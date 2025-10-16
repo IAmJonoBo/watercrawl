@@ -1,9 +1,22 @@
 from __future__ import annotations
 
 import json
+import sys
+import types
+from typing import Any, cast
 
-from firecrawl_demo import config
-from firecrawl_demo.secrets import ChainedSecretsProvider
+import pytest
+from botocore.exceptions import ClientError  # type: ignore[import-untyped]
+
+from firecrawl_demo import config, secrets
+from firecrawl_demo.secrets import (
+    AwsSecretsManagerProvider,
+    AzureKeyVaultProvider,
+    ChainedSecretsProvider,
+    EnvSecretsProvider,
+    SecretsProviderError,
+    build_provider_from_environment,
+)
 
 
 class DummyProvider:
@@ -24,6 +37,241 @@ def test_chained_provider_prefers_first_non_empty_value() -> None:
     assert provider.get("SECRET") == "secondary"
     assert primary.calls == ["SECRET"]
     assert fallback.calls == ["SECRET"]
+
+
+def _install_azure_stubs(
+    monkeypatch: pytest.MonkeyPatch,
+    secret_client_cls: type,
+    credential_cls: type,
+) -> None:
+    identity_module = cast(Any, types.ModuleType("azure.identity"))
+    identity_module.DefaultAzureCredential = credential_cls
+
+    secrets_module = cast(Any, types.ModuleType("azure.keyvault.secrets"))
+    secrets_module.SecretClient = secret_client_cls
+
+    keyvault_module = cast(Any, types.ModuleType("azure.keyvault"))
+    keyvault_module.secrets = secrets_module
+
+    azure_module = cast(Any, types.ModuleType("azure"))
+    azure_module.identity = identity_module
+    azure_module.keyvault = keyvault_module
+
+    monkeypatch.setitem(sys.modules, "azure", azure_module)
+    monkeypatch.setitem(sys.modules, "azure.identity", identity_module)
+    monkeypatch.setitem(sys.modules, "azure.keyvault", keyvault_module)
+    monkeypatch.setitem(sys.modules, "azure.keyvault.secrets", secrets_module)
+
+
+def test_env_secrets_provider_defaults_to_os_env(monkeypatch):
+    monkeypatch.setenv("SAMPLE_SECRET", "value")
+    provider = EnvSecretsProvider()
+    assert provider.get("SAMPLE_SECRET") == "value"
+
+
+def test_env_secrets_provider_respects_custom_mapping():
+    provider = EnvSecretsProvider({"KEY": "mapped"})
+    assert provider.get("KEY") == "mapped"
+
+
+def test_aws_secrets_manager_provider_returns_secret():
+    class StubClient:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def get_secret_value(self, SecretId: str) -> dict[str, str]:
+            self.calls.append(SecretId)
+            return {"SecretString": "resolved"}
+
+    class StubSession:
+        def __init__(self, client: StubClient) -> None:
+            self._client = client
+
+        def client(self, service: str, region_name: str | None = None) -> StubClient:
+            assert service == "secretsmanager"
+            return self._client
+
+    stub_client = StubClient()
+    provider = AwsSecretsManagerProvider(
+        secret_prefix="prod", region_name="af-south-1", session=StubSession(stub_client)
+    )
+    assert provider.get("TOKEN") == "resolved"
+    assert stub_client.calls == ["prod/TOKEN"]
+
+
+def test_aws_secrets_manager_provider_handles_missing_secret():
+    class FailingClient:
+        def __init__(self, code: str) -> None:
+            self.code = code
+
+        def get_secret_value(self, SecretId: str) -> dict[str, Any]:
+            raise ClientError({"Error": {"Code": self.code}}, "GetSecretValue")
+
+    class StubSession:
+        def __init__(self, client: FailingClient) -> None:
+            self._client = client
+
+        def client(self, *_: object, **__: object) -> FailingClient:
+            return self._client
+
+    missing_provider = AwsSecretsManagerProvider(
+        session=StubSession(FailingClient("ResourceNotFoundException"))
+    )
+    assert missing_provider.get("TOKEN") is None
+
+    provider = AwsSecretsManagerProvider(
+        session=StubSession(FailingClient("InternalServiceError"))
+    )
+    with pytest.raises(SecretsProviderError):
+        provider.get("TOKEN")
+
+
+def test_azure_key_vault_provider_returns_secret(monkeypatch):
+    class StubSecret:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+    class StubClient:
+        def __init__(self, *, vault_url: str, credential: object) -> None:
+            self.vault_url = vault_url
+            self.credential = credential
+            self.calls: list[str] = []
+
+        def get_secret(self, name: str) -> StubSecret:
+            self.calls.append(name)
+            return StubSecret("fetched")
+
+    class StubCredential:
+        pass
+
+    _install_azure_stubs(monkeypatch, StubClient, StubCredential)
+
+    provider = AzureKeyVaultProvider(
+        vault_url="https://vault.example", secret_prefix="team/"
+    )
+    assert provider.get("TOKEN") == "fetched"
+
+
+def test_azure_key_vault_provider_handles_missing_secret(monkeypatch):
+    class StubClient:
+        def __init__(self, *, vault_url: str, credential: object) -> None:
+            self.vault_url = vault_url
+            self.credential = credential
+
+        def get_secret(self, name: str) -> None:
+            error = Exception("missing")
+            setattr(error, "status_code", 404)
+            raise error
+
+    class StubCredential:
+        pass
+
+    _install_azure_stubs(monkeypatch, StubClient, StubCredential)
+
+    provider = AzureKeyVaultProvider(vault_url="https://vault.example")
+    assert provider.get("TOKEN") is None
+
+
+def test_azure_key_vault_provider_wraps_other_errors(monkeypatch):
+    class StubClient:
+        def __init__(self, *, vault_url: str, credential: object) -> None:
+            self.vault_url = vault_url
+            self.credential = credential
+
+        def get_secret(self, name: str) -> None:
+            raise RuntimeError("boom")
+
+    class StubCredential:
+        pass
+
+    _install_azure_stubs(monkeypatch, StubClient, StubCredential)
+
+    provider = AzureKeyVaultProvider(vault_url="https://vault.example")
+    with pytest.raises(SecretsProviderError):
+        provider.get("TOKEN")
+
+
+def test_build_provider_from_environment_defaults_to_env():
+    provider = build_provider_from_environment({"SAMPLE": "value"})
+    assert isinstance(provider, EnvSecretsProvider)
+    assert provider.get("SAMPLE") == "value"
+
+
+def test_build_provider_from_environment_includes_aws(monkeypatch):
+    class StubProvider:
+        def __init__(self, **kwargs: object) -> None:
+            self.kwargs = kwargs
+            self.values = {"SECRET": "aws"}
+
+        def get(self, name: str) -> str | None:
+            return self.values.get(name)
+
+    monkeypatch.setattr(secrets, "AwsSecretsManagerProvider", StubProvider)
+
+    provider = build_provider_from_environment(
+        {
+            "SECRETS_BACKEND": "aws",
+            "AWS_REGION": "af-south-1",
+            "AWS_SECRETS_PREFIX": "prod/",
+            "SECRET": "env",
+        }
+    )
+
+    value = provider.get("SECRET")
+    assert value == "aws"
+
+
+def test_build_provider_from_environment_handles_aws_errors(monkeypatch):
+    def raising_provider(**_: object) -> None:
+        raise SecretsProviderError("boom")
+
+    monkeypatch.setattr(secrets, "AwsSecretsManagerProvider", raising_provider)
+
+    provider = build_provider_from_environment(
+        {"SECRETS_BACKEND": "aws", "SECRET": "env"}
+    )
+    assert isinstance(provider, EnvSecretsProvider)
+    assert provider.get("SECRET") == "env"
+
+
+def test_build_provider_from_environment_includes_azure(monkeypatch):
+    class StubProvider:
+        def __init__(self, **kwargs: object) -> None:
+            self.kwargs = kwargs
+            self.values = {"SECRET": "azure"}
+
+        def get(self, name: str) -> str | None:
+            return self.values.get(name)
+
+    monkeypatch.setattr(secrets, "AzureKeyVaultProvider", StubProvider)
+
+    provider = build_provider_from_environment(
+        {
+            "SECRETS_BACKEND": "azure",
+            "AZURE_KEY_VAULT_URL": "https://vault.example",
+            "AZURE_SECRETS_PREFIX": "team/",
+            "SECRET": "env",
+        }
+    )
+
+    assert provider.get("SECRET") == "azure"
+
+
+def test_build_provider_from_environment_handles_azure_errors(monkeypatch):
+    def raising_provider(**_: object) -> None:
+        raise SecretsProviderError("boom")
+
+    monkeypatch.setattr(secrets, "AzureKeyVaultProvider", raising_provider)
+
+    provider = build_provider_from_environment(
+        {
+            "SECRETS_BACKEND": "azure",
+            "AZURE_KEY_VAULT_URL": "https://vault.example",
+            "SECRET": "env",
+        }
+    )
+    assert isinstance(provider, EnvSecretsProvider)
+    assert provider.get("SECRET") == "env"
 
 
 def test_configure_uses_supplied_provider() -> None:

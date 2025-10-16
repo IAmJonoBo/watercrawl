@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from firecrawl_demo.mcp.server import CopilotMCPServer
 from firecrawl_demo.models import EvidenceRecord
