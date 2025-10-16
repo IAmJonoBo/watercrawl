@@ -66,3 +66,9 @@ During enrichment the pipeline calls the configured `EvidenceSink`, so MCP tasks
 2. Update `CHANGELOG.md` (to be introduced) with highlights.
 3. Regenerate MkDocs (`mkdocs build`) and publish artefacts.
 4. Tag release following SemVer once automation surfaces confirm green status.
+
+## Infrastructure Plan Drift
+
+- `firecrawl_demo.infrastructure.planning.detect_plan_drift()` compares the active plan against the checked-in baseline snapshot.
+- `tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot` guards probe endpoints, the active OPA bundle path, and plan→commit automation topics from unexpected drift.
+- Update the baseline snapshot intentionally whenever probes move or policy bundles change, and note the reason in `Next_Steps.md`.

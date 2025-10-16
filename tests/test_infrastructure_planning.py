@@ -87,3 +87,29 @@ def test_build_infrastructure_plan_respects_configuration() -> None:
     assert plan.plan_commit.diff_format == "json"
     assert plan.plan_commit.audit_topic == "audit.plan-commit.test"
     assert plan.plan_commit.allow_force_commit is True
+
+
+def test_infrastructure_plan_matches_baseline_snapshot() -> None:
+    snapshot = planning.plan_to_mapping(planning.build_infrastructure_plan())
+    assert snapshot == planning.BASELINE_PLAN_SNAPSHOT
+
+
+def test_infrastructure_plan_drift_detection_flags_changes(monkeypatch) -> None:
+    provider = DummyProvider(
+        {
+            "OBSERVABILITY_READINESS_PATH": "/health/readyz-v2",
+            "OPA_DECISION_PATH": "opa/deny",
+            "PLAN_COMMIT_AUDIT_TOPIC": "audit.plan-commit.override",
+        }
+    )
+    config.configure(provider)
+    try:
+        drift_plan = planning.build_infrastructure_plan()
+    finally:
+        config.configure()
+
+    drift = planning.detect_plan_drift(drift_plan)
+
+    assert any("ready" in entry for entry in drift)
+    assert any("opa/deny" in entry for entry in drift)
+    assert any("audit.plan-commit.override" in entry for entry in drift)

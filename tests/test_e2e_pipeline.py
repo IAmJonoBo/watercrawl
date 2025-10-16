@@ -103,6 +103,7 @@ def test_pipeline_records_rebrand_investigation(monkeypatch):
         enable_firecrawl_sdk=False,
         enable_press_research=True,
         enable_regulator_lookup=True,
+        enable_ml_inference=True,
         investigate_rebrands=True,
     )
     monkeypatch.setattr(config, "FEATURE_FLAGS", flags)

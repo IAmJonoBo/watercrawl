@@ -8,7 +8,7 @@
 - [x] Stand up MkDocs documentation portal — Owner: AI — Due: Complete
 - [x] Integrate secrets manager for production credentials — Owner: AI — Due: Complete
 - [x] Introduce research adapter registry with config-driven sequencing — Owner: AI — Due: 2025-10-16
-- [ ] Package exemplar regulator/press/ML adapters for registry adoption — Owner: Platform Team — Due: Backlog
+- [x] Package exemplar regulator/press/ML adapters for registry adoption — Owner: Platform Team — Due: 2025-10-16
 - [x] Introduce pluggable evidence sinks (CSV + streaming stub) — Owner: AI — Due: 2025-10-16
 
 ## Steps
@@ -22,6 +22,8 @@
 - [x] Document adapter authoring workflow in architecture guide
 - [x] Backfill tests for CSV sink + MCP injection path
 - [x] Scaffold infrastructure plan for crawler/observability/policy guardrails (AT-07, AT-15–AT-18)
+- [x] Package exemplar regulator/press/ML adapters and add registry defaults (2025-10-16)
+- [x] Baseline infrastructure plan snapshot + drift regression tests (2025-10-16)
 
 ## Deliverables
 
@@ -31,6 +33,8 @@
 - [x] MkDocs site with methodology, API, and operations docs
 - [x] Registry-enabled research pipeline supporting Firecrawl+Null defaults and config overrides
 - [x] Adapter authoring guidance in docs/architecture.md
+- [x] Exemplar regulator/press/ML adapters packaged with deterministic dataset
+- [x] Infrastructure plan drift snapshot + regression coverage
 
 ## Quality Gates
 
@@ -45,6 +49,7 @@
 - [x] Types (2025-10-16): mypy .
 - [x] Security (2025-10-16): bandit -r firecrawl_demo
 - [x] Build (2025-10-16): poetry build
+- [x] Infrastructure drift (2025-10-16): pytest tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot
 
 ## Links
 
@@ -54,6 +59,8 @@
 - [x] Adapter registry documentation — docs/architecture.md#research-adapter-registry
 - [x] Registry tests — tests/test_research_logic.py
 - [x] Infrastructure plan scaffolding — firecrawl_demo/infrastructure/planning.py
+- [x] Exemplar adapter implementations — firecrawl_demo/research/exemplars.py
+- [x] Infrastructure drift regression tests — tests/test_infrastructure_planning.py
 
 ## Risks/Notes
 - [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
@@ -71,7 +78,8 @@
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
 - [ ]MCP first: Expose crawler controls and graph queries as MCP tools; surface pages, logs and datasets as MCP resources; include research/playbook prompts. Copilot Studio/Windows/Agents SDK speak MCP, so Copilot can plan → call → verify across your stack. ￼
-- [ ] Keep infrastructure plan aligned with deployed probe endpoints, OPA bundles, and automation workflows; add regression tests that fail when plan drift occurs.
+- [x] Keep infrastructure plan aligned with deployed probe endpoints, OPA bundles, and automation workflows; add regression tests that fail when plan drift occurs. (2025-10-16)
+- [ ] Refresh infrastructure baseline snapshot + docs whenever probe endpoints, policy bundles, or automation topics change in production.
 - [ ]Real-time graphs: Use Kafka→Neo4j/Memgraph ingestion, then run online algorithms (PageRank, Louvain) and render with Cytoscape.js or GPU visual analytics for live relationship maps. ￼
 - [ ]Hygiene: Respect RFC 9309 robots, do boilerplate removal, dedupe with SimHash/MinHash, and track provenance with W3C PROV-O. These raise precision and trust. ￼
 
