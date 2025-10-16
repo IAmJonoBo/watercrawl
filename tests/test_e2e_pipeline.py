@@ -88,6 +88,40 @@ def test_pipeline_enriches_missing_fields():
     assert entry.confidence == 96
 
 
+def test_pipeline_adds_remediation_note_for_sparse_evidence():
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Sparse Evidence Aero",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    adapter = StubResearchAdapter(
+        {
+            "Sparse Evidence Aero": ResearchFinding(
+                contact_person="Ayanda Khumalo",
+                sources=["https://directory.example.com/sparse-evidence"],
+                confidence=72,
+            )
+        }
+    )
+
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    evidence = report.evidence_log[0]
+    assert "Evidence shortfall" in evidence.notes
+    assert "second independent source" in evidence.notes
+    assert "official" in evidence.notes
+
+
 def test_pipeline_records_rebrand_investigation(monkeypatch):
     df = pd.DataFrame(
         [

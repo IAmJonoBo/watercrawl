@@ -105,6 +105,7 @@ class Pipeline:
                 updated = True
 
             has_named_contact = bool(record.contact_person)
+            has_official_source = self._has_official_domain(sources)
             evidence_ok = self._has_official_source(sources)
             status = determine_status(
                 bool(record.website_url),
@@ -131,7 +132,11 @@ class Pipeline:
                         changes=self._describe_changes(original_row, record),
                         sources=sources,
                         notes=self._compose_evidence_notes(
-                            finding, original_row, record
+                            finding,
+                            original_row,
+                            record,
+                            sources=sources,
+                            has_official_source=has_official_source,
                         ),
                         confidence=confidence,
                     )
@@ -231,10 +236,16 @@ class Pipeline:
             sources.append("internal://record")
         return sources
 
-    def _has_official_source(self, sources: Sequence[str]) -> bool:
+    def _has_official_domain(self, sources: Sequence[str]) -> bool:
         for source in sources:
-            if any(keyword in source for keyword in _OFFICIAL_KEYWORDS):
+            candidate = source.lower()
+            if any(keyword in candidate for keyword in _OFFICIAL_KEYWORDS):
                 return True
+        return False
+
+    def _has_official_source(self, sources: Sequence[str]) -> bool:
+        if self._has_official_domain(sources):
+            return True
         # If no explicit official keyword but there are >=2 sources, consider the first as quasi-official
         return len(sources) >= 2
 
@@ -259,6 +270,9 @@ class Pipeline:
         finding: ResearchFinding,
         original_row: pd.Series,
         record: SchoolRecord,
+        *,
+        sources: Sequence[str],
+        has_official_source: bool,
     ) -> str:
         notes: list[str] = []
         if finding.notes:
@@ -290,5 +304,24 @@ class Pipeline:
                     notes.append(address_note)
 
         if not notes:
-            return ""
-        return "; ".join(notes)
+            notes_text = ""
+        else:
+            notes_text = "; ".join(notes)
+
+        remediation_reasons: list[str] = []
+        if len(sources) < 2:
+            remediation_reasons.append("add a second independent source")
+        if not has_official_source:
+            remediation_reasons.append(
+                "confirm an official (.gov.za/.caa.co.za/.ac.za/.org.za/.mil.za) source"
+            )
+        if remediation_reasons:
+            shortfall_note = "Evidence shortfall: " + "; ".join(remediation_reasons)
+            if not shortfall_note.endswith("."):
+                shortfall_note += "."
+            if notes_text:
+                notes_text = "; ".join(filter(None, [notes_text, shortfall_note]))
+            else:
+                notes_text = shortfall_note
+
+        return notes_text
