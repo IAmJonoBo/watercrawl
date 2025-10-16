@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
-from typing import Any, Dict
+from typing import Any
 
 from ..pipeline import Pipeline
 
@@ -16,7 +16,7 @@ class CopilotMCPServer:
     def __init__(self, pipeline: Pipeline) -> None:
         self.pipeline = pipeline
 
-    def process_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    def process_request(self, request: dict[str, Any]) -> dict[str, Any]:
         method = request.get("method")
         request_id = request.get("id")
         params = request.get("params", {})

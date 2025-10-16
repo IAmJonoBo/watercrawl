@@ -4,40 +4,42 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
-from pydantic_settings import BaseSettings
+try:  # pragma: no cover - optional dependency
+    from pydantic_settings import BaseSettings as _ImportedBaseSettings
+except ImportError:  # pragma: no cover - runtime fallback
+    _PydanticBaseSettings: type[Any] | None = None
+else:
+    _PydanticBaseSettings = _ImportedBaseSettings
 
 """Central configuration and environment-driven settings for the enrichment stack."""
 
-# --- Pydantic config management upgrade ---
 
-# --- Robust config management with pydantic fallback ---
+class _SettingsFallback:
+    FIRECRAWL_API_KEY: str | None = os.getenv("FIRECRAWL_API_KEY")
+    FIRECRAWL_API_URL: str = os.getenv("FIRECRAWL_API_URL", "https://api.firecrawl.com")
 
-try:
-    from pydantic_settings import BaseSettings
 
-    class Settings(BaseSettings):
-        FIRECRAWL_API_KEY: Optional[str] = None
-        FIRECRAWL_API_URL: str = "https://api.firecrawl.com"
-        # Add other config fields as needed
+BaseSettingsType: type[Any]
+if _PydanticBaseSettings is not None:  # pragma: no branch - deterministic selection
+    BaseSettingsType = _PydanticBaseSettings
+else:  # pragma: no cover - exercised when pydantic-settings missing
+    BaseSettingsType = _SettingsFallback
+
+
+class Settings(BaseSettingsType):
+    FIRECRAWL_API_KEY: str | None = None
+    FIRECRAWL_API_URL: str = "https://api.firecrawl.com"
+
+    if _PydanticBaseSettings is not None:
 
         class Config:
             env_file = ".env"
             env_file_encoding = "utf-8"
 
-    settings = Settings()
-except ImportError:
-    settings = type(
-        "Settings",
-        (),
-        {
-            "FIRECRAWL_API_KEY": os.getenv("FIRECRAWL_API_KEY", ""),
-            "FIRECRAWL_API_URL": os.getenv(
-                "FIRECRAWL_API_URL", "https://api.firecrawl.com"
-            ),
-        },
-    )()
+
+settings = Settings()
 
 # Optional .env loading -----------------------------------------------------
 try:  # pragma: no cover - optional dependency
@@ -118,6 +120,34 @@ EVIDENCE_QUERIES = [
 ]
 
 
+# Feature toggles ------------------------------------------------------------
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+@dataclass(frozen=True)
+class FeatureFlags:
+    enable_firecrawl_sdk: bool = False
+    enable_press_research: bool = True
+    enable_regulator_lookup: bool = True
+    investigate_rebrands: bool = True
+
+
+FEATURE_FLAGS = FeatureFlags(
+    enable_firecrawl_sdk=_env_bool("FEATURE_ENABLE_FIRECRAWL_SDK", False),
+    enable_press_research=_env_bool("FEATURE_ENABLE_PRESS_RESEARCH", True),
+    enable_regulator_lookup=_env_bool("FEATURE_ENABLE_REGULATOR_LOOKUP", True),
+    investigate_rebrands=_env_bool("FEATURE_INVESTIGATE_REBRANDS", True),
+)
+
+ALLOW_NETWORK_RESEARCH = _env_bool("ALLOW_NETWORK_RESEARCH", False)
+
+
 # Dataclasses for richer configuration --------------------------------------
 @dataclass(frozen=True)
 class RetryPolicy:
@@ -140,14 +170,14 @@ class FirecrawlBehaviour:
     timeout_seconds: float
     proxy_mode: str
     only_main_content: bool
-    scrape_formats: List[Any]
-    parsers: List[Any]
+    scrape_formats: list[Any]
+    parsers: list[Any]
 
 
 @dataclass(frozen=True)
 class FirecrawlSettings:
-    api_key: Optional[str]
-    api_url: Optional[str]
+    api_key: str | None
+    api_url: str | None
     retry: RetryPolicy
     throttle: ThrottlePolicy
     behaviour: FirecrawlBehaviour
@@ -174,7 +204,7 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
-def _env_json(name: str) -> Optional[Any]:
+def _env_json(name: str) -> Any | None:
     value = os.getenv(name)
     if not value:
         return None
@@ -184,7 +214,7 @@ def _env_json(name: str) -> Optional[Any]:
         return None
 
 
-def _default_scrape_formats() -> List[Any]:
+def _default_scrape_formats() -> list[Any]:
     return [
         "markdown",
         {
@@ -194,7 +224,7 @@ def _default_scrape_formats() -> List[Any]:
     ]
 
 
-def _default_parsers() -> List[Any]:
+def _default_parsers() -> list[Any]:
     return []
 
 
@@ -245,7 +275,7 @@ BATCH_SIZE = _env_int("FIRECRAWL_BATCH_SIZE", 20)
 REQUEST_DELAY_SECONDS = _env_float("FIRECRAWL_REQUEST_DELAY_SECONDS", 1.0)
 
 
-def resolve_api_key(explicit: Optional[str] = None) -> str:
+def resolve_api_key(explicit: str | None = None) -> str:
     """Return the API key, prioritising explicit overrides. Uses pydantic settings if available."""
     key = explicit or getattr(settings, "FIRECRAWL_API_KEY", None) or FIRECRAWL.api_key
     if not key:

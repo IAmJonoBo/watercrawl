@@ -1,6 +1,7 @@
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 import pytest
 
+from firecrawl_demo import config
 from firecrawl_demo.pipeline import Pipeline
 from firecrawl_demo.research import ResearchAdapter, ResearchFinding
 
@@ -63,6 +64,56 @@ def test_pipeline_enriches_missing_fields():
     assert entry.row_id == 2
     assert len(entry.sources) >= 2
     assert entry.confidence == 96
+
+
+def test_pipeline_records_rebrand_investigation(monkeypatch):
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Legacy Flight School",
+                "Province": "Western Cape",
+                "Status": "Candidate",
+                "Website URL": "https://legacy-flight.co.za",
+                "Contact Person": "",
+                "Contact Number": "021 555 0199",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    finding = ResearchFinding(
+        website_url="https://newbrand.aero",
+        contact_person="Nomsa Jacobs",
+        contact_email="nomsa.jacobs@newbrand.aero",
+        contact_phone="0215550199",
+        sources=[
+            "https://newbrand.aero/contact",
+            "https://www.caa.co.za/operators/newbrand",
+        ],
+        notes="Regulator lists organisation under the new brand",
+        confidence=90,
+        investigation_notes=[
+            "Regulator registry indicates Legacy Flight School now trades as NewBrand Aero (2024).",
+        ],
+        alternate_names=["Legacy Flight School"],
+    )
+
+    adapter = StubResearchAdapter({"Legacy Flight School": finding})
+    flags = config.FeatureFlags(
+        enable_firecrawl_sdk=False,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    evidence = report.evidence_log[0]
+    assert "newbrand" in evidence.notes.lower()
+    assert "legacy flight school" in evidence.notes.lower()
+    assert any("caa.co.za" in source for source in evidence.sources)
 
 
 def test_pipeline_rejects_records_missing_required_columns():

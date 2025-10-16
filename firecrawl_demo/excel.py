@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, List
+from collections.abc import Iterable
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
 from . import config
 from .models import EnrichmentResult, SchoolRecord
@@ -58,7 +58,7 @@ def write_dataset(df: pd.DataFrame, path: Path) -> None:
     raise ValueError(f"Unsupported file format: {suffix}")
 
 
-def load_school_records(path: Path = config.SOURCE_XLSX) -> List[SchoolRecord]:
+def load_school_records(path: Path = config.SOURCE_XLSX) -> list[SchoolRecord]:
     df = read_dataset(path)
     missing = [col for col in EXPECTED_COLUMNS if col not in df.columns]
     if missing:
@@ -67,7 +67,7 @@ def load_school_records(path: Path = config.SOURCE_XLSX) -> List[SchoolRecord]:
 
 
 def append_enrichment_columns(
-    df: pd.DataFrame, results: List[EnrichmentResult]
+    df: pd.DataFrame, results: list[EnrichmentResult]
 ) -> pd.DataFrame:
     enrichment_rows = [result.record.as_dict() for result in results]
     enrichment_df = pd.DataFrame(enrichment_rows)

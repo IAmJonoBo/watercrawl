@@ -10,6 +10,7 @@
    - Emits structured `ValidationIssue` instances for UI/automation consumption.
 3. **Research Adapter Layer** (`firecrawl_demo.research`)
    - Provides a protocol-driven interface so tests can inject deterministic findings while production can swap in Firecrawl or OSINT clients.
+   - `TriangulatingResearchAdapter` merges Firecrawl, regulator, press, and directory intelligence governed by feature toggles.
 4. **Compliance Utilities** (`firecrawl_demo.compliance`)
    - Normalises phone numbers to +27 E.164, verifies email domains against official websites, and calculates confidence scores.
 5. **Pipeline Orchestrator** (`firecrawl_demo.pipeline`)

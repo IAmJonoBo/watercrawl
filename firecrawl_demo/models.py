@@ -2,29 +2,29 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
 
 @dataclass
 class Organisation:
     name: str
-    province: Optional[str] = None
-    status: Optional[str] = None
+    province: str | None = None
+    status: str | None = None
 
 
 @dataclass(frozen=True)
 class ValidationIssue:
     code: str
     message: str
-    row: Optional[int] = None
-    column: Optional[str] = None
+    row: int | None = None
+    column: str | None = None
 
 
 @dataclass(frozen=True)
 class ValidationReport:
-    issues: List[ValidationIssue]
+    issues: list[ValidationIssue]
     rows: int
 
     @property
@@ -37,12 +37,12 @@ class EvidenceRecord:
     row_id: int
     organisation: str
     changes: str
-    sources: List[str]
+    sources: list[str]
     notes: str
     confidence: int
     timestamp: datetime = field(default_factory=lambda: datetime.utcnow())
 
-    def as_dict(self) -> Dict[str, str]:
+    def as_dict(self) -> dict[str, str]:
         return {
             "RowID": str(self.row_id),
             "Organisation": self.organisation,
@@ -59,13 +59,13 @@ class SchoolRecord:
     name: str
     province: str
     status: str
-    website_url: Optional[str]
-    contact_person: Optional[str]
-    contact_number: Optional[str]
-    contact_email: Optional[str]
+    website_url: str | None
+    contact_person: str | None
+    contact_number: str | None
+    contact_email: str | None
 
     @classmethod
-    def from_dataframe_row(cls, row: pd.Series) -> "SchoolRecord":
+    def from_dataframe_row(cls, row: pd.Series) -> SchoolRecord:
         return cls(
             name=str(row.get("Name of Organisation", "")).strip(),
             province=str(row.get("Province", "")).strip(),
@@ -76,7 +76,7 @@ class SchoolRecord:
             contact_email=_clean_value(row.get("Contact Email Address")),
         )
 
-    def as_dict(self) -> Dict[str, Optional[str]]:
+    def as_dict(self) -> dict[str, str | None]:
         return {
             "Name of Organisation": self.name,
             "Province": self.province,
@@ -91,8 +91,8 @@ class SchoolRecord:
 @dataclass
 class EnrichmentResult:
     record: SchoolRecord
-    issues: List[str] = field(default_factory=list)
-    evidence: Optional[EvidenceRecord] = None
+    issues: list[str] = field(default_factory=list)
+    evidence: EvidenceRecord | None = None
 
     def apply(self, frame: pd.DataFrame, index: int) -> None:
         for key, value in self.record.as_dict().items():
@@ -104,15 +104,15 @@ class EnrichmentResult:
 class PipelineReport:
     refined_dataframe: pd.DataFrame
     validation_report: ValidationReport
-    evidence_log: List[EvidenceRecord]
-    metrics: Dict[str, int]
+    evidence_log: list[EvidenceRecord]
+    metrics: dict[str, int]
 
     @property
-    def issues(self) -> List[ValidationIssue]:
+    def issues(self) -> list[ValidationIssue]:
         return self.validation_report.issues
 
 
-def _clean_value(value: Any) -> Optional[str]:
+def _clean_value(value: Any) -> str | None:
     if value is None:
         return None
     text = str(value).strip()

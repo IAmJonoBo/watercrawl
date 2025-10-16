@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 from click.testing import CliRunner
 
 from firecrawl_demo.cli import cli

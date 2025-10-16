@@ -1,25 +1,30 @@
 repos:
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.4.4
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
     hooks:
       - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
   - repo: https://github.com/psf/black
-    rev: 24.4.0
+    rev: 24.10.0
     hooks:
       - id: black
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+        language_version: python3
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.0
     hooks:
-      - id: isort
+      - id: pyupgrade
+        args: ["--py39-plus"]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.11.2
     hooks:
       - id: mypy
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+        additional_dependencies:
+          - pandas-stubs
+          - types-requests
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.9
     hooks:
       - id: bandit
-  - repo: https://github.com/dotenv-linter/dotenv-linter
-    rev: v3.3.0
-    hooks:
-      - id: dotenv-linter
+        args: ["-r", "firecrawl_demo"]
+        pass_filenames: false

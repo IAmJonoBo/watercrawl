@@ -9,8 +9,12 @@ poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-repo
 poetry run ruff check .
 poetry run mypy .
 poetry run bandit -r firecrawl_demo
+poetry run pre-commit run --all-files
 poetry run poetry build
 ```
+
+The toolchain includes first-party type stubs for `pandas` and `requests`, so remove per-file `type: ignore` directives instead
+of silencing mypy regressions.
 
 ## Acceptance Criteria
 

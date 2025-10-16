@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
 from . import config
 from .excel import EXPECTED_COLUMNS
@@ -15,7 +14,7 @@ class DatasetValidator:
     """Validates input datasets for mandatory columns and value constraints."""
 
     def validate_dataframe(self, frame: pd.DataFrame) -> ValidationReport:
-        issues: List[ValidationIssue] = []
+        issues: list[ValidationIssue] = []
         missing_columns = [col for col in EXPECTED_COLUMNS if col not in frame.columns]
         for column in missing_columns:
             issues.append(
@@ -33,11 +32,11 @@ class DatasetValidator:
         issues.extend(self._validate_statuses(frame))
         return ValidationReport(issues=issues, rows=len(frame))
 
-    def _validate_provinces(self, frame: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_provinces(self, frame: pd.DataFrame) -> list[ValidationIssue]:
         allowed = {province.lower(): province for province in config.PROVINCES}
         province_series = frame["Province"].fillna("")
-        issues: List[ValidationIssue] = []
-        for idx, raw_value in province_series.items():
+        issues: list[ValidationIssue] = []
+        for offset, (_, raw_value) in enumerate(province_series.items(), start=2):
             cleaned = str(raw_value).strip().lower()
             if cleaned and cleaned in allowed:
                 continue
@@ -47,23 +46,25 @@ class DatasetValidator:
                 ValidationIssue(
                     code="invalid_province",
                     message=f"Province '{raw_value}' is not recognised",
-                    row=idx + 2,
+                    row=offset,
                     column="Province",
                 )
             )
         return issues
 
-    def _validate_statuses(self, frame: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_statuses(self, frame: pd.DataFrame) -> list[ValidationIssue]:
         allowed = {status.lower() for status in config.CANONICAL_STATUSES}
-        issues: List[ValidationIssue] = []
-        for idx, raw_value in frame["Status"].fillna("").items():
+        issues: list[ValidationIssue] = []
+        for offset, (_, raw_value) in enumerate(
+            frame["Status"].fillna("").items(), start=2
+        ):
             cleaned = str(raw_value).strip().lower()
             if not cleaned:
                 issues.append(
                     ValidationIssue(
                         code="missing_status",
                         message="Status is empty",
-                        row=idx + 2,
+                        row=offset,
                         column="Status",
                     )
                 )
@@ -73,7 +74,7 @@ class DatasetValidator:
                     ValidationIssue(
                         code="invalid_status",
                         message=f"Status '{raw_value}' is not permitted",
-                        row=idx + 2,
+                        row=offset,
                         column="Status",
                     )
                 )

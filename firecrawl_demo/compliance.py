@@ -5,7 +5,8 @@ import hashlib
 import json
 import re
 from datetime import datetime
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Optional
+from collections.abc import Iterable, Sequence
 from urllib.parse import urlparse
 
 from . import config
@@ -43,7 +44,7 @@ def canonical_domain(url: Optional[str]) -> Optional[str]:
     return host or None
 
 
-def normalize_phone(raw_phone: Optional[str]) -> Tuple[Optional[str], List[str]]:
+def normalize_phone(raw_phone: Optional[str]) -> tuple[Optional[str], list[str]]:
     if not raw_phone:
         return None, ["Phone missing"]
     digits = re.sub(r"\D", "", raw_phone)
@@ -60,7 +61,7 @@ def normalize_phone(raw_phone: Optional[str]) -> Tuple[Optional[str], List[str]]
         normalized = None
         if len(digits) >= 9:
             normalized = "+27" + digits[-9:]
-    issues: List[str] = []
+    issues: list[str] = []
     if not normalized or not _PHONE_RE.fullmatch(normalized):
         issues.append("Phone is not in +27 E.164 format")
         return None, issues
@@ -69,11 +70,11 @@ def normalize_phone(raw_phone: Optional[str]) -> Tuple[Optional[str], List[str]]
 
 def validate_email(
     email: Optional[str], organisation_domain: Optional[str]
-) -> Tuple[Optional[str], List[str]]:
+) -> tuple[Optional[str], list[str]]:
     if not email:
         return None, ["Email missing"]
     cleaned = email.strip()
-    issues: List[str] = []
+    issues: list[str] = []
     if not _EMAIL_RE.fullmatch(cleaned):
         issues.append("Email format invalid")
         return None, issues
@@ -140,7 +141,7 @@ def evidence_entry(
     sources: Sequence[str],
     notes: str,
     confidence: int,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     timestamp = datetime.utcnow().isoformat(timespec="seconds")
     # Enforce ≥2 sources and at least one official
     official_keywords = [".gov.za", "caa.co.za", "ac.za", "org.za"]
@@ -167,7 +168,7 @@ def evidence_entry(
     }
 
 
-def append_evidence_log(rows: Iterable[Dict[str, str]]) -> None:
+def append_evidence_log(rows: Iterable[dict[str, str]]) -> None:
     path = config.EVIDENCE_LOG
     path.parent.mkdir(parents=True, exist_ok=True)
     file_exists = path.exists()
@@ -190,15 +191,15 @@ def append_evidence_log(rows: Iterable[Dict[str, str]]) -> None:
             writer.writerow(row)
 
 
-def payload_hash(payload: Dict[str, object]) -> str:
+def payload_hash(payload: dict[str, object]) -> str:
     serialised = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha256(serialised.encode("utf-8")).hexdigest()
 
 
 def describe_changes(
-    original: Dict[str, Optional[str]], enriched: Dict[str, Optional[str]]
+    original: dict[str, Optional[str]], enriched: dict[str, Optional[str]]
 ) -> str:
-    changes: List[str] = []
+    changes: list[str] = []
     for key, original_value in original.items():
         new_value = enriched.get(key)
         if original_value != new_value:
