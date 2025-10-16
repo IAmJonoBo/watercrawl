@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -51,6 +51,26 @@ class EvidenceRecord:
             "Notes": self.notes,
             "Timestamp": self.timestamp.isoformat(timespec="seconds"),
             "Confidence": str(self.confidence),
+        }
+
+
+@dataclass(frozen=True)
+class QualityIssue:
+    row_id: int
+    organisation: str
+    code: str
+    severity: Literal["block", "warn"]
+    message: str
+    remediation: str | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "row_id": self.row_id,
+            "organisation": self.organisation,
+            "code": self.code,
+            "severity": self.severity,
+            "message": self.message,
+            "remediation": self.remediation or "",
         }
 
 
@@ -117,12 +137,40 @@ class EnrichmentResult:
 
 
 @dataclass(frozen=True)
+class RollbackAction:
+    row_id: int
+    organisation: str
+    columns: list[str]
+    previous_values: dict[str, str | None]
+    reason: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "row_id": self.row_id,
+            "organisation": self.organisation,
+            "columns": list(self.columns),
+            "previous_values": dict(self.previous_values),
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
+class RollbackPlan:
+    actions: list[RollbackAction]
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"actions": [action.as_dict() for action in self.actions]}
+
+
+@dataclass(frozen=True)
 class PipelineReport:
     refined_dataframe: pd.DataFrame
     validation_report: ValidationReport
     evidence_log: list[EvidenceRecord]
     metrics: dict[str, int]
     sanity_findings: list[SanityCheckFinding] = field(default_factory=list)
+    quality_issues: list[QualityIssue] = field(default_factory=list)
+    rollback_plan: RollbackPlan | None = None
 
     @property
     def issues(self) -> list[ValidationIssue]:
