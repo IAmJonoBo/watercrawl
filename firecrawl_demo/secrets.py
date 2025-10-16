@@ -94,7 +94,7 @@ class AwsSecretsManagerProvider:
         if secret_string is not None:
             return secret_string
         binary = response.get("SecretBinary")
-        if binary is not None:  # pragma: no cover - binary seldom used in tests
+        if binary is not None:
             if isinstance(binary, (bytes, bytearray)):
                 return binary.decode()
             return str(binary)

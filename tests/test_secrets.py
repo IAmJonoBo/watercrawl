@@ -39,6 +39,12 @@ def test_chained_provider_prefers_first_non_empty_value() -> None:
     assert fallback.calls == ["SECRET"]
 
 
+def test_chained_provider_returns_none_when_all_missing() -> None:
+    empty = DummyProvider({})
+    provider = ChainedSecretsProvider((empty, empty))
+    assert provider.get("MISSING") is None
+
+
 def _install_azure_stubs(
     monkeypatch: pytest.MonkeyPatch,
     secret_client_cls: type,
@@ -79,7 +85,7 @@ def test_aws_secrets_manager_provider_returns_secret():
         def __init__(self) -> None:
             self.calls: list[str] = []
 
-        def get_secret_value(self, SecretId: str) -> dict[str, str]:
+        def get_secret_value(self, SecretId: str) -> dict[str, object]:
             self.calls.append(SecretId)
             return {"SecretString": "resolved"}
 
@@ -97,6 +103,53 @@ def test_aws_secrets_manager_provider_returns_secret():
     )
     assert provider.get("TOKEN") == "resolved"
     assert stub_client.calls == ["prod/TOKEN"]
+
+
+def test_aws_secrets_manager_provider_handles_binary_payload():
+    class StubClient:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def get_secret_value(self, SecretId: str) -> dict[str, object]:
+            self.calls.append(SecretId)
+            return {"SecretString": None, "SecretBinary": b"payload"}
+
+    class StubSession:
+        def __init__(self, client: StubClient) -> None:
+            self._client = client
+
+        def client(self, *_: object, **__: object) -> StubClient:
+            return self._client
+
+    stub_client = StubClient()
+    provider = AwsSecretsManagerProvider(session=StubSession(stub_client))
+    assert provider.get("TOKEN") == "payload"
+    assert stub_client.calls == ["TOKEN"]
+
+    class NonBytesClient(StubClient):
+        def get_secret_value(self, SecretId: str) -> dict[str, object]:
+            self.calls.append(SecretId)
+            return {"SecretString": None, "SecretBinary": {"value": "data"}}
+
+    other_client = NonBytesClient()
+    provider = AwsSecretsManagerProvider(session=StubSession(other_client))
+    assert provider.get("TOKEN") == "{'value': 'data'}"
+
+
+def test_aws_secrets_manager_provider_returns_none_for_empty_payload():
+    class StubClient:
+        def get_secret_value(self, SecretId: str) -> dict[str, object]:
+            return {}
+
+    class StubSession:
+        def __init__(self, client: StubClient) -> None:
+            self._client = client
+
+        def client(self, *_: object, **__: object) -> StubClient:
+            return self._client
+
+    provider = AwsSecretsManagerProvider(session=StubSession(StubClient()))
+    assert provider.get("TOKEN") is None
 
 
 def test_aws_secrets_manager_provider_handles_missing_secret():

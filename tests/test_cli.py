@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +9,7 @@ from click.testing import CliRunner
 from firecrawl_demo import cli
 from firecrawl_demo.cli import cli as cli_group
 from firecrawl_demo.models import SchoolRecord
+from firecrawl_demo.progress import PipelineProgressListener
 
 
 def _write_sample_csv(path: Path, include_email: bool = False) -> None:
@@ -23,6 +25,22 @@ def _write_sample_csv(path: Path, include_email: bool = False) -> None:
         base_row["Contact Email Address"] = "info@aerolabs.co.za"
     df = pd.DataFrame([base_row])
     df.to_csv(path, index=False)
+
+
+def _make_record(name: str = "Atlas") -> SchoolRecord:
+    return SchoolRecord.from_dataframe_row(
+        pd.Series(
+            {
+                "Name of Organisation": name,
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "https://example.org",
+                "Contact Person": "Analyst",
+                "Contact Number": "+27115550100",
+                "Contact Email Address": "analyst@example.org",
+            }
+        )
+    )
 
 
 def test_cli_validate_reports_issues(tmp_path):
@@ -131,6 +149,86 @@ def test_rich_pipeline_progress_tracks_updates(monkeypatch):
     assert any("Adapter failure processing row 2" in log for log in events["logs"])
 
 
+def test_rich_pipeline_progress_handles_duplicate_start(monkeypatch):
+    class DummyProgress:
+        def __init__(self, *args, **kwargs):
+            self.start_calls = 0
+            self.added: list[tuple[str, int]] = []
+            self.advanced: list[int] = []
+            self.logs: list[str] = []
+
+        def start(self) -> None:
+            self.start_calls += 1
+
+        def add_task(self, description: str, total: int) -> int:
+            self.added.append((description, total))
+            return 1
+
+        def advance(self, task_id: int, step: int) -> None:
+            self.advanced.append(step)
+
+        def stop(self) -> None:
+            self.logs.append("stopped")
+
+        def log(self, message: str) -> None:
+            self.logs.append(message)
+
+    monkeypatch.setattr(cli, "Progress", DummyProgress)
+
+    listener = cli.RichPipelineProgress("Validating dataset")
+    listener.on_row_processed(0, True, _make_record())
+    listener.on_error(RuntimeError("boom"))
+    listener.on_complete({})
+
+    # First start initialises the progress task.
+    listener.on_start(3)
+    assert listener._started is True  # type: ignore[attr-defined]
+    assert listener._task_id == 1  # type: ignore[attr-defined]
+
+    # Subsequent starts should not restart the progress machinery.
+    listener.on_start(10)
+    assert listener._started is True  # type: ignore[attr-defined]
+
+    listener.on_row_processed(0, False, _make_record())
+    listener.on_complete({"adapter_failures": 0})
+
+    dummy_progress: DummyProgress = listener._progress  # type: ignore[attr-defined]
+    assert dummy_progress.start_calls == 1
+    assert dummy_progress.added == [("Validating dataset", 3)]
+
+
+def test_rich_pipeline_progress_logs_adapter_failures(monkeypatch):
+    class DummyProgress:
+        def __init__(self, *args, **kwargs):
+            self.logs: list[str] = []
+
+        def start(self) -> None:
+            pass
+
+        def add_task(self, description: str, total: int) -> int:
+            return 1
+
+        def advance(self, task_id: int, step: int) -> None:
+            pass
+
+        def update(self, task_id: int, *, description: str) -> None:
+            pass
+
+        def stop(self) -> None:
+            pass
+
+        def log(self, *parts: str) -> None:
+            self.logs.append("".join(parts))
+
+    monkeypatch.setattr(cli, "Progress", DummyProgress)
+
+    listener = cli.RichPipelineProgress("Enriching dataset")
+    listener.on_start(1)
+    listener.on_complete({"adapter_failures": 2})
+    dummy_progress: DummyProgress = listener._progress  # type: ignore[attr-defined]
+    assert any("adapter failures" in log for log in dummy_progress.logs)
+
+
 def test_mcp_server_stdio_invokes_async_loop(monkeypatch):
     runner = CliRunner()
 
@@ -182,3 +280,128 @@ def test_mcp_server_rejects_non_stdio(monkeypatch):
     result = runner.invoke(cli_group, ["mcp-server", "--no-stdio"])
     assert result.exit_code == 2
     assert "Only stdio transport" in result.output
+
+
+def test_cli_validate_progress_path(monkeypatch, tmp_path):
+    input_path = tmp_path / "input.csv"
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Atlas",  # minimal columns for SchoolRecord
+                "Province": "Gauteng",
+                "Status": "Candidate",
+            }
+        ]
+    )
+    df.to_csv(input_path, index=False)
+
+    class DummyIssue:
+        def __init__(self) -> None:
+            self.code = "missing_data"
+            self.message = "Missing"
+            self.column = "Website URL"
+
+    class DummyReport:
+        rows = 1
+        is_valid = True
+        issues = [DummyIssue()]
+
+    class DummyValidator:
+        def validate_dataframe(self, frame: pd.DataFrame) -> DummyReport:
+            assert len(frame) == 1
+            return DummyReport()
+
+    class DummyPipeline:
+        def __init__(self) -> None:
+            self.validator = DummyValidator()
+
+    class DummyProgressListener:
+        def __init__(self, description: str) -> None:
+            self.description = description
+            self.start_calls: list[int] = []
+            self.processed: list[tuple[int, bool, SchoolRecord]] = []
+            self.completions: list[Mapping[str, int]] = []
+
+        def on_start(self, total_rows: int) -> None:
+            self.start_calls.append(total_rows)
+
+        def on_row_processed(
+            self, index: int, updated: bool, record: SchoolRecord
+        ) -> None:
+            self.processed.append((index, updated, record))
+
+        def on_complete(self, metrics: Mapping[str, int]) -> None:
+            self.completions.append(metrics)
+
+    monkeypatch.setattr(cli, "Pipeline", DummyPipeline)
+    monkeypatch.setattr(cli, "read_dataset", lambda path: df)
+    monkeypatch.setattr(cli, "RichPipelineProgress", DummyProgressListener)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli_group,
+        ["validate", str(input_path), "--format", "text", "--progress"],
+    )
+
+    assert result.exit_code == 0
+    assert "Rows: 1" in result.output
+    assert "missing_data" in result.output
+
+
+def test_cli_enrich_warns_on_adapter_failures(monkeypatch, tmp_path):
+    input_path = tmp_path / "input.csv"
+    input_path.write_text("dummy", encoding="utf-8")
+
+    class DummyReport:
+        issues = []
+        metrics = {
+            "rows_total": 5,
+            "enriched_rows": 3,
+            "verified_rows": 2,
+            "adapter_failures": 4,
+        }
+
+    class DummyProgress:
+        def __init__(self, description: str) -> None:
+            self.description = description
+            self.started: list[int] = []
+            self.completed: list[Mapping[str, int]] = []
+
+        def on_start(self, total_rows: int) -> None:
+            self.started.append(total_rows)
+
+        def on_row_processed(
+            self, index: int, updated: bool, record: SchoolRecord
+        ) -> None:
+            pass
+
+        def on_complete(self, metrics: Mapping[str, int]) -> None:
+            self.completed.append(metrics)
+
+    class DummyPipeline:
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def run_file(
+            self,
+            path: Path,
+            *,
+            output_path: Path,
+            progress: PipelineProgressListener | None,
+        ) -> DummyReport:
+            assert path == input_path
+            output_path.write_text("data", encoding="utf-8")
+            assert isinstance(progress, DummyProgress)
+            progress.on_start(5)
+            progress.on_complete(DummyReport.metrics)
+            return DummyReport()
+
+    monkeypatch.setattr(cli, "Pipeline", DummyPipeline)
+    monkeypatch.setattr(cli, "build_evidence_sink", lambda: "sink")
+    monkeypatch.setattr(cli, "RichPipelineProgress", DummyProgress)
+
+    runner = CliRunner()
+    result = runner.invoke(cli_group, ["enrich", str(input_path)])
+
+    assert result.exit_code == 0
+    assert "Warnings: 4 research lookups failed" in result.output
