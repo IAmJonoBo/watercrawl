@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """High-level Firecrawl client with caching, throttling, and retries."""
 import json
 import logging
@@ -6,8 +7,10 @@ import re
 import threading
 import time
 from typing import Any, Callable, Dict, Iterable, List, Optional
+
 from firecrawl import Firecrawl  # type: ignore
 from firecrawl.v2.utils.error_handler import RateLimitError  # type: ignore
+
 from . import cache, config
 
 logger = logging.getLogger(__name__)
@@ -396,6 +399,7 @@ class DeferredQueueFirecrawlError(FirecrawlError):
         super().__init__(message, code="deferred_queue", details=details, cause=cause)
 
 from firecrawl.v2.utils.error_handler import RateLimitError  # type: ignore
+
 from . import cache, config
 
 logger = logging.getLogger(__name__)
@@ -457,7 +461,6 @@ from firecrawl import Firecrawl  # type: ignore
 from firecrawl.v2.utils.error_handler import RateLimitError  # type: ignore
 
 from . import cache, config
-
 
 logger = logging.getLogger(__name__)
 

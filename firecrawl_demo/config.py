@@ -1,4 +1,5 @@
 """Central configuration and environment-driven settings for the enrichment stack."""
+
 from __future__ import annotations
 
 import json
@@ -180,7 +181,8 @@ BEHAVIOUR = FirecrawlBehaviour(
     map_limit=_env_int("FIRECRAWL_MAP_LIMIT", 8),
     timeout_seconds=_env_float("FIRECRAWL_TIMEOUT_SECONDS", 30.0),
     proxy_mode=os.getenv("FIRECRAWL_PROXY_MODE", "basic"),
-    only_main_content=os.getenv("FIRECRAWL_ONLY_MAIN_CONTENT", "true").lower() == "true",
+    only_main_content=os.getenv("FIRECRAWL_ONLY_MAIN_CONTENT", "true").lower()
+    == "true",
     scrape_formats=list(RAW_SCRAPE_FORMATS),
     parsers=list(RAW_PARSERS),
 )

@@ -6,8 +6,8 @@ Based on the official documentation at https://docs.firecrawl.dev/introduction
 
 from __future__ import annotations
 
-import os
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 def ensure_api_key() -> str:
     """Load FIRECRAWL_API_KEY from .env or the environment."""
-    env_path = Path(__file__).with_name('.env')
+    env_path = Path(__file__).with_name(".env")
     if env_path.exists():
         load_dotenv(env_path)
     api_key = os.getenv("FIRECRAWL_API_KEY")
@@ -33,7 +33,7 @@ def pretty_print(label: str, obj: Any) -> None:
     """Print a label followed by a formatted representation of obj."""
     print(f"\n{'='*60}")
     print(f"{label}")
-    print('='*60)
+    print("=" * 60)
 
     if isinstance(obj, str):
         print(obj[:500])
@@ -51,6 +51,7 @@ def pretty_print(label: str, obj: Any) -> None:
 
 class CompanyInfo(BaseModel):
     """Pydantic schema for structured data extraction."""
+
     company_mission: str
     supports_sso: bool
     is_open_source: bool
@@ -66,8 +67,7 @@ def demo_scraping(client: Firecrawl) -> None:
     pretty_print("Basic Scrape (Markdown)", result.markdown)
 
     # Scraping with multiple formats
-    result = client.scrape("https://firecrawl.dev",
-                           formats=["markdown", "html"])
+    result = client.scrape("https://firecrawl.dev", formats=["markdown", "html"])
     pretty_print("Metadata", result.metadata)
 
 
@@ -77,25 +77,24 @@ def demo_json_mode(client: Firecrawl) -> None:
 
     # JSON mode with Pydantic schema
     result = client.scrape(
-        'https://firecrawl.dev',
-        formats=[{
-            "type": "json",
-            "schema": CompanyInfo
-        }],
+        "https://firecrawl.dev",
+        formats=[{"type": "json", "schema": CompanyInfo}],
         only_main_content=False,
-        timeout=120000
+        timeout=120000,
     )
     pretty_print("Structured Data with Schema", result.json)
 
     # JSON mode with prompt (no schema)
     result = client.scrape(
-        'https://firecrawl.dev',
-        formats=[{
-            "type": "json",
-            "prompt": "Extract the company mission and key features from the page."
-        }],
+        "https://firecrawl.dev",
+        formats=[
+            {
+                "type": "json",
+                "prompt": "Extract the company mission and key features from the page.",
+            }
+        ],
         only_main_content=False,
-        timeout=120000
+        timeout=120000,
     )
     pretty_print("Structured Data with Prompt", result.json)
 

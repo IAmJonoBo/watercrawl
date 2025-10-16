@@ -1,4 +1,5 @@
 """Utilities for working with Firecrawl preset templates."""
+
 from __future__ import annotations
 
 import json
@@ -21,7 +22,9 @@ def load_preset_template(name: str) -> Dict[str, Any]:
     try:
         filename = _PRESET_FILES[name]
     except KeyError as exc:  # pragma: no cover - defensive guard
-        raise ValueError(f"Unknown preset '{name}'. Expected one of {sorted(_PRESET_FILES)}") from exc
+        raise ValueError(
+            f"Unknown preset '{name}'. Expected one of {sorted(_PRESET_FILES)}"
+        ) from exc
     path = config.PROJECT_ROOT / "presets" / filename
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
@@ -41,7 +44,9 @@ def scrape_payload(page_url: str) -> Dict[str, Any]:
     return payload
 
 
-def crawl_payload(domain_url: str, *, include_paths: Optional[List[str]] = None) -> Dict[str, Any]:
+def crawl_payload(
+    domain_url: str, *, include_paths: Optional[List[str]] = None
+) -> Dict[str, Any]:
     payload = deepcopy(load_preset_template("crawl"))
     payload["url"] = domain_url
     if include_paths:
@@ -49,7 +54,9 @@ def crawl_payload(domain_url: str, *, include_paths: Optional[List[str]] = None)
     return payload
 
 
-def render_curl_command(endpoint: str, payload_path: Path, output_path: Optional[Path] = None) -> str:
+def render_curl_command(
+    endpoint: str, payload_path: Path, output_path: Optional[Path] = None
+) -> str:
     """Return a ready-to-run curl command string for the given preset payload."""
 
     command = [

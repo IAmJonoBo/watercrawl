@@ -10,11 +10,7 @@
     "/facult",
     "/engineering"
   ],
-  "excludePaths": [
-    "/privacy",
-    "/terms",
-    "/wp-json"
-  ],
+  "excludePaths": ["/privacy", "/terms", "/wp-json"],
   "maxDiscoveryDepth": 2,
   "sitemap": "include",
   "limit": 120,
@@ -24,13 +20,8 @@
   "delay": 500,
   "maxConcurrency": 3,
   "scrapeOptions": {
-    "formats": [
-      "markdown",
-      "links"
-    ],
-    "parsers": [
-      "pdf"
-    ],
+    "formats": ["markdown", "links"],
+    "parsers": ["pdf"],
     "onlyMainContent": true,
     "waitFor": 800,
     "mobile": false,

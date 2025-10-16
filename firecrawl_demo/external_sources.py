@@ -1,6 +1,9 @@
 """External enrichment modules for additional OSINT sources."""
-from typing import Dict, Any, Optional
+
+from typing import Any, Dict, Optional
+
 import requests
+
 
 def query_regulator_api(org_name: str) -> Optional[Dict[str, Any]]:
     # Example stub: Replace with real API endpoint and logic
@@ -13,6 +16,7 @@ def query_regulator_api(org_name: str) -> Optional[Dict[str, Any]]:
         pass
     return None
 
+
 def query_press(org_name: str) -> Optional[Dict[str, Any]]:
     # Example stub: Replace with real press search logic
     endpoint = f"https://newsapi.org/v2/everything?q={org_name}&apiKey=YOUR_KEY"
@@ -23,6 +27,7 @@ def query_press(org_name: str) -> Optional[Dict[str, Any]]:
     except Exception:
         pass
     return None
+
 
 def query_professional_directory(org_name: str) -> Optional[Dict[str, Any]]:
     # Example stub: Replace with real directory logic

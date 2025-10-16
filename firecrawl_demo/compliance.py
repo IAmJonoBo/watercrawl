@@ -145,7 +145,11 @@ def evidence_entry(
     official_keywords = [".gov.za", "caa.co.za", "ac.za", "org.za"]
     official_present = any(any(k in s for k in official_keywords) for s in sources)
     if len(sources) < 2 or not official_present:
-        notes = (notes + "; Evidence shortfall: <2 sources or no official/regulatory.") if notes else "Evidence shortfall: <2 sources or no official/regulatory."
+        notes = (
+            (notes + "; Evidence shortfall: <2 sources or no official/regulatory.")
+            if notes
+            else "Evidence shortfall: <2 sources or no official/regulatory."
+        )
     # Source freshness check (max age 12 months)
     # This is a stub: in real use, parse source dates if available
     # For now, just log a warning if any source contains 'archive' or 'wayback'

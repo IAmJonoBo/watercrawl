@@ -1,7 +1,9 @@
 """Core enrichment pipeline orchestrating Firecrawl lookups with compliance."""
+
 from __future__ import annotations
 
 import itertools
+import json
 import logging
 import re
 from datetime import datetime
@@ -27,9 +29,9 @@ from .excel import (
     load_school_records,
     write_outputs,
 )
-import json
 from .firecrawl_client import FirecrawlClient, summarize_extract_payload
 from .models import EnrichmentResult, SchoolRecord
+
 
 # --- Runbook Plan Logging ---
 def build_run_plan(total_records: int, run_records: int) -> dict:
@@ -38,8 +40,9 @@ def build_run_plan(total_records: int, run_records: int) -> dict:
         "timestamp": datetime.utcnow().isoformat(timespec="seconds"),
         "total_records": total_records,
         "run_records": run_records,
-        "notes": f"Run started for {run_records} of {total_records} records."
+        "notes": f"Run started for {run_records} of {total_records} records.",
     }
+
 
 def _register_plan(plan: dict) -> None:
     """Append the run plan to the provenance log for audit trail."""
@@ -47,6 +50,7 @@ def _register_plan(plan: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(plan) + "\n")
+
 
 logger = logging.getLogger(__name__)
 
@@ -108,16 +112,18 @@ def enrich_dataset(api_key: str, *, dry_run_limit: Optional[int] = None) -> None
         province_val = province
         source_url1 = result.source_url
         source_url2 = result.org_details.get("website_url")
-        rels.append({
-            "org": org,
-            "person": person,
-            "role": role,
-            "email_domain": email_domain,
-            "phone": phone,
-            "province": province_val,
-            "source_url1": source_url1,
-            "source_url2": source_url2,
-        })
+        rels.append(
+            {
+                "org": org,
+                "person": person,
+                "role": role,
+                "email_domain": email_domain,
+                "phone": phone,
+                "province": province_val,
+                "source_url1": source_url1,
+                "source_url2": source_url2,
+            }
+        )
         # Example: add more roles/persons if present in external sources (stub)
         # In real use, parse ext_result for additional contacts/roles
         # for ext_func in [query_regulator_api, query_press, query_professional_directory]:
@@ -143,7 +149,12 @@ def enrich_dataset(api_key: str, *, dry_run_limit: Optional[int] = None) -> None
     _write_summary(enrichment_results)
     # --- Relationship graph output ---
     import pandas as pd
-    rel_path = config.RELATIONSHIPS_CSV if hasattr(config, "RELATIONSHIPS_CSV") else "data/processed/relationships.csv"
+
+    rel_path = (
+        config.RELATIONSHIPS_CSV
+        if hasattr(config, "RELATIONSHIPS_CSV")
+        else "data/processed/relationships.csv"
+    )
     pd.DataFrame(relationship_rows).to_csv(rel_path, index=False)
 
 
@@ -170,14 +181,20 @@ def enrich_record(
     contact_phone = structured.get("contact_phone") or record.contact_number
 
     normalized_phone, phone_issues = normalize_phone(contact_phone)
-    validated_email, email_issues = validate_email(contact_email, canonical_domain(website_url))
+    validated_email, email_issues = validate_email(
+        contact_email, canonical_domain(website_url)
+    )
 
-    sources = list(_unique_sources(itertools.chain(
-        [s for s in [website_url, record.website_url] if s],
-        supporting_sources,
-        _extract_payload_sources(scrape_payload, extract_payload),
-        [social_links.get("linkedin"), social_links.get("facebook")],
-    )))
+    sources = list(
+        _unique_sources(
+            itertools.chain(
+                [s for s in [website_url, record.website_url] if s],
+                supporting_sources,
+                _extract_payload_sources(scrape_payload, extract_payload),
+                [social_links.get("linkedin"), social_links.get("facebook")],
+            )
+        )
+    )
     official_domain = canonical_domain(website_url)
     if not sources:
         logger.debug("No sources collected initially for %s", record.name)
@@ -205,7 +222,9 @@ def enrich_record(
         evidence_ok=evidence_ok,
     )
 
-    compliance_notes = _compose_notes(phone_issues, email_issues, evidence_ok, has_named_contact)
+    compliance_notes = _compose_notes(
+        phone_issues, email_issues, evidence_ok, has_named_contact
+    )
     confidence = confidence_for_status(status, len(compliance_notes))
 
     # --- Error and Compliance Logging ---
@@ -214,7 +233,9 @@ def enrich_record(
     if status == "Needs Review":
         logger.warning(f"Needs Review: {record.name} - Reason(s): {compliance_notes}")
     if status == "Do Not Contact (Compliance)":
-        logger.warning(f"Compliance block: {record.name} - Reason(s): {compliance_notes}")
+        logger.warning(
+            f"Compliance block: {record.name} - Reason(s): {compliance_notes}"
+        )
     if email_issues:
         logger.info(f"Email issues for {record.name}: {email_issues}")
     if phone_issues:
@@ -247,10 +268,12 @@ def enrich_record(
         status=status,
         confidence=confidence,
         updated_at=datetime.utcnow(),
-        payload_hash=payload_hash({
-            "scrape": scrape_payload,
-            "extract": extract_payload,
-        }),
+        payload_hash=payload_hash(
+            {
+                "scrape": scrape_payload,
+                "extract": extract_payload,
+            }
+        ),
         org_details=org_details,
     )
 
@@ -296,7 +319,9 @@ def locate_official_website(
     return primary, supporting
 
 
-def discover_social_links(client: FirecrawlClient, name: str) -> Dict[str, Optional[str]]:
+def discover_social_links(
+    client: FirecrawlClient, name: str
+) -> Dict[str, Optional[str]]:
     results: Dict[str, Optional[str]] = {"linkedin": None, "facebook": None}
     for template in SOCIAL_SEARCH_QUERIES:
         query = template.format(name=name)
@@ -312,7 +337,9 @@ def discover_social_links(client: FirecrawlClient, name: str) -> Dict[str, Optio
     return results
 
 
-def _extract_payload_sources(scrape_payload: Dict[str, Any], extract_payload: Dict[str, Any]) -> List[str]:
+def _extract_payload_sources(
+    scrape_payload: Dict[str, Any], extract_payload: Dict[str, Any]
+) -> List[str]:
     sources: List[str] = []
     data = scrape_payload.get("data") if isinstance(scrape_payload, dict) else None
     if isinstance(data, dict):
@@ -366,10 +393,16 @@ def _score_candidate(domain: str, organisation_name: str) -> int:
 
 def _organisation_tokens(name: str) -> List[str]:
     stop_words = {"flight", "school", "academy", "aviation", "pty", "ltd"}
-    return [token for token in re.split(r"\W+", name.lower()) if token and token not in stop_words]
+    return [
+        token
+        for token in re.split(r"\W+", name.lower())
+        if token and token not in stop_words
+    ]
 
 
-def _has_sufficient_evidence(sources: Sequence[str], official_domain: Optional[str]) -> bool:
+def _has_sufficient_evidence(
+    sources: Sequence[str], official_domain: Optional[str]
+) -> bool:
     if len(sources) < config.MIN_EVIDENCE_SOURCES:
         return False
     if not official_domain:
@@ -413,10 +446,10 @@ def _write_summary(results: Sequence[EnrichmentResult]) -> None:
     if needs_review:
         notes.append(f"{needs_review} record(s) flagged for follow-up")
     if candidate:
-        notes.append("candidate entries missing at least one named contact or clean channel")
-    summary = (
-        f"Processed {total} record(s): {verified} Verified, {candidate} Candidate, {needs_review} Needs Review."
-    )
+        notes.append(
+            "candidate entries missing at least one named contact or clean channel"
+        )
+    summary = f"Processed {total} record(s): {verified} Verified, {candidate} Candidate, {needs_review} Needs Review."
     if notes:
         summary += " Key gaps: " + "; ".join(notes) + "."
     summary += " Next focus: close evidence gaps and upgrade candidate contacts."
@@ -458,7 +491,9 @@ def _augment_evidence_sources(
             if official_domain and domain == official_domain:
                 extras.append(url)
                 seen.add(url)
-            elif domain and any(keyword in domain for keyword in ("caa.co.za", "gov.za", "aviation")):
+            elif domain and any(
+                keyword in domain for keyword in ("caa.co.za", "gov.za", "aviation")
+            ):
                 extras.append(url)
                 seen.add(url)
         if len(seen) >= config.MIN_EVIDENCE_SOURCES and extras:

@@ -1,4 +1,5 @@
 """Dataclasses representing flight school records and enrichment results."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -6,10 +7,10 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 
-
 @dataclass
 class SchoolRecord:
     """Represents a single organisation row from the enrichment worksheet."""
+
     name: str
     province: str
     status: str
@@ -57,6 +58,7 @@ class EnrichmentResult:
         }
         base.update(details)
         return base
+
     """Represents enrichment results for a flight school record, including evidence and compliance details."""
 
     source_url: Optional[str] = None
@@ -66,17 +68,19 @@ class EnrichmentResult:
     payload_hash: Optional[str] = None
 
     # Grouped contact and organisation details
-    org_details: Dict[str, Optional[str]] = field(default_factory=lambda: {
-        "website_url": None,
-        "contact_person": None,
-        "contact_email": None,
-        "contact_phone": None,
-        "physical_address": None,
-        "accreditation": None,
-        "fleet_overview": None,
-        "linkedin_url": None,
-        "facebook_url": None,
-    })
+    org_details: Dict[str, Optional[str]] = field(
+        default_factory=lambda: {
+            "website_url": None,
+            "contact_person": None,
+            "contact_email": None,
+            "contact_phone": None,
+            "physical_address": None,
+            "accreditation": None,
+            "fleet_overview": None,
+            "linkedin_url": None,
+            "facebook_url": None,
+        }
+    )
 
 
 def _clean_value(value: Any) -> Optional[str]:

@@ -1,4 +1,5 @@
 """Helpers for reading and writing the flight school workbook."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,14 +27,20 @@ def load_school_records(path: Path = config.SOURCE_XLSX) -> List[SchoolRecord]:
     missing = [col for col in EXPECTED_COLUMNS if col not in df.columns]
     if missing:
         raise ValueError(f"Missing expected columns: {missing}")
-    records: List[SchoolRecord] = [SchoolRecord.from_row(row.to_dict()) for _, row in df.iterrows()]
+    records: List[SchoolRecord] = [
+        SchoolRecord.from_row(row.to_dict()) for _, row in df.iterrows()
+    ]
     return records
+
 
 def load_cleaned_dataframe(path: Path = config.SOURCE_XLSX) -> pd.DataFrame:
     """Return the cleaned worksheet as a DataFrame for downstream enrichment merges."""
     return pd.read_excel(path, sheet_name=config.CLEANED_SHEET)
 
-def append_enrichment_columns(df: pd.DataFrame, results: List[EnrichmentResult]) -> pd.DataFrame:
+
+def append_enrichment_columns(
+    df: pd.DataFrame, results: List[EnrichmentResult]
+) -> pd.DataFrame:
     enrichment_rows = [result.as_dict() for result in results]
     enrichment_df = pd.DataFrame(enrichment_rows)
     # Add Analyst Feedback column if not present
@@ -41,6 +48,7 @@ def append_enrichment_columns(df: pd.DataFrame, results: List[EnrichmentResult])
         df["Analyst Feedback"] = ""
     combined = pd.concat([df.reset_index(drop=True), enrichment_df], axis=1)
     return combined
+
 
 def write_outputs(
     enriched_df: pd.DataFrame,

@@ -1,13 +1,13 @@
 """Simple JSON cache for Firecrawl responses."""
+
 from __future__ import annotations
 
 import json
 import time
 from dataclasses import asdict, is_dataclass
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Optional
-
-from json import JSONDecodeError
 
 from . import config
 

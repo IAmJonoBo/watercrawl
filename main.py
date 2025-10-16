@@ -12,7 +12,7 @@ from firecrawl import Firecrawl
 
 def ensure_api_key() -> str:
     """Load FIRECRAWL_API_KEY from .env or the environment."""
-    env_path = Path(__file__).with_name('.env')
+    env_path = Path(__file__).with_name(".env")
     if env_path.exists():
         load_dotenv(env_path)
     api_key = os.getenv("FIRECRAWL_API_KEY")
@@ -39,8 +39,7 @@ def main() -> None:
     client = Firecrawl(api_key=api_key)
 
     # Example: scrape the Firecrawl homepage for markdown content.
-    scrape_result = client.scrape(
-        "https://firecrawl.dev", formats=["markdown"])
+    scrape_result = client.scrape("https://firecrawl.dev", formats=["markdown"])
     pretty_print("Scrape result", scrape_result.markdown)
 
     # Example: extract key details from the docs landing page using a prompt.
