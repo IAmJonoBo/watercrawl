@@ -1,5 +1,3 @@
-"""Central configuration and environment-driven settings for the enrichment stack."""
-
 from __future__ import annotations
 
 import json
@@ -7,6 +5,39 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, List, Optional
+
+from pydantic_settings import BaseSettings
+
+"""Central configuration and environment-driven settings for the enrichment stack."""
+
+# --- Pydantic config management upgrade ---
+
+# --- Robust config management with pydantic fallback ---
+
+try:
+    from pydantic_settings import BaseSettings
+
+    class Settings(BaseSettings):
+        FIRECRAWL_API_KEY: str
+        FIRECRAWL_API_URL: str = "https://api.firecrawl.com"
+        # Add other config fields as needed
+
+        class Config:
+            env_file = ".env"
+            env_file_encoding = "utf-8"
+
+    settings = Settings()
+except ImportError:
+    settings = type(
+        "Settings",
+        (),
+        {
+            "FIRECRAWL_API_KEY": os.getenv("FIRECRAWL_API_KEY", ""),
+            "FIRECRAWL_API_URL": os.getenv(
+                "FIRECRAWL_API_URL", "https://api.firecrawl.com"
+            ),
+        },
+    )()
 
 # Optional .env loading -----------------------------------------------------
 try:  # pragma: no cover - optional dependency
@@ -215,9 +246,8 @@ REQUEST_DELAY_SECONDS = _env_float("FIRECRAWL_REQUEST_DELAY_SECONDS", 1.0)
 
 
 def resolve_api_key(explicit: Optional[str] = None) -> str:
-    """Return the API key, prioritising explicit overrides."""
-
-    key = explicit or FIRECRAWL.api_key
+    """Return the API key, prioritising explicit overrides. Uses pydantic settings if available."""
+    key = explicit or getattr(settings, "FIRECRAWL_API_KEY", None) or FIRECRAWL.api_key
     if not key:
         raise ValueError(
             "Firecrawl API key is required. Set FIRECRAWL_API_KEY env variable or pass api_key explicitly."

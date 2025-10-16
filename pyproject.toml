@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "firecrawl-demo"
+version = "0.1.0"
+description = "Modular, async-ready, compliance-driven enrichment pipeline for Firecrawl."
+authors = ["ACES Aerodynamics Analyst <info@acesaero.co.za>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "*"
+openpyxl = "*"
+streamlit = { version = "^1.50.0", python = ">=3.9,<3.9.7 || >3.9.7,<4.0" }
+requests = "*"
+httpx = "*"
+tenacity = "*"
+pydantic = "*"
+structlog = "*"
+prometheus-client = "*"
+pytest = "*"
+pytest-asyncio = "*"
+ruff = "*"
+black = "*"
+isort = "*"
+mypy = "*"
+bandit = "*"
+dotenv-linter = "*"
+pydantic-settings = "^2.11.0"
+
+[tool.poetry.dev-dependencies]
+pytest-cov = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
