@@ -16,7 +16,7 @@ httpcore==1.0.9
 httpx==0.28.1
 iniconfig==2.1.0
 multidict==6.7.0
-numpy==2.0.2
+numpy==2.3.4
 openpyxl==3.1.5
 pandas==2.3.3
 pipx==1.8.0
