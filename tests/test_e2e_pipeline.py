@@ -63,6 +63,7 @@ def test_pipeline_enriches_missing_fields():
                 contact_phone="011 555 0100",
                 sources=[
                     "https://www.skyreachaero.co.za/contact",
+                    "https://www.caa.co.za/operators/skyreachaero",
                     "https://linkedin.com/company/skyreachaero",
                 ],
                 notes="Directory + LinkedIn cross-check",
@@ -81,6 +82,8 @@ def test_pipeline_enriches_missing_fields():
     assert enriched.loc[0, "Status"] == "Verified"
 
     assert report.metrics["enriched_rows"] == 1
+    assert report.metrics["quality_rejections"] == 0
+    assert report.rollback_plan is None
     assert len(report.evidence_log) == 1
     entry = report.evidence_log[0]
     assert entry.row_id == 2
@@ -117,9 +120,12 @@ def test_pipeline_adds_remediation_note_for_sparse_evidence():
     report = pipeline.run_dataframe(df)
 
     evidence = report.evidence_log[0]
-    assert "Evidence shortfall" in evidence.notes
-    assert "second independent source" in evidence.notes
+    assert "Quality gate rejected enrichment" in evidence.notes
+    assert "two independent sources" in evidence.notes
     assert "official" in evidence.notes
+    assert report.metrics["quality_rejections"] == 1
+    assert report.quality_issues
+    assert report.rollback_plan is not None
 
 
 def test_pipeline_records_rebrand_investigation(monkeypatch):
@@ -209,7 +215,10 @@ def test_pipeline_emits_progress_events():
             "Event Horizon Aero": ResearchFinding(
                 website_url="https://www.event-horizon.aero",
                 contact_person="Sifiso Moyo",
-                sources=["https://www.event-horizon.aero/contact"],
+                sources=[
+                    "https://www.event-horizon.aero/contact",
+                    "https://www.caa.co.za/operators/event-horizon",
+                ],
                 confidence=80,
             )
         }
@@ -220,6 +229,7 @@ def test_pipeline_emits_progress_events():
     report = pipeline.run_dataframe(df, progress=listener)
 
     assert report.metrics["enriched_rows"] == 1
+    assert report.metrics["quality_rejections"] == 0
     assert listener.events[0] == ("start", 1)
     assert any(event[0] == "row" and event[2] is True for event in listener.events)
     assert listener.events[-1][0] == "complete"
@@ -249,6 +259,7 @@ def test_pipeline_tracks_adapter_failures_without_crash():
     report = pipeline.run_dataframe(df, progress=listener)
 
     assert report.metrics["adapter_failures"] == 1
+    assert report.metrics["quality_rejections"] == 0
     assert any(event[0] == "error" for event in listener.events)
     # Fallback should keep dataset intact when enrichment fails.
     assert report.refined_dataframe.loc[0, "Name of Organisation"] == "Failure Flight"
@@ -323,3 +334,123 @@ def test_pipeline_reports_duplicate_names_in_sanity_findings():
     ]
     assert duplicate_findings, "Expected duplicate organisation sanity findings"
     assert {finding.row_id for finding in duplicate_findings} == {2, 3}
+    assert report.metrics["quality_rejections"] == 0
+
+
+def test_pipeline_blocks_low_quality_adapter_updates():
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Hallucinated Aero",
+                "Province": "KwaZulu-Natal",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    adapter = StubResearchAdapter(
+        {
+            "Hallucinated Aero": ResearchFinding(
+                website_url="https://totally-not-real.biz",
+                contact_person="Fabricated Pilot",
+                contact_email="pilot@totally-not-real.biz",
+                contact_phone="021 555 0987",
+                sources=["https://random-directory.example.com/hallucinated"],
+                notes="Single directory listing with no corroboration",
+                confidence=24,
+            )
+        }
+    )
+
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    refined = report.refined_dataframe
+    # Website and contacts should remain blank because the adapter output was rejected.
+    assert refined.loc[0, "Website URL"] == ""
+    assert refined.loc[0, "Contact Email Address"] == ""
+    assert refined.loc[0, "Contact Number"] == ""
+    # Row should be flagged for follow-up.
+    assert refined.loc[0, "Status"] == "Needs Review"
+
+    assert report.metrics["enriched_rows"] == 0
+    assert report.metrics["quality_rejections"] == 1
+
+    # Quality issues surface detailed context for analysts.
+    assert report.quality_issues, "Expected quality issues for rejected enrichment"
+    rejection = report.quality_issues[0]
+    assert "Hallucinated Aero" in rejection.organisation
+    assert rejection.severity == "block"
+    messages = " ".join(issue.message.lower() for issue in report.quality_issues)
+    assert "confidence" in messages
+    assert "official" in messages
+
+    # Rollback plan captures how to restore attempted changes.
+    assert report.rollback_plan is not None
+    action = report.rollback_plan.actions[0]
+    assert action.organisation == "Hallucinated Aero"
+    assert "Website URL" in action.columns
+    assert "Contact Email Address" in action.columns
+    assert "official" in action.reason.lower()
+
+    # Evidence log should document the rejection for audit trails.
+    assert report.evidence_log
+    log_entry = report.evidence_log[0]
+    assert "quality gate" in log_entry.notes.lower()
+
+
+def test_pipeline_rejects_updates_without_fresh_sources():
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Stale Evidence Aero",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "https://www.staleevidence.gov.za",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    adapter = StubResearchAdapter(
+        {
+            "Stale Evidence Aero": ResearchFinding(
+                contact_person="Speculative Lead",
+                sources=["https://www.staleevidence.gov.za/about"],
+                notes="No new corroborating evidence, reused existing site",
+                confidence=92,
+            )
+        }
+    )
+
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    refined = report.refined_dataframe
+    assert refined.loc[0, "Contact Person"] == ""
+    assert refined.loc[0, "Status"] == "Needs Review"
+
+    assert report.metrics["quality_rejections"] == 1
+    assert report.metrics["enriched_rows"] == 0
+
+    assert report.rollback_plan is not None
+    action = report.rollback_plan.actions[0]
+    assert action.organisation == "Stale Evidence Aero"
+    assert "Contact Person" in action.columns
+    assert "fresh" in action.reason.lower()
+
+    assert report.quality_issues
+    messages = " ".join(issue.message.lower() for issue in report.quality_issues)
+    assert "fresh" in messages
+    assert "official" in messages
+
+    assert report.evidence_log
+    notes = report.evidence_log[0].notes.lower()
+    assert "fresh" in notes
+    assert "quality gate" in notes

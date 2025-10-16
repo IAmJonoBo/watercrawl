@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Hashable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
@@ -23,10 +23,14 @@ from .excel import EXPECTED_COLUMNS, read_dataset, write_dataset
 from .models import (
     EvidenceRecord,
     PipelineReport,
+    QualityIssue,
+    RollbackAction,
+    RollbackPlan,
     SanityCheckFinding,
     SchoolRecord,
 )
 from .progress import NullPipelineProgressListener, PipelineProgressListener
+from .quality import QualityFinding, QualityGate, QualityGateDecision
 from .research import ResearchAdapter, ResearchFinding, build_research_adapter
 from .validation import DatasetValidator
 
@@ -39,6 +43,7 @@ class Pipeline:
     research_adapter: ResearchAdapter = field(default_factory=build_research_adapter)
     validator: DatasetValidator = field(default_factory=DatasetValidator)
     evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
+    quality_gate: QualityGate = field(default_factory=QualityGate)
     _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
 
     def run_dataframe(
@@ -61,13 +66,17 @@ class Pipeline:
         adapter_failures = 0
         sanity_findings: list[SanityCheckFinding] = []
         row_number_lookup: dict[Hashable, int] = {}
+        quality_issues: list[QualityIssue] = []
+        rollback_actions: list[RollbackAction] = []
+        quality_rejections = 0
         listener = progress or NullPipelineProgressListener()
 
         listener.on_start(len(working_frame))
 
         for position, (idx, row) in enumerate(working_frame.iterrows()):
             original_row = row.copy()
-            record = SchoolRecord.from_dataframe_row(row)
+            original_record = SchoolRecord.from_dataframe_row(row)
+            record = replace(original_record)
             record.province = normalize_province(record.province)
             working_frame_cast.at[idx, "Province"] = record.province
             row_id = position + 2
@@ -87,26 +96,34 @@ class Pipeline:
                 listener.on_error(exc, position)
                 finding = ResearchFinding(notes=f"Research adapter failed: {exc}")
 
-            updated = False
             sources = self._merge_sources(record, finding)
+            (
+                total_source_count,
+                fresh_source_count,
+                official_source_count,
+                official_fresh_source_count,
+            ) = self._summarize_sources(
+                original=original_record, merged_sources=sources
+            )
 
-            if not record.website_url and finding.website_url:
-                record.website_url = finding.website_url
-                updated = True
+            if finding.website_url:
+                current_domain = canonical_domain(record.website_url)
+                proposed_domain = canonical_domain(finding.website_url)
+                if not record.website_url or (
+                    proposed_domain and proposed_domain != current_domain
+                ):
+                    record.website_url = finding.website_url
 
             if not record.contact_person and finding.contact_person:
                 record.contact_person = finding.contact_person
-                updated = True
 
             previous_phone = record.contact_number
             phone_candidate = finding.contact_phone or record.contact_number
             normalized_phone, phone_issues = normalize_phone(phone_candidate)
             if normalized_phone and normalized_phone != record.contact_number:
                 record.contact_number = normalized_phone
-                updated = True
             elif not normalized_phone and record.contact_number:
                 record.contact_number = None
-                updated = True
 
             previous_email = record.contact_email
             email_candidate = finding.contact_email or record.contact_email
@@ -118,27 +135,24 @@ class Pipeline:
             ]
             if validated_email and validated_email != record.contact_email:
                 record.contact_email = validated_email
-                updated = True
             elif not validated_email and record.contact_email:
                 record.contact_email = None
-                updated = True
 
             has_named_contact = bool(record.contact_person)
-            has_official_source = self._has_official_domain(sources)
-            evidence_ok = self._has_official_source(sources)
+            has_official_domain = official_source_count > 0
+            has_multiple_sources = total_source_count >= 2
             status = determine_status(
                 bool(record.website_url),
                 has_named_contact,
                 phone_issues,
                 filtered_email_issues,
-                evidence_ok,
+                has_multiple_sources,
             )
             if status != record.status:
                 record.status = status
-                updated = True
 
             (
-                sanity_updated,
+                _sanity_updated,
                 sanity_notes,
                 row_findings,
                 sources,
@@ -152,41 +166,99 @@ class Pipeline:
                 previous_phone=previous_phone,
                 previous_email=previous_email,
             )
-            if sanity_updated:
-                updated = True
             if row_findings:
                 sanity_findings.extend(row_findings)
             for column in cleared_columns:
                 working_frame_cast.at[idx, column] = ""
 
-            if updated:
-                enriched_rows += 1
-                self._apply_record(working_frame, idx, record)
-                confidence = finding.confidence or confidence_for_status(
-                    record.status,
-                    len(phone_issues) + len(filtered_email_issues),
+            changed_columns = self._collect_changed_columns(original_record, record)
+            final_record = record
+            final_updated = bool(changed_columns)
+            decision: QualityGateDecision | None = None
+            if changed_columns:
+                decision = self.quality_gate.evaluate(
+                    original=original_record,
+                    proposed=record,
+                    finding=finding,
+                    changed_columns=changed_columns,
+                    phone_issues=phone_issues,
+                    email_issues=filtered_email_issues,
+                    total_source_count=total_source_count,
+                    fresh_source_count=fresh_source_count,
+                    official_source_count=official_source_count,
+                    official_fresh_source_count=official_fresh_source_count,
+                )
+
+            if decision and not decision.accepted:
+                quality_rejections += 1
+                issues = [
+                    self._quality_issue_from_finding(
+                        row_id=row_id,
+                        organisation=original_record.name,
+                        finding=finding_detail,
+                    )
+                    for finding_detail in decision.findings
+                ]
+                quality_issues.extend(issues)
+                rollback_actions.append(
+                    self._build_rollback_action(
+                        row_id=row_id,
+                        organisation=original_record.name,
+                        attempted_changes=changed_columns,
+                        issues=issues,
+                    )
+                )
+                final_record = decision.fallback_record or replace(
+                    original_record, status="Needs Review"
+                )
+                final_updated = final_record != original_record
+                attempted_changes_text = self._describe_changes(original_row, record)
+                final_changes_text = self._describe_changes(original_row, final_record)
+                rejection_reason = self._format_rejection_reason(issues)
+                notes = self._compose_quality_rejection_notes(
+                    rejection_reason,
+                    attempted_changes_text,
+                    decision.findings,
+                    sanity_notes,
                 )
                 evidence_records.append(
                     EvidenceRecord(
-                        row_id=position + 2,
-                        organisation=record.name,
-                        changes=self._describe_changes(original_row, record),
+                        row_id=row_id,
+                        organisation=final_record.name,
+                        changes=final_changes_text or "No changes",
                         sources=sources,
-                        notes=self._compose_evidence_notes(
-                            finding,
-                            original_row,
-                            record,
-                            sources=sources,
-                            has_official_source=has_official_source,
-                            sanity_notes=sanity_notes,
-                        ),
-                        confidence=confidence,
+                        notes=notes,
+                        confidence=0,
                     )
                 )
             else:
-                self._apply_record(working_frame, idx, record)
+                if final_updated:
+                    confidence = finding.confidence or confidence_for_status(
+                        final_record.status,
+                        len(phone_issues) + len(filtered_email_issues),
+                    )
+                    evidence_records.append(
+                        EvidenceRecord(
+                            row_id=row_id,
+                            organisation=final_record.name,
+                            changes=self._describe_changes(original_row, final_record),
+                            sources=sources,
+                            notes=self._compose_evidence_notes(
+                                finding,
+                                original_row,
+                                final_record,
+                                has_official_source=has_official_domain,
+                                total_source_count=total_source_count,
+                                fresh_source_count=fresh_source_count,
+                                sanity_notes=sanity_notes,
+                            ),
+                            confidence=confidence,
+                        )
+                    )
+                    enriched_rows += 1
 
-            listener.on_row_processed(position, updated, record)
+            self._apply_record(working_frame, idx, final_record)
+            listener.on_row_processed(position, final_updated, final_record)
 
         if evidence_records:
             self.evidence_sink.record(evidence_records)
@@ -202,6 +274,8 @@ class Pipeline:
             "issues_found": len(validation.issues),
             "adapter_failures": adapter_failures,
             "sanity_issues": len(sanity_findings),
+            "quality_rejections": quality_rejections,
+            "quality_issues": len(quality_issues),
         }
         report = PipelineReport(
             refined_dataframe=working_frame,
@@ -209,6 +283,10 @@ class Pipeline:
             evidence_log=evidence_records,
             metrics=metrics,
             sanity_findings=sanity_findings,
+            quality_issues=quality_issues,
+            rollback_plan=(
+                RollbackPlan(rollback_actions) if rollback_actions else None
+            ),
         )
         self._last_report = report
         listener.on_complete(metrics)
@@ -251,6 +329,14 @@ class Pipeline:
                 "status": "ok",
                 "rows_enriched": pipeline_report.metrics["enriched_rows"],
                 "metrics": pipeline_report.metrics,
+                "quality_issues": [
+                    issue.__dict__ for issue in pipeline_report.quality_issues
+                ],
+                "rollback_plan": (
+                    pipeline_report.rollback_plan.as_dict()
+                    if pipeline_report.rollback_plan
+                    else None
+                ),
             }
         if task == "summarize_last_run":
             return self._summarize_last_run()
@@ -276,6 +362,85 @@ class Pipeline:
             if value is not None:
                 frame_cast.at[index, column] = value
 
+    def _collect_changed_columns(
+        self, original: SchoolRecord, proposed: SchoolRecord
+    ) -> dict[str, tuple[str | None, str | None]]:
+        changes: dict[str, tuple[str | None, str | None]] = {}
+        original_map = original.as_dict()
+        proposed_map = proposed.as_dict()
+        for column, original_value in original_map.items():
+            proposed_value = proposed_map.get(column)
+            if (original_value or "") != (proposed_value or ""):
+                changes[column] = (original_value, proposed_value)
+        return changes
+
+    def _quality_issue_from_finding(
+        self,
+        *,
+        row_id: int,
+        organisation: str,
+        finding: QualityFinding,
+    ) -> QualityIssue:
+        return QualityIssue(
+            row_id=row_id,
+            organisation=organisation,
+            code=finding.code,
+            severity=finding.severity,
+            message=finding.message,
+            remediation=finding.remediation,
+        )
+
+    def _build_rollback_action(
+        self,
+        *,
+        row_id: int,
+        organisation: str,
+        attempted_changes: dict[str, tuple[str | None, str | None]],
+        issues: Sequence[QualityIssue],
+    ) -> RollbackAction:
+        columns = sorted(attempted_changes.keys())
+        previous_values = {column: attempted_changes[column][0] for column in columns}
+        reason_parts = [issue.message for issue in issues if issue.message]
+        reason_text = "; ".join(reason_parts) or "Quality gate rejection"
+        remediation = sorted(
+            {issue.remediation for issue in issues if issue.remediation}
+        )
+        if remediation:
+            reason_text += ". Remediation: " + "; ".join(remediation)
+        return RollbackAction(
+            row_id=row_id,
+            organisation=organisation,
+            columns=columns,
+            previous_values=previous_values,
+            reason=reason_text,
+        )
+
+    def _format_rejection_reason(self, issues: Sequence[QualityIssue]) -> str:
+        blocking = [issue.message for issue in issues if issue.severity == "block"]
+        if blocking:
+            return "; ".join(blocking)
+        fallback = [issue.message for issue in issues if issue.message]
+        return "; ".join(fallback) or "Quality gate rejected enrichment"
+
+    def _compose_quality_rejection_notes(
+        self,
+        reason: str,
+        attempted_changes: str,
+        findings: Sequence[QualityFinding],
+        sanity_notes: Sequence[str],
+    ) -> str:
+        notes: list[str] = [f"Quality gate rejected enrichment: {reason}"]
+        if attempted_changes:
+            notes.append(f"Attempted updates: {attempted_changes}")
+        remediation = sorted(
+            {finding.remediation for finding in findings if finding.remediation}
+        )
+        if remediation:
+            notes.append("Remediation: " + "; ".join(remediation))
+        if sanity_notes:
+            notes.extend(sanity_notes)
+        return "; ".join(notes)
+
     def _merge_sources(
         self, record: SchoolRecord, finding: ResearchFinding
     ) -> list[str]:
@@ -291,18 +456,48 @@ class Pipeline:
             sources.append("internal://record")
         return sources
 
-    def _has_official_domain(self, sources: Sequence[str]) -> bool:
-        for source in sources:
-            candidate = source.lower()
-            if any(keyword in candidate for keyword in _OFFICIAL_KEYWORDS):
-                return True
-        return False
+    def _summarize_sources(
+        self, *, original: SchoolRecord, merged_sources: Sequence[str]
+    ) -> tuple[int, int, int, int]:
+        original_keys = {
+            self._normalize_source_key(source)
+            for source in self._collect_original_sources(original)
+        }
+        seen_keys: set[str] = set()
+        total_sources = 0
+        fresh_sources = 0
+        official_sources = 0
+        official_fresh_sources = 0
+        for source in merged_sources:
+            key = self._normalize_source_key(source)
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            total_sources += 1
+            is_official = self._is_official_source(source)
+            if is_official:
+                official_sources += 1
+            if key not in original_keys:
+                fresh_sources += 1
+                if is_official:
+                    official_fresh_sources += 1
+        return total_sources, fresh_sources, official_sources, official_fresh_sources
 
-    def _has_official_source(self, sources: Sequence[str]) -> bool:
-        if self._has_official_domain(sources):
-            return True
-        # If no explicit official keyword but there are >=2 sources, consider the first as quasi-official
-        return len(sources) >= 2
+    def _collect_original_sources(self, record: SchoolRecord) -> Sequence[str]:
+        sources: list[str] = []
+        if record.website_url:
+            sources.append(record.website_url)
+        return sources
+
+    def _normalize_source_key(self, source: str) -> str:
+        domain = canonical_domain(source)
+        if domain:
+            return f"domain:{domain}"
+        return source.strip().lower()
+
+    def _is_official_source(self, source: str) -> bool:
+        candidate = source.lower()
+        return any(keyword in candidate for keyword in _OFFICIAL_KEYWORDS)
 
     def _describe_changes(self, original_row: pd.Series, record: SchoolRecord) -> str:
         changes: list[str] = []
@@ -326,8 +521,9 @@ class Pipeline:
         original_row: pd.Series,
         record: SchoolRecord,
         *,
-        sources: Sequence[str],
         has_official_source: bool,
+        total_source_count: int,
+        fresh_source_count: int,
         sanity_notes: Sequence[str] | None = None,
     ) -> str:
         notes: list[str] = []
@@ -370,8 +566,10 @@ class Pipeline:
             notes_text = "; ".join(notes)
 
         remediation_reasons: list[str] = []
-        if len(sources) < 2:
+        if total_source_count < 2:
             remediation_reasons.append("add a second independent source")
+        if fresh_source_count == 0:
+            remediation_reasons.append("capture a fresh supporting source")
         if not has_official_source:
             remediation_reasons.append(
                 "confirm an official (.gov.za/.caa.co.za/.ac.za/.org.za/.mil.za) source"

@@ -20,6 +20,7 @@
 - [ ] Phase 4 — LLM safety, evaluation, and MCP plan→commit gating (AT-31, AT-32, AT-33) — Owner: Platform/Security — Due: 2026-01-31
 - [x] Import order remediation (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — Owner: Platform — Due: 2025-10-23
 - [x] Document dotenv-linter invocation in ops runbook — Owner: Docs — Due: 2025-10-16
+- [x] Install quality gate + rollback instrumentation for crawler hallucinations — Owner: AI — Due: 2025-10-17
 
 ## Steps
 
@@ -41,6 +42,8 @@
 - [x] Document dotenv-linter invocation in operations guide (2025-10-16)
 - [x] Backfill targeted coverage for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-16)
 - [x] Extend high-risk coverage edge cases for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-17)
+- [x] Wire quality gate metrics, rollback plan emission, and documentation updates (2025-10-17)
+- [x] Enforce fresh evidence gating for high-risk updates and update docs (2025-10-18)
 - [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24) — Kickoff plan published in docs/data-quality.md (Phase 1.1 section); suite scaffolding scheduled Week 1.
 - [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Execution roadmap outlined in docs/data-quality.md (Phase 1.2 section); fixtures and property suite queued.
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
@@ -84,6 +87,8 @@
 - [x] Env lint (2025-10-16 17:11 UTC): dotenv-linter lint .env.example
 - [x] Infrastructure drift (2025-10-16): pytest tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot
 - [x] Adapter failure monitoring (2025-10-16): pipeline metrics expose `adapter_failures`; CLI surfaces warnings
+- [x] Quality gate enforcement (2025-10-17): `quality_rejections` metric >0 halts publish; rollback plan generated for every blocked row
+- [x] Fresh evidence gating (2025-10-18): high-risk updates require ≥2 unique sources including fresh official corroboration; rejection notes call out missing fresh evidence.
 - [ ] Data contracts enforced: GX/dbt/Deequ suites block publishable writes (AT-24)
 - [ ] Provenance completeness: 100% of publishable facts have OpenLineage + PROV-O/DCAT metadata (AT-25)
 - [ ] ACID + versioning: curated tables written via Delta/Iceberg with reproducible DVC/lakeFS commits (AT-26, AT-27)
@@ -126,6 +131,7 @@
 - [ ] Validate streaming evidence sink against real Kafka/REST endpoints once roadmap work begins; document throughput targets.
 - [x] Secrets manager paths blocked until boto3 / Azure SDK packages are bundled with the project dependencies.
 - [x] Evidence log remediation warnings now trigger for sparse or unofficial sourcing; schedule analyst refresher to interpret the new notes.
+- [ ] Monitor fresh-evidence blocks for legitimate analyst updates; capture false-positive patterns for adapter tuning (2025-10-18).
 - [x] Quickstart references `data/sample.csv` but the repo ships no sample input yet.
 
 - [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
