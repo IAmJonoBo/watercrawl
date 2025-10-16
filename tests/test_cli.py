@@ -28,7 +28,7 @@ def test_cli_validate_reports_issues(tmp_path):
 
     runner = CliRunner()
     result = runner.invoke(cli, ["validate", str(input_path), "--format", "json"])
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     payload = json.loads(result.output)
     assert payload["rows"] == 1
     assert payload["issues"][0]["code"] == "missing_column"
@@ -55,3 +55,15 @@ def test_cli_enrich_creates_output(tmp_path):
     payload = json.loads(result.output)
     assert payload["rows_enriched"] == 1
     assert output_path.exists()
+
+
+def test_cli_validate_text_mode_without_progress(tmp_path):
+    input_path = tmp_path / "input.csv"
+    _write_sample_csv(input_path, include_email=True)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["validate", str(input_path), "--format", "text", "--no-progress"]
+    )
+    assert result.exit_code == 0
+    assert "Rows:" in result.output

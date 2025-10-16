@@ -24,6 +24,7 @@
 - [x] Scaffold infrastructure plan for crawler/observability/policy guardrails (AT-07, AT-15–AT-18)
 - [x] Package exemplar regulator/press/ML adapters and add registry defaults (2025-10-16)
 - [x] Baseline infrastructure plan snapshot + drift regression tests (2025-10-16)
+- [x] Harden CLI progress telemetry and adapter failure tracking (2025-10-16)
 
 ## Deliverables
 
@@ -50,6 +51,7 @@
 - [x] Security (2025-10-16): bandit -r firecrawl_demo
 - [x] Build (2025-10-16): poetry build
 - [x] Infrastructure drift (2025-10-16): pytest tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot
+- [x] Adapter failure monitoring (2025-10-16): pipeline metrics expose `adapter_failures`; CLI surfaces warnings
 
 ## Links
 

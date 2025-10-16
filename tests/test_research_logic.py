@@ -7,9 +7,9 @@ from firecrawl_demo.research import (
     NullResearchAdapter,
     ResearchAdapter,
     ResearchFinding,
-    merge_findings,
     TriangulatingResearchAdapter,
     load_enabled_adapters,
+    merge_findings,
     register_adapter,
 )
 from firecrawl_demo.research import registry as research_registry
