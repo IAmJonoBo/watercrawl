@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "url": "https://EXAMPLE.co.za",
+  "includePaths": [
+    "/about",
+    "/contact",
+    "/team",
+    "/leadership",
+    "/training",
+    "/facult",
+    "/engineering"
+  ],
+  "excludePaths": [
+    "/privacy",
+    "/terms",
+    "/wp-json"
+  ],
+  "maxDiscoveryDepth": 2,
+  "sitemap": "include",
+  "limit": 120,
+  "allowExternalLinks": false,
+  "allowSubdomains": false,
+  "crawlEntireDomain": false,
+  "delay": 500,
+  "maxConcurrency": 3,
+  "scrapeOptions": {
+    "formats": [
+      "markdown",
+      "links"
+    ],
+    "parsers": [
+      "pdf"
+    ],
+    "onlyMainContent": true,
+    "waitFor": 800,
+    "mobile": false,
+    "skipTlsVerification": false,
+    "removeBase64Images": true
+  }
+}

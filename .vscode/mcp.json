@@ -1,0 +1,69 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "firecrawlApiKey",
+      "description": "Firecrawl API Key",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "firecrawlApiUrl",
+      "description": "Optional: Custom Firecrawl API URL (leave blank for cloud)",
+      "password": false
+    },
+    {
+      "type": "promptString",
+      "id": "firecrawlRetryMaxAttempts",
+      "description": "Optional: Retry max attempts (default 3)",
+      "password": false
+    },
+    {
+      "type": "promptString",
+      "id": "firecrawlRetryInitialDelay",
+      "description": "Optional: Retry initial delay ms (default 1000)",
+      "password": false
+    },
+    {
+      "type": "promptString",
+      "id": "firecrawlRetryMaxDelay",
+      "description": "Optional: Retry max delay ms (default 10000)",
+      "password": false
+    },
+    {
+      "type": "promptString",
+      "id": "firecrawlRetryBackoffFactor",
+      "description": "Optional: Retry backoff factor (default 2)",
+      "password": false
+    },
+    {
+      "type": "promptString",
+      "id": "firecrawlCreditWarningThreshold",
+      "description": "Optional: Credit warning threshold (default 1000)",
+      "password": false
+    },
+    {
+      "type": "promptString",
+      "id": "firecrawlCreditCriticalThreshold",
+      "description": "Optional: Credit critical threshold (default 100)",
+      "password": false
+    }
+  ],
+  "servers": {
+    "firecrawl": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${input:firecrawlApiKey}",
+        "FIRECRAWL_API_URL": "${input:firecrawlApiUrl}",
+        "FIRECRAWL_RETRY_MAX_ATTEMPTS": "${input:firecrawlRetryMaxAttempts}",
+        "FIRECRAWL_RETRY_INITIAL_DELAY": "${input:firecrawlRetryInitialDelay}",
+        "FIRECRAWL_RETRY_MAX_DELAY": "${input:firecrawlRetryMaxDelay}",
+        "FIRECRAWL_RETRY_BACKOFF_FACTOR": "${input:firecrawlRetryBackoffFactor}",
+        "FIRECRAWL_CREDIT_WARNING_THRESHOLD": "${input:firecrawlCreditWarningThreshold}",
+        "FIRECRAWL_CREDIT_CRITICAL_THRESHOLD": "${input:firecrawlCreditCriticalThreshold}"
+      }
+    }
+  }
+}

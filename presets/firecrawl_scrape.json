@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "url": "https://EXAMPLE.co.za/contact",
+  "formats": [
+    "markdown",
+    "links"
+  ],
+  "parsers": [
+    "pdf"
+  ],
+  "onlyMainContent": true,
+  "includeTags": [],
+  "excludeTags": [],
+  "waitFor": 800,
+  "actions": [
+    {
+      "type": "scroll",
+      "direction": "down"
+    }
+  ],
+  "mobile": false,
+  "skipTlsVerification": false,
+  "removeBase64Images": true,
+  "storeInCache": true,
+  "maxAge": 86400
+}
