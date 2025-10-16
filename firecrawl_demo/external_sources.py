@@ -1,14 +1,12 @@
-class ExternalSourceFetcher:
-    """Stub for ExternalSourceFetcher to satisfy tests."""
-
-    pass
-
-
 """External enrichment modules for additional OSINT sources."""
 
 from typing import Any, Dict, Optional
 
-import requests
+import logging
+
+import requests  # type: ignore[import-untyped]
+
+logger = logging.getLogger(__name__)
 
 
 def query_regulator_api(org_name: str) -> Optional[Dict[str, Any]]:
@@ -18,8 +16,9 @@ def query_regulator_api(org_name: str) -> Optional[Dict[str, Any]]:
         resp = requests.get(endpoint, timeout=10)
         if resp.status_code == 200:
             return resp.json()
-    except Exception:
-        pass
+        logger.warning("Regulator API returned status %s", resp.status_code)
+    except requests.RequestException as exc:
+        logger.warning("Regulator API request failed: %s", exc)
     return None
 
 
@@ -30,8 +29,9 @@ def query_press(org_name: str) -> Optional[Dict[str, Any]]:
         resp = requests.get(endpoint, timeout=10)
         if resp.status_code == 200:
             return resp.json()
-    except Exception:
-        pass
+        logger.warning("Press lookup returned status %s", resp.status_code)
+    except requests.RequestException as exc:
+        logger.warning("Press lookup failed: %s", exc)
     return None
 
 
@@ -42,6 +42,13 @@ def query_professional_directory(org_name: str) -> Optional[Dict[str, Any]]:
         resp = requests.get(endpoint, timeout=10)
         if resp.status_code == 200:
             return resp.json()
-    except Exception:
-        pass
+        logger.warning("Directory lookup returned status %s", resp.status_code)
+    except requests.RequestException as exc:
+        logger.warning("Directory lookup failed: %s", exc)
     return None
+
+
+class ExternalSourceFetcher:
+    """Stub for legacy tests."""
+
+    pass

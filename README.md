@@ -1,106 +1,54 @@
-# Firecrawl Demo
+# ACES Aerodynamics Enrichment Stack
 
-This project demonstrates how to use Firecrawl's powerful web scraping and data extraction features from Python, following the official documentation at <https://docs.firecrawl.dev/introduction>.
+Modular toolkit for validating and enriching South African flight-school datasets. The stack emphasises evidence-backed research, POPIA-compliant contact handling, and automation surfaces for analysts and GitHub Copilot.
 
-## Features Demonstrated
+## Quickstart
 
-- **Scraping**: Extract clean markdown and HTML from any URL
-- **JSON Mode**: Get structured data using Pydantic schemas or AI prompts
-- **Crawling**: Automatically discover and scrape entire websites
-- **Search**: Perform web searches and get full content from results
-- **Extract**: Get AI-powered data extraction from web pages
-- **Actions**: Interact with pages before scraping (clicks, input, etc.)
-
-## Setup
-
-1. **Install Firecrawl Python package**:
-
-   ```bash
-   pip install firecrawl-py
-   ```
-
-2. **Set up your API key**:
-   - Sign up at [firecrawl.dev](https://firecrawl.dev)
-   - Get your API key
-   - Add it to `.env` file:
-
-     ```env
-     FIRECRAWL_API_KEY=fc-your-api-key-here
-     ```
-
-3. **Run the demonstrations**:
-
-   **Basic demo** (simple scrape and extract):
-
-   ```bash
-   python main.py
-   ```
-
-   **Comprehensive examples** (all features):
-
-   ```bash
-   python examples.py
-   ```
-
-## Files
-
-- `main.py` - Simple demonstration of scraping and extracting
-- `examples.py` - Comprehensive showcase of all Firecrawl features
-- `.env` - Your API key configuration
-
-## Key Features
-
-### Scraping
-
-```python
-from firecrawl import Firecrawl
-
-client = Firecrawl(api_key="your-api-key")
-result = client.scrape("https://example.com", formats=["markdown"])
-print(result.markdown)
+```bash
+poetry install --no-root
+poetry run python -m firecrawl_demo.cli validate data/sample.csv --format json
+poetry run python -m firecrawl_demo.cli enrich data/sample.csv --output data/sample_enriched.csv
 ```
 
-### JSON Mode with Schema
+Set `FIRECRAWL_API_KEY` in `.env` if you intend to plug in the Firecrawl SDK.
 
-```python
-from pydantic import BaseModel
+## Features
 
-class CompanyInfo(BaseModel):
-    name: str
-    description: str
+- **Dataset validation** with detailed issue reporting (`firecrawl_demo.validation`).
+- **Research adapters** for deterministic enrichment and future OSINT integrations (`firecrawl_demo.research`).
+- **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.pipeline`).
+- **CLI** commands for analysts and automation runs (`firecrawl_demo.cli`).
+- **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.mcp.server`).
+- **MkDocs documentation** under `docs/` with architecture, gap analysis, and SOPs.
 
-result = client.scrape(
-    'https://example.com',
-    formats=[{"type": "json", "schema": CompanyInfo}]
-)
-```
+## Tests & QA
 
-### Crawling
-
-```python
-docs = client.crawl(url="https://example.com", limit=10)
-```
-
-### Search
-
-```python
-results = client.search(query="your search term", limit=5)
+```bash
+poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+poetry run ruff check .
+poetry run mypy .
+poetry run bandit -r firecrawl_demo
 ```
 
 ## Documentation
 
-For complete API documentation and advanced features, visit:
+MkDocs site configuration lives in `mkdocs.yml`. Preview locally with:
 
-- [Official Docs](https://docs.firecrawl.dev)
-- [Python SDK Guide](https://docs.firecrawl.dev/sdks/python)
-- [API Reference](https://docs.firecrawl.dev/api-reference/introduction)
+```bash
+poetry run mkdocs serve
+```
 
-## Advanced MCP Configuration
+Key pages:
 
-The workspace `.vscode/mcp.json` now exposes optional inputs so you can tune the official `firecrawl-mcp` server without editing code. When VS Code prompts for a value you can leave it blank to keep Firecrawl defaults.
+- `docs/gap-analysis.md`: current vs target architecture.
+- `docs/architecture.md`: layered design and flow diagrams.
+- `docs/cli.md`: command usage and examples.
+- `docs/mcp.md`: MCP contract for Copilot.
+- `docs/operations.md`: QA gates and release process.
 
-- `FIRECRAWL_API_URL`: Point the MCP server at a self-hosted Firecrawl instance.
-- `FIRECRAWL_RETRY_MAX_ATTEMPTS`, `FIRECRAWL_RETRY_INITIAL_DELAY`, `FIRECRAWL_RETRY_MAX_DELAY`, `FIRECRAWL_RETRY_BACKOFF_FACTOR`: Control exponential backoff behaviour.
-- `FIRECRAWL_CREDIT_WARNING_THRESHOLD`, `FIRECRAWL_CREDIT_CRITICAL_THRESHOLD`: Configure credit-usage alerts when using the hosted API.
+## Contributing
 
-After updating values, run the VS Code command `MCP: List Servers`, pick `firecrawl`, and choose **Restart** so the new environment settings take effect.
+1. Run the baseline QA suite before committing.
+2. Update/extend tests first.
+3. Keep `Next_Steps.md` in sync with progress and risks.
+4. Update MkDocs content when behaviour changes.

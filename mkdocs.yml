@@ -1,0 +1,25 @@
+site_name: ACES Aerodynamics Enrichment Stack
+site_description: "Data enrichment, validation, and automation toolkit for South African flight school intelligence."
+site_author: ACES Aerodynamics Analyst
+repo_url: https://github.com/acesaero/watercrawl
+nav:
+  - Home: index.md
+  - Gap Analysis: gap-analysis.md
+  - Architecture: architecture.md
+  - Data Quality & Research: data-quality.md
+  - CLI Guide: cli.md
+  - MCP Integration: mcp.md
+  - Operations: operations.md
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+plugins:
+  - search

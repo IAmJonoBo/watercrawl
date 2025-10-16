@@ -18,7 +18,7 @@ try:
     from pydantic_settings import BaseSettings
 
     class Settings(BaseSettings):
-        FIRECRAWL_API_KEY: str
+        FIRECRAWL_API_KEY: Optional[str] = None
         FIRECRAWL_API_URL: str = "https://api.firecrawl.com"
         # Add other config fields as needed
 
