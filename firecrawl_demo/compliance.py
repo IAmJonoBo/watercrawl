@@ -4,9 +4,9 @@ import csv
 import hashlib
 import json
 import re
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from typing import Optional
-from collections.abc import Iterable, Sequence
 from urllib.parse import urlparse
 
 from . import config

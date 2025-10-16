@@ -7,6 +7,8 @@
 - [x] Implement CLI + MCP bridge for task orchestration — Owner: AI — Due: Complete
 - [x] Stand up MkDocs documentation portal — Owner: AI — Due: Complete
 - [x] Integrate secrets manager for production credentials — Owner: AI — Due: Complete
+- [x] Introduce research adapter registry with config-driven sequencing — Owner: AI — Due: 2025-10-16
+- [ ] Package exemplar regulator/press/ML adapters for registry adoption — Owner: Platform Team — Due: Backlog
 
 ## Steps
 
@@ -14,6 +16,9 @@
 - [x] Design target-state modules (data ingestion, validation, enrichment, evidence logging)
 - [x] Implement incremental code/test updates per module
 - [x] Integrate QA gates (lint, type, security, tests) into workflow
+- [x] Add registry module + builder integration with fallback safety
+- [x] Extend research tests for ordering, deduplication, and feature-flag coverage
+- [x] Document adapter authoring workflow in architecture guide
 
 ## Deliverables
 
@@ -21,6 +26,8 @@
 - [x] CLI entrypoints for batch runs, validation, and reporting
 - [x] Minimal MCP server contract for Copilot orchestration
 - [x] MkDocs site with methodology, API, and operations docs
+- [x] Registry-enabled research pipeline supporting Firecrawl+Null defaults and config overrides
+- [x] Adapter authoring guidance in docs/architecture.md
 
 ## Quality Gates
 
@@ -29,12 +36,20 @@
 - [x] Type: mypy clean with strict config (to be defined)
 - [x] Security: bandit critical findings resolved
 - [x] Build: poetry build succeeds
+- [x] Tests (2025-10-16): pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+- [x] Lint (2025-10-16): ruff check .
+- [x] Format (2025-10-16): black --check . & isort --profile black --check-only .
+- [x] Types (2025-10-16): mypy .
+- [x] Security (2025-10-16): bandit -r firecrawl_demo
+- [x] Build (2025-10-16): poetry build
 
 ## Links
 
 - [x] Baseline test failure log — see docs/gap-analysis.md
 - [x] Coverage trend — pytest coverage report captured in CI logs
 - [x] Architecture docs — docs/architecture.md
+- [x] Adapter registry documentation — docs/architecture.md#research-adapter-registry
+- [x] Registry tests — tests/test_research_logic.py
 
 ## Risks/Notes
 - [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
@@ -44,6 +59,8 @@
 - [ ] Enforced pandas/requests type stubs—watch for downstream mypy regressions without `type: ignore` escapes.
 
 - [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
+- [ ] Align isort configuration (project vs CLI flags) to avoid manual --profile overrides.
+- [ ] Capture adapter contribution guide (with examples) once regulator/press adapters land.
 - [ ] Type stubs handled via `type: ignore`; consider adding official stubs to dependencies.
       Pre-commit tooling still absent; evaluate adding packaged entrypoint or doc instructions in future iteration.
 
