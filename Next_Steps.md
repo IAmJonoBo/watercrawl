@@ -13,6 +13,10 @@
 - [x] Add official secrets-manager dependencies (boto3, azure identity/key vault) to unblock AWS/Azure backends — Owner: Platform Team — Due: 2025-10-30
 - [x] Enforce evidence-log remediation notes when <2 sources or no official URL are present — Owner: AI — Due: 2025-10-23
 - [x] Ship a runnable sample dataset or adjust README quickstart instructions — Owner: Docs — Due: 2025-10-23
+- [ ] Phase 1 — Data contracts + evidence enforcement (AT-24, AT-29) — Owner: Data — Due: 2025-11-15
+- [ ] Phase 2 — Lineage, catalogue, and versioning rollout (AT-25, AT-26, AT-27) — Owner: Platform — Due: 2025-12-06
+- [ ] Phase 3 — Graph semantics + drift observability (AT-28, AT-30) — Owner: Data/Platform — Due: 2026-01-10
+- [ ] Phase 4 — LLM safety, evaluation, and MCP plan→commit gating (AT-31, AT-32, AT-33) — Owner: Platform/Security — Due: 2026-01-31
 
 ## Steps
 
@@ -31,6 +35,14 @@
 - [x] Close the secrets manager dependency gap and re-run QA (2025-10-30)
 - [x] Implement evidence shortfall messaging in pipeline + tests (2025-10-23)
 - [x] Publish onboarding-ready sample dataset guidance (2025-10-23)
+- [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24)
+- [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29)
+- [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25)
+- [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27)
+- [ ] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28)
+- [ ] Phase 3.2 — Instrument whylogs drift monitors + alert routing (AT-30)
+- [ ] Phase 4.1 — Integrate Ragas scoring + release gating thresholds (AT-31)
+- [ ] Phase 4.2 — Implement OWASP LLM Top-10 mitigations + MCP diff/commit controls (AT-32, AT-33)
 
 ## Deliverables
 
@@ -42,6 +54,13 @@
 - [x] Adapter authoring guidance in docs/architecture.md
 - [x] Exemplar regulator/press/ML adapters packaged with deterministic dataset
 - [x] Infrastructure plan drift snapshot + regression coverage
+- [ ] Great Expectations/dbt/Deequ suites published with CI integration (AT-24)
+- [ ] Lineage + provenance catalogue (OpenLineage, PROV-O, DCAT) live with reproducible run book (AT-25, AT-27)
+- [ ] ACID data lake baseline (Delta Lake/Iceberg) + DVC/lakeFS automation scripts (AT-26, AT-27)
+- [ ] CSVW/R2RML mapping package + graph validation report (AT-28)
+- [ ] whylogs drift dashboards + alert runbook (AT-30)
+- [ ] Ragas evaluation report + policy gating checklist (AT-31)
+- [ ] LLM safety/plan→commit MCP policy pack + red-team evidence (AT-32, AT-33)
 
 ## Quality Gates
 
@@ -58,6 +77,23 @@
 - [x] Build (2025-10-16): poetry build
 - [x] Infrastructure drift (2025-10-16): pytest tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot
 - [x] Adapter failure monitoring (2025-10-16): pipeline metrics expose `adapter_failures`; CLI surfaces warnings
+- [ ] Data contracts enforced: GX/dbt/Deequ suites block publishable writes (AT-24)
+- [ ] Provenance completeness: 100% of publishable facts have OpenLineage + PROV-O/DCAT metadata (AT-25)
+- [ ] ACID + versioning: curated tables written via Delta/Iceberg with reproducible DVC/lakeFS commits (AT-26, AT-27)
+- [ ] Graph validation + drift monitoring: CSVW/R2RML checks + whylogs alerts wired (AT-28, AT-30)
+- [ ] Evaluation + safety: Ragas thresholds + OWASP LLM Top-10 suite green before release (AT-31, AT-32)
+- [ ] MCP plan→commit enforcement: diff/If-Match + schema/test gating observed in audit logs (AT-33)
+
+## Phase Plan (2025 Q4 → 2026 Q1)
+
+| Phase | Scope | Dependencies | Exit Criteria |
+|-------|-------|--------------|---------------|
+| **1. Data Contracts & Evidence Discipline** | Ship GX/dbt/Deequ suites, Pint unit enforcement, Hypothesis fuzzing, and evidence shortfall automation. | Existing validation/enrichment modules; pandas/requests stubs. | CI fails on contract breach, evidence log auto-remediates, coverage ≥95% of curated tables. |
+| **2. Lineage & Versioned Lakehouse** | Emit OpenLineage/PROV-O/DCAT, adopt Delta/Iceberg, store DVC/lakeFS run commits, update docs/CLI outputs. | Phase 1 gating; infrastructure plan. | Reproduce run from commit only; 100% lineage coverage; documented rollback paths. |
+| **3. Graph Semantics & Observability** | Finalise CSVW/R2RML, integrate graph build smoke tests, instrument whylogs drift dashboards + alerting. | Phase 2 dataset guarantees. | Graph validation thresholds pass; drift alerts tested in CI & staging; observability runbook published. |
+| **4. LLM Safety & MCP Governance** | Integrate Ragas evaluation, OWASP LLM mitigations, MCP diff/commit with schema/test enforcement, update policies. | Phases 1–3 analytics & metadata. | Ragas scores above thresholds, red-team suite green, MCP audit logs show plan→commit gating and If-Match usage. |
+
+> Maintain sequential sign-off: do not start a downstream phase until upstream exit criteria have been met and recorded in `Links`.
 
 ## Links
 
@@ -69,6 +105,10 @@
 - [x] Infrastructure plan scaffolding — firecrawl_demo/infrastructure/planning.py
 - [x] Exemplar adapter implementations — firecrawl_demo/research/exemplars.py
 - [x] Infrastructure drift regression tests — tests/test_infrastructure_planning.py
+- [ ] GX/dbt/Deequ suites (Phase 1) — TBC
+- [ ] Lineage + lakehouse configuration docs (Phase 2) — TBC
+- [ ] Graph semantics mapping repo + drift dashboards (Phase 3) — TBC
+- [ ] LLM safety + MCP governance pack (Phase 4) — TBC
 
 ## Risks/Notes
 - [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
@@ -90,6 +130,8 @@
 - [ ] Add regression tests for MCP summarize/list tasks returning empty results (tests/test_mcp.py).
 - [ ] Investigate coverage gaps in analyst_ui.py and compliance.py when time allows.
 - [ ] Explore CI gating on the `sanity_issues` metric once monitoring data stabilises.
+- [ ] Import ordering drift flagged by `isort` (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py); schedule formatter fix alongside next code change.
+- [ ] `.env` hygiene tooling (`dotenv-linter`) requires explicit target files — add stub env templates or document invocation path.
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
 - [ ]MCP first: Expose crawler controls and graph queries as MCP tools; surface pages, logs and datasets as MCP resources; include research/playbook prompts. Copilot Studio/Windows/Agents SDK speak MCP, so Copilot can plan → call → verify across your stack. ￼
@@ -327,3 +369,15 @@ Why MCP here? It standardises how Copilot calls your stack, and it’s natively 
 - **whylogs** drift beyond thresholds or missing profiles for a promoted partition (AT‑30).
 - **Ragas** scores below thresholds for publish (AT‑31).
 - **OWASP LLM Top‑10** red‑team failure (AT‑32).
+
+## Baseline QA Snapshot — 2025-10-16
+
+- ✅ `poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing`
+- ✅ `poetry run ruff check .`
+- ✅ `poetry run black --check .`
+- ❌ `poetry run isort --profile black --check-only .` (import order drift in tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py)
+- ✅ `poetry run mypy .`
+- ✅ `poetry run bandit -r firecrawl_demo`
+- ⚠️ `poetry run dotenv-linter` (requires explicit target file; no `.env` committed)
+- ✅ `poetry run pre-commit run --all-files`
+- ✅ `poetry run poetry build`
