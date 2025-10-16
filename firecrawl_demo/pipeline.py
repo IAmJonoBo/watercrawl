@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
-from collections.abc import Hashable, Sequence
 
 import pandas as pd
 
@@ -18,11 +18,7 @@ from .compliance import (
 )
 from .excel import EXPECTED_COLUMNS, read_dataset, write_dataset
 from .models import EvidenceRecord, PipelineReport, SchoolRecord
-from .research import (
-    ResearchAdapter,
-    ResearchFinding,
-    build_research_adapter,
-)
+from .research import ResearchAdapter, ResearchFinding, build_research_adapter
 from .validation import DatasetValidator
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")

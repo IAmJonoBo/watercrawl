@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Callable, Protocol
-from collections.abc import Iterable, Mapping, Sequence
 
-from . import config
-from .compliance import normalize_phone
-from .external_sources import triangulate_organisation
-from .firecrawl_client import FirecrawlClient, summarize_extract_payload
+from .. import config
+from ..compliance import normalize_phone
+from ..external_sources import triangulate_organisation
+from ..firecrawl_client import FirecrawlClient, summarize_extract_payload
 
 logger = logging.getLogger(__name__)
 
@@ -236,22 +236,21 @@ def triangulate_via_sources(
 
 
 def build_research_adapter() -> ResearchAdapter:
-    adapters: list[ResearchAdapter] = []
-    flags = config.FEATURE_FLAGS
+    """Assemble the active research pipeline based on the adapter registry."""
 
-    firecrawl_adapter = (
-        _build_firecrawl_adapter() if flags.enable_firecrawl_sdk else None
-    )
-    if firecrawl_adapter is not None:
-        adapters.append(firecrawl_adapter)
+    from .registry import AdapterLoaderSettings, load_enabled_adapters
 
-    adapters.append(NullResearchAdapter())
+    settings = AdapterLoaderSettings(provider=config.SECRETS_PROVIDER)
+    adapters = load_enabled_adapters(settings)
+
+    if not adapters:
+        adapters = [NullResearchAdapter()]
 
     base: ResearchAdapter
     if len(adapters) == 1:
         base = adapters[0]
     else:
-        base = CompositeResearchAdapter(adapters)
+        base = CompositeResearchAdapter(tuple(adapters))
 
     return TriangulatingResearchAdapter(
         base_adapter=base, triangulate=triangulate_via_sources

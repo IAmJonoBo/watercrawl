@@ -1,13 +1,18 @@
 import pytest
 
-from firecrawl_demo import config
-from firecrawl_demo import research
+from firecrawl_demo import config, research
+from firecrawl_demo.external_sources import triangulate_organisation
 from firecrawl_demo.research import (
+    AdapterLoaderSettings,
+    NullResearchAdapter,
     ResearchAdapter,
     ResearchFinding,
     TriangulatingResearchAdapter,
+    load_enabled_adapters,
+    register_adapter,
 )
-from firecrawl_demo.external_sources import triangulate_organisation
+from firecrawl_demo.research import registry as research_registry
+from firecrawl_demo.secrets import EnvSecretsProvider
 
 
 class DummyAdapter(ResearchAdapter):
@@ -18,6 +23,101 @@ class DummyAdapter(ResearchAdapter):
         assert organisation
         assert province
         return self._finding
+
+
+def test_load_enabled_adapters_preserves_order_and_deduplicates(monkeypatch):
+    register_adapter(
+        "alpha",
+        lambda ctx: DummyAdapter(ResearchFinding(notes="alpha")),
+    )
+    register_adapter(
+        "beta",
+        lambda ctx: DummyAdapter(ResearchFinding(notes="beta")),
+    )
+
+    adapters = load_enabled_adapters(
+        AdapterLoaderSettings(sequence=["alpha", "beta", "alpha", "null"])
+    )
+
+    lookups = [adapter.lookup("Org", "GP") for adapter in adapters]
+    assert [finding.notes for finding in lookups] == ["alpha", "beta", ""]
+    assert isinstance(adapters[-1], NullResearchAdapter)
+
+
+def test_load_enabled_adapters_reads_env_configuration(monkeypatch):
+    register_adapter(
+        "alpha",
+        lambda ctx: DummyAdapter(ResearchFinding(notes="alpha")),
+    )
+    register_adapter(
+        "gamma",
+        lambda ctx: DummyAdapter(ResearchFinding(notes="gamma")),
+    )
+    provider = EnvSecretsProvider({"RESEARCH_ADAPTERS": "gamma, alpha, null"})
+
+    adapters = load_enabled_adapters(AdapterLoaderSettings(provider=provider))
+    notes = [adapter.lookup("Org", "GP").notes for adapter in adapters]
+    assert notes[:2] == ["gamma", "alpha"]
+
+
+def test_load_enabled_adapters_reads_yaml_configuration(tmp_path):
+    register_adapter(
+        "delta",
+        lambda ctx: DummyAdapter(ResearchFinding(notes="delta")),
+    )
+    config_path = tmp_path / "adapters.yaml"
+    config_path.write_text("adapters:\n  - delta\n  - null\n", encoding="utf-8")
+    provider = EnvSecretsProvider({"RESEARCH_ADAPTERS_FILE": str(config_path)})
+
+    adapters = load_enabled_adapters(AdapterLoaderSettings(provider=provider))
+
+    assert isinstance(adapters[0], DummyAdapter)
+    assert adapters[0].lookup("Org", "GP").notes == "delta"
+    assert isinstance(adapters[1], NullResearchAdapter)
+
+
+def test_firecrawl_factory_respects_feature_flags(monkeypatch):
+    flags = config.FeatureFlags(
+        enable_firecrawl_sdk=False,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+
+    adapters = load_enabled_adapters(
+        AdapterLoaderSettings(sequence=["firecrawl", "null"])
+    )
+
+    assert all(
+        not isinstance(adapter, research.FirecrawlResearchAdapter)
+        for adapter in adapters
+    )
+    assert any(isinstance(adapter, NullResearchAdapter) for adapter in adapters)
+
+
+def test_firecrawl_factory_activates_when_feature_enabled(monkeypatch):
+    dummy_adapter = DummyAdapter(ResearchFinding(notes="firecrawl"))
+    monkeypatch.setattr(
+        research_registry,
+        "_build_firecrawl_adapter",
+        lambda: dummy_adapter,
+    )
+
+    flags = config.FeatureFlags(
+        enable_firecrawl_sdk=True,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+
+    adapters = load_enabled_adapters(
+        AdapterLoaderSettings(sequence=["firecrawl", "null"])
+    )
+
+    assert adapters[0] is dummy_adapter
+    assert isinstance(adapters[1], NullResearchAdapter)
 
 
 def test_triangulating_adapter_merges_sources_and_notes():
@@ -88,7 +188,7 @@ def test_build_research_adapter_handles_missing_firecrawl(
         enable_regulator_lookup=True,
         investigate_rebrands=True,
     )
-    monkeypatch.setattr(research.config, "FEATURE_FLAGS", flags)
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
 
     adapter = research.build_research_adapter()
 
