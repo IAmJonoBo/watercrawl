@@ -89,6 +89,7 @@
 - [x] Adapter failure monitoring (2025-10-16): pipeline metrics expose `adapter_failures`; CLI surfaces warnings
 - [x] Quality gate enforcement (2025-10-17): `quality_rejections` metric >0 halts publish; rollback plan generated for every blocked row
 - [x] Fresh evidence gating (2025-10-18): high-risk updates require ≥2 unique sources including fresh official corroboration; rejection notes call out missing fresh evidence.
+- [x] Restore PipelineReport quality metadata models so CLI/MCP responses include quality issues + rollback plans post-regression (2025-10-16)
 - [ ] Data contracts enforced: GX/dbt/Deequ suites block publishable writes (AT-24)
 - [ ] Provenance completeness: 100% of publishable facts have OpenLineage + PROV-O/DCAT metadata (AT-25)
 - [ ] ACID + versioning: curated tables written via Delta/Iceberg with reproducible DVC/lakeFS commits (AT-26, AT-27)
