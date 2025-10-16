@@ -22,7 +22,7 @@ conda_package_streaming @ file:///home/conda/feedstock_root/build_artifacts/cond
 debugpy @ file:///Users/runner/miniforge3/conda-bld/bld/rattler-build_debugpy_1754523443/work
 decorator @ file:///home/conda/feedstock_root/build_artifacts/decorator_1740384970518/work
 distro @ file:///home/conda/feedstock_root/build_artifacts/distro_1734729835256/work
-dnspython==2.7.0
+dnspython==2.8.0
 et_xmlfile==2.0.0
 exceptiongroup @ file:///home/conda/feedstock_root/build_artifacts/exceptiongroup_1746947292760/work
 executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1745502089858/work
