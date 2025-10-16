@@ -5,6 +5,7 @@
 - [x] Develop enhanced enrichment architecture & pipeline hardening — Owner: AI — Due: Complete
 - [x] Implement CLI + MCP bridge for task orchestration — Owner: AI — Due: Complete
 - [x] Stand up MkDocs documentation portal — Owner: AI — Due: Complete
+- [ ] Integrate secrets manager for production credentials — Owner: TBD — Due: Backlog
 
 ## Steps
 - [x] Document current-state architecture and gaps
@@ -31,6 +32,7 @@
 - [x] Architecture docs — docs/architecture.md
 
 ## Risks/Notes
-- [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
-- [ ] Type stubs handled via `type: ignore`; consider adding official stubs to dependencies.
-- [ ] Pre-commit tooling still absent; evaluate adding packaged entrypoint or doc instructions in future iteration.
+- [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
+- [ ] Secrets handling remains `.env` based; migrate to vault/secret manager for long-term governance.
+- [ ] Monitor pre-commit hook runtimes once CI enables them to avoid exceeding build minutes.
+- [ ] Enforced pandas/requests type stubs—watch for downstream mypy regressions without `type: ignore` escapes.

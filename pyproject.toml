@@ -15,18 +15,21 @@ tenacity = "*"
 pydantic = "*"
 structlog = "*"
 prometheus-client = "*"
+pydantic-settings = "^2.11.0"
+
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-asyncio = "*"
+pytest-cov = "*"
 ruff = "*"
 black = "*"
 isort = "*"
 mypy = "*"
 bandit = "*"
 dotenv-linter = "*"
-pydantic-settings = "^2.11.0"
-
-[tool.poetry.dev-dependencies]
-pytest-cov = "*"
+pre-commit = "*"
+pandas-stubs = "*"
+types-requests = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

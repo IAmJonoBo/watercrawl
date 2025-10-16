@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Optional
+from typing import Any
+from collections.abc import Iterable
 
 from .config import settings
 
@@ -15,8 +16,8 @@ except ImportError:  # pragma: no cover - graceful degradation
 class FirecrawlClient:
     """Thin wrapper around the Firecrawl SDK with safe fallbacks for tests."""
 
-    api_key: Optional[str] = None
-    api_url: Optional[str] = None
+    api_key: str | None = None
+    api_url: str | None = None
 
     def _client(self) -> Firecrawl:
         if Firecrawl is None:
@@ -30,24 +31,24 @@ class FirecrawlClient:
         )
 
     def scrape(
-        self, url: str, *, formats: Optional[Iterable[str]] = None
-    ) -> Dict[str, Any]:
+        self, url: str, *, formats: Iterable[str] | None = None
+    ) -> dict[str, Any]:
         client = self._client()
         result = client.scrape(url=url, formats=list(formats or ["markdown"]))
         return getattr(result, "data", result)
 
-    def extract(self, urls: Iterable[str], prompt: str) -> Dict[str, Any]:
+    def extract(self, urls: Iterable[str], prompt: str) -> dict[str, Any]:
         client = self._client()
         result = client.extract(urls=list(urls), prompt=prompt)
         return getattr(result, "data", result)
 
-    def search(self, query: str, *, limit: int = 5) -> Dict[str, Any]:
+    def search(self, query: str, *, limit: int = 5) -> dict[str, Any]:
         client = self._client()
         result = client.search(query=query, limit=limit)
         return getattr(result, "data", result)
 
 
-def summarize_extract_payload(payload: Dict[str, Any]) -> Dict[str, Optional[str]]:
+def summarize_extract_payload(payload: dict[str, Any]) -> dict[str, str | None]:
     """Normalize Firecrawl extract payload into simple contact dict."""
 
     data: Any = payload or {}

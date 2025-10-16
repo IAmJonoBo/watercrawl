@@ -22,5 +22,5 @@
 
 - ✅ New validator, pipeline, CLI, and MCP server implemented with deterministic tests.
 - ✅ MkDocs site scaffolded with architecture, data-quality, and operations content.
-- 🔄 Follow-up: integrate optional Firecrawl SDK behind feature flags and add type stubs for external libraries.
+- ✅ Firecrawl SDK integration available behind feature toggles with offline-safe defaults and type stubs for pandas/requests.
 - 🔄 Follow-up: replace placeholder `.env` credentials with secrets manager integration.

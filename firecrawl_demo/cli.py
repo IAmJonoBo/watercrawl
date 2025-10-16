@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Dict, Optional
 
 import click
 
@@ -30,7 +29,7 @@ def validate(input_path: Path, output_format: str) -> None:
     frame = read_dataset(input_path)
     report = pipeline.validator.validate_dataframe(frame)
     issues_payload = [issue.__dict__ for issue in report.issues]
-    payload: Dict[str, object] = {
+    payload: dict[str, object] = {
         "rows": report.rows,
         "issues": issues_payload,
         "is_valid": report.is_valid,
@@ -60,7 +59,7 @@ def validate(input_path: Path, output_format: str) -> None:
 @click.option(
     "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
 )
-def enrich(input_path: Path, output_path: Optional[Path], output_format: str) -> None:
+def enrich(input_path: Path, output_path: Path | None, output_format: str) -> None:
     """Validate, enrich, and export a dataset."""
 
     pipeline = Pipeline()

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Any, cast
+from collections.abc import Hashable, Sequence
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
+from . import config
 from .compliance import (
     canonical_domain,
     confidence_for_status,
@@ -16,7 +18,11 @@ from .compliance import (
 )
 from .excel import EXPECTED_COLUMNS, read_dataset, write_dataset
 from .models import EvidenceRecord, PipelineReport, SchoolRecord
-from .research import NullResearchAdapter, ResearchAdapter, ResearchFinding
+from .research import (
+    ResearchAdapter,
+    ResearchFinding,
+    build_research_adapter,
+)
 from .validation import DatasetValidator
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
@@ -24,8 +30,8 @@ _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
 
 @dataclass
 class Pipeline:
-    research_adapter: ResearchAdapter = NullResearchAdapter()
-    validator: DatasetValidator = DatasetValidator()
+    research_adapter: ResearchAdapter = field(default_factory=build_research_adapter)
+    validator: DatasetValidator = field(default_factory=DatasetValidator)
 
     def run_dataframe(self, frame: pd.DataFrame) -> PipelineReport:
         validation = self.validator.validate_dataframe(frame)
@@ -37,14 +43,15 @@ class Pipeline:
             raise ValueError(f"Missing expected columns: {columns}")
 
         working_frame = frame.copy(deep=True)
-        evidence_records: List[EvidenceRecord] = []
+        working_frame_cast = cast(Any, working_frame)
+        evidence_records: list[EvidenceRecord] = []
         enriched_rows = 0
 
-        for idx, row in working_frame.iterrows():
+        for position, (idx, row) in enumerate(working_frame.iterrows()):
             original_row = row.copy()
             record = SchoolRecord.from_dataframe_row(row)
             record.province = normalize_province(record.province)
-            working_frame.at[idx, "Province"] = record.province
+            working_frame_cast.at[idx, "Province"] = record.province
 
             finding = self.research_adapter.lookup(record.name, record.province)
             updated = False
@@ -97,11 +104,13 @@ class Pipeline:
                 )
                 evidence_records.append(
                     EvidenceRecord(
-                        row_id=idx + 2,
+                        row_id=position + 2,
                         organisation=record.name,
                         changes=self._describe_changes(original_row, record),
                         sources=sources,
-                        notes=finding.notes,
+                        notes=self._compose_evidence_notes(
+                            finding, original_row, record
+                        ),
                         confidence=confidence,
                     )
                 )
@@ -122,7 +131,7 @@ class Pipeline:
         )
 
     def run_file(
-        self, input_path: Path, output_path: Optional[Path] = None
+        self, input_path: Path, output_path: Path | None = None
     ) -> PipelineReport:
         dataset = read_dataset(input_path)
         report = self.run_dataframe(dataset)
@@ -130,13 +139,13 @@ class Pipeline:
             write_dataset(report.refined_dataframe, output_path)
         return report
 
-    def available_tasks(self) -> Dict[str, str]:
+    def available_tasks(self) -> dict[str, str]:
         return {
             "validate_dataset": "Validate the provided dataset",
             "enrich_dataset": "Validate and enrich the provided dataset",
         }
 
-    def run_task(self, task: str, payload: Dict[str, object]) -> Dict[str, object]:
+    def run_task(self, task: str, payload: dict[str, object]) -> dict[str, object]:
         if task == "validate_dataset":
             frame = self._frame_from_payload(payload)
             validation_report = self.validator.validate_dataframe(frame)
@@ -155,25 +164,28 @@ class Pipeline:
             }
         raise KeyError(task)
 
-    def _frame_from_payload(self, payload: Dict[str, object]) -> pd.DataFrame:
+    def _frame_from_payload(self, payload: dict[str, object]) -> pd.DataFrame:
         if "path" in payload:
             return read_dataset(Path(str(payload["path"])))
         if "rows" in payload:
-            rows = payload["rows"] or []
-            return pd.DataFrame(rows, columns=EXPECTED_COLUMNS)
+            rows_obj = payload["rows"] or []
+            if not isinstance(rows_obj, list):
+                raise ValueError("Payload 'rows' must be a list of mappings")
+            return pd.DataFrame(list(rows_obj), columns=list(EXPECTED_COLUMNS))
         raise ValueError("Payload must include 'path' or 'rows'")
 
     def _apply_record(
-        self, frame: pd.DataFrame, index: int, record: SchoolRecord
+        self, frame: pd.DataFrame, index: Hashable, record: SchoolRecord
     ) -> None:
+        frame_cast = cast(Any, frame)
         for column, value in record.as_dict().items():
             if value is not None:
-                frame.at[index, column] = value
+                frame_cast.at[index, column] = value
 
     def _merge_sources(
         self, record: SchoolRecord, finding: ResearchFinding
-    ) -> List[str]:
-        sources: List[str] = []
+    ) -> list[str]:
+        sources: list[str] = []
         if record.website_url:
             sources.append(record.website_url)
         if finding.website_url and finding.website_url not in sources:
@@ -193,7 +205,7 @@ class Pipeline:
         return len(sources) >= 2
 
     def _describe_changes(self, original_row: pd.Series, record: SchoolRecord) -> str:
-        changes: List[str] = []
+        changes: list[str] = []
         mapping = {
             "Website URL": record.website_url,
             "Contact Person": record.contact_person,
@@ -207,3 +219,42 @@ class Pipeline:
             if new_value and original_value != new_value:
                 changes.append(f"{column} -> {new_value}")
         return "; ".join(changes) or "No changes"
+
+    def _compose_evidence_notes(
+        self,
+        finding: ResearchFinding,
+        original_row: pd.Series,
+        record: SchoolRecord,
+    ) -> str:
+        notes: list[str] = []
+        if finding.notes:
+            notes.append(finding.notes)
+
+        if config.FEATURE_FLAGS.investigate_rebrands:
+            for note in finding.investigation_notes:
+                if note and note not in notes:
+                    notes.append(note)
+
+            prior_domain = canonical_domain(str(original_row.get("Website URL", "")))
+            current_domain = canonical_domain(record.website_url)
+            if prior_domain and current_domain and prior_domain != current_domain:
+                rename_note = f"Website changed from {prior_domain} to {current_domain}; investigate potential rename or ownership change."
+                if rename_note not in notes:
+                    notes.append(rename_note)
+
+            if finding.alternate_names:
+                alias_block = ", ".join(sorted(set(finding.alternate_names)))
+                alias_note = f"Known aliases: {alias_block}"
+                if alias_note not in notes:
+                    notes.append(alias_note)
+
+            if finding.physical_address:
+                address_note = (
+                    f"Latest address intelligence: {finding.physical_address}"
+                )
+                if address_note not in notes:
+                    notes.append(address_note)
+
+        if not notes:
+            return ""
+        return "; ".join(notes)

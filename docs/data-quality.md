@@ -11,8 +11,10 @@
 
 1. **Website discovery**: Prefer research adapter findings; fall back to existing row data.
 2. **Contact inference**: Named contacts supplied by adapters override blanks. Role inboxes downgrade status to `Candidate`.
-3. **Evidence sourcing**: Merge the organisation website with adapter-provided URLs. If fewer than two sources are available, evidence notes carry a remediation instruction.
-4. **Status promotion**: Rows with website, named contact, valid phone, and domain-aligned email become `Verified`; otherwise `Candidate` or `Needs Review` based on defect severity.
+3. **Triangulation**: The default adapter cross-references Firecrawl (when enabled), regulator registries, press coverage, and professional directories. Offline runs log follow-up instructions instead of performing live lookups.
+4. **Evidence sourcing**: Merge the organisation website with adapter-provided URLs. If fewer than two sources are available, evidence notes carry a remediation instruction.
+5. **Status promotion**: Rows with website, named contact, valid phone, and domain-aligned email become `Verified`; otherwise `Candidate` or `Needs Review` based on defect severity.
+6. **Rename detection**: When a new website domain or alias is discovered, the pipeline logs an investigation note encouraging analysts to confirm potential ownership changes.
 
 ## Research Adapter Guidance
 
