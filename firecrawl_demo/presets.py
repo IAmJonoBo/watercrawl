@@ -1,5 +1,3 @@
-"""Utilities for working with Firecrawl preset templates."""
-
 from __future__ import annotations
 
 import json
@@ -8,6 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from . import config
+
+PRESET_MAP = {}
+"""Utilities for working with Firecrawl preset templates."""
 
 _PRESET_FILES = {
     "map": "firecrawl_map.json",

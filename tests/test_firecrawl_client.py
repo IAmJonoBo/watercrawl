@@ -36,7 +36,9 @@ def test_circuit_breaker_triggers_and_resets(monkeypatch):
 
     client._failure_count = client._max_failures - 1
     # Should trigger circuit breaker
-    with pytest.raises(RuntimeError):
+    from firecrawl_demo.firecrawl_client import RateLimitFirecrawlError
+
+    with pytest.raises(RateLimitFirecrawlError):
         client._execute_with_retry(always_fail)
     # Simulate circuit breaker reset
     client._circuit_open_until = time.monotonic() - 1

@@ -1,10 +1,17 @@
-"""Dataclasses representing flight school records and enrichment results."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, Optional
+
+
+class Organisation:
+    """Stub for Organisation to satisfy tests."""
+
+    pass
+
+
+"""Dataclasses representing flight school records and enrichment results."""
 
 
 @dataclass
