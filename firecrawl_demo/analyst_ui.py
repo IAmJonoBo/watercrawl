@@ -64,5 +64,5 @@ def main():
         st.success("Feedback saved and audit logged.")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover - manual execution entry point
     main()

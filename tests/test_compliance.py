@@ -19,9 +19,29 @@ def test_normalize_helpers_cover_edge_cases():
     assert phone == "+27115550100"
     assert not issues
 
+    short_sa, short_sa_issues = compliance.normalize_phone("27-123-4567")
+    assert short_sa is None
+    assert any("E.164" in issue for issue in short_sa_issues)
+
+    fallback_phone, fallback_issues = compliance.normalize_phone("+44 73 123 4567")
+    assert fallback_phone == "+27731234567"
+    assert fallback_issues == []
+
     invalid_phone, invalid_issues = compliance.normalize_phone("123")
     assert invalid_phone is None
     assert "E.164" in invalid_issues[0]
+
+
+def test_normalize_phone_handles_prefixed_plus(monkeypatch):
+    def fake_sub(pattern: str, repl: str, text: str) -> str:
+        assert text.startswith("+27")
+        return "00123456789"
+
+    monkeypatch.setattr(compliance.re, "sub", fake_sub)
+    normalized, issues = compliance.normalize_phone("+27 00 123 456 789")
+
+    assert normalized == "+27123456789"
+    assert not issues
 
 
 def test_validate_email_paths(monkeypatch):
@@ -157,6 +177,44 @@ def test_evidence_entry_and_append(monkeypatch, tmp_path):
         "https://archive.org/item",
     ]
     assert isinstance(recorded[0][0].timestamp, datetime)
+
+
+def test_append_evidence_log_handles_invalid_rows(monkeypatch):
+    captured: list[list[EvidenceRecord]] = []
+
+    class DummySink(CSVEvidenceSink):
+        def __init__(self, path: Path) -> None:  # type: ignore[override]
+            self.path = path
+
+        def record(self, entries):  # type: ignore[override]
+            captured.append(list(entries))
+
+    monkeypatch.setattr(compliance, "CSVEvidenceSink", lambda path: DummySink(path))
+    monkeypatch.setattr(project_config, "EVIDENCE_LOG", Path("ignored.csv"))
+
+    compliance.append_evidence_log(
+        [
+            {
+                "RowID": "not-a-number",
+                "Organisation": "Aero Lab",
+                "What changed": "Updated",
+                "Sources": "https://example.org ; https://www.gov.za",
+                "Notes": "",
+                "Confidence": "unknown",
+                "Timestamp": "not-a-timestamp",
+            }
+        ]
+    )
+
+    assert captured
+    record = captured[0][0]
+    assert record.row_id == 0
+    assert record.confidence == 0
+    assert record.sources == ["https://example.org", "https://www.gov.za"]
+
+
+def test_append_evidence_log_returns_early_on_empty_list():
+    compliance.append_evidence_log([])
 
 
 def test_payload_hash_and_describe_changes():

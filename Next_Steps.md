@@ -40,6 +40,7 @@
 - [x] Publish onboarding-ready sample dataset guidance (2025-10-23)
 - [x] Document dotenv-linter invocation in operations guide (2025-10-16)
 - [x] Backfill targeted coverage for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-16)
+- [x] Extend high-risk coverage edge cases for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-17)
 - [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24) — Kickoff plan published in docs/data-quality.md (Phase 1.1 section); suite scaffolding scheduled Week 1.
 - [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Execution roadmap outlined in docs/data-quality.md (Phase 1.2 section); fixtures and property suite queued.
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
