@@ -139,6 +139,56 @@ class EvidenceSinkSettings:
     kafka_topic: str | None = None
 
 
+@dataclass(frozen=True)
+class CrawlerInfrastructureSettings:
+    frontier_backend: str = "scrapy"
+    scheduler_mode: str = "priority"
+    politeness_delay_seconds: float = 1.0
+    max_depth: int = 6
+    max_pages: int = 5000
+    trap_rules_path: Path | None = None
+    user_agent: str = "ACESCrawler/1.0"
+    robots_cache_hours: float = 6.0
+
+
+@dataclass(frozen=True)
+class HealthProbeSettings:
+    port: int = 8080
+    liveness_path: str = "/healthz"
+    readiness_path: str = "/readyz"
+    startup_path: str = "/startupz"
+
+
+@dataclass(frozen=True)
+class SLOSettings:
+    availability_target: float = 99.5
+    latency_p95_ms: float = 500.0
+    error_budget_percent: float = 2.0
+
+
+@dataclass(frozen=True)
+class ObservabilitySettings:
+    probes: HealthProbeSettings = field(default_factory=HealthProbeSettings)
+    slos: SLOSettings = field(default_factory=SLOSettings)
+    alert_routes: tuple[str, ...] = ("slack",)
+
+
+@dataclass(frozen=True)
+class PolicySettings:
+    bundle_path: Path | None = None
+    decision_path: str = "opa/allow"
+    enforcement_mode: str = "enforce"
+    cache_seconds: int = 30
+
+
+@dataclass(frozen=True)
+class PlanCommitSettings:
+    require_plan: bool = True
+    diff_format: str = "markdown"
+    audit_topic: str = "audit.plan-commit"
+    allow_force_commit: bool = False
+
+
 def _get_value(name: str, default: str | None, provider: SecretsProvider) -> str | None:
     value = provider.get(name)
     return value if value is not None else default
@@ -179,6 +229,29 @@ def _env_json(name: str, provider: SecretsProvider) -> Any | None:
         return json.loads(value)
     except json.JSONDecodeError:
         return None
+
+
+def _env_list(name: str, provider: SecretsProvider) -> list[str]:
+    value = _get_value(name, None, provider)
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        parsed = None
+    if isinstance(parsed, list) and all(isinstance(item, str) for item in parsed):
+        return list(parsed)
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def _env_path(name: str, provider: SecretsProvider) -> Path | None:
+    value = _get_value(name, None, provider)
+    if not value:
+        return None
+    candidate = Path(value).expanduser()
+    if not candidate.is_absolute():
+        candidate = PROJECT_ROOT / candidate
+    return candidate
 
 
 def _default_scrape_formats() -> list[Any]:
@@ -227,6 +300,10 @@ BATCH_SIZE: int
 REQUEST_DELAY_SECONDS: float
 SECRETS_PROVIDER: SecretsProvider
 EVIDENCE_SINK: EvidenceSinkSettings
+CRAWLER_INFRASTRUCTURE: CrawlerInfrastructureSettings
+OBSERVABILITY: ObservabilitySettings
+POLICY_GUARDS: PolicySettings
+PLAN_COMMIT: PlanCommitSettings
 
 
 def _build_firecrawl_settings(provider: SecretsProvider) -> FirecrawlSettings:
@@ -291,6 +368,10 @@ def configure(provider: SecretsProvider | None = None) -> None:
     global BATCH_SIZE
     global REQUEST_DELAY_SECONDS
     global EVIDENCE_SINK
+    global CRAWLER_INFRASTRUCTURE
+    global OBSERVABILITY
+    global POLICY_GUARDS
+    global PLAN_COMMIT
 
     SECRETS_PROVIDER = provider or build_provider_from_environment()
 
@@ -352,6 +433,81 @@ def configure(provider: SecretsProvider | None = None) -> None:
             "EVIDENCE_STREAM_REST_ENDPOINT", None, SECRETS_PROVIDER
         ),
         kafka_topic=_get_value("EVIDENCE_STREAM_KAFKA_TOPIC", None, SECRETS_PROVIDER),
+    )
+
+    CRAWLER_INFRASTRUCTURE = CrawlerInfrastructureSettings(
+        frontier_backend=_get_value(
+            "CRAWLER_FRONTIER_BACKEND", "scrapy", SECRETS_PROVIDER
+        )
+        or "scrapy",
+        scheduler_mode=_get_value(
+            "CRAWLER_SCHEDULER_MODE", "priority", SECRETS_PROVIDER
+        )
+        or "priority",
+        politeness_delay_seconds=_env_float(
+            "CRAWLER_POLITENESS_DELAY_SECONDS", 1.0, SECRETS_PROVIDER
+        ),
+        max_depth=_env_int("CRAWLER_MAX_DEPTH", 6, SECRETS_PROVIDER),
+        max_pages=_env_int("CRAWLER_MAX_PAGES", 5000, SECRETS_PROVIDER),
+        trap_rules_path=_env_path("CRAWLER_TRAP_RULES_PATH", SECRETS_PROVIDER),
+        user_agent=_get_value("CRAWLER_USER_AGENT", "ACESCrawler/1.0", SECRETS_PROVIDER)
+        or "ACESCrawler/1.0",
+        robots_cache_hours=_env_float(
+            "CRAWLER_ROBOTS_CACHE_HOURS", 6.0, SECRETS_PROVIDER
+        ),
+    )
+
+    probes = HealthProbeSettings(
+        port=_env_int("OBSERVABILITY_PORT", 8080, SECRETS_PROVIDER),
+        liveness_path=_get_value(
+            "OBSERVABILITY_LIVENESS_PATH", "/healthz", SECRETS_PROVIDER
+        )
+        or "/healthz",
+        readiness_path=_get_value(
+            "OBSERVABILITY_READINESS_PATH", "/readyz", SECRETS_PROVIDER
+        )
+        or "/readyz",
+        startup_path=_get_value(
+            "OBSERVABILITY_STARTUP_PATH", "/startupz", SECRETS_PROVIDER
+        )
+        or "/startupz",
+    )
+    slos = SLOSettings(
+        availability_target=_env_float(
+            "SLO_AVAILABILITY_TARGET", 99.5, SECRETS_PROVIDER
+        ),
+        latency_p95_ms=_env_float("SLO_LATENCY_P95_MS", 500.0, SECRETS_PROVIDER),
+        error_budget_percent=_env_float(
+            "SLO_ERROR_BUDGET_PERCENT", 2.0, SECRETS_PROVIDER
+        ),
+    )
+    alert_routes = _env_list("OBSERVABILITY_ALERT_ROUTES", SECRETS_PROVIDER)
+    OBSERVABILITY = ObservabilitySettings(
+        probes=probes,
+        slos=slos,
+        alert_routes=tuple(alert_routes) if alert_routes else ("slack",),
+    )
+
+    POLICY_GUARDS = PolicySettings(
+        bundle_path=_env_path("OPA_BUNDLE_PATH", SECRETS_PROVIDER),
+        decision_path=_get_value("OPA_DECISION_PATH", "opa/allow", SECRETS_PROVIDER)
+        or "opa/allow",
+        enforcement_mode=_get_value("OPA_ENFORCEMENT_MODE", "enforce", SECRETS_PROVIDER)
+        or "enforce",
+        cache_seconds=_env_int("OPA_CACHE_SECONDS", 30, SECRETS_PROVIDER),
+    )
+
+    PLAN_COMMIT = PlanCommitSettings(
+        require_plan=_env_bool("PLAN_COMMIT_REQUIRED", True, SECRETS_PROVIDER),
+        diff_format=_get_value("PLAN_COMMIT_DIFF_FORMAT", "markdown", SECRETS_PROVIDER)
+        or "markdown",
+        audit_topic=_get_value(
+            "PLAN_COMMIT_AUDIT_TOPIC", "audit.plan-commit", SECRETS_PROVIDER
+        )
+        or "audit.plan-commit",
+        allow_force_commit=_env_bool(
+            "PLAN_COMMIT_ALLOW_FORCE", False, SECRETS_PROVIDER
+        ),
     )
 
 

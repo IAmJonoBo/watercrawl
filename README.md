@@ -21,6 +21,7 @@ Set `FIRECRAWL_API_KEY` in `.env` if you intend to plug in the Firecrawl SDK.
 - **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.pipeline`).
 - **CLI** commands for analysts and automation runs (`firecrawl_demo.cli`).
 - **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.mcp.server`).
+- **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
 - **MkDocs documentation** under `docs/` with architecture, gap analysis, and SOPs.
 
 ## Feature Flags & Environment Variables
