@@ -252,3 +252,74 @@ def test_pipeline_tracks_adapter_failures_without_crash():
     assert any(event[0] == "error" for event in listener.events)
     # Fallback should keep dataset intact when enrichment fails.
     assert report.refined_dataframe.loc[0, "Name of Organisation"] == "Failure Flight"
+
+
+def test_pipeline_auto_remediates_sanity_issues():
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Sanity Check Flight",
+                "Province": "",
+                "Status": "Candidate",
+                "Website URL": "acesaero.co.za",
+                "Contact Person": "",
+                "Contact Number": "555-INVALID",
+                "Contact Email Address": "bad-email",
+            }
+        ]
+    )
+
+    adapter = StubResearchAdapter({"Sanity Check Flight": ResearchFinding()})
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    enriched = report.refined_dataframe
+    assert enriched.loc[0, "Website URL"] == "https://acesaero.co.za"
+    assert enriched.loc[0, "Province"] == "Unknown"
+    assert enriched.loc[0, "Contact Email Address"] == ""
+    assert enriched.loc[0, "Contact Number"] == ""
+
+    issues = {finding.issue for finding in report.sanity_findings}
+    assert "website_url_missing_scheme" in issues
+    assert "contact_email_invalid" in issues
+    assert "contact_number_invalid" in issues
+    assert "province_unknown" in issues
+
+    assert report.metrics["sanity_issues"] >= 4
+
+
+def test_pipeline_reports_duplicate_names_in_sanity_findings():
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Duplicate Aero",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            },
+            {
+                "Name of Organisation": "Duplicate Aero",
+                "Province": "Western Cape",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            },
+        ]
+    )
+
+    adapter = StubResearchAdapter({"Duplicate Aero": ResearchFinding()})
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    duplicate_findings = [
+        finding
+        for finding in report.sanity_findings
+        if finding.issue == "duplicate_organisation"
+    ]
+    assert duplicate_findings, "Expected duplicate organisation sanity findings"
+    assert {finding.row_id for finding in duplicate_findings} == {2, 3}

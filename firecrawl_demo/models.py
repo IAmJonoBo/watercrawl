@@ -54,6 +54,22 @@ class EvidenceRecord:
         }
 
 
+@dataclass(frozen=True)
+class SanityCheckFinding:
+    row_id: int
+    organisation: str
+    issue: str
+    remediation: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "row_id": str(self.row_id),
+            "organisation": self.organisation,
+            "issue": self.issue,
+            "remediation": self.remediation,
+        }
+
+
 @dataclass
 class SchoolRecord:
     name: str
@@ -106,6 +122,7 @@ class PipelineReport:
     validation_report: ValidationReport
     evidence_log: list[EvidenceRecord]
     metrics: dict[str, int]
+    sanity_findings: list[SanityCheckFinding] = field(default_factory=list)
 
     @property
     def issues(self) -> list[ValidationIssue]:

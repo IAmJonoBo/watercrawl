@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping
+from collections.abc import Mapping
 
 from .. import config
 from ..compliance import normalize_phone

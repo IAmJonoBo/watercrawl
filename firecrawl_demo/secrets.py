@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
+from collections.abc import Sequence
 
 
 class SecretsProviderError(RuntimeError):
@@ -60,8 +61,8 @@ class AwsSecretsManagerProvider:
         session: Any | None = None,
     ) -> None:
         try:  # pragma: no cover - optional dependency
-            import boto3  # type: ignore[import-not-found]
-            from botocore.exceptions import (  # type: ignore[import-not-found]
+            import boto3  # type: ignore[import-not-found, import-untyped]
+            from botocore.exceptions import (  # type: ignore[import-not-found, import-untyped]
                 ClientError,
             )
         except ImportError as exc:  # pragma: no cover - import-time guard
@@ -111,10 +112,10 @@ class AzureKeyVaultProvider:
         secret_prefix: str | None = None,
     ) -> None:
         try:  # pragma: no cover - optional dependency
-            from azure.identity import (  # type: ignore[import-not-found]
+            from azure.identity import (  # type: ignore[import-not-found, import-untyped]
                 DefaultAzureCredential,
             )
-            from azure.keyvault.secrets import (  # type: ignore[import-not-found]
+            from azure.keyvault.secrets import (  # type: ignore[import-not-found, import-untyped]
                 SecretClient,
             )
         except ImportError as exc:  # pragma: no cover - import-time guard

@@ -13,7 +13,7 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
 | Method      | Description                                      | Params                                  |
 |-------------|--------------------------------------------------|------------------------------------------|
 | initialize  | Negotiates capabilities.                         | None                                     |
-| list_tasks  | Returns `validate_dataset` and `enrich_dataset`.  | None                                     |
+| list_tasks  | Returns available pipeline tasks.                | None                                     |
 | run_task    | Runs a task with a payload.                      | `{ "task": str, "payload": dict }`     |
 | shutdown    | Gracefully stops the server.                     | None                                     |
 
@@ -38,6 +38,14 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
   }
   ```
   or `{ "path": "data/input.xlsx" }`.
+- `summarize_last_run`
+  ```json
+  { "task": "summarize_last_run", "payload": {} }
+  ```
+- `list_sanity_issues`
+  ```json
+  { "task": "list_sanity_issues", "payload": {} }
+  ```
 
 ## Responses
 
@@ -51,6 +59,8 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
 3. `run_task` for `validate_dataset`
 4. Inspect issues, remediate locally.
 5. `run_task` for `enrich_dataset`
-6. `shutdown`
+6. `run_task` for `summarize_last_run` (optional) to capture metrics/sanity counts.
+7. `run_task` for `list_sanity_issues` to queue remediation work.
+8. `shutdown`
 
 Include the CLI `--format json` outputs in your automation logs to maintain an audit trail.

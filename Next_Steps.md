@@ -10,9 +10,9 @@
 - [x] Introduce research adapter registry with config-driven sequencing — Owner: AI — Due: 2025-10-16
 - [x] Package exemplar regulator/press/ML adapters for registry adoption — Owner: Platform Team — Due: 2025-10-16
 - [x] Introduce pluggable evidence sinks (CSV + streaming stub) — Owner: AI — Due: 2025-10-16
-- [ ] Add official secrets-manager dependencies (boto3, azure identity/key vault) to unblock AWS/Azure backends — Owner: Platform Team — Due: 2025-10-30
+- [x] Add official secrets-manager dependencies (boto3, azure identity/key vault) to unblock AWS/Azure backends — Owner: Platform Team — Due: 2025-10-30
 - [x] Enforce evidence-log remediation notes when <2 sources or no official URL are present — Owner: AI — Due: 2025-10-23
-- [ ] Ship a runnable sample dataset or adjust README quickstart instructions — Owner: Docs — Due: 2025-10-23
+- [x] Ship a runnable sample dataset or adjust README quickstart instructions — Owner: Docs — Due: 2025-10-23
 
 ## Steps
 
@@ -28,9 +28,9 @@
 - [x] Package exemplar regulator/press/ML adapters and add registry defaults (2025-10-16)
 - [x] Baseline infrastructure plan snapshot + drift regression tests (2025-10-16)
 - [x] Harden CLI progress telemetry and adapter failure tracking (2025-10-16)
-- [ ] Close the secrets manager dependency gap and re-run QA (2025-10-30)
+- [x] Close the secrets manager dependency gap and re-run QA (2025-10-30)
 - [x] Implement evidence shortfall messaging in pipeline + tests (2025-10-23)
-- [ ] Publish onboarding-ready sample dataset guidance (2025-10-23)
+- [x] Publish onboarding-ready sample dataset guidance (2025-10-23)
 
 ## Deliverables
 
@@ -77,15 +77,19 @@
 - [ ] Monitor pre-commit hook runtimes once CI enables them to avoid exceeding build minutes.
 - [ ] Enforced pandas/requests type stubs—watch for downstream mypy regressions without `type: ignore` escapes.
 - [ ] Validate streaming evidence sink against real Kafka/REST endpoints once roadmap work begins; document throughput targets.
-- [ ] Secrets manager paths blocked until boto3 / Azure SDK packages are bundled with the project dependencies.
+- [x] Secrets manager paths blocked until boto3 / Azure SDK packages are bundled with the project dependencies.
 - [x] Evidence log remediation warnings now trigger for sparse or unofficial sourcing; schedule analyst refresher to interpret the new notes.
-- [ ] Quickstart references `data/sample.csv` but the repo ships no sample input yet.
+- [x] Quickstart references `data/sample.csv` but the repo ships no sample input yet.
 
 - [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
 - [ ] Align isort configuration (project vs CLI flags) to avoid manual --profile overrides.
 - [ ] Capture adapter contribution guide (with examples) once regulator/press adapters land.
 - [ ] Type stubs handled via `type: ignore`; consider adding official stubs to dependencies.
       Pre-commit tooling still absent; evaluate adding packaged entrypoint or doc instructions in future iteration.
+- [ ] Monitor new `sanity_issues` metric surfaced via CLI/MCP; triage non-zero counts before publishing datasets.
+- [ ] Add regression tests for MCP summarize/list tasks returning empty results (tests/test_mcp.py).
+- [ ] Investigate coverage gaps in analyst_ui.py and compliance.py when time allows.
+- [ ] Explore CI gating on the `sanity_issues` metric once monitoring data stabilises.
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
 - [ ]MCP first: Expose crawler controls and graph queries as MCP tools; surface pages, logs and datasets as MCP resources; include research/playbook prompts. Copilot Studio/Windows/Agents SDK speak MCP, so Copilot can plan → call → verify across your stack. ￼

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from collections.abc import Iterable
 
 from firecrawl_demo.mcp.server import CopilotMCPServer
 from firecrawl_demo.models import EvidenceRecord
@@ -21,6 +21,9 @@ def test_mcp_lists_tasks() -> None:
     )
     task_names = {task["name"] for task in response["result"]["tasks"]}
     assert "validate_dataset" in task_names
+    assert "enrich_dataset" in task_names
+    assert "summarize_last_run" in task_names
+    assert "list_sanity_issues" in task_names
 
 
 def test_mcp_runs_validation_task() -> None:
@@ -47,6 +50,21 @@ def test_mcp_handles_unknown_task() -> None:
         }
     )
     assert response["error"]["code"] == -32601
+
+
+def test_mcp_summarize_last_run_handles_empty_history() -> None:
+    server = CopilotMCPServer(pipeline=DummyPipeline())
+    response = server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "run_task",
+            "params": {"task": "summarize_last_run", "payload": {}},
+        }
+    )
+
+    assert response["result"]["status"] == "empty"
+    assert "message" in response["result"]
 
 
 @dataclass
@@ -103,3 +121,58 @@ def test_mcp_enrich_task_uses_injected_sink() -> None:
     recorded_entries = sink.calls[0]
     assert recorded_entries[0].organisation == "Example Flight School"
     assert any("caa.co.za" in source for source in recorded_entries[0].sources)
+
+
+def test_mcp_reports_last_run_metrics_and_sanity_findings() -> None:
+    sink = RecordingSink(calls=[])
+    pipeline = Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink)
+    server = CopilotMCPServer(pipeline=pipeline)
+
+    rows = [
+        {
+            "Name of Organisation": "Metrics Flight School",
+            "Province": "",
+            "Status": "Candidate",
+            "Website URL": "example.org",
+            "Contact Person": "",
+            "Contact Number": "",
+            "Contact Email Address": "",
+        }
+    ]
+
+    server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "run_task",
+            "params": {"task": "enrich_dataset", "payload": {"rows": rows}},
+        }
+    )
+
+    summary = server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "run_task",
+            "params": {"task": "summarize_last_run", "payload": {}},
+        }
+    )
+
+    assert summary["result"]["status"] == "ok"
+    assert summary["result"]["metrics"]["rows_total"] == 1
+    assert summary["result"]["sanity_issue_count"] >= 1
+
+    findings_response = server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "run_task",
+            "params": {"task": "list_sanity_issues", "payload": {}},
+        }
+    )
+
+    assert findings_response["result"]["status"] == "ok"
+    findings = findings_response["result"]["findings"]
+    assert isinstance(findings, list)
+    assert findings, "Expected at least one sanity finding"
+    assert all("issue" in finding and "remediation" in finding for finding in findings)

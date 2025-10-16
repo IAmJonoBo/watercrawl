@@ -35,11 +35,12 @@ of silencing mypy regressions.
 | Types           | `mypy` success, including third-party stubs.             |
 | Security        | No `bandit` High/Medium findings without mitigation.     |
 | Evidence        | Every enriched row logged with ≥2 sources.               |
+| Sanity Checks   | `sanity_issues` metric is zero or tracked with remediation owners. |
 | Documentation   | MkDocs updated for any behavioural change.               |
 
-Monitor `adapter_failures` in pipeline metrics/CLI output; any non-zero count
-should trigger investigation into upstream research adapters or network
-conditions.
+Monitor `adapter_failures` and `sanity_issues` in pipeline metrics/CLI output;
+any non-zero count should trigger investigation into upstream research adapters
+or missing evidence before publishing results.
 
 ## Evidence Sink Configuration
 

@@ -5,6 +5,7 @@ from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
+from urllib.parse import urlparse
 
 import pandas as pd
 
@@ -19,7 +20,12 @@ from .compliance import (
     validate_email,
 )
 from .excel import EXPECTED_COLUMNS, read_dataset, write_dataset
-from .models import EvidenceRecord, PipelineReport, SchoolRecord
+from .models import (
+    EvidenceRecord,
+    PipelineReport,
+    SanityCheckFinding,
+    SchoolRecord,
+)
 from .progress import NullPipelineProgressListener, PipelineProgressListener
 from .research import ResearchAdapter, ResearchFinding, build_research_adapter
 from .validation import DatasetValidator
@@ -33,6 +39,7 @@ class Pipeline:
     research_adapter: ResearchAdapter = field(default_factory=build_research_adapter)
     validator: DatasetValidator = field(default_factory=DatasetValidator)
     evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
+    _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
 
     def run_dataframe(
         self,
@@ -52,6 +59,8 @@ class Pipeline:
         evidence_records: list[EvidenceRecord] = []
         enriched_rows = 0
         adapter_failures = 0
+        sanity_findings: list[SanityCheckFinding] = []
+        row_number_lookup: dict[Hashable, int] = {}
         listener = progress or NullPipelineProgressListener()
 
         listener.on_start(len(working_frame))
@@ -61,6 +70,8 @@ class Pipeline:
             record = SchoolRecord.from_dataframe_row(row)
             record.province = normalize_province(record.province)
             working_frame_cast.at[idx, "Province"] = record.province
+            row_id = position + 2
+            row_number_lookup[idx] = row_id
 
             try:
                 finding = self.research_adapter.lookup(record.name, record.province)
@@ -87,12 +98,17 @@ class Pipeline:
                 record.contact_person = finding.contact_person
                 updated = True
 
+            previous_phone = record.contact_number
             phone_candidate = finding.contact_phone or record.contact_number
             normalized_phone, phone_issues = normalize_phone(phone_candidate)
             if normalized_phone and normalized_phone != record.contact_number:
                 record.contact_number = normalized_phone
                 updated = True
+            elif not normalized_phone and record.contact_number:
+                record.contact_number = None
+                updated = True
 
+            previous_email = record.contact_email
             email_candidate = finding.contact_email or record.contact_email
             validated_email, email_issues = validate_email(
                 email_candidate, canonical_domain(record.website_url)
@@ -102,6 +118,9 @@ class Pipeline:
             ]
             if validated_email and validated_email != record.contact_email:
                 record.contact_email = validated_email
+                updated = True
+            elif not validated_email and record.contact_email:
+                record.contact_email = None
                 updated = True
 
             has_named_contact = bool(record.contact_person)
@@ -117,6 +136,28 @@ class Pipeline:
             if status != record.status:
                 record.status = status
                 updated = True
+
+            (
+                sanity_updated,
+                sanity_notes,
+                row_findings,
+                sources,
+                cleared_columns,
+            ) = self._run_sanity_checks(
+                record=record,
+                row_id=row_id,
+                sources=sources,
+                phone_issues=phone_issues,
+                email_issues=filtered_email_issues,
+                previous_phone=previous_phone,
+                previous_email=previous_email,
+            )
+            if sanity_updated:
+                updated = True
+            if row_findings:
+                sanity_findings.extend(row_findings)
+            for column in cleared_columns:
+                working_frame_cast.at[idx, column] = ""
 
             if updated:
                 enriched_rows += 1
@@ -137,6 +178,7 @@ class Pipeline:
                             record,
                             sources=sources,
                             has_official_source=has_official_source,
+                            sanity_notes=sanity_notes,
                         ),
                         confidence=confidence,
                     )
@@ -149,19 +191,26 @@ class Pipeline:
         if evidence_records:
             self.evidence_sink.record(evidence_records)
 
+        sanity_findings.extend(
+            self._detect_duplicate_schools(working_frame, row_number_lookup)
+        )
+
         metrics = {
             "rows_total": len(working_frame),
             "enriched_rows": enriched_rows,
             "verified_rows": int((working_frame["Status"] == "Verified").sum()),
             "issues_found": len(validation.issues),
             "adapter_failures": adapter_failures,
+            "sanity_issues": len(sanity_findings),
         }
         report = PipelineReport(
             refined_dataframe=working_frame,
             validation_report=validation,
             evidence_log=evidence_records,
             metrics=metrics,
+            sanity_findings=sanity_findings,
         )
+        self._last_report = report
         listener.on_complete(metrics)
         return report
 
@@ -182,6 +231,8 @@ class Pipeline:
         return {
             "validate_dataset": "Validate the provided dataset",
             "enrich_dataset": "Validate and enrich the provided dataset",
+            "summarize_last_run": "Summarise metrics from the most recent pipeline execution",
+            "list_sanity_issues": "List outstanding sanity check findings from the latest run",
         }
 
     def run_task(self, task: str, payload: dict[str, object]) -> dict[str, object]:
@@ -201,6 +252,10 @@ class Pipeline:
                 "rows_enriched": pipeline_report.metrics["enriched_rows"],
                 "metrics": pipeline_report.metrics,
             }
+        if task == "summarize_last_run":
+            return self._summarize_last_run()
+        if task == "list_sanity_issues":
+            return self._list_sanity_issues()
         raise KeyError(task)
 
     def _frame_from_payload(self, payload: dict[str, object]) -> pd.DataFrame:
@@ -273,10 +328,16 @@ class Pipeline:
         *,
         sources: Sequence[str],
         has_official_source: bool,
+        sanity_notes: Sequence[str] | None = None,
     ) -> str:
         notes: list[str] = []
         if finding.notes:
             notes.append(finding.notes)
+
+        if sanity_notes:
+            for note in sanity_notes:
+                if note and note not in notes:
+                    notes.append(note)
 
         if config.FEATURE_FLAGS.investigate_rebrands:
             for note in finding.investigation_notes:
@@ -325,3 +386,131 @@ class Pipeline:
                 notes_text = shortfall_note
 
         return notes_text
+
+    def _run_sanity_checks(
+        self,
+        *,
+        record: SchoolRecord,
+        row_id: int,
+        sources: list[str],
+        phone_issues: Sequence[str],
+        email_issues: Sequence[str],
+        previous_phone: str | None,
+        previous_email: str | None,
+    ) -> tuple[bool, list[str], list[SanityCheckFinding], list[str], list[str]]:
+        updated = False
+        notes: list[str] = []
+        findings: list[SanityCheckFinding] = []
+        normalized_sources = list(sources)
+        cleared_columns: list[str] = []
+
+        if record.website_url:
+            parsed = urlparse(record.website_url)
+            if not parsed.scheme:
+                original_url = record.website_url
+                normalized_url = f"https://{original_url.lstrip('/')}"
+                record.website_url = normalized_url
+                normalized_sources = [
+                    normalized_url if source == original_url else source
+                    for source in normalized_sources
+                ]
+                updated = True
+                notes.append("Auto-normalised website URL to include https scheme.")
+                findings.append(
+                    SanityCheckFinding(
+                        row_id=row_id,
+                        organisation=record.name,
+                        issue="website_url_missing_scheme",
+                        remediation="Added an https:// prefix to the website URL for consistency.",
+                    )
+                )
+
+        if previous_phone and record.contact_number is None and phone_issues:
+            notes.append(
+                "Removed invalid contact number after it failed +27 E.164 validation."
+            )
+            findings.append(
+                SanityCheckFinding(
+                    row_id=row_id,
+                    organisation=record.name,
+                    issue="contact_number_invalid",
+                    remediation="Capture a verified +27-format contact number before publishing.",
+                )
+            )
+            updated = True
+            cleared_columns.append("Contact Number")
+
+        if previous_email and record.contact_email is None and email_issues:
+            notes.append("Removed invalid contact email after validation failures.")
+            findings.append(
+                SanityCheckFinding(
+                    row_id=row_id,
+                    organisation=record.name,
+                    issue="contact_email_invalid",
+                    remediation="Source a named contact email on the official organisation domain.",
+                )
+            )
+            updated = True
+            cleared_columns.append("Contact Email Address")
+
+        if record.province == "Unknown":
+            findings.append(
+                SanityCheckFinding(
+                    row_id=row_id,
+                    organisation=record.name,
+                    issue="province_unknown",
+                    remediation=(
+                        "Confirm the organisation's South African province and update the dataset."
+                    ),
+                )
+            )
+            notes.append("Province remains Unknown pending analyst confirmation.")
+
+        return updated, notes, findings, normalized_sources, cleared_columns
+
+    def _detect_duplicate_schools(
+        self, frame: pd.DataFrame, row_lookup: dict[Hashable, int]
+    ) -> list[SanityCheckFinding]:
+        if "Name of Organisation" not in frame:
+            return []
+        names = frame["Name of Organisation"].fillna("").astype(str)
+        normalized = names.str.strip().str.lower()
+        duplicate_mask = normalized.duplicated(keep=False)
+        findings: list[SanityCheckFinding] = []
+        if not duplicate_mask.any():
+            return findings
+
+        for idx in frame.index[duplicate_mask]:
+            row_id = row_lookup.get(idx, 0)
+            organisation = names.loc[idx].strip()
+            findings.append(
+                SanityCheckFinding(
+                    row_id=row_id,
+                    organisation=organisation,
+                    issue="duplicate_organisation",
+                    remediation="Deduplicate or merge duplicate organisation rows before publishing.",
+                )
+            )
+        return findings
+
+    def _summarize_last_run(self) -> dict[str, object]:
+        if self._last_report is None:
+            return {
+                "status": "empty",
+                "message": "No pipeline runs have been executed yet.",
+            }
+        return {
+            "status": "ok",
+            "metrics": dict(self._last_report.metrics),
+            "sanity_issue_count": len(self._last_report.sanity_findings),
+        }
+
+    def _list_sanity_issues(self) -> dict[str, object]:
+        if self._last_report is None:
+            return {"status": "empty", "findings": []}
+        return {
+            "status": "ok",
+            "findings": [
+                finding.as_dict() for finding in self._last_report.sanity_findings
+            ],
+        }

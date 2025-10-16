@@ -10,6 +10,9 @@ poetry run python -m firecrawl_demo.cli validate data/sample.csv --format json
 poetry run python -m firecrawl_demo.cli enrich data/sample.csv --output data/sample_enriched.csv
 ```
 
+The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the
+pipeline without additional setup.
+
 Set `FIRECRAWL_API_KEY` in `.env` if you intend to plug in the Firecrawl SDK.
 
 ## Features
@@ -20,6 +23,8 @@ Set `FIRECRAWL_API_KEY` in `.env` if you intend to plug in the Firecrawl SDK.
 - **Triangulated intelligence** that merges regulator, press, and directory evidence to spot rebrands or ownership changes.
 - **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.pipeline`).
 - **CLI** commands for analysts and automation runs (`firecrawl_demo.cli`).
+- **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
+  remediation guidance into the evidence log and MCP.
 - **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.mcp.server`).
 - **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
 - **MkDocs documentation** under `docs/` with architecture, gap analysis, and SOPs.
