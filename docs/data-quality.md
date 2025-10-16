@@ -12,9 +12,17 @@
 1. **Website discovery**: Prefer research adapter findings; fall back to existing row data.
 2. **Contact inference**: Named contacts supplied by adapters override blanks. Role inboxes downgrade status to `Candidate`.
 3. **Triangulation**: The default adapter cross-references Firecrawl (when enabled), regulator registries, press coverage, and professional directories. Offline runs log follow-up instructions instead of performing live lookups.
-4. **Evidence sourcing**: Merge the organisation website with adapter-provided URLs. If fewer than two sources are available, evidence notes carry a remediation instruction.
+4. **Evidence sourcing**: Merge the organisation website with adapter-provided URLs. If fewer than two *unique* sources are available or no fresh evidence accompanies a change, the pipeline now blocks the update and records remediation guidance for analysts.
 5. **Status promotion**: Rows with website, named contact, valid phone, and domain-aligned email become `Verified`; otherwise `Candidate` or `Needs Review` based on defect severity.
 6. **Rename detection**: When a new website domain or alias is discovered, the pipeline logs an investigation note encouraging analysts to confirm potential ownership changes.
+
+## Quality Gate & Rollback Safeguards
+
+- **Quality gate enforcement**: Adapter output only lands when it carries at least two independent sources (one official/regulatory) **and** fresh corroboration beyond the legacy dataset. Adapter confidence for contact/website changes must be ≥70, and phone/email validation failures still force a block.
+- **Automatic quarantine**: Blocked rows revert to `Needs Review`, emit a detailed `QualityIssue`, and capture remediation guidance in the evidence log so analysts know what to fix.
+- **Metrics & reporting**: `quality_rejections` and `quality_issues` now sit beside enrichment metrics. CLI/MCP/JSON responses surface these counts alongside a structured `RollbackPlan`, with explicit "fresh evidence" notes when the gate fires.
+- **Rollback actions**: Every rejection lists the affected columns and previous values so analysts (or downstream automation) can restore the dataset without manual diffing.
+- **Operational visibility**: When the quality gate fires, the CLI prints a rollback summary, while automation surfaces the same context via JSON for observability pipelines.
 
 ## Research Adapter Guidance
 

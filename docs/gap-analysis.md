@@ -31,3 +31,21 @@
 - ❗ **Secrets manager dependencies missing** — `firecrawl_demo.secrets` expects `boto3` and Azure Key Vault libraries, but they are not declared in `pyproject.toml`, so the documented AWS/Azure backends cannot be activated without manual installs.
 - ❗ **Evidence log guidance unenforced** — `docs/data-quality.md` promises remediation notes when evidence has fewer than two sources, yet `Pipeline._merge_sources`/`_compose_evidence_notes` never add those warnings, so analysts receive silent shortfalls.
 - ❗ **Quickstart dataset absent** — README instructs running the CLI against `data/sample.csv`, but no sample file ships in `data/`, leaving newcomers without a runnable example.
+
+## 2025-10-17 Hallucination & Rollback Audit
+
+- ❗ **Crawler hallucination exposure** — enrichment accepted single-source findings with adapter confidence as low as 20%, allowing speculative directory entries to overwrite the spreadsheet with fabricated websites and contacts.
+- ❗ **No structured rollback** — once low-quality values landed in the sheet there was no machine-readable rollback plan, leaving analysts to diff and revert rows manually.
+- ❗ **Invisible quarantine state** — pipeline metrics did not expose how many rows were quarantined or rejected by analysts, obscuring pipeline health trends.
+
+### Mitigations implemented
+
+- ✅ Introduced a `QualityGate` that blocks updates lacking an official or second source, rejects low-confidence contact/website changes, and forces suspect rows back to `Needs Review` with detailed remediation notes.
+- ✅ Surfaced `quality_rejections` and `quality_issues` metrics alongside a structured `RollbackPlan` so downstream automations and analysts can revert attempted updates deterministically.
+- ✅ Extended CLI, MCP, and docs to broadcast the quality gate verdict, making hallucination rejections visible in both human and machine channels.
+
+## 2025-10-18 Fresh Evidence Enforcement Audit
+
+- ❗ **Legacy evidence loophole** — Rows with an existing official website could accept new contact details sourced from the same domain, letting speculative updates ride on stale corroboration.
+- ✅ **Fresh-evidence enforcement** — The pipeline now separates legacy vs new evidence, blocks high-risk changes without fresh official corroboration, and records "fresh evidence" remediation guidance in rollback plans and evidence notes.
+- ✅ **Documentation alignment** — Data-quality guidance now calls out the fresh-source requirement so analysts understand why stale evidence is rejected.
