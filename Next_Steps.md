@@ -13,6 +13,7 @@
 - [x] Add official secrets-manager dependencies (boto3, azure identity/key vault) to unblock AWS/Azure backends — Owner: Platform Team — Due: 2025-10-30
 - [x] Enforce evidence-log remediation notes when <2 sources or no official URL are present — Owner: AI — Due: 2025-10-23
 - [x] Ship a runnable sample dataset or adjust README quickstart instructions — Owner: Docs — Due: 2025-10-23
+- [ ] High-risk coverage uplift (analyst_ui.py, compliance.py, cli.py, presets.py, secrets.py) — Owner: QA — Due: 2025-10-30
 - [ ] Phase 1 — Data contracts + evidence enforcement (AT-24, AT-29) — Owner: Data — Due: 2025-11-15
 - [ ] Phase 2 — Lineage, catalogue, and versioning rollout (AT-25, AT-26, AT-27) — Owner: Platform — Due: 2025-12-06
 - [ ] Phase 3 — Graph semantics + drift observability (AT-28, AT-30) — Owner: Data/Platform — Due: 2026-01-10
@@ -72,12 +73,13 @@
 - [x] Type: mypy clean with strict config (to be defined)
 - [x] Security: bandit critical findings resolved
 - [x] Build: poetry build succeeds
-- [x] Tests (2025-10-16): pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+- [x] Tests (2025-10-16 17:00 UTC): pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing (77% coverage; flagged analyst_ui/compliance/cli/presets/secrets as hotspots)
 - [x] Lint (2025-10-16): ruff check .
 - [ ] Format (2025-10-16): black --check . & isort --profile black --check-only . — isort failing on import order drift; remediation scheduled for 2025-10-23.
 - [x] Types (2025-10-16): mypy .
 - [x] Security (2025-10-16): bandit -r firecrawl_demo
 - [x] Build (2025-10-16): poetry build
+- [x] Env lint (2025-10-16 17:11 UTC): dotenv-linter lint .env.example
 - [x] Infrastructure drift (2025-10-16): pytest tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot
 - [x] Adapter failure monitoring (2025-10-16): pipeline metrics expose `adapter_failures`; CLI surfaces warnings
 - [ ] Data contracts enforced: GX/dbt/Deequ suites block publishable writes (AT-24)
@@ -131,7 +133,7 @@
       Pre-commit tooling still absent; evaluate adding packaged entrypoint or doc instructions in future iteration.
 - [ ] Monitor new `sanity_issues` metric surfaced via CLI/MCP; triage non-zero counts before publishing datasets.
 - [ ] Add regression tests for MCP summarize/list tasks returning empty results (tests/test_mcp.py).
-- [ ] Investigate coverage gaps in analyst_ui.py and compliance.py when time allows.
+- [ ] Coverage hotspots: analyst_ui.py, compliance.py, cli.py, presets.py, and secrets.py below 60% test coverage — target uplift by 2025-10-30 (see Tasks).
 - [ ] Explore CI gating on the `sanity_issues` metric once monitoring data stabilises.
 - [ ] Import ordering drift flagged by `isort` (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — formatter remediation scheduled for 2025-10-23 (see Tasks).
 - [x] `.env` hygiene tooling (`dotenv-linter`) requires explicit target files — invocation documented in docs/operations.md (2025-10-16); evaluate stub env templates separately.
