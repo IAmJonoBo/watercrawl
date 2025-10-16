@@ -147,3 +147,84 @@ Why MCP here? It standardises how Copilot calls your stack, and it’s natively 
 - [ ]Scheduler (Frontera/StormCrawler) with bandit scoring; boilerplate (Trafilatura) and dedupe (SimHash). ￼
 - [ ]NER/RE (spaCy + REBEL) feeding Kafka→Neo4j/Memgraph; surface Cytoscape.js dashboard. ￼
 - [ ]Hybrid search (OpenSearch/pgvector) for retrieval-augmented analysis. ￼
+
+## Actionable Tasks & Quality Gates
+
+> Each task has: **ID · Description · Owner · Due · Dependencies · Quality Gates (acceptance criteria) · Evidence/Artefacts · Rollback/Remediation**. Treat all writes as _plan → commit_ with preconditions and audit. Owners and due dates are placeholders—update as you staff the work.
+
+### Global Definition of Done (applies to all tasks)
+
+- Unit/integration tests updated; CI green (lint, type, security, tests).
+- Docs updated (MkDocs) including runbook and API reference.
+- Observability added (metrics + alerts) if the task changes runtime behaviour.
+- Rollback procedure documented and tested in pre‑prod.
+
+---
+
+### Core Guardrails & Write Safety
+
+| ID    | Description                                                                                                                             | Owner    | Due | Dependencies | Quality Gates (acceptance criteria)                                                                                                     | Evidence/Artefacts                                               | Rollback/Remediation                                                           |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- | --- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| AT-01 | **Preconditioned PATCH API**: enforce `If-Match`/ETag (or version) on all writes; reject with 412 on mismatch; require idempotency key. | Platform | TBC | None         | 100% write endpoints require `If-Match`; golden tests prove 412 on stale version; retries do not double-apply; negative tests included. | API contract; pytest suite; demo capturing 412; OpenAPI updated. | Feature flag to disable writes; revert to previous API image.                  |
+| AT-02 | **JSON Schema validation** (2020-12) for core resources.                                                                                | Platform | TBC | AT-01        | CI blocks on invalid schema; server rejects malformed payloads; contract tests cover all required fields and enums.                     | Schema files; contract tests; CI logs.                           | Rollback to prior schema set; toggle validation to warn-only in pre‑prod only. |
+| AT-03 | **DB/Graph constraints**: uniqueness, existence, type on nodes/edges.                                                                   | Data     | TBC | AT-02        | Attempted dupes/invalid writes fail; constraint coverage ≥95% of entities/edges in core domain.                                         | Cypher/DDL migration scripts; failing negative tests.            | Revert migration; restore snapshot.                                            |
+| AT-04 | **Event sourcing + snapshots**: append-only log for patches; scheduled snapshots.                                                       | Platform | TBC | AT-01, AT-02 | Patches emitted to Kafka; snapshot restore proven in pre‑prod; RPO ≤ 15 min, RTO ≤ 30 min.                                              | Kafka topics; restore runbook; snapshot artefacts.               | Restore from last good snapshot; replay patches.                               |
+| AT-05 | **Schema Registry** compatibility `FULL` for change-managed topics.                                                                     | Platform | TBC | AT-04        | Incompatible producer rejected in tests; breaking change cannot ship.                                                                   | Registry config; failing producer test captured.                 | Temporarily relax to `BACKWARD` in pre‑prod only; never in prod.               |
+| AT-06 | **Merkle drift detection** on critical tables/subgraphs.                                                                                | Platform | TBC | AT-04        | Baseline root computed hourly; injected divergence detected <10 min; alert fires.                                                       | Merkle job code; alert runbook; test report.                     | Auto-quarantine writer; replay from snapshot to convergence.                   |
+
+---
+
+### Crawler Hygiene & Content Quality
+
+| ID    | Description                                                               | Owner   | Due | Dependencies | Quality Gates                                                                               | Evidence/Artefacts                              | Rollback/Remediation                                     |
+| ----- | ------------------------------------------------------------------------- | ------- | --- | ------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------- |
+| AT-07 | **RFC 9309 robots + politeness**: per-host queues, adaptive delay.        | Crawler | TBC | None         | Zero robots violations in test corpus; rate-limit respected; deny/allow lists configurable. | Compliance tests; logs; config examples.        | Pause domains via allow/deny lists; backoff multipliers. |
+| AT-08 | **Trap detection** (calendars/facets/loops) + canonicalisation.           | Crawler | TBC | AT-07        | Coverage of common trap patterns; false-positive rate <2%; hop/param caps in place.         | Unit tests; crawler metrics dashboard.          | Disable trap rules by domain; manual seed pruning.       |
+| AT-09 | **Boilerplate removal** (Trafilatura/jusText) & **dedupe** (SimHash/LSH). | Crawler | TBC | AT-07        | ≥90% boilerplate removed on sample set; dedupe precision ≥0.98, recall ≥0.9.                | Eval notebook; fixtures; thresholds documented. | Lower thresholds; revert to prior model.                 |
+
+---
+
+### Extraction, Resolution, and Graph
+
+| ID    | Description                                                                              | Owner  | Due | Dependencies | Quality Gates                                                                              | Evidence/Artefacts              | Rollback/Remediation                                     |
+| ----- | ---------------------------------------------------------------------------------------- | ------ | --- | ------------ | ------------------------------------------------------------------------------------------ | ------------------------------- | -------------------------------------------------------- |
+| AT-10 | **NER/RE pipeline**: spaCy + REBEL (or equivalent).                                      | NLP    | TBC | AT-09        | Micro-F1 ≥ baseline on labelled set; throughput ≥ X docs/min; latency p95 ≤ Y ms per doc.  | Test set & report; model cards. | Switch to previous model; feature flag.                  |
+| AT-11 | **Entity resolution** with Splink (or equivalent).                                       | NLP    | TBC | AT-10        | Precision ≥0.98, recall ≥0.9 on hold-out; manual QA queue for low-confidence merges.       | Eval report; QA workflow.       | Rollback last merge batch; tighten thresholds.           |
+| AT-12 | **Kafka → Graph streaming** (Neo4j/Memgraph) with PageRank & Louvain on rolling windows. | Data   | TBC | AT-10        | End-to-end lag ≤ 60 s; algorithms recompute < 5 min for active window; metrics exposed.    | Connector configs; dashboards.  | Drain connector; replay from offset; revert algo params. |
+| AT-13 | **Hybrid search** (BM25 + vector via OpenSearch/pgvector).                               | Search | TBC | AT-10        | Top‑k recall ≥ baseline on eval queries; p95 query latency ≤ 300 ms; fallbacks documented. | Query bench; dashboards.        | Route to lexical-only; disable ANN plugin.               |
+| AT-14 | **Real-time visualisation**: Cytoscape.js dashboard; optional GPU path.                  | App    | TBC | AT-12        | Can render ≥50k node/edge subgraphs interactively; export to PNG/JSON; auth enforced.      | UI demo; perf logs.             | Disable large-subgraph mode; server-side sampling.       |
+
+---
+
+### Copilot × MCP Orchestration
+
+| ID    | Description                                                                                                                   | Owner    | Due | Dependencies | Quality Gates                                                                                                  | Evidence/Artefacts                    | Rollback/Remediation                                           |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------- | -------- | --- | ------------ | -------------------------------------------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| AT-15 | **MCP tools**: `crawl.plan/enqueue/pause/status`, `extract.entities/relations`, `graph.query/subgraph`, `verify.triangulate`. | Platform | TBC | AT-07..AT-14 | Tool schemas validated; permission scopes enforced; negative tests for over-broad arguments.                   | MCP manifest; tool tests.             | Remove offending tool from manifest; scope tokens.             |
+| AT-16 | **Plan → Commit pattern** for writes with human‑readable diff.                                                                | Platform | TBC | AT-15        | Copilot must call `*.plan` before `*.commit`; commits require `If-Match`; diffs shown; audit logged.           | Conversation transcript; logs; tests. | Block `*.commit`; manual review path.                          |
+| AT-17 | **OPA policy gate** (deny-by-default; field-level).                                                                           | Security | TBC | AT-15        | Rego policies cover sensitive fields; policy tests; change approval required; emergency break-glass procedure. | Policy repo; test outputs.            | Revert to last good policy bundle; break-glass token rotation. |
+| AT-18 | **Provenance (PROV‑O)** for every fact/edge.                                                                                  | Data     | TBC | AT-12        | Each emitted fact links to sources + timestamps + tool run; provenance density ≥2 for publish.                 | PROV store; sample queries.           | Flag low-density items; quarantine publish.                    |
+| AT-19 | **E2E Copilot scenario**: Plan crawl → enqueue → extract → triangulate → publish.                                             | Platform | TBC | AT-15..AT-18 | Fully automated happy path; failure path exercises policy/rollback; recorded demo.                             | Test plan; video; logs.               | Disable publish step; fall back to manual gating.              |
+
+---
+
+### Self‑healing, Observability, and Operations
+
+| ID    | Description                                                                                         | Owner    | Due | Dependencies | Quality Gates                                                                                       | Evidence/Artefacts                       | Rollback/Remediation                              |
+| ----- | --------------------------------------------------------------------------------------------------- | -------- | --- | ------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------- |
+| AT-20 | **Health probes** (liveness/readiness/startup) + SLOs.                                              | Platform | TBC | None         | Probes implemented across services; SLOs defined (availability, latency, error rate); alerts wired. | Helm/YAML; dashboards.                   | Scale out/in; restart pods; circuit breakers.     |
+| AT-21 | **Canary edits + progressive delivery** (Argo Rollouts).                                            | Platform | TBC | AT-01        | 1–5% canary path; automatic rollback on SLO breach or constraint violations spike.                  | Rollouts config; simulated failure demo. | Pause rollout; revert image.                      |
+| AT-22 | **Chaos experiments** (pre‑prod): downstream 500s/latency/data corruption.                          | Platform | TBC | AT-20, AT-21 | All experiments pass; remediation scripts validated; mean time to detect <2 min.                    | Chaos runbook; reports.                  | Disable faulty path; restore from snapshot.       |
+| AT-23 | **Security & supply chain**: SBOM (CycloneDX) + SLSA attestations; signature verification in CI/CD. | Security | TBC | None         | SBOMs generated per build; provenance verified; unsigned artefacts blocked.                         | CI logs; SBOM files; policy.             | Allowlist hotfix with exec approval; rotate keys. |
+
+---
+
+### Operational Quality Gates (release blockers)
+
+- Any failing chaos scenario.
+- Schema compatibility break on managed topics.
+- OPA policy bundle not loading or tests failing.
+- MC P `plan→commit` tests failing or missing audit logs.
+- Robots/politeness compliance failing on the test corpus.
+
+> Update the checkboxes above to reference the relevant **AT-** IDs as you complete them (e.g., “MCP server … (AT‑15, AT‑16, AT‑19)”).
