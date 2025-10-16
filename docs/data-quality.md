@@ -24,3 +24,62 @@
   - `confidence`: Integer 0–100 reflecting evidence strength.
 - Keep adapters stateless; persist caching or rate limiting externally.
 - Add new adapters under `firecrawl_demo.research` or compose them within the pipeline factory.
+
+## Phase 1.1 — Great Expectations + dbt quality suites
+
+Phase 1.1 introduces automated contracts that gate curated outputs before they
+leave the enrichment pipeline. The delivery slices are:
+
+- **Suite scaffolding (Week 1)**
+  - Stand up a `great_expectations/` project rooted in the repo to co-locate
+    batch checkpoints with sample data extracts.
+  - Mirror core validation logic (province list, status taxonomy, contact
+    requirements) as *Expectations* and register them with a `curated_dataset`
+    expectation suite.
+  - Generate `data_docs` artefacts and publish them via MkDocs so analysts can
+    audit the rule catalogue.
+- **dbt contract alignment (Week 2)**
+  - Introduce a lightweight dbt project under `analytics/` with staging models
+    for the canonical flight school dataset.
+  - Encode column types, accepted values, and referential checks using dbt
+    schema tests; add custom tests for evidence source counts and enriched
+    contact completeness.
+  - Configure CI to run `dbt test` alongside the Great Expectations checkpoint
+    so both suites must pass before merge.
+- **Operationalisation (Week 3)**
+  - Wire the CLI and MCP paths to execute the `great_expectations` checkpoint
+    when `ALLOW_NETWORK_RESEARCH=0` to preserve determinism.
+  - Persist expectation suite snapshots to the evidence log to prove which
+    contracts ran for each dataset revision.
+  - Track coverage with a target of ≥95% of curated columns having at least one
+    expectation or dbt test before promoting Phase 1 exit criteria.
+
+Deliverables include the expectation suite, dbt project, CI wiring, and MkDocs
+documentation summarising rule coverage and remediation playbooks.
+
+## Phase 1.2 — Pint + Hypothesis contract tests
+
+Phase 1.2 extends contract coverage to spreadsheet ingest and computed fields.
+
+- **Unit-aware schema enforcement**
+  - Add Pint unit registries for every numeric column (e.g., fleet counts,
+    runway lengths) and assert conversions during ingest so inconsistent units
+    surface immediately.
+  - Provide deterministic fixtures representing edge-case spreadsheets (mixed
+    units, missing dimensions) to validate the enforcement path.
+- **Property-based regression suite**
+  - Use Hypothesis strategies to fuzz spreadsheet ingestion, targeting
+    `firecrawl_demo.excel` and downstream transformation helpers.
+  - Model invariants such as "province is normalised", "status taxonomy remains
+    within the allowed set", and "evidence source count never drops below two".
+  - Emit shrinking artefacts into the evidence log when Hypothesis finds a
+    counterexample so analysts can reproduce locally.
+- **CI + observability**
+  - Gate merges on the property-based suite (`pytest -k contract`) and surface
+    failure summaries in the CLI telemetry.
+  - Add dashboard panels that track contract runtime, pass rate, and the top
+    failing invariants to expedite triage.
+
+Exit criteria for Phase 1.2 are a green property-based suite, Pint-enforced
+ingest paths, and documentation that walks analysts through responding to
+contract failures.
