@@ -1,6 +1,5 @@
 """Compliance helpers enforcing ACES Aerodynamics enrichment guardrails."""
 
-import csv
 import hashlib
 import json
 import re
@@ -10,6 +9,8 @@ from typing import Optional
 from urllib.parse import urlparse
 
 from . import config
+from .audit import CSVEvidenceSink
+from .models import EvidenceRecord
 
 try:  # pragma: no cover - optional dependency
     import dns.resolver  # type: ignore[import-not-found]
@@ -169,26 +170,46 @@ def evidence_entry(
 
 
 def append_evidence_log(rows: Iterable[dict[str, str]]) -> None:
-    path = config.EVIDENCE_LOG
-    path.parent.mkdir(parents=True, exist_ok=True)
-    file_exists = path.exists()
-    with path.open("a", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(
-            fh,
-            fieldnames=[
-                "RowID",
-                "Organisation",
-                "What changed",
-                "Sources",
-                "Notes",
-                "Timestamp",
-                "Confidence",
-            ],
+    entries = list(rows)
+    if not entries:
+        return
+
+    evidence_rows: list[EvidenceRecord] = []
+    for row in entries:
+        try:
+            row_id = int(row.get("RowID", "0") or 0)
+        except ValueError:
+            row_id = 0
+
+        raw_sources = row.get("Sources", "")
+        sources = [part.strip() for part in raw_sources.split(";") if part.strip()]
+
+        try:
+            confidence = int(row.get("Confidence", "0") or 0)
+        except ValueError:
+            confidence = 0
+
+        timestamp_value = row.get("Timestamp")
+        timestamp = None
+        if isinstance(timestamp_value, str) and timestamp_value:
+            try:
+                timestamp = datetime.fromisoformat(timestamp_value)
+            except ValueError:
+                timestamp = None
+
+        evidence_rows.append(
+            EvidenceRecord(
+                row_id=row_id,
+                organisation=row.get("Organisation", ""),
+                changes=row.get("What changed", ""),
+                sources=sources,
+                notes=row.get("Notes", ""),
+                confidence=confidence,
+                timestamp=timestamp or datetime.utcnow(),
+            )
         )
-        if not file_exists:
-            writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
+
+    CSVEvidenceSink(path=config.EVIDENCE_LOG).record(evidence_rows)
 
 
 def payload_hash(payload: dict[str, object]) -> str:

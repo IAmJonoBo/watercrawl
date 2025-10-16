@@ -130,6 +130,15 @@ class FirecrawlSettings:
     behaviour: FirecrawlBehaviour
 
 
+@dataclass(frozen=True)
+class EvidenceSinkSettings:
+    backend: str = "csv"
+    stream_transport: str = "rest"
+    stream_enabled: bool = False
+    rest_endpoint: str | None = None
+    kafka_topic: str | None = None
+
+
 def _get_value(name: str, default: str | None, provider: SecretsProvider) -> str | None:
     value = provider.get(name)
     return value if value is not None else default
@@ -217,6 +226,7 @@ FIRECRAWL: FirecrawlSettings
 BATCH_SIZE: int
 REQUEST_DELAY_SECONDS: float
 SECRETS_PROVIDER: SecretsProvider
+EVIDENCE_SINK: EvidenceSinkSettings
 
 
 def _build_firecrawl_settings(provider: SecretsProvider) -> FirecrawlSettings:
@@ -280,6 +290,7 @@ def configure(provider: SecretsProvider | None = None) -> None:
     global FIRECRAWL
     global BATCH_SIZE
     global REQUEST_DELAY_SECONDS
+    global EVIDENCE_SINK
 
     SECRETS_PROVIDER = provider or build_provider_from_environment()
 
@@ -325,6 +336,22 @@ def configure(provider: SecretsProvider | None = None) -> None:
     BATCH_SIZE = _env_int("FIRECRAWL_BATCH_SIZE", 20, SECRETS_PROVIDER)
     REQUEST_DELAY_SECONDS = _env_float(
         "FIRECRAWL_REQUEST_DELAY_SECONDS", 1.0, SECRETS_PROVIDER
+    )
+
+    sink_backend = (
+        _get_value("EVIDENCE_SINK_BACKEND", "csv", SECRETS_PROVIDER) or "csv"
+    ).lower()
+    stream_transport = (
+        _get_value("EVIDENCE_STREAM_TRANSPORT", "rest", SECRETS_PROVIDER) or "rest"
+    ).lower()
+    EVIDENCE_SINK = EvidenceSinkSettings(
+        backend=sink_backend,
+        stream_transport=stream_transport,
+        stream_enabled=_env_bool("EVIDENCE_STREAM_ENABLED", False, SECRETS_PROVIDER),
+        rest_endpoint=_get_value(
+            "EVIDENCE_STREAM_REST_ENDPOINT", None, SECRETS_PROVIDER
+        ),
+        kafka_topic=_get_value("EVIDENCE_STREAM_KAFKA_TOPIC", None, SECRETS_PROVIDER),
     )
 
 

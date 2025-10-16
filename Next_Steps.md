@@ -9,6 +9,7 @@
 - [x] Integrate secrets manager for production credentials — Owner: AI — Due: Complete
 - [x] Introduce research adapter registry with config-driven sequencing — Owner: AI — Due: 2025-10-16
 - [ ] Package exemplar regulator/press/ML adapters for registry adoption — Owner: Platform Team — Due: Backlog
+- [x] Introduce pluggable evidence sinks (CSV + streaming stub) — Owner: AI — Due: 2025-10-16
 
 ## Steps
 
@@ -19,6 +20,7 @@
 - [x] Add registry module + builder integration with fallback safety
 - [x] Extend research tests for ordering, deduplication, and feature-flag coverage
 - [x] Document adapter authoring workflow in architecture guide
+- [x] Backfill tests for CSV sink + MCP injection path
 
 ## Deliverables
 
@@ -57,6 +59,7 @@
 - [x] Secrets rotation: Primary vault determined by `SECRETS_BACKEND` (AWS or Azure) with local overrides via chained `.env` provider; document rotation/override in ops runbook.
 - [ ] Monitor pre-commit hook runtimes once CI enables them to avoid exceeding build minutes.
 - [ ] Enforced pandas/requests type stubs—watch for downstream mypy regressions without `type: ignore` escapes.
+- [ ] Validate streaming evidence sink against real Kafka/REST endpoints once roadmap work begins; document throughput targets.
 
 - [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
 - [ ] Align isort configuration (project vs CLI flags) to avoid manual --profile overrides.
