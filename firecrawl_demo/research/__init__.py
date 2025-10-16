@@ -19,6 +19,9 @@ from .registry import (
     register_adapter,
 )
 
+# Import exemplar adapters for registration side effects.
+from . import exemplars as _exemplar_adapters  # noqa: F401
+
 __all__ = [
     "CompositeResearchAdapter",
     "FirecrawlResearchAdapter",

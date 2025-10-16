@@ -30,7 +30,7 @@ class AdapterLoaderSettings:
     sequence: Sequence[str] | None = None
     env_var: str = "RESEARCH_ADAPTERS"
     file_env_var: str = "RESEARCH_ADAPTERS_FILE"
-    default_sequence: Sequence[str] = ("firecrawl", "null")
+    default_sequence: Sequence[str] = ("regulator", "press", "ml", "firecrawl", "null")
 
 
 @dataclass(slots=True, frozen=True)
@@ -259,6 +259,12 @@ def _null_factory(_: AdapterContext) -> ResearchAdapter:
 # Register built-in adapters immediately for default behaviour.
 register_adapter("firecrawl", _firecrawl_factory)
 register_adapter("null", _null_factory)
+
+# Ensure exemplar adapters are registered alongside built-ins.
+try:  # pragma: no cover - defensive import
+    from . import exemplars as _exemplar_adapters  # noqa: F401
+except Exception as exc:  # pragma: no cover - defensive logging
+    logger.debug("Unable to load exemplar adapters: %s", exc)
 
 
 __all__ = [

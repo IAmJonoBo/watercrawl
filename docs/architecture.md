@@ -59,6 +59,13 @@ The `firecrawl_demo.research.registry` module centralises adapter discovery so n
 
 This registry keeps `build_research_adapter()` thin while allowing optional modules (e.g., press intelligence, regulator lookups, ML enrichers) to live in their own packages.
 
+### Exemplar adapters
+
+- `firecrawl_demo.research.exemplars` ships offline-friendly implementations for regulator (`RegulatorRegistryAdapter`), press (`PressMonitoringAdapter`), and ML (`MLInferenceAdapter`) intelligence.
+- They register themselves with the adapter registry on import and are part of the default adapter chain (`regulator, press, ml, firecrawl, null`).
+- Each adapter respects the relevant feature flags (`FEATURE_ENABLE_REGULATOR_LOOKUP`, `FEATURE_ENABLE_PRESS_RESEARCH`, `FEATURE_ENABLE_ML_INFERENCE`) so analysts can toggle data sources without editing code.
+- The exemplar dataset is deterministic, ensuring unit tests and dry-run demos can rely on consistent findings without touching external networks.
+
 ## Infrastructure Plan Scaffold
 
 The `firecrawl_demo.infrastructure.planning` module provides an `InfrastructurePlan` dataclass that aggregates crawler, observability, policy, and plan→commit expectations into a single contract.

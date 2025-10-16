@@ -7,6 +7,7 @@ from firecrawl_demo.research import (
     NullResearchAdapter,
     ResearchAdapter,
     ResearchFinding,
+    merge_findings,
     TriangulatingResearchAdapter,
     load_enabled_adapters,
     register_adapter,
@@ -81,6 +82,7 @@ def test_firecrawl_factory_respects_feature_flags(monkeypatch):
         enable_firecrawl_sdk=False,
         enable_press_research=True,
         enable_regulator_lookup=True,
+        enable_ml_inference=True,
         investigate_rebrands=True,
     )
     monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
@@ -108,6 +110,7 @@ def test_firecrawl_factory_activates_when_feature_enabled(monkeypatch):
         enable_firecrawl_sdk=True,
         enable_press_research=True,
         enable_regulator_lookup=True,
+        enable_ml_inference=True,
         investigate_rebrands=True,
     )
     monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
@@ -186,6 +189,7 @@ def test_build_research_adapter_handles_missing_firecrawl(
         enable_firecrawl_sdk=enable_firecrawl,
         enable_press_research=True,
         enable_regulator_lookup=True,
+        enable_ml_inference=True,
         investigate_rebrands=True,
     )
     monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
@@ -258,3 +262,41 @@ def test_triangulate_organisation_merges_live_sources(monkeypatch):
     assert any("caa.co.za" in source for source in result.sources)
     assert any("rebrand" in note.lower() for note in result.investigation_notes)
     assert result.physical_address == "Cape Town International Airport"
+
+
+def test_exemplar_adapters_enrich_from_registry(monkeypatch):
+    flags = config.FeatureFlags(
+        enable_firecrawl_sdk=False,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+
+    provider = EnvSecretsProvider({"RESEARCH_ADAPTERS": "regulator, press, ml"})
+
+    adapters = load_enabled_adapters(AdapterLoaderSettings(provider=provider))
+
+    names = {adapter.__class__.__name__ for adapter in adapters}
+    assert names == {
+        "RegulatorRegistryAdapter",
+        "PressMonitoringAdapter",
+        "MLInferenceAdapter",
+    }
+
+    findings = [
+        adapter.lookup("Legacy Flight School", "Western Cape") for adapter in adapters
+    ]
+    merged = merge_findings(*findings)
+
+    assert merged.website_url == "https://legacy-flight.example.za"
+    assert merged.contact_person == "Nomsa Jacobs"
+    assert merged.contact_email == "nomsa.jacobs@legacy-flight.example.za"
+    assert merged.contact_phone == "+27215550123"
+    assert len(merged.sources) >= 3
+    assert any("regulator" in note.lower() for note in merged.notes.split("; "))
+    assert any(
+        "press" in note.lower() or "coverage" in note.lower()
+        for note in merged.investigation_notes
+    )

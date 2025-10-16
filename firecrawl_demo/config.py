@@ -93,6 +93,7 @@ class FeatureFlags:
     enable_firecrawl_sdk: bool = False
     enable_press_research: bool = True
     enable_regulator_lookup: bool = True
+    enable_ml_inference: bool = True
     investigate_rebrands: bool = True
 
 
@@ -386,6 +387,9 @@ def configure(provider: SecretsProvider | None = None) -> None:
         ),
         enable_regulator_lookup=_env_bool(
             "FEATURE_ENABLE_REGULATOR_LOOKUP", True, SECRETS_PROVIDER
+        ),
+        enable_ml_inference=_env_bool(
+            "FEATURE_ENABLE_ML_INFERENCE", True, SECRETS_PROVIDER
         ),
         investigate_rebrands=_env_bool(
             "FEATURE_INVESTIGATE_REBRANDS", True, SECRETS_PROVIDER
