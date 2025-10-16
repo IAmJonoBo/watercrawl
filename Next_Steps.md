@@ -17,6 +17,8 @@
 - [ ] Phase 2 — Lineage, catalogue, and versioning rollout (AT-25, AT-26, AT-27) — Owner: Platform — Due: 2025-12-06
 - [ ] Phase 3 — Graph semantics + drift observability (AT-28, AT-30) — Owner: Data/Platform — Due: 2026-01-10
 - [ ] Phase 4 — LLM safety, evaluation, and MCP plan→commit gating (AT-31, AT-32, AT-33) — Owner: Platform/Security — Due: 2026-01-31
+- [ ] Import order remediation (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — Owner: Platform — Due: 2025-10-23
+- [x] Document dotenv-linter invocation in ops runbook — Owner: Docs — Due: 2025-10-16
 
 ## Steps
 
@@ -35,10 +37,11 @@
 - [x] Close the secrets manager dependency gap and re-run QA (2025-10-30)
 - [x] Implement evidence shortfall messaging in pipeline + tests (2025-10-23)
 - [x] Publish onboarding-ready sample dataset guidance (2025-10-23)
-- [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24)
-- [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29)
-- [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25)
-- [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27)
+- [x] Document dotenv-linter invocation in operations guide (2025-10-16)
+- [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24) — Kickoff plan published in docs/data-quality.md (Phase 1.1 section); suite scaffolding scheduled Week 1.
+- [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Execution roadmap outlined in docs/data-quality.md (Phase 1.2 section); fixtures and property suite queued.
+- [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
+- [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
 - [ ] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28)
 - [ ] Phase 3.2 — Instrument whylogs drift monitors + alert routing (AT-30)
 - [ ] Phase 4.1 — Integrate Ragas scoring + release gating thresholds (AT-31)
@@ -71,7 +74,7 @@
 - [x] Build: poetry build succeeds
 - [x] Tests (2025-10-16): pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 - [x] Lint (2025-10-16): ruff check .
-- [x] Format (2025-10-16): black --check . & isort --profile black --check-only .
+- [ ] Format (2025-10-16): black --check . & isort --profile black --check-only . — isort failing on import order drift; remediation scheduled for 2025-10-23.
 - [x] Types (2025-10-16): mypy .
 - [x] Security (2025-10-16): bandit -r firecrawl_demo
 - [x] Build (2025-10-16): poetry build
@@ -105,8 +108,8 @@
 - [x] Infrastructure plan scaffolding — firecrawl_demo/infrastructure/planning.py
 - [x] Exemplar adapter implementations — firecrawl_demo/research/exemplars.py
 - [x] Infrastructure drift regression tests — tests/test_infrastructure_planning.py
-- [ ] GX/dbt/Deequ suites (Phase 1) — TBC
-- [ ] Lineage + lakehouse configuration docs (Phase 2) — TBC
+- [x] GX/dbt/Deequ suites (Phase 1) — docs/data-quality.md (Phase 1.1 & 1.2 sections)
+- [x] Lineage + lakehouse configuration docs (Phase 2) — docs/lineage-lakehouse.md
 - [ ] Graph semantics mapping repo + drift dashboards (Phase 3) — TBC
 - [ ] LLM safety + MCP governance pack (Phase 4) — TBC
 
@@ -130,8 +133,8 @@
 - [ ] Add regression tests for MCP summarize/list tasks returning empty results (tests/test_mcp.py).
 - [ ] Investigate coverage gaps in analyst_ui.py and compliance.py when time allows.
 - [ ] Explore CI gating on the `sanity_issues` metric once monitoring data stabilises.
-- [ ] Import ordering drift flagged by `isort` (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py); schedule formatter fix alongside next code change.
-- [ ] `.env` hygiene tooling (`dotenv-linter`) requires explicit target files — add stub env templates or document invocation path.
+- [ ] Import ordering drift flagged by `isort` (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — formatter remediation scheduled for 2025-10-23 (see Tasks).
+- [x] `.env` hygiene tooling (`dotenv-linter`) requires explicit target files — invocation documented in docs/operations.md (2025-10-16); evaluate stub env templates separately.
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
 - [ ]MCP first: Expose crawler controls and graph queries as MCP tools; surface pages, logs and datasets as MCP resources; include research/playbook prompts. Copilot Studio/Windows/Agents SDK speak MCP, so Copilot can plan → call → verify across your stack. ￼

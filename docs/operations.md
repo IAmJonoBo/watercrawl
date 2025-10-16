@@ -10,8 +10,14 @@ poetry run ruff check .
 poetry run mypy .
 poetry run bandit -r firecrawl_demo
 poetry run pre-commit run --all-files
+poetry run dotenv-linter lint .env.example
 poetry run poetry build
 ```
+
+> Update the path passed to `dotenv-linter` to match the environment file under
+> review (for example `.env`, `.env.production`, or `.env.sample`). The command
+> exits non-zero when variables are duplicated, unexported, or malformed, so run
+> it before committing any secrets configuration changes.
 
 ## Secrets Provisioning
 
