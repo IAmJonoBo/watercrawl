@@ -7,7 +7,7 @@ from typing import Any
 from .config import resolve_api_key, settings
 
 try:  # pragma: no cover - optional dependency
-    from firecrawl import Firecrawl  # type: ignore[import-not-found]
+    from firecrawl import Firecrawl  # type: ignore
 except ImportError:  # pragma: no cover - graceful degradation
     Firecrawl = None  # type: ignore[assignment]
 
@@ -19,7 +19,7 @@ class FirecrawlClient:
     api_key: str | None = None
     api_url: str | None = None
 
-    def _client(self) -> Firecrawl:
+    def _client(self) -> "Firecrawl":  # type: ignore
         if Firecrawl is None:
             raise RuntimeError("Firecrawl SDK is not installed")
         try:
@@ -28,8 +28,8 @@ class FirecrawlClient:
             raise RuntimeError("FIRECRAWL_API_KEY is not configured") from exc
         return Firecrawl(
             api_key=key,
-            api_url=self.api_url or getattr(settings, "FIRECRAWL_API_URL", None),
-        )
+            api_url=str(self.api_url or getattr(settings, "FIRECRAWL_API_URL", "")),
+        )  # type: ignore
 
     def scrape(
         self, url: str, *, formats: Iterable[str] | None = None

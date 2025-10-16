@@ -99,12 +99,12 @@
 
 ## Phase Plan (2025 Q4 → 2026 Q1)
 
-| Phase | Scope | Dependencies | Exit Criteria |
-|-------|-------|--------------|---------------|
-| **1. Data Contracts & Evidence Discipline** | Ship GX/dbt/Deequ suites, Pint unit enforcement, Hypothesis fuzzing, and evidence shortfall automation. | Existing validation/enrichment modules; pandas/requests stubs. | CI fails on contract breach, evidence log auto-remediates, coverage ≥95% of curated tables. |
-| **2. Lineage & Versioned Lakehouse** | Emit OpenLineage/PROV-O/DCAT, adopt Delta/Iceberg, store DVC/lakeFS run commits, update docs/CLI outputs. | Phase 1 gating; infrastructure plan. | Reproduce run from commit only; 100% lineage coverage; documented rollback paths. |
-| **3. Graph Semantics & Observability** | Finalise CSVW/R2RML, integrate graph build smoke tests, instrument whylogs drift dashboards + alerting. | Phase 2 dataset guarantees. | Graph validation thresholds pass; drift alerts tested in CI & staging; observability runbook published. |
-| **4. LLM Safety & MCP Governance** | Integrate Ragas evaluation, OWASP LLM mitigations, MCP diff/commit with schema/test enforcement, update policies. | Phases 1–3 analytics & metadata. | Ragas scores above thresholds, red-team suite green, MCP audit logs show plan→commit gating and If-Match usage. |
+| Phase                                       | Scope                                                                                                             | Dependencies                                                   | Exit Criteria                                                                                                   |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **1. Data Contracts & Evidence Discipline** | Ship GX/dbt/Deequ suites, Pint unit enforcement, Hypothesis fuzzing, and evidence shortfall automation.           | Existing validation/enrichment modules; pandas/requests stubs. | CI fails on contract breach, evidence log auto-remediates, coverage ≥95% of curated tables.                     |
+| **2. Lineage & Versioned Lakehouse**        | Emit OpenLineage/PROV-O/DCAT, adopt Delta/Iceberg, store DVC/lakeFS run commits, update docs/CLI outputs.         | Phase 1 gating; infrastructure plan.                           | Reproduce run from commit only; 100% lineage coverage; documented rollback paths.                               |
+| **3. Graph Semantics & Observability**      | Finalise CSVW/R2RML, integrate graph build smoke tests, instrument whylogs drift dashboards + alerting.           | Phase 2 dataset guarantees.                                    | Graph validation thresholds pass; drift alerts tested in CI & staging; observability runbook published.         |
+| **4. LLM Safety & MCP Governance**          | Integrate Ragas evaluation, OWASP LLM mitigations, MCP diff/commit with schema/test enforcement, update policies. | Phases 1–3 analytics & metadata.                               | Ragas scores above thresholds, red-team suite green, MCP audit logs show plan→commit gating and If-Match usage. |
 
 > Maintain sequential sign-off: do not start a downstream phase until upstream exit criteria have been met and recorded in `Links`.
 
@@ -124,6 +124,7 @@
 - [ ] LLM safety + MCP governance pack (Phase 4) — TBC
 
 ## Risks/Notes
+
 - [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
 - [ ] Secrets governance follow-up: validate AWS/Azure vault access in staging and document production rotation approvals.
 - [x] Secrets rotation: Primary vault determined by `SECRETS_BACKEND` (AWS or Azure) with local overrides via chained `.env` provider; document rotation/override in ops runbook.
@@ -148,11 +149,11 @@
 - [x] `.env` hygiene tooling (`dotenv-linter`) requires explicit target files — invocation documented in docs/operations.md (2025-10-16); evaluate stub env templates separately.
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
-- [ ]MCP first: Expose crawler controls and graph queries as MCP tools; surface pages, logs and datasets as MCP resources; include research/playbook prompts. Copilot Studio/Windows/Agents SDK speak MCP, so Copilot can plan → call → verify across your stack. ￼
+- [ ] MCP first: Expose crawler controls and graph queries as MCP tools; surface pages, logs and datasets as MCP resources; include research/playbook prompts. Copilot Studio/Windows/Agents SDK speak MCP, so Copilot can plan → call → verify across your stack. ￼
 - [x] Keep infrastructure plan aligned with deployed probe endpoints, OPA bundles, and automation workflows; add regression tests that fail when plan drift occurs. (2025-10-16)
 - [ ] Refresh infrastructure baseline snapshot + docs whenever probe endpoints, policy bundles, or automation topics change in production.
-- [ ]Real-time graphs: Use Kafka→Neo4j/Memgraph ingestion, then run online algorithms (PageRank, Louvain) and render with Cytoscape.js or GPU visual analytics for live relationship maps. ￼
-- [ ]Hygiene: Respect RFC 9309 robots, do boilerplate removal, dedupe with SimHash/MinHash, and track provenance with W3C PROV-O. These raise precision and trust. ￼
+- [ ] Real-time graphs: Use Kafka→Neo4j/Memgraph ingestion, then run online algorithms (PageRank, Louvain) and render with Cytoscape.js or GPU visual analytics for live relationship maps. ￼
+- [ ] Hygiene: Respect RFC 9309 robots, do boilerplate removal, dedupe with SimHash/MinHash, and track provenance with W3C PROV-O. These raise precision and trust. ￼
 
 ⸻
 
@@ -160,18 +161,18 @@
 
 Crawl & learn
 
-- [ ]Frontier & scheduler: Start with Scrapy/Frontera/StormCrawler/Nutch; they give you robust queueing, politeness and retries. Plug in your own scoring function. ￼
-- [ ]Learning policy: Prioritise URLs with multi-armed bandits or RL to maximise harvest rate on a topic; this consistently beats static heuristics in focused crawling studies. ￼
+- [ ] Frontier & scheduler: Start with Scrapy/Frontera/StormCrawler/Nutch; they give you robust queueing, politeness and retries. Plug in your own scoring function. ￼
+- [ ] Learning policy: Prioritise URLs with multi-armed bandits or RL to maximise harvest rate on a topic; this consistently beats static heuristics in focused crawling studies. ￼
 
 Parse & normalise
 
-- [ ]Boilerplate removal: Trafilatura/jusText or neural variants to isolate the main content before NLP. ￼
-- [ ]Near-duplicate detection: SimHash/LSH to collapse repeats across mirrors/syndication. ￼
+- [ ] Boilerplate removal: Trafilatura/jusText or neural variants to isolate the main content before NLP. ￼
+- [ ] Near-duplicate detection: SimHash/LSH to collapse repeats across mirrors/syndication. ￼
 
 Extract & resolve
 
-- [ ]Entities/relations: spaCy for fast NER; add a relation-extraction model (e.g., REBEL class) via Transformers. ￼
-- [ ]Entity resolution: Use Splink to merge near-matches across sources (names, organisations, products). ￼
+- [ ] Entities/relations: spaCy for fast NER; add a relation-extraction model (e.g., REBEL class) via Transformers. ￼
+- [ ] Entity resolution: Use Splink to merge near-matches across sources (names, organisations, products). ￼
 
 Index & graph
 
@@ -198,7 +199,7 @@ Visualise
 
 ⸻
 
-3. How Copilot best leverages the MCP server
+1. How Copilot best leverages the MCP server
 
 Expose three MCP surfaces and let Copilot orchestrate them:
 

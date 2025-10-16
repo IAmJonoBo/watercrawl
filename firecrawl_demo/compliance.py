@@ -15,9 +15,9 @@ from .models import EvidenceRecord
 try:  # pragma: no cover - optional dependency
     import dns.resolver  # type: ignore[import-not-found]
 except ImportError:  # pragma: no cover - fallback path
-    dns_resolver = None  # type: ignore[assignment]
+    DNS_RESOLVER = None  # type: ignore[assignment]
 else:  # pragma: no cover - optional dependency
-    dns_resolver = dns.resolver
+    DNS_RESOLVER = dns.resolver.Resolver()
 
 _PHONE_RE = re.compile(r"^\+27\d{9}$")
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
@@ -93,7 +93,7 @@ def validate_email(
 def _check_mx_records(domain: str) -> Optional[str]:
     if not domain:
         return "Missing email domain"
-    resolver = dns_resolver
+    resolver = DNS_RESOLVER
     if resolver is None:  # pragma: no cover - depends on optional package
         return "MX lookup unavailable"
     try:
@@ -230,5 +230,3 @@ def describe_changes(
 
 class ComplianceChecker:
     """Stub maintained for backward-compatible tests."""
-
-    pass
