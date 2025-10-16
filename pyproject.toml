@@ -16,6 +16,9 @@ pydantic = "*"
 structlog = "*"
 prometheus-client = "*"
 pydantic-settings = "^2.11.0"
+boto3 = "^1.40.53"
+azure-identity = "^1.25.1"
+azure-keyvault-secrets = "^4.10.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

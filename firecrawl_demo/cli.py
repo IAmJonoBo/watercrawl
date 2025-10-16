@@ -4,7 +4,6 @@ import asyncio
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Optional
 
 import click
 from rich.console import Console
@@ -21,7 +20,7 @@ from .progress import PipelineProgressListener
 class RichPipelineProgress(PipelineProgressListener):
     """Rich progress bar implementation for pipeline runs."""
 
-    def __init__(self, description: str, console: Optional[Console] = None) -> None:
+    def __init__(self, description: str, console: Console | None = None) -> None:
         self._description = description
         self._console = console or Console(stderr=True)
         self._progress = Progress(
@@ -33,7 +32,7 @@ class RichPipelineProgress(PipelineProgressListener):
             transient=True,
             auto_refresh=True,
         )
-        self._task_id: Optional[TaskID] = None
+        self._task_id: TaskID | None = None
         self._started = False
 
     def on_start(self, total_rows: int) -> None:
@@ -75,7 +74,7 @@ class RichPipelineProgress(PipelineProgressListener):
         self._progress.log(f"[red]Adapter failure processing {location}: {error}[/red]")
 
 
-def _resolve_progress_flag(output_format: str, requested: Optional[bool]) -> bool:
+def _resolve_progress_flag(output_format: str, requested: bool | None) -> bool:
     if requested is not None:
         return requested
     return output_format == "text"
@@ -97,7 +96,7 @@ def cli() -> None:
     default=None,
     help="Display a progress bar while validating (defaults to off).",
 )
-def validate(input_path: Path, output_format: str, progress: Optional[bool]) -> None:
+def validate(input_path: Path, output_format: str, progress: bool | None) -> None:
     """Validate a CSV/XLSX dataset and report any quality issues."""
 
     pipeline = Pipeline()
@@ -161,7 +160,7 @@ def enrich(
     input_path: Path,
     output_path: Path | None,
     output_format: str,
-    progress: Optional[bool],
+    progress: bool | None,
 ) -> None:
     """Validate, enrich, and export a dataset."""
 

@@ -1,6 +1,8 @@
 # CLI Guide
 
 The CLI lives in `firecrawl_demo.cli` and is available via `python -m firecrawl_demo.cli ...` when the Poetry environment is active.
+The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
+enrich immediately after installing dependencies.
 
 ## Commands
 
@@ -37,6 +39,9 @@ poetry run python -m firecrawl_demo.cli mcp-server
 - Runs the MCP JSON-RPC bridge over stdio.
 - Designed for GitHub Copilot or other MCP-compliant clients.
 - Accepts `initialize`, `list_tasks`, `run_task`, and `shutdown` methods.
+- Exposes new orchestration tasks — `summarize_last_run` for metrics snapshots and
+  `list_sanity_issues` for remediation queues — so Copilot can reason about pipeline
+  health without parsing CSVs.
 
 ## Exit Codes
 
