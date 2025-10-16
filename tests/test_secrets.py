@@ -53,6 +53,28 @@ def test_configure_uses_supplied_provider() -> None:
             "FIRECRAWL_MX_LOOKUP_TIMEOUT": "1.5",
             "FIRECRAWL_BATCH_SIZE": "11",
             "FIRECRAWL_REQUEST_DELAY_SECONDS": "0.3",
+            "CRAWLER_FRONTIER_BACKEND": "stormcrawler",
+            "CRAWLER_SCHEDULER_MODE": "bandit",
+            "CRAWLER_POLITENESS_DELAY_SECONDS": "2.0",
+            "CRAWLER_MAX_DEPTH": "8",
+            "CRAWLER_MAX_PAGES": "7000",
+            "CRAWLER_USER_AGENT": "ACESBot/1.1",
+            "CRAWLER_ROBOTS_CACHE_HOURS": "9",
+            "OBSERVABILITY_PORT": "7070",
+            "OBSERVABILITY_LIVENESS_PATH": "/health/live",
+            "OBSERVABILITY_READINESS_PATH": "/health/ready",
+            "OBSERVABILITY_STARTUP_PATH": "/health/start",
+            "OBSERVABILITY_ALERT_ROUTES": "slack,pagerduty",
+            "SLO_AVAILABILITY_TARGET": "99.8",
+            "SLO_LATENCY_P95_MS": "350",
+            "SLO_ERROR_BUDGET_PERCENT": "1.5",
+            "OPA_DECISION_PATH": "copilot/allow",
+            "OPA_ENFORCEMENT_MODE": "dry-run",
+            "OPA_CACHE_SECONDS": "45",
+            "PLAN_COMMIT_REQUIRED": "0",
+            "PLAN_COMMIT_DIFF_FORMAT": "json",
+            "PLAN_COMMIT_AUDIT_TOPIC": "audit.plan-commit.test",
+            "PLAN_COMMIT_ALLOW_FORCE": "1",
         }
     )
 
@@ -84,5 +106,27 @@ def test_configure_uses_supplied_provider() -> None:
         assert config.MX_LOOKUP_TIMEOUT == 1.5
         assert config.BATCH_SIZE == 11
         assert config.REQUEST_DELAY_SECONDS == 0.3
+        assert config.CRAWLER_INFRASTRUCTURE.frontier_backend == "stormcrawler"
+        assert config.CRAWLER_INFRASTRUCTURE.scheduler_mode == "bandit"
+        assert config.CRAWLER_INFRASTRUCTURE.politeness_delay_seconds == 2.0
+        assert config.CRAWLER_INFRASTRUCTURE.max_depth == 8
+        assert config.CRAWLER_INFRASTRUCTURE.max_pages == 7000
+        assert config.CRAWLER_INFRASTRUCTURE.user_agent == "ACESBot/1.1"
+        assert config.CRAWLER_INFRASTRUCTURE.robots_cache_hours == 9.0
+        assert config.OBSERVABILITY.probes.port == 7070
+        assert config.OBSERVABILITY.probes.liveness_path == "/health/live"
+        assert config.OBSERVABILITY.probes.readiness_path == "/health/ready"
+        assert config.OBSERVABILITY.probes.startup_path == "/health/start"
+        assert config.OBSERVABILITY.alert_routes == ("slack", "pagerduty")
+        assert config.OBSERVABILITY.slos.availability_target == 99.8
+        assert config.OBSERVABILITY.slos.latency_p95_ms == 350.0
+        assert config.OBSERVABILITY.slos.error_budget_percent == 1.5
+        assert config.POLICY_GUARDS.decision_path == "copilot/allow"
+        assert config.POLICY_GUARDS.enforcement_mode == "dry-run"
+        assert config.POLICY_GUARDS.cache_seconds == 45
+        assert config.PLAN_COMMIT.require_plan is False
+        assert config.PLAN_COMMIT.diff_format == "json"
+        assert config.PLAN_COMMIT.audit_topic == "audit.plan-commit.test"
+        assert config.PLAN_COMMIT.allow_force_commit is True
     finally:
         config.configure()

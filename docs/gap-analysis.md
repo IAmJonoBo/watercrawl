@@ -24,3 +24,4 @@
 - ✅ MkDocs site scaffolded with architecture, data-quality, and operations content.
 - ✅ Firecrawl SDK integration available behind feature toggles with offline-safe defaults and type stubs for pandas/requests.
 - 🔄 Follow-up: replace placeholder `.env` credentials with secrets manager integration.
+- ✅ Infrastructure planning module added to codify crawler, observability, and policy guardrails with environment-driven overrides.

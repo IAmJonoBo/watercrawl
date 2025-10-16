@@ -21,6 +21,7 @@
 - [x] Extend research tests for ordering, deduplication, and feature-flag coverage
 - [x] Document adapter authoring workflow in architecture guide
 - [x] Backfill tests for CSV sink + MCP injection path
+- [x] Scaffold infrastructure plan for crawler/observability/policy guardrails (AT-07, AT-15–AT-18)
 
 ## Deliverables
 
@@ -52,6 +53,7 @@
 - [x] Architecture docs — docs/architecture.md
 - [x] Adapter registry documentation — docs/architecture.md#research-adapter-registry
 - [x] Registry tests — tests/test_research_logic.py
+- [x] Infrastructure plan scaffolding — firecrawl_demo/infrastructure/planning.py
 
 ## Risks/Notes
 - [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
@@ -69,6 +71,7 @@
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
 - [ ]MCP first: Expose crawler controls and graph queries as MCP tools; surface pages, logs and datasets as MCP resources; include research/playbook prompts. Copilot Studio/Windows/Agents SDK speak MCP, so Copilot can plan → call → verify across your stack. ￼
+- [ ] Keep infrastructure plan aligned with deployed probe endpoints, OPA bundles, and automation workflows; add regression tests that fail when plan drift occurs.
 - [ ]Real-time graphs: Use Kafka→Neo4j/Memgraph ingestion, then run online algorithms (PageRank, Louvain) and render with Cytoscape.js or GPU visual analytics for live relationship maps. ￼
 - [ ]Hygiene: Respect RFC 9309 robots, do boilerplate removal, dedupe with SimHash/MinHash, and track provenance with W3C PROV-O. These raise precision and trust. ￼
 

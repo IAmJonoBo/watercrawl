@@ -58,3 +58,14 @@ The `firecrawl_demo.research.registry` module centralises adapter discovery so n
 4. When `load_enabled_adapters()` runs, the registry handles deduplication and feature-flag checks; `build_research_adapter()` ensures a Null adapter is used if every factory opts out.
 
 This registry keeps `build_research_adapter()` thin while allowing optional modules (e.g., press intelligence, regulator lookups, ML enrichers) to live in their own packages.
+
+## Infrastructure Plan Scaffold
+
+The `firecrawl_demo.infrastructure.planning` module provides an `InfrastructurePlan` dataclass that aggregates crawler, observability, policy, and plan→commit expectations into a single contract.
+
+- **CrawlerPlan** captures the frontier backend, scheduling policy, politeness delays, depth limits, trap-rule file, and user agent. Defaults map to a Scrapy/priority queue stack while allowing overrides via environment variables (`CRAWLER_*`).
+- **ObservabilityPlan** defines Kubernetes-style probe paths, SLO thresholds, and alert routes. The defaults surface `/healthz`, `/readyz`, and `/startupz` endpoints with a 99.5% availability target. Teams can raise thresholds by setting `OBSERVABILITY_*` and `SLO_*` values.
+- **PolicyPlan** records the OPA bundle path, decision namespace, and enforcement mode so MCP/CLI tooling can fail closed when `OPA_ENFORCEMENT_MODE=enforce`. Caching is tunable via `OPA_CACHE_SECONDS`.
+- **PlanCommitContract** encodes the plan→commit guardrails for automation, including the audit topic used by the evidence sink and optional force-commit escape hatches.
+
+The planner is intentionally declarative—call `build_infrastructure_plan()` to obtain a frozen snapshot suitable for documentation exports, MCP tool manifests, or CI assertions that the environment is wired correctly before agents are allowed to crawl.
