@@ -13,6 +13,8 @@ poetry run python -m firecrawl_demo.cli validate data/input.csv --format json
 - Loads CSV/XLSX data.
 - Runs dataset validation and prints issues.
 - Returns JSON (for automation) or text summaries.
+- Exit status is `1` when validation fails so automations can gate on QA.
+- Pass `--progress` to render a progress bar while validating large files.
 
 ### `enrich`
 
@@ -23,6 +25,8 @@ poetry run python -m firecrawl_demo.cli enrich data/input.csv --output data/outp
 - Validates, enriches, and writes the dataset.
 - Automatically appends evidence rows to `data/interim/evidence_log.csv`.
 - Supports JSON output for pipelines.
+- Displays a Rich-powered progress bar for text output by default (`--no-progress` to disable).
+- JSON responses now include an `adapter_failures` field so pipelines can alert on degraded runs.
 
 ### `mcp-server`
 
@@ -37,7 +41,7 @@ poetry run python -m firecrawl_demo.cli mcp-server
 ## Exit Codes
 
 - `0`: Success.
-- `1`: Validation/enrichment failure (unhandled exception).
+- `1`: Dataset failed validation or an unhandled error occurred.
 
 ## Environment Variables
 

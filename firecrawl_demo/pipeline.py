@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,10 +20,12 @@ from .compliance import (
 )
 from .excel import EXPECTED_COLUMNS, read_dataset, write_dataset
 from .models import EvidenceRecord, PipelineReport, SchoolRecord
+from .progress import NullPipelineProgressListener, PipelineProgressListener
 from .research import ResearchAdapter, ResearchFinding, build_research_adapter
 from .validation import DatasetValidator
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,7 +34,11 @@ class Pipeline:
     validator: DatasetValidator = field(default_factory=DatasetValidator)
     evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
 
-    def run_dataframe(self, frame: pd.DataFrame) -> PipelineReport:
+    def run_dataframe(
+        self,
+        frame: pd.DataFrame,
+        progress: PipelineProgressListener | None = None,
+    ) -> PipelineReport:
         validation = self.validator.validate_dataframe(frame)
         missing_column_errors = [
             issue for issue in validation.issues if issue.code == "missing_column"
@@ -44,6 +51,10 @@ class Pipeline:
         working_frame_cast = cast(Any, working_frame)
         evidence_records: list[EvidenceRecord] = []
         enriched_rows = 0
+        adapter_failures = 0
+        listener = progress or NullPipelineProgressListener()
+
+        listener.on_start(len(working_frame))
 
         for position, (idx, row) in enumerate(working_frame.iterrows()):
             original_row = row.copy()
@@ -51,7 +62,20 @@ class Pipeline:
             record.province = normalize_province(record.province)
             working_frame_cast.at[idx, "Province"] = record.province
 
-            finding = self.research_adapter.lookup(record.name, record.province)
+            try:
+                finding = self.research_adapter.lookup(record.name, record.province)
+            except Exception as exc:  # pragma: no cover - defensive guard
+                adapter_failures += 1
+                logger.warning(
+                    "Research adapter failed for %s (%s): %s",
+                    record.name,
+                    record.province,
+                    exc,
+                    exc_info=exc,
+                )
+                listener.on_error(exc, position)
+                finding = ResearchFinding(notes=f"Research adapter failed: {exc}")
+
             updated = False
             sources = self._merge_sources(record, finding)
 
@@ -115,6 +139,8 @@ class Pipeline:
             else:
                 self._apply_record(working_frame, idx, record)
 
+            listener.on_row_processed(position, updated, record)
+
         if evidence_records:
             self.evidence_sink.record(evidence_records)
 
@@ -123,19 +149,26 @@ class Pipeline:
             "enriched_rows": enriched_rows,
             "verified_rows": int((working_frame["Status"] == "Verified").sum()),
             "issues_found": len(validation.issues),
+            "adapter_failures": adapter_failures,
         }
-        return PipelineReport(
+        report = PipelineReport(
             refined_dataframe=working_frame,
             validation_report=validation,
             evidence_log=evidence_records,
             metrics=metrics,
         )
+        listener.on_complete(metrics)
+        return report
 
     def run_file(
-        self, input_path: Path, output_path: Path | None = None
+        self,
+        input_path: Path,
+        output_path: Path | None = None,
+        *,
+        progress: PipelineProgressListener | None = None,
     ) -> PipelineReport:
         dataset = read_dataset(input_path)
-        report = self.run_dataframe(dataset)
+        report = self.run_dataframe(dataset, progress=progress)
         if output_path:
             write_dataset(report.refined_dataframe, output_path)
         return report

@@ -37,6 +37,10 @@ of silencing mypy regressions.
 | Evidence        | Every enriched row logged with ≥2 sources.               |
 | Documentation   | MkDocs updated for any behavioural change.               |
 
+Monitor `adapter_failures` in pipeline metrics/CLI output; any non-zero count
+should trigger investigation into upstream research adapters or network
+conditions.
+
 ## Evidence Sink Configuration
 
 - `EVIDENCE_SINK_BACKEND`: choose `csv`, `stream`, or `csv+stream` to fan out.
