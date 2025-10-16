@@ -8,6 +8,7 @@ from typing import Any, cast
 import pandas as pd
 
 from . import config
+from .audit import EvidenceSink, NullEvidenceSink
 from .compliance import (
     canonical_domain,
     confidence_for_status,
@@ -28,6 +29,7 @@ _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
 class Pipeline:
     research_adapter: ResearchAdapter = field(default_factory=build_research_adapter)
     validator: DatasetValidator = field(default_factory=DatasetValidator)
+    evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
 
     def run_dataframe(self, frame: pd.DataFrame) -> PipelineReport:
         validation = self.validator.validate_dataframe(frame)
@@ -112,6 +114,9 @@ class Pipeline:
                 )
             else:
                 self._apply_record(working_frame, idx, record)
+
+        if evidence_records:
+            self.evidence_sink.record(evidence_records)
 
         metrics = {
             "rows_total": len(working_frame),

@@ -37,6 +37,15 @@ of silencing mypy regressions.
 | Evidence        | Every enriched row logged with ≥2 sources.               |
 | Documentation   | MkDocs updated for any behavioural change.               |
 
+## Evidence Sink Configuration
+
+- `EVIDENCE_SINK_BACKEND`: choose `csv`, `stream`, or `csv+stream` to fan out.
+- `EVIDENCE_STREAM_ENABLED`: toggle Kafka/REST emission when using the streaming stub.
+- `EVIDENCE_STREAM_TRANSPORT`: `rest` (default) or `kafka` to switch log context.
+- `EVIDENCE_STREAM_REST_ENDPOINT` / `EVIDENCE_STREAM_KAFKA_TOPIC`: document targets for future graph ingestion pipelines.
+
+During enrichment the pipeline calls the configured `EvidenceSink`, so MCP tasks and CLI runs share the same audit trail plumbing. Use a mock sink in tests or dry runs to prevent filesystem writes.
+
 ## Incident Response
 
 1. Re-run CLI `validate` to reproduce issue locally.

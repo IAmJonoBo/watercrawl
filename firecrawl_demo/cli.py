@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 
-from .compliance import append_evidence_log
+from .audit import build_evidence_sink
 from .excel import read_dataset
 from .mcp.server import CopilotMCPServer
 from .pipeline import Pipeline
@@ -62,14 +62,11 @@ def validate(input_path: Path, output_format: str) -> None:
 def enrich(input_path: Path, output_path: Path | None, output_format: str) -> None:
     """Validate, enrich, and export a dataset."""
 
-    pipeline = Pipeline()
+    pipeline = Pipeline(evidence_sink=build_evidence_sink())
     target = output_path or input_path.with_name(
         f"{input_path.stem}_enriched{input_path.suffix}"
     )
     report = pipeline.run_file(input_path, output_path=target)
-    if report.evidence_log:
-        append_evidence_log([record.as_dict() for record in report.evidence_log])
-
     issues_payload = [issue.__dict__ for issue in report.issues]
     payload = {
         "rows_total": report.metrics["rows_total"],
@@ -93,7 +90,7 @@ def enrich(input_path: Path, output_path: Path | None, output_format: str) -> No
 def mcp_server(stdio: bool) -> None:
     """Expose the pipeline via the Model Context Protocol for Copilot."""
 
-    server = CopilotMCPServer(pipeline=Pipeline())
+    server = CopilotMCPServer(pipeline=Pipeline(evidence_sink=build_evidence_sink()))
     if stdio:
         asyncio.run(server.serve_stdio())
     else:

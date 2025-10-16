@@ -16,7 +16,11 @@
 5. **Pipeline Orchestrator** (`firecrawl_demo.pipeline`)
    - Applies validation, enrichment, evidence logging, and metrics collection.
    - Generates `PipelineReport` objects for CLI/MCP consumers.
-6. **Interfaces**
+6. **Audit Sinks** (`firecrawl_demo.audit`)
+   - `EvidenceSink` protocol decouples evidence persistence from the pipeline.
+   - `CSVEvidenceSink` preserves the legacy append-to-file behaviour for analysts.
+   - `StreamingEvidenceSink` logs Kafka/REST publication stubs so future streaming graphs can subscribe without modifying the pipeline.
+7. **Interfaces**
    - **CLI** (`firecrawl_demo.cli`): human-friendly commands for validation and enrichment.
    - **MCP Server** (`firecrawl_demo.mcp.server`): JSON-RPC surface for GitHub Copilot automation.
 
@@ -40,6 +44,7 @@ flowchart LR
 - Implement a new `ResearchAdapter` to integrate different data sources (e.g., SACAA APIs, LinkedIn scraping, commercial datasets).
 - Override `Pipeline.run_task` to expose additional automation tasks (e.g., province-only audits).
 - Extend MkDocs with ADRs to capture decision history as the stack evolves.
+- Swap in a custom `EvidenceSink` to emit audit events to Kafka, REST webhooks, or other telemetry when the graph roadmap graduates from stubs to production.
 
 ### Research Adapter Registry
 
