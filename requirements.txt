@@ -90,7 +90,7 @@ typing-inspection==0.4.2
 typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_typing_extensions_1751643513/work
 tzdata==2025.2
 urllib3 @ file:///home/conda/feedstock_root/build_artifacts/urllib3_1750271362675/work
-userpath==1.8.0
+userpath==1.9.2
 wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1733231326287/work
 websockets==15.0.1
 yarl==1.22.0
