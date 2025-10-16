@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
-from collections.abc import Sequence
 
 
 class SecretsProviderError(RuntimeError):

@@ -13,12 +13,12 @@
 - [x] Add official secrets-manager dependencies (boto3, azure identity/key vault) to unblock AWS/Azure backends — Owner: Platform Team — Due: 2025-10-30
 - [x] Enforce evidence-log remediation notes when <2 sources or no official URL are present — Owner: AI — Due: 2025-10-23
 - [x] Ship a runnable sample dataset or adjust README quickstart instructions — Owner: Docs — Due: 2025-10-23
-- [ ] High-risk coverage uplift (analyst_ui.py, compliance.py, cli.py, presets.py, secrets.py) — Owner: QA — Due: 2025-10-30
+- [x] High-risk coverage uplift (analyst_ui.py, compliance.py, cli.py, presets.py, secrets.py) — Owner: QA — Due: 2025-10-30
 - [ ] Phase 1 — Data contracts + evidence enforcement (AT-24, AT-29) — Owner: Data — Due: 2025-11-15
 - [ ] Phase 2 — Lineage, catalogue, and versioning rollout (AT-25, AT-26, AT-27) — Owner: Platform — Due: 2025-12-06
 - [ ] Phase 3 — Graph semantics + drift observability (AT-28, AT-30) — Owner: Data/Platform — Due: 2026-01-10
 - [ ] Phase 4 — LLM safety, evaluation, and MCP plan→commit gating (AT-31, AT-32, AT-33) — Owner: Platform/Security — Due: 2026-01-31
-- [ ] Import order remediation (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — Owner: Platform — Due: 2025-10-23
+- [x] Import order remediation (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — Owner: Platform — Due: 2025-10-23
 - [x] Document dotenv-linter invocation in ops runbook — Owner: Docs — Due: 2025-10-16
 
 ## Steps
@@ -39,6 +39,7 @@
 - [x] Implement evidence shortfall messaging in pipeline + tests (2025-10-23)
 - [x] Publish onboarding-ready sample dataset guidance (2025-10-23)
 - [x] Document dotenv-linter invocation in operations guide (2025-10-16)
+- [x] Backfill targeted coverage for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-16)
 - [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24) — Kickoff plan published in docs/data-quality.md (Phase 1.1 section); suite scaffolding scheduled Week 1.
 - [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Execution roadmap outlined in docs/data-quality.md (Phase 1.2 section); fixtures and property suite queued.
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
@@ -75,7 +76,7 @@
 - [x] Build: poetry build succeeds
 - [x] Tests (2025-10-16 17:00 UTC): pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing (77% coverage; flagged analyst_ui/compliance/cli/presets/secrets as hotspots)
 - [x] Lint (2025-10-16): ruff check .
-- [ ] Format (2025-10-16): black --check . & isort --profile black --check-only . — isort failing on import order drift; remediation scheduled for 2025-10-23.
+- [x] Format (2025-10-16 17:24 UTC): black --check . & isort --profile black --check-only . — import order corrected and checks now pass.
 - [x] Types (2025-10-16): mypy .
 - [x] Security (2025-10-16): bandit -r firecrawl_demo
 - [x] Build (2025-10-16): poetry build
@@ -133,9 +134,9 @@
       Pre-commit tooling still absent; evaluate adding packaged entrypoint or doc instructions in future iteration.
 - [ ] Monitor new `sanity_issues` metric surfaced via CLI/MCP; triage non-zero counts before publishing datasets.
 - [ ] Add regression tests for MCP summarize/list tasks returning empty results (tests/test_mcp.py).
-- [ ] Coverage hotspots: analyst_ui.py, compliance.py, cli.py, presets.py, and secrets.py below 60% test coverage — target uplift by 2025-10-30 (see Tasks).
+- [x] Coverage hotspots: analyst_ui.py, compliance.py, cli.py, presets.py, and secrets.py below 60% test coverage — target uplift by 2025-10-30 (see Tasks). Coverage now ≥82% for each module after new unit suites landed (2025-10-16).
 - [ ] Explore CI gating on the `sanity_issues` metric once monitoring data stabilises.
-- [ ] Import ordering drift flagged by `isort` (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — formatter remediation scheduled for 2025-10-23 (see Tasks).
+- [x] Import ordering drift flagged by `isort` (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — remediation completed and checks green (2025-10-16).
 - [x] `.env` hygiene tooling (`dotenv-linter`) requires explicit target files — invocation documented in docs/operations.md (2025-10-16); evaluate stub env templates separately.
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
