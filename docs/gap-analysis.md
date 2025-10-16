@@ -25,3 +25,9 @@
 - ✅ Firecrawl SDK integration available behind feature toggles with offline-safe defaults and type stubs for pandas/requests.
 - 🔄 Follow-up: replace placeholder `.env` credentials with secrets manager integration.
 - ✅ Infrastructure planning module added to codify crawler, observability, and policy guardrails with environment-driven overrides.
+
+## 2025-10-16 Audit Findings
+
+- ❗ **Secrets manager dependencies missing** — `firecrawl_demo.secrets` expects `boto3` and Azure Key Vault libraries, but they are not declared in `pyproject.toml`, so the documented AWS/Azure backends cannot be activated without manual installs.
+- ❗ **Evidence log guidance unenforced** — `docs/data-quality.md` promises remediation notes when evidence has fewer than two sources, yet `Pipeline._merge_sources`/`_compose_evidence_notes` never add those warnings, so analysts receive silent shortfalls.
+- ❗ **Quickstart dataset absent** — README instructs running the CLI against `data/sample.csv`, but no sample file ships in `data/`, leaving newcomers without a runnable example.
