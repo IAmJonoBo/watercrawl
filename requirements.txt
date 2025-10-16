@@ -50,7 +50,7 @@ matplotlib-inline @ file:///home/conda/feedstock_root/build_artifacts/matplotlib
 menuinst @ file:///Users/runner/miniforge3/conda-bld/menuinst_1753546343304/work
 multidict==6.7.0
 nest_asyncio @ file:///home/conda/feedstock_root/build_artifacts/nest-asyncio_1733325553580/work
-numpy==2.0.2
+numpy==2.3.4
 openpyxl==3.1.5
 packaging @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_packaging_1745345660/work
 pandas==2.3.3
