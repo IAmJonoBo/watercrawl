@@ -6,7 +6,7 @@
 - [x] Develop enhanced enrichment architecture & pipeline hardening — Owner: AI — Due: Complete
 - [x] Implement CLI + MCP bridge for task orchestration — Owner: AI — Due: Complete
 - [x] Stand up MkDocs documentation portal — Owner: AI — Due: Complete
-- [ ] Integrate secrets manager for production credentials — Owner: TBD — Due: Backlog
+- [x] Integrate secrets manager for production credentials — Owner: AI — Due: Complete
 
 ## Steps
 
@@ -38,7 +38,8 @@
 
 ## Risks/Notes
 - [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
-- [ ] Secrets handling remains `.env` based; migrate to vault/secret manager for long-term governance.
+- [ ] Secrets governance follow-up: validate AWS/Azure vault access in staging and document production rotation approvals.
+- [x] Secrets rotation: Primary vault determined by `SECRETS_BACKEND` (AWS or Azure) with local overrides via chained `.env` provider; document rotation/override in ops runbook.
 - [ ] Monitor pre-commit hook runtimes once CI enables them to avoid exceeding build minutes.
 - [ ] Enforced pandas/requests type stubs—watch for downstream mypy regressions without `type: ignore` escapes.
 
