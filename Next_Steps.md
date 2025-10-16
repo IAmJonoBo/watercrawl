@@ -280,3 +280,50 @@ Why MCP here? It standardises how Copilot calls your stack, and it’s natively 
 - Robots/politeness compliance failing on the test corpus.
 
 > Update the checkboxes above to reference the relevant **AT-** IDs as you complete them (e.g., “MCP server … (AT‑15, AT‑16, AT‑19)”).
+
+---
+
+## Frontier Enhancements — Data Trust, Graph Semantics, and Safety
+
+> This section integrates best‑in‑class data quality, lineage, ACID/versioning, tabular→graph semantics, guard‑railed calculations, observability/evaluation, and LLM safety into the programme. It adds aims, process notes, and **new AT‑tasks** with explicit quality gates.
+
+### Aims → outcomes (what “great” looks like)
+
+- **Authoritative results:** every published fact shows run lineage, fact‑level provenance, passed quality checks, and a time‑travelable dataset version.
+- **Intelligent tabular analysis:** spreadsheets/DBs are typed, constraint‑checked and unit‑aware; graphs mirror entities/relations from those tables in near‑real time.
+- **Self‑healing:** failing inputs/outputs are quarantined automatically; lineage/profiles pinpoint faulty steps; rollbacks are routine.
+
+### Principles & frameworks (to adopt)
+
+1. **Data quality & contracts:** automatic checks with **Great Expectations / dbt tests / Deequ** gate all writes before compute/publish.
+2. **Lineage, provenance, catalogue:** emit run‑level lineage (**OpenLineage**), fact‑level provenance (**W3C PROV‑O**), and dataset‑level metadata (**W3C DCAT**).
+3. **ACID tables + versioning:** write curated data to **Delta Lake** or **Apache Iceberg**; version datasets with **DVC**/**lakeFS**.
+4. **Tabular→graph by spec:** map spreadsheets/SQL using **CSVW** / **R2RML** (and **RML** for non‑SQL). Query/compute on **GQL‑ready** engines with PageRank/Louvain.
+5. **Guard‑railed calculations:** route spreadsheet math through **DuckDB/SQLite** with `CHECK/NOT NULL/UNIQUE/PK`; add **units** checking (Pint) and **property‑based tests** (Hypothesis).
+6. **Observability & eval:** profile data distributions continuously (**whylogs**); score LLM/RAG outputs (**Ragas**) to stop silent regressions.
+7. **LLM safety:** apply **OWASP Top‑10 for LLMs** (injection, insecure output handling, excessive agency) to every agent/tool path.
+
+### Actionable Tasks & Quality Gates (new)
+
+|        ID | Description                                                                                                                                        | Owner    | Due | Dependencies | Quality Gates (acceptance criteria)                                                                                  | Evidence/Artefacts                                                        | Rollback/Remediation                                                                 |
+| --------: | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | --- | ------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **AT-24** | **Data contracts & tests**: enforce Great Expectations / dbt tests / Deequ on every ingest/transform; block writes on failure.                     | Data     | TBC | AT-01..AT-06 | CI job fails if any test fails; coverage of schema/range/uniqueness/ref integrity ≥95% of curated tables.            | dbt `tests/` + GX suites + Deequ checks; CI logs; human‑readable GX docs. | Auto‑quarantine dataset; roll back to last good snapshot; hotfix test definitions.   |
+| **AT-25** | **Lineage & catalogue**: emit OpenLineage events; attach PROV‑O to facts; publish DCAT entries for curated datasets.                               | Data     | TBC | AT-04        | 100% publishable runs have lineage events; each fact resolves to ≥1 PROV record; DCAT entries live and discoverable. | OpenLineage emitter configs; PROV store; DCAT catalogue pages.            | Pause publish for items lacking lineage/provenance; backfill events; republish.      |
+| **AT-26** | **ACID table format**: adopt Delta Lake or Iceberg for curated tables (time travel + concurrent writers).                                          | Platform | TBC | AT-04, AT-05 | All curated writes land in ACID tables; time‑travel restore proven; concurrent write tests pass.                     | Table configs; restore demo; perf/lock tests.                             | Repoint writers to snapshot; revert table config; replay events.                     |
+| **AT-27** | **Dataset versioning**: tag runs with DVC or lakeFS commit; store pointers in lineage/provenance.                                                  | Platform | TBC | AT-26        | Every run references an immutable data commit; `reproduce` rebuild succeeds from commit alone.                       | DVC/lakeFS commit IDs; reproduce log.                                     | Roll back to prior commit; promote hotfix branch.                                    |
+| **AT-28** | **Tabular→graph mappings**: define CSVW metadata + R2RML/RML mappings; validate before graph build.                                                | Data     | TBC | AT-12        | Mapping validation passes; post‑build checks confirm node/edge counts + degree distributions in expected ranges.     | Mapping repo; validators; post‑build report.                              | Invalidate graph; fix mapping; rebuild from last good snapshot.                      |
+| **AT-29** | **Guard‑railed calculations**: import spreadsheets into DuckDB/SQLite; enforce constraints; verify units with Pint; fuzz with Hypothesis.          | Platform | TBC | AT-02        | Transformations have schema/type checks + unit checks; ≥1 property‑based test per transformation.                    | DDL with constraints; Pint unit tests; Hypothesis tests.                  | Disable failing transform; revert to stable version; correct units/constraints.      |
+| **AT-30** | **Data profiling**: instrument whylogs for each dataset/partition; drift alerts wired.                                                             | Platform | TBC | AT-20        | Baselines captured; drift/missingness thresholds defined; alert fires on simulated drift.                            | Profiles; alert runbook; dashboards.                                      | Quarantine partition; roll back to last good version; widen thresholds if justified. |
+| **AT-31** | **RAG/agent evaluation**: integrate Ragas; enforce minimum scores (faithfulness/context precision).                                                | Platform | TBC | AT-15..AT-19 | Below‑threshold scores block “authoritative” promotion; evaluation trace stored.                                     | Ragas reports; CI gate.                                                   | Re‑run with improved retrieval/context; hold publish.                                |
+| **AT-32** | **LLM safety**: implement OWASP LLM Top‑10 mitigations; red‑team tests for injection, insecure output handling, excessive agency.                  | Security | TBC | AT-15..AT-17 | Red‑team suite passes; tool allow‑list and typed arg validation enforced; no direct write tools without plan→commit. | Test suite; OPA policies; audit logs.                                     | Disable risky tools; tighten policies; rotate secrets.                               |
+| **AT-33** | **Copilot MCP × data gates**: expose `table.plan_patch`/`table.commit_patch` tools; require `If‑Match` + schema + (dbt/GX/Deequ) checks in‑flight. | Platform | TBC | AT-24..AT-32 | Copilot shows diff; commits only when all tests/constraints pass; audit links lineage/provenance.                    | MCP manifest; conversation transcript; logs.                              | Block `commit_patch`; manual review path; revert via time travel.                    |
+
+### Additional release blockers (additive)
+
+- Any failing **GX/dbt/Deequ** test on publishable datasets (AT‑24).
+- Missing **OpenLineage** events or **PROV‑O/DCAT** for a publishable run (AT‑25).
+- Curated writes to **non‑ACID** tables or runs without a **DVC/lakeFS** commit (AT‑26, AT‑27).
+- **CSVW/R2RML/RML** validation failure or graph post‑build checks out of bounds (AT‑28).
+- **whylogs** drift beyond thresholds or missing profiles for a promoted partition (AT‑30).
+- **Ragas** scores below thresholds for publish (AT‑31).
+- **OWASP LLM Top‑10** red‑team failure (AT‑32).
