@@ -2,22 +2,60 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+
+import pandas as pd  # type: ignore[import-untyped]
 
 
+@dataclass
 class Organisation:
-    """Stub for Organisation to satisfy tests."""
+    name: str
+    province: Optional[str] = None
+    status: Optional[str] = None
 
-    pass
+
+@dataclass(frozen=True)
+class ValidationIssue:
+    code: str
+    message: str
+    row: Optional[int] = None
+    column: Optional[str] = None
 
 
-"""Dataclasses representing flight school records and enrichment results."""
+@dataclass(frozen=True)
+class ValidationReport:
+    issues: List[ValidationIssue]
+    rows: int
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.issues
+
+
+@dataclass(frozen=True)
+class EvidenceRecord:
+    row_id: int
+    organisation: str
+    changes: str
+    sources: List[str]
+    notes: str
+    confidence: int
+    timestamp: datetime = field(default_factory=lambda: datetime.utcnow())
+
+    def as_dict(self) -> Dict[str, str]:
+        return {
+            "RowID": str(self.row_id),
+            "Organisation": self.organisation,
+            "What changed": self.changes,
+            "Sources": "; ".join(self.sources),
+            "Notes": self.notes,
+            "Timestamp": self.timestamp.isoformat(timespec="seconds"),
+            "Confidence": str(self.confidence),
+        }
 
 
 @dataclass
 class SchoolRecord:
-    """Represents a single organisation row from the enrichment worksheet."""
-
     name: str
     province: str
     status: str
@@ -27,67 +65,51 @@ class SchoolRecord:
     contact_email: Optional[str]
 
     @classmethod
-    def from_row(cls, row: Dict[str, Any]) -> "SchoolRecord":
-        """Create a SchoolRecord instance from a worksheet row dictionary."""
+    def from_dataframe_row(cls, row: pd.Series) -> "SchoolRecord":
         return cls(
             name=str(row.get("Name of Organisation", "")).strip(),
             province=str(row.get("Province", "")).strip(),
-            status=str(row.get("Status", "")).strip(),
+            status=str(row.get("Status", "")).strip() or "Candidate",
             website_url=_clean_value(row.get("Website URL")),
             contact_person=_clean_value(row.get("Contact Person")),
             contact_number=_clean_value(row.get("Contact Number")),
             contact_email=_clean_value(row.get("Contact Email Address")),
         )
 
+    def as_dict(self) -> Dict[str, Optional[str]]:
+        return {
+            "Name of Organisation": self.name,
+            "Province": self.province,
+            "Status": self.status,
+            "Website URL": self.website_url,
+            "Contact Person": self.contact_person,
+            "Contact Number": self.contact_number,
+            "Contact Email Address": self.contact_email,
+        }
+
 
 @dataclass
 class EnrichmentResult:
-    def as_dict(self) -> Dict[str, Any]:
-        # Flatten org_details into top-level columns for sheet export
-        base = {
-            "Source URL": self.source_url,
-            "Status": self.status,
-            "Confidence": self.confidence,
-            "Updated At": self.updated_at.isoformat(timespec="seconds"),
-            "Payload Hash": self.payload_hash,
-        }
-        # Map org_details to expected columns
-        details = {
-            "Website URL": self.org_details.get("website_url"),
-            "Contact Person": self.org_details.get("contact_person"),
-            "Contact Number": self.org_details.get("contact_phone"),
-            "Contact Email Address": self.org_details.get("contact_email"),
-            "Physical Address": self.org_details.get("physical_address"),
-            "Accreditation": self.org_details.get("accreditation"),
-            "Fleet Overview": self.org_details.get("fleet_overview"),
-            "LinkedIn URL": self.org_details.get("linkedin_url"),
-            "Facebook URL": self.org_details.get("facebook_url"),
-        }
-        base.update(details)
-        return base
+    record: SchoolRecord
+    issues: List[str] = field(default_factory=list)
+    evidence: Optional[EvidenceRecord] = None
 
-    """Represents enrichment results for a flight school record, including evidence and compliance details."""
+    def apply(self, frame: pd.DataFrame, index: int) -> None:
+        for key, value in self.record.as_dict().items():
+            if value is not None:
+                frame.at[index, key] = value
 
-    source_url: Optional[str] = None
-    status: str = "Candidate"
-    confidence: int = 0
-    updated_at: datetime = field(default_factory=datetime.utcnow)
-    payload_hash: Optional[str] = None
 
-    # Grouped contact and organisation details
-    org_details: Dict[str, Optional[str]] = field(
-        default_factory=lambda: {
-            "website_url": None,
-            "contact_person": None,
-            "contact_email": None,
-            "contact_phone": None,
-            "physical_address": None,
-            "accreditation": None,
-            "fleet_overview": None,
-            "linkedin_url": None,
-            "facebook_url": None,
-        }
-    )
+@dataclass(frozen=True)
+class PipelineReport:
+    refined_dataframe: pd.DataFrame
+    validation_report: ValidationReport
+    evidence_log: List[EvidenceRecord]
+    metrics: Dict[str, int]
+
+    @property
+    def issues(self) -> List[ValidationIssue]:
+        return self.validation_report.issues
 
 
 def _clean_value(value: Any) -> Optional[str]:

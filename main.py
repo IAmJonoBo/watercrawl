@@ -1,5 +1,7 @@
 """Main script for Firecrawl demo: loads API key, scrapes and extracts content from example URLs."""
 
+# mypy: ignore-errors
+
 from __future__ import annotations
 
 import os

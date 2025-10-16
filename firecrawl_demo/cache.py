@@ -1,8 +1,6 @@
 # Minimal in-memory Cache for testing
 from __future__ import annotations
 
-from typing import Any, Optional
-
 
 class Cache:
     """Minimal in-memory cache for testing."""

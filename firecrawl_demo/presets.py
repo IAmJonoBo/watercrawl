@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from . import config
 
-PRESET_MAP = {}
+PRESET_MAP: Dict[str, Dict[str, Any]] = {}
 """Utilities for working with Firecrawl preset templates."""
 
 _PRESET_FILES = {

@@ -1,12 +1,3 @@
-from __future__ import annotations
-
-
-class ComplianceChecker:
-    """Stub for ComplianceChecker to satisfy tests."""
-
-    pass
-
-
 """Compliance helpers enforcing ACES Aerodynamics enrichment guardrails."""
 
 import csv
@@ -46,7 +37,10 @@ def canonical_domain(url: Optional[str]) -> Optional[str]:
         return None
     parsed = urlparse(url.strip())
     host = parsed.hostname or ""
-    return host.lower() or None
+    host = host.lower()
+    if host.startswith("www."):
+        host = host[4:]
+    return host or None
 
 
 def normalize_phone(raw_phone: Optional[str]) -> Tuple[Optional[str], List[str]]:
@@ -210,3 +204,9 @@ def describe_changes(
         if original_value != new_value:
             changes.append(f"{key} updated")
     return ", ".join(changes) if changes else "No changes"
+
+
+class ComplianceChecker:
+    """Stub maintained for backward-compatible tests."""
+
+    pass
