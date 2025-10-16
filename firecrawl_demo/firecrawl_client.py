@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 from collections.abc import Iterable
 
-from .config import settings
+from .config import resolve_api_key, settings
 
 try:  # pragma: no cover - optional dependency
     from firecrawl import Firecrawl  # type: ignore[import-not-found]
@@ -22,9 +22,10 @@ class FirecrawlClient:
     def _client(self) -> Firecrawl:
         if Firecrawl is None:
             raise RuntimeError("Firecrawl SDK is not installed")
-        key = self.api_key or getattr(settings, "FIRECRAWL_API_KEY", None)
-        if not key:
-            raise RuntimeError("FIRECRAWL_API_KEY is not configured")
+        try:
+            key = resolve_api_key(self.api_key)
+        except ValueError as exc:
+            raise RuntimeError("FIRECRAWL_API_KEY is not configured") from exc
         return Firecrawl(
             api_key=key,
             api_url=self.api_url or getattr(settings, "FIRECRAWL_API_URL", None),

@@ -1,50 +1,17 @@
+"""Central configuration and secrets-backed settings for the enrichment stack."""
+
 from __future__ import annotations
 
 import json
-import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-try:  # pragma: no cover - optional dependency
-    from pydantic_settings import BaseSettings as _ImportedBaseSettings
-except ImportError:  # pragma: no cover - runtime fallback
-    _PydanticBaseSettings: type[Any] | None = None
-else:
-    _PydanticBaseSettings = _ImportedBaseSettings
+from .secrets import SecretsProvider, build_provider_from_environment
 
-"""Central configuration and environment-driven settings for the enrichment stack."""
-
-
-class _SettingsFallback:
-    FIRECRAWL_API_KEY: str | None = os.getenv("FIRECRAWL_API_KEY")
-    FIRECRAWL_API_URL: str = os.getenv("FIRECRAWL_API_URL", "https://api.firecrawl.com")
-
-
-BaseSettingsType: type[Any]
-if _PydanticBaseSettings is not None:  # pragma: no branch - deterministic selection
-    BaseSettingsType = _PydanticBaseSettings
-else:  # pragma: no cover - exercised when pydantic-settings missing
-    BaseSettingsType = _SettingsFallback
-
-
-class Settings(BaseSettingsType):
-    FIRECRAWL_API_KEY: str | None = None
-    FIRECRAWL_API_URL: str = "https://api.firecrawl.com"
-
-    if _PydanticBaseSettings is not None:
-
-        class Config:
-            env_file = ".env"
-            env_file_encoding = "utf-8"
-
-
-settings = Settings()
-
-# Optional .env loading -----------------------------------------------------
 try:  # pragma: no cover - optional dependency
     from dotenv import load_dotenv
-except ImportError:  # pragma: no cover - handled gracefully
+except ImportError:  # pragma: no cover - handled gracefully at runtime
     load_dotenv = None  # type: ignore
 
 
@@ -120,16 +87,7 @@ EVIDENCE_QUERIES = [
 ]
 
 
-# Feature toggles ------------------------------------------------------------
-
-
-def _env_bool(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
+# Dataclasses for richer configuration --------------------------------------
 @dataclass(frozen=True)
 class FeatureFlags:
     enable_firecrawl_sdk: bool = False
@@ -138,17 +96,6 @@ class FeatureFlags:
     investigate_rebrands: bool = True
 
 
-FEATURE_FLAGS = FeatureFlags(
-    enable_firecrawl_sdk=_env_bool("FEATURE_ENABLE_FIRECRAWL_SDK", False),
-    enable_press_research=_env_bool("FEATURE_ENABLE_PRESS_RESEARCH", True),
-    enable_regulator_lookup=_env_bool("FEATURE_ENABLE_REGULATOR_LOOKUP", True),
-    investigate_rebrands=_env_bool("FEATURE_INVESTIGATE_REBRANDS", True),
-)
-
-ALLOW_NETWORK_RESEARCH = _env_bool("ALLOW_NETWORK_RESEARCH", False)
-
-
-# Dataclasses for richer configuration --------------------------------------
 @dataclass(frozen=True)
 class RetryPolicy:
     max_attempts: int
@@ -183,9 +130,20 @@ class FirecrawlSettings:
     behaviour: FirecrawlBehaviour
 
 
-# Helper parsers -------------------------------------------------------------
-def _env_int(name: str, default: int) -> int:
-    value = os.getenv(name)
+def _get_value(name: str, default: str | None, provider: SecretsProvider) -> str | None:
+    value = provider.get(name)
+    return value if value is not None else default
+
+
+def _env_bool(name: str, default: bool, provider: SecretsProvider) -> bool:
+    value = _get_value(name, None, provider)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int, provider: SecretsProvider) -> int:
+    value = _get_value(name, None, provider)
     if value is None:
         return default
     try:
@@ -194,8 +152,8 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
-def _env_float(name: str, default: float) -> float:
-    value = os.getenv(name)
+def _env_float(name: str, default: float, provider: SecretsProvider) -> float:
+    value = _get_value(name, None, provider)
     if value is None:
         return default
     try:
@@ -204,8 +162,8 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
-def _env_json(name: str) -> Any | None:
-    value = os.getenv(name)
+def _env_json(name: str, provider: SecretsProvider) -> Any | None:
+    value = _get_value(name, None, provider)
     if not value:
         return None
     try:
@@ -228,58 +186,163 @@ def _default_parsers() -> list[Any]:
     return []
 
 
-# Cache defaults -------------------------------------------------------------
-CACHE_TTL_HOURS = _env_float("FIRECRAWL_CACHE_TTL_HOURS", 24.0)
-MX_LOOKUP_TIMEOUT = _env_float("FIRECRAWL_MX_LOOKUP_TIMEOUT", 3.0)
+@dataclass(slots=True)
+class Settings:
+    provider: SecretsProvider
+    FIRECRAWL_API_KEY: str | None = field(init=False)
+    FIRECRAWL_API_URL: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.refresh()
+
+    def refresh(self) -> None:
+        self.FIRECRAWL_API_KEY = _get_value("FIRECRAWL_API_KEY", None, self.provider)
+        self.FIRECRAWL_API_URL = (
+            _get_value("FIRECRAWL_API_URL", "https://api.firecrawl.com", self.provider)
+            or "https://api.firecrawl.com"
+        )
 
 
-# Firecrawl behaviour --------------------------------------------------------
-RAW_SCRAPE_FORMATS = _env_json("FIRECRAWL_SCRAPE_FORMATS") or _default_scrape_formats()
-RAW_PARSERS = _env_json("FIRECRAWL_PARSERS") or _default_parsers()
-
-BEHAVIOUR = FirecrawlBehaviour(
-    search_limit=_env_int("FIRECRAWL_SEARCH_LIMIT", 3),
-    map_limit=_env_int("FIRECRAWL_MAP_LIMIT", 8),
-    timeout_seconds=_env_float("FIRECRAWL_TIMEOUT_SECONDS", 30.0),
-    proxy_mode=os.getenv("FIRECRAWL_PROXY_MODE", "basic"),
-    only_main_content=os.getenv("FIRECRAWL_ONLY_MAIN_CONTENT", "true").lower()
-    == "true",
-    scrape_formats=list(RAW_SCRAPE_FORMATS),
-    parsers=list(RAW_PARSERS),
-)
-
-RETRY = RetryPolicy(
-    max_attempts=_env_int("FIRECRAWL_RETRY_MAX_ATTEMPTS", 3),
-    initial_delay=_env_float("FIRECRAWL_RETRY_INITIAL_DELAY", 1.0),
-    max_delay=_env_float("FIRECRAWL_RETRY_MAX_DELAY", 10.0),
-    backoff_factor=_env_float("FIRECRAWL_RETRY_BACKOFF_FACTOR", 2.0),
-)
-
-THROTTLE = ThrottlePolicy(
-    max_concurrency=_env_int("FIRECRAWL_MAX_CONCURRENCY", 3),
-    min_interval=_env_float("FIRECRAWL_MIN_INTERVAL_SECONDS", 1.0),
-)
+settings: Settings
+FEATURE_FLAGS: FeatureFlags
+ALLOW_NETWORK_RESEARCH: bool
+CACHE_TTL_HOURS: float
+MX_LOOKUP_TIMEOUT: float
+RAW_SCRAPE_FORMATS: list[Any]
+RAW_PARSERS: list[Any]
+BEHAVIOUR: FirecrawlBehaviour
+RETRY: RetryPolicy
+THROTTLE: ThrottlePolicy
+FIRECRAWL: FirecrawlSettings
+BATCH_SIZE: int
+REQUEST_DELAY_SECONDS: float
+SECRETS_PROVIDER: SecretsProvider
 
 
-FIRECRAWL = FirecrawlSettings(
-    api_key=os.getenv("FIRECRAWL_API_KEY"),
-    api_url=os.getenv("FIRECRAWL_API_URL"),
-    retry=RETRY,
-    throttle=THROTTLE,
-    behaviour=BEHAVIOUR,
-)
+def _build_firecrawl_settings(provider: SecretsProvider) -> FirecrawlSettings:
+    retry = RetryPolicy(
+        max_attempts=_env_int("FIRECRAWL_RETRY_MAX_ATTEMPTS", 3, provider),
+        initial_delay=_env_float("FIRECRAWL_RETRY_INITIAL_DELAY", 1.0, provider),
+        max_delay=_env_float("FIRECRAWL_RETRY_MAX_DELAY", 10.0, provider),
+        backoff_factor=_env_float("FIRECRAWL_RETRY_BACKOFF_FACTOR", 2.0, provider),
+    )
+
+    throttle = ThrottlePolicy(
+        max_concurrency=_env_int("FIRECRAWL_MAX_CONCURRENCY", 3, provider),
+        min_interval=_env_float("FIRECRAWL_MIN_INTERVAL_SECONDS", 1.0, provider),
+    )
+
+    scrape_formats = (
+        _env_json("FIRECRAWL_SCRAPE_FORMATS", provider) or _default_scrape_formats()
+    )
+    parsers = _env_json("FIRECRAWL_PARSERS", provider) or _default_parsers()
+
+    behaviour = FirecrawlBehaviour(
+        search_limit=_env_int("FIRECRAWL_SEARCH_LIMIT", 3, provider),
+        map_limit=_env_int("FIRECRAWL_MAP_LIMIT", 8, provider),
+        timeout_seconds=_env_float("FIRECRAWL_TIMEOUT_SECONDS", 30.0, provider),
+        proxy_mode=_get_value("FIRECRAWL_PROXY_MODE", "basic", provider) or "basic",
+        only_main_content=(
+            (
+                _get_value("FIRECRAWL_ONLY_MAIN_CONTENT", "true", provider) or "true"
+            ).lower()
+            == "true"
+        ),
+        scrape_formats=list(scrape_formats),
+        parsers=list(parsers),
+    )
+
+    api_url = _get_value("FIRECRAWL_API_URL", "https://api.firecrawl.com", provider)
+
+    return FirecrawlSettings(
+        api_key=_get_value("FIRECRAWL_API_KEY", None, provider),
+        api_url=api_url,
+        retry=retry,
+        throttle=throttle,
+        behaviour=behaviour,
+    )
 
 
-# Pipeline tuning ------------------------------------------------------------
-BATCH_SIZE = _env_int("FIRECRAWL_BATCH_SIZE", 20)
-REQUEST_DELAY_SECONDS = _env_float("FIRECRAWL_REQUEST_DELAY_SECONDS", 1.0)
+def configure(provider: SecretsProvider | None = None) -> None:
+    """Initialise configuration from the supplied secrets provider."""
+
+    global SECRETS_PROVIDER
+    global settings
+    global FEATURE_FLAGS
+    global ALLOW_NETWORK_RESEARCH
+    global CACHE_TTL_HOURS
+    global MX_LOOKUP_TIMEOUT
+    global RAW_SCRAPE_FORMATS
+    global RAW_PARSERS
+    global BEHAVIOUR
+    global RETRY
+    global THROTTLE
+    global FIRECRAWL
+    global BATCH_SIZE
+    global REQUEST_DELAY_SECONDS
+
+    SECRETS_PROVIDER = provider or build_provider_from_environment()
+
+    settings = Settings(provider=SECRETS_PROVIDER)
+
+    FEATURE_FLAGS = FeatureFlags(
+        enable_firecrawl_sdk=_env_bool(
+            "FEATURE_ENABLE_FIRECRAWL_SDK", False, SECRETS_PROVIDER
+        ),
+        enable_press_research=_env_bool(
+            "FEATURE_ENABLE_PRESS_RESEARCH", True, SECRETS_PROVIDER
+        ),
+        enable_regulator_lookup=_env_bool(
+            "FEATURE_ENABLE_REGULATOR_LOOKUP", True, SECRETS_PROVIDER
+        ),
+        investigate_rebrands=_env_bool(
+            "FEATURE_INVESTIGATE_REBRANDS", True, SECRETS_PROVIDER
+        ),
+    )
+
+    ALLOW_NETWORK_RESEARCH = _env_bool(
+        "ALLOW_NETWORK_RESEARCH", False, SECRETS_PROVIDER
+    )
+
+    CACHE_TTL_HOURS = _env_float("FIRECRAWL_CACHE_TTL_HOURS", 24.0, SECRETS_PROVIDER)
+    MX_LOOKUP_TIMEOUT = _env_float("FIRECRAWL_MX_LOOKUP_TIMEOUT", 3.0, SECRETS_PROVIDER)
+
+    firecrawl_settings = _build_firecrawl_settings(SECRETS_PROVIDER)
+    RETRY = firecrawl_settings.retry
+    THROTTLE = firecrawl_settings.throttle
+    BEHAVIOUR = firecrawl_settings.behaviour
+    FIRECRAWL = FirecrawlSettings(
+        api_key=settings.FIRECRAWL_API_KEY,
+        api_url=settings.FIRECRAWL_API_URL,
+        retry=RETRY,
+        throttle=THROTTLE,
+        behaviour=BEHAVIOUR,
+    )
+
+    RAW_SCRAPE_FORMATS = list(FIRECRAWL.behaviour.scrape_formats)
+    RAW_PARSERS = list(FIRECRAWL.behaviour.parsers)
+
+    BATCH_SIZE = _env_int("FIRECRAWL_BATCH_SIZE", 20, SECRETS_PROVIDER)
+    REQUEST_DELAY_SECONDS = _env_float(
+        "FIRECRAWL_REQUEST_DELAY_SECONDS", 1.0, SECRETS_PROVIDER
+    )
 
 
-def resolve_api_key(explicit: str | None = None) -> str:
-    """Return the API key, prioritising explicit overrides. Uses pydantic settings if available."""
-    key = explicit or getattr(settings, "FIRECRAWL_API_KEY", None) or FIRECRAWL.api_key
+def resolve_api_key(
+    explicit: str | None = None, *, provider: SecretsProvider | None = None
+) -> str:
+    """Return the Firecrawl API key, prioritising explicit overrides."""
+
+    active_provider = provider or SECRETS_PROVIDER
+    if explicit:
+        return explicit
+    key = settings.FIRECRAWL_API_KEY or active_provider.get("FIRECRAWL_API_KEY")
     if not key:
         raise ValueError(
-            "Firecrawl API key is required. Set FIRECRAWL_API_KEY env variable or pass api_key explicitly."
+            "Firecrawl API key is required. Set FIRECRAWL_API_KEY in the secrets provider or pass api_key explicitly."
         )
     return key
+
+
+# Initialise module state on import.
+configure()

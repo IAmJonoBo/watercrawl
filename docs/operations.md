@@ -13,6 +13,16 @@ poetry run pre-commit run --all-files
 poetry run poetry build
 ```
 
+## Secrets Provisioning
+
+The stack now resolves credentials and feature flags through `firecrawl_demo.secrets`.
+
+1. Choose a backend by setting `SECRETS_BACKEND` to `env`, `aws`, or `azure`.
+2. For local development (`env`), populate `.env` or OS environment variables as before.
+3. For AWS Secrets Manager, provide `AWS_REGION`/`AWS_DEFAULT_REGION` and an optional `AWS_SECRETS_PREFIX` (for example `prod/firecrawl/`). Credentials follow the active AWS profile or IAM role.
+4. For Azure Key Vault, set `AZURE_KEY_VAULT_URL` and optionally `AZURE_SECRETS_PREFIX`; authentication flows through `DefaultAzureCredential`, so ensure managed identity or service principal access.
+5. Rotation is handled centrally; override any individual secret locally by exporting the variable in your shell or `.env`.
+
 The toolchain includes first-party type stubs for `pandas` and `requests`, so remove per-file `type: ignore` directives instead
 of silencing mypy regressions.
 

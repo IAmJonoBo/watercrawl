@@ -7,26 +7,22 @@ Based on the official documentation at https://docs.firecrawl.dev/introduction
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
 from firecrawl import Firecrawl  # type: ignore
 from pydantic import BaseModel
 
+from firecrawl_demo.config import resolve_api_key
+
 
 def ensure_api_key() -> str:
-    """Load FIRECRAWL_API_KEY from .env or the environment."""
-    env_path = Path(__file__).with_name(".env")
-    if env_path.exists():
-        load_dotenv(env_path)
-    api_key = os.getenv("FIRECRAWL_API_KEY")
-    if not api_key:
+    """Load FIRECRAWL_API_KEY from the configured secrets provider."""
+    try:
+        return resolve_api_key()
+    except ValueError as exc:
         raise RuntimeError(
-            "Set FIRECRAWL_API_KEY in firecrawl-demo/.env before running this script."
-        )
-    return api_key
+            "Set FIRECRAWL_API_KEY in the configured secrets backend before running this script."
+        ) from exc
 
 
 def pretty_print(label: str, obj: Any) -> None:
