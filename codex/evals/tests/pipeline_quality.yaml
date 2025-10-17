@@ -1,0 +1,16 @@
+- vars:
+    file: "firecrawl_demo/pipeline.py"
+    test: "tests/test_pipeline.py::test_pipeline_rejects_low_confidence_updates"
+  assert:
+    - type: icontains
+      value: "quality gate"
+    - type: icontains
+      value: "rollback"
+- vars:
+    file: "firecrawl_demo/compliance.py"
+    test: "tests/test_compliance.py::test_validate_email_domain"
+  assert:
+    - type: icontains
+      value: "South Africa"
+    - type: not-icontains
+      value: "TODO"
