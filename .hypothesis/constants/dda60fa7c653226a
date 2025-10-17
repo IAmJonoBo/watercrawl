@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/drift.py
+# hypothesis_version: 6.142.1
+
+[0.0, 'DriftBaseline', 'DriftMetric', 'DriftReport', 'Province', 'Status', 'compare_to_baseline']

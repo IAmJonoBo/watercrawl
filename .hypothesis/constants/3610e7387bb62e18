@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/core/external_sources.py
+# hypothesis_version: 6.142.1
+
+[200, '; ', 'acquired', 'address', 'articles', 'contact', 'contactEmail', 'contactPerson', 'contactPhone', 'contact_email', 'contact_person', 'contact_phone', 'data', 'description', 'details', 'email', 'entries', 'headline', 'knownAliases', 'link', 'location', 'merger', 'officialWebsite', 'ownership', 'ownershipChange', 'phone', 'physicalAddress', 'rebrand', 'rebrandNote', 'renamed', 'results', 'source', 'sources', 'summary', 'title', 'tradingAs', 'url', 'website']

@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/core/excel.py
+# hypothesis_version: 6.142.1
+
+['.csv', '.xls', '.xlsx', 'Contact Number', 'Contact Person', 'Fleet Size', 'Name of Organisation', 'Province', 'Runway Length', 'Runway Length (m)', 'Status', 'Website URL', 'aircraft', 'aircraft = count', 'allowed_units', 'canonical_unit', 'cast', 'count', 'count = []', 'dimensionless', 'feet', 'foot', 'ft', 'm', 'meter', 'metre', 'openpyxl', 'plane', 'plane = count', 'planes', 'planes = count']

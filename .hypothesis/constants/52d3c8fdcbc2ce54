@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/interfaces/mcp/server.py
+# hypothesis_version: 6.142.1
+
+[-32700, -32601, -32000, '2.0', 'Invalid JSON', 'capabilities', 'code', 'description', 'error', 'id', 'initialize', 'jsonrpc', 'listTasks', 'list_tasks', 'message', 'method', 'name', 'ok', 'params', 'payload', 'result', 'runTask', 'run_task', 'shutdown', 'status', 'task', 'tasks']

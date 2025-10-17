@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/interfaces/__init__.py
+# hypothesis_version: 6.142.1
+
+['analyst_ui', 'cli', 'mcp']

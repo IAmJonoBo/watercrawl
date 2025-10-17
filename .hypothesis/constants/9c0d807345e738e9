@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/research/registry.py
+# hypothesis_version: 6.142.1
+
+['"', '#', "'", ',', '-', '.toml', '.yaml', '.yml', ':', 'AdapterContext', 'AdapterFactory', 'RESEARCH_ADAPTERS', '[', '[]', ']', 'adapters', 'firecrawl', 'ml', 'null', 'press', 'register_adapter', 'regulator', 'research_adapters', 'sequence', 'utf-8']

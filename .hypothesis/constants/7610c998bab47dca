@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/core/presets.py
+# hypothesis_version: 6.142.1
+
+['-H', '-X', '-d', '-sS', 'POST', 'crawl', 'curl', 'firecrawl_crawl.json', 'firecrawl_map.json', 'includePaths', 'limit', 'map', 'presets', 'r', 'scrape', 'url', 'utf-8']

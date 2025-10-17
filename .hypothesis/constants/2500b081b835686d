@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/firecrawl_client.py
+# hypothesis_version: 6.142.1
+
+['FIRECRAWL_API_URL', 'accreditation', 'address', 'attributes', 'contactEmail', 'contactPerson', 'contactPhone', 'contact_email', 'contact_person', 'contact_phone', 'data', 'facebook', 'facebook_url', 'fleet', 'fleet_overview', 'linkedin', 'linkedin_url', 'markdown', 'physical_address', 'website', 'website_url']

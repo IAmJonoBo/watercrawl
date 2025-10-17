@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/interfaces/cli.py
+# hypothesis_version: 6.142.1
+
+['--format', '--output', '--stdio/--no-stdio', 'Contracts ', 'Enriching dataset', 'Failing dbt tests:', 'Great Expectations: ', 'Issues:', 'No issues detected.', 'Validating dataset', '__main__', 'adapter_failures', 'artifact_dir', 'catalog', 'column', 'contracts', 'dataset', 'dbt', 'dbt tests: ', 'elapsed', 'enriched_rows', 'expectation_config', 'expectation_type', 'failed', 'failed_expectations', 'failures', 'great_expectations', 'input_path', 'is_valid', 'issues', 'issues_found', 'json', 'kwargs', 'lineage_artifacts', 'log_path', 'mcp-server', 'meta', 'openlineage', 'output_format', 'output_path', 'pass', 'passed', 'progress', 'prov', 'result', 'results', 'rows', 'rows_enriched', 'rows_total', 'skipped', 'statistics', 'status', 'success', 'target_path', 'text', 'total', 'unknown', 'verified_rows', 'warn']

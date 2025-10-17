@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/governance/safety.py
+# hypothesis_version: 6.142.1
+
+[0.0, 5000, 'SafetyDecision', 'SafetyPolicy', 'SafetyViolation', 'blocked_domain', 'blocked_keyword', 'changes', 'diff_too_large', 'evaluate_plan_commit', 'rag', 'rag_below_threshold', 'rag_score', 'value']

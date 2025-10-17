@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/contracts/operations.py
+# hypothesis_version: 6.142.1
+
+['%Y%m%dT%H%M%SZ', '0', '100', '; ', 'Confidence', 'Notes', 'Organisation', 'RowID', 'Sources', 'Timestamp', 'What changed', 'contracts', 'curated_dataset.json', 'dataset_path.txt', 'dbt_run_results.json', 'expectations', 'great_expectations', 'results']

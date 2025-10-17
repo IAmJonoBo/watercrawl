@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/contracts/great_expectations_runner.py
+# hypothesis_version: 6.142.1
+
+['curated_dataset.json', 'expectation_type', 'expectations', 'great_expectations', 'kwargs', 'meta', 'results', 'statistics', 'success', 'suite_name']

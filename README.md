@@ -35,6 +35,18 @@ The repository now ships a ready-to-run sample dataset at `data/sample.csv` so a
 
 **No requirements.txt needed:** Poetry is the single source of dependency management. Use `pyproject.toml` for all dependencies.
 
+**Offline installation (for air-gapped environments):**
+
+```bash
+# For development environments (includes testing, linting, type checking tools)
+pip install -r requirements-dev.txt
+
+# For production environments (runtime dependencies only)
+pip install -r requirements.txt
+```
+
+The exported requirements files include pinned versions with SHA256 hashes for reproducible, secure installations.
+
 ## Features
 
 - **Dataset validation** with detailed issue reporting (`firecrawl_demo.core.validation`).

@@ -1,0 +1,4 @@
+# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/research/core.py
+# hypothesis_version: 6.142.1
+
+['; ', 'alternate_names', 'contact_email', 'contact_person', 'contact_phone', 'data', 'investigation_notes', 'link', 'ownership_change', 'physical_address', 'rebrand_note', 'results', 'sources', 'url', 'website', 'website_url']
