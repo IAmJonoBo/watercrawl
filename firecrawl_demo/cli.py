@@ -4,12 +4,14 @@ import asyncio
 import json
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 import click
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeRemainingColumn
 
 from .audit import build_evidence_sink
+from .contracts import validate_curated_file
 from .excel import read_dataset
 from .mcp.server import CopilotMCPServer
 from .models import SchoolRecord
@@ -198,6 +200,53 @@ def enrich(
             click.echo(
                 f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."
             )
+
+
+@cli.command("contracts")
+@click.argument("input_path", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
+)
+def contracts(input_path: Path, output_format: str) -> None:
+    """Run Great Expectations contracts against a curated dataset."""
+
+    result = validate_curated_file(input_path)
+    payload: dict[str, Any] = {
+        "success": result.success,
+        "statistics": result.statistics,
+        "unsuccessful_expectations": result.unsuccessful_expectations,
+        "expectation_suite_name": result.expectation_suite_name,
+        "meta": result.meta,
+        "failed_expectations": [
+            {
+                "expectation_type": entry.get("expectation_config", {}).get(
+                    "expectation_type"
+                ),
+                "kwargs": entry.get("expectation_config", {}).get("kwargs", {}),
+                "result": entry.get("result", {}),
+            }
+            for entry in result.results
+            if not entry.get("success", True)
+        ],
+    }
+    if output_format == "json":
+        click.echo(json.dumps(payload, indent=2))
+    else:
+        click.echo(
+            "Contracts " + ("passed" if result.success else "failed"),
+        )
+        click.echo(
+            f"Evaluated expectations: {payload['statistics'].get('evaluated_expectations', 0)}"
+        )
+        if payload["failed_expectations"]:
+            click.echo("Failing expectations:")
+            for failure in payload["failed_expectations"]:
+                expectation = failure.get("expectation_type", "unknown")
+                column = failure.get("kwargs", {}).get("column")
+                scope = f" on column '{column}'" if column else ""
+                click.echo(f" - {expectation}{scope}")
+    if not result.success:
+        raise click.exceptions.Exit(1)
 
 
 @cli.command("mcp-server")

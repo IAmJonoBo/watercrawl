@@ -1,0 +1,51 @@
+# Minimal Great Expectations configuration for curated dataset contracts.
+config_version: 3
+plugins_directory: plugins/
+expectations_store_name: expectations_store
+validation_results_store_name: validation_results_store
+checkpoint_store_name: checkpoint_store
+
+anonymous_usage_statistics:
+  enabled: false
+
+stores:
+  expectations_store:
+    class_name: ExpectationsStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: expectations/
+  validation_results_store:
+    class_name: ValidationResultsStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: validations/
+  checkpoint_store:
+    class_name: CheckpointStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: checkpoints/
+
+datasources:
+  curated_runtime:
+    class_name: Datasource
+    execution_engine:
+      module_name: great_expectations.execution_engine
+      class_name: PandasExecutionEngine
+    data_connectors:
+      runtime_data_connector:
+        class_name: RuntimeDataConnector
+        assets:
+          curated_dataset:
+            batch_identifiers:
+              - default_identifier_name
+
+checkpoints:
+  curated_dataset:
+    module_name: great_expectations.checkpoint
+    class_name: SimpleCheckpoint
+    validations:
+      - batch_request:
+          datasource_name: curated_runtime
+          data_connector_name: runtime_data_connector
+          data_asset_name: curated_dataset
+        expectation_suite_name: curated_dataset

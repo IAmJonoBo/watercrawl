@@ -8,6 +8,7 @@ Modular toolkit for validating and enriching South African flight-school dataset
 poetry install --no-root
 poetry run python -m firecrawl_demo.cli validate data/sample.csv --format json
 poetry run python -m firecrawl_demo.cli enrich data/sample.csv --output data/sample_enriched.csv
+poetry run python -m firecrawl_demo.cli contracts data/sample_enriched.csv --format text
 ```
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the

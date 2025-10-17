@@ -15,9 +15,9 @@ from .models import EvidenceRecord
 try:  # pragma: no cover - optional dependency
     import dns.resolver  # type: ignore[import-not-found]
 except ImportError:  # pragma: no cover - fallback path
-    DNS_RESOLVER = None  # type: ignore[assignment]
+    dns_resolver = None  # type: ignore[assignment]
 else:  # pragma: no cover - optional dependency
-    DNS_RESOLVER = dns.resolver.Resolver()
+    dns_resolver = dns.resolver.Resolver()
 
 _PHONE_RE = re.compile(r"^\+27\d{9}$")
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
@@ -93,7 +93,7 @@ def validate_email(
 def _check_mx_records(domain: str) -> Optional[str]:
     if not domain:
         return "Missing email domain"
-    resolver = DNS_RESOLVER
+    resolver = dns_resolver
     if resolver is None:  # pragma: no cover - depends on optional package
         return "MX lookup unavailable"
     try:
