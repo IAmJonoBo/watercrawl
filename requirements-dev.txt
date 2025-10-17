@@ -640,9 +640,9 @@ et-xmlfile==2.0.0 ; python_version >= "3.11" and python_version < "3.14" \
 filelock==3.20.0 ; python_version >= "3.11" and python_version < "3.14" \
     --hash=sha256:339b4732ffda5cd79b13f4e2711a31b0365ce445d95d243bb996273d072546a2 \
     --hash=sha256:711e943b4ec6be42e1d4e6690b48dc175c822967466bb31c0c293f34334c13f4
-firecrawl-py==4.4.0 ; python_version >= "3.11" and python_version < "3.14" \
-    --hash=sha256:528984379d2a0383c7ff4c59e33ba8f2fe18964927bafdffaae38e26314eb199 \
-    --hash=sha256:d428f60638f1a223fa3049175d274171032a30d53fa1ba858e19da994a27648b
+firecrawl-py==4.5.0; python_version >= "3.11" and python_version < "3.14" \
+    --hash=sha256:8caad0d18c887bc08bc874241daf1d16083d34750beb344bc83f2872657b8620 \
+    --hash=sha256:f0c6c0a11e97bde8fc0364bb2d48866d1241533963335c615296cf980b9eb991
 flexcache==0.3 ; python_version >= "3.11" and python_version < "3.14" \
     --hash=sha256:18743bd5a0621bfe2cf8d519e4c3bfdf57a269c15d1ced3fb4b64e0ff4600656 \
     --hash=sha256:d43c9fea82336af6e0115e308d9d33a185390b8346a017564611f1466dcd2e32
