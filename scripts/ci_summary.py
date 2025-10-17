@@ -5,9 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import xml.etree.ElementTree as ET
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 
 @dataclass

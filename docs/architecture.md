@@ -76,3 +76,8 @@ The `firecrawl_demo.infrastructure.planning` module provides an `InfrastructureP
 - **PlanCommitContract** encodes the plan→commit guardrails for automation, including the audit topic used by the evidence sink and optional force-commit escape hatches.
 
 The planner is intentionally declarative—call `build_infrastructure_plan()` to obtain a frozen snapshot suitable for documentation exports, MCP tool manifests, or CI assertions that the environment is wired correctly before agents are allowed to crawl.
+
+### Lineage & Lakehouse Services
+
+- `firecrawl_demo.lineage` captures OpenLineage, PROV-O, and DCAT artefacts for each pipeline run so provenance bundles accompany enriched datasets.
+- `firecrawl_demo.lakehouse` provides a local lakehouse writer that snapshots curated tables to Parquet with manifest metadata, forming the foundation for future Delta Lake/Iceberg and DVC/lakeFS integrations.

@@ -190,6 +190,23 @@ class PlanCommitSettings:
     allow_force_commit: bool = False
 
 
+@dataclass(frozen=True)
+class LineageSettings:
+    enabled: bool = True
+    namespace: str = "aces-aerodynamics"
+    job_name: str = "enrichment"
+    dataset_name: str = "flight-schools"
+    artifact_root: Path = field(default_factory=lambda: PROJECT_ROOT / "artifacts")
+
+
+@dataclass(frozen=True)
+class LakehouseSettings:
+    enabled: bool = True
+    backend: str = "delta"
+    root_path: Path = field(default_factory=lambda: DATA_DIR / "lakehouse")
+    table_name: str = "flight_schools"
+
+
 def _get_value(name: str, default: str | None, provider: SecretsProvider) -> str | None:
     value = provider.get(name)
     return value if value is not None else default
@@ -305,6 +322,8 @@ CRAWLER_INFRASTRUCTURE: CrawlerInfrastructureSettings
 OBSERVABILITY: ObservabilitySettings
 POLICY_GUARDS: PolicySettings
 PLAN_COMMIT: PlanCommitSettings
+LINEAGE: LineageSettings
+LAKEHOUSE: LakehouseSettings
 
 
 def _build_firecrawl_settings(provider: SecretsProvider) -> FirecrawlSettings:
@@ -373,6 +392,8 @@ def configure(provider: SecretsProvider | None = None) -> None:
     global OBSERVABILITY
     global POLICY_GUARDS
     global PLAN_COMMIT
+    global LINEAGE
+    global LAKEHOUSE
 
     SECRETS_PROVIDER = provider or build_provider_from_environment()
 
@@ -512,6 +533,35 @@ def configure(provider: SecretsProvider | None = None) -> None:
         allow_force_commit=_env_bool(
             "PLAN_COMMIT_ALLOW_FORCE", False, SECRETS_PROVIDER
         ),
+    )
+
+    lineage_root = _env_path("LINEAGE_ARTIFACT_ROOT", SECRETS_PROVIDER) or (
+        PROJECT_ROOT / "artifacts"
+    )
+    LINEAGE = LineageSettings(
+        enabled=_env_bool("LINEAGE_ENABLED", True, SECRETS_PROVIDER),
+        namespace=_get_value("LINEAGE_NAMESPACE", "aces-aerodynamics", SECRETS_PROVIDER)
+        or "aces-aerodynamics",
+        job_name=_get_value("LINEAGE_JOB_NAME", "enrichment", SECRETS_PROVIDER)
+        or "enrichment",
+        dataset_name=_get_value(
+            "LINEAGE_DATASET_NAME", "flight-schools", SECRETS_PROVIDER
+        )
+        or "flight-schools",
+        artifact_root=lineage_root,
+    )
+
+    lakehouse_root = _env_path("LAKEHOUSE_ROOT", SECRETS_PROVIDER) or (
+        DATA_DIR / "lakehouse"
+    )
+    LAKEHOUSE = LakehouseSettings(
+        enabled=_env_bool("LAKEHOUSE_ENABLED", True, SECRETS_PROVIDER),
+        backend=_get_value("LAKEHOUSE_BACKEND", "delta", SECRETS_PROVIDER) or "delta",
+        root_path=lakehouse_root,
+        table_name=_get_value(
+            "LAKEHOUSE_TABLE_NAME", "flight_schools", SECRETS_PROVIDER
+        )
+        or "flight_schools",
     )
 
 

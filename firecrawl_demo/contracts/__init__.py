@@ -6,10 +6,7 @@ from .great_expectations_runner import (
     validate_curated_dataframe,
     validate_curated_file,
 )
-from .operations import (
-    persist_contract_artifacts,
-    record_contracts_evidence,
-)
+from .operations import persist_contract_artifacts, record_contracts_evidence
 
 __all__ = [
     "DbtContractResult",

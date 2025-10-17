@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, Protocol, runtime_checkable
+from typing import Callable, Protocol, runtime_checkable
 
 from .. import config
 from ..compliance import normalize_phone
