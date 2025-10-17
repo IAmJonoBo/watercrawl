@@ -30,7 +30,11 @@ class AdapterLoaderSettings:
     sequence: Sequence[str] | None = None
     env_var: str = "RESEARCH_ADAPTERS"
     file_env_var: str = "RESEARCH_ADAPTERS_FILE"
-    default_sequence: Sequence[str] = ("regulator", "press", "ml", "firecrawl", "null")
+    # Firecrawl remains opt-in until the production SDK rollout is complete.
+    # The default stack therefore favours deterministic, offline-safe adapters
+    # and terminates with the null adapter as a guard rail. Firecrawl can still
+    # be enabled via feature flags + configuration once the SDK is available.
+    default_sequence: Sequence[str] = ("regulator", "press", "ml", "null")
 
 
 @dataclass(slots=True, frozen=True)

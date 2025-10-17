@@ -123,6 +123,30 @@ def test_firecrawl_factory_activates_when_feature_enabled(monkeypatch):
     assert isinstance(adapters[1], NullResearchAdapter)
 
 
+def test_default_sequence_defers_firecrawl_until_opt_in(monkeypatch):
+    called = False
+
+    def _tracking_factory() -> ResearchAdapter:
+        nonlocal called
+        called = True
+        return DummyAdapter(ResearchFinding(notes="firecrawl"))
+
+    monkeypatch.setattr(
+        research_registry,
+        "_build_firecrawl_adapter",
+        _tracking_factory,
+    )
+
+    adapters = load_enabled_adapters(AdapterLoaderSettings())
+
+    assert not called, "Firecrawl factory should not run without explicit opt-in"
+    assert all(
+        not isinstance(adapter, research.FirecrawlResearchAdapter)
+        for adapter in adapters
+    )
+    assert isinstance(adapters[-1], NullResearchAdapter)
+
+
 def test_triangulating_adapter_merges_sources_and_notes():
     base_finding = ResearchFinding(
         website_url=None,

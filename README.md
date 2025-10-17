@@ -28,8 +28,10 @@ The repository now ships a ready-to-run sample dataset at `data/sample.csv` so a
 
 **Firecrawl SDK integration:**
 
-- The [official Firecrawl Python SDK](https://docs.firecrawl.dev/sdks/python) is included as a dependency.
-- Set your `FIRECRAWL_API_KEY` in a `.env` file or as an environment variable to enable Firecrawl-powered enrichment.
+- The [official Firecrawl Python SDK](https://docs.firecrawl.dev/sdks/python) is available as an optional dependency.
+- The CLI and pipeline default to deterministic research adapters so offline QA remains stable.
+- Set `FEATURE_ENABLE_FIRECRAWL_SDK=1`, `ALLOW_NETWORK_RESEARCH=1`, and your `FIRECRAWL_API_KEY` (via `.env` or the environment)
+  when you are ready to exercise the live SDK.
 
 **No requirements.txt needed:** Poetry is the single source of dependency management. Use `pyproject.toml` for all dependencies.
 
