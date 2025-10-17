@@ -85,6 +85,21 @@ Key pages:
 - `docs/mcp.md`: MCP contract for Copilot.
 - `docs/operations.md`: QA gates and release process.
 
+## Codex developer experience
+
+Codex agents can reuse the same guardrails as analysts by running the Promptfoo scenarios and optional MCP tooling bundled in
+`codex/`:
+
+```bash
+# Run Codex smoke tests before enabling agent access
+promptfoo eval codex/evals/promptfooconfig.yaml
+
+# Launch the in-repo MCP server for Codex sessions
+poetry run python -m firecrawl_demo.mcp.server
+```
+
+See `codex/README.md` for the full workflow, including optional read-only context servers.
+
 ## Contributing
 
 1. Run the baseline QA suite before committing.

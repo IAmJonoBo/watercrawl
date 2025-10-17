@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: "ACES Aerodynamics Codex smoke tests"
+providers:
+  - id: openai:gpt-4.1-mini
+    config:
+      temperature: 0
+prompts:
+  - "Summarise {file} responsibilities for an ACES Aerodynamics analyst in <=6 bullets."
+  - "Given failing check {test}, outline a compliant remediation in <=4 steps."
+tests: file://tests/*
+defaultTest:
+  assert:
+    - type: contains-any
+      value: ["province", "evidence", "quality", "rollback"]
+    - type: javascript
+      value: "output.trim().length > 0"

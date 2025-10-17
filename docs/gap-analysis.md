@@ -49,3 +49,10 @@
 - ❗ **Legacy evidence loophole** — Rows with an existing official website could accept new contact details sourced from the same domain, letting speculative updates ride on stale corroboration.
 - ✅ **Fresh-evidence enforcement** — The pipeline now separates legacy vs new evidence, blocks high-risk changes without fresh official corroboration, and records "fresh evidence" remediation guidance in rollback plans and evidence notes.
 - ✅ **Documentation alignment** — Data-quality guidance now calls out the fresh-source requirement so analysts understand why stale evidence is rejected.
+
+## 2025-10-17 Codex DX integration & QA verification
+
+- ✅ **Baseline QA rerun** — `pytest`, `ruff`, `black`, `isort`, `mypy`, `bandit`, `dotenv-linter`, `dbt build`, and `poetry build` all pass against the current HEAD, confirming test, lint, type, security, contract, and packaging coverage remain intact after template consolidation.
+- ✅ **Codex smoke tests scaffolded** — Promptfoo scenarios under `codex/evals/` target pipeline quality gates and compliance validators so Codex agents receive immediate feedback when proposals drift from policy.
+- ✅ **MCP alignment** — Codex documentation now points to the in-repo MCP server, reinforcing reuse of the audited automation surface instead of bespoke tooling.
+- 🔄 **Next step** — Extend Promptfoo coverage to include evidence-log remediation narratives once upcoming lineage tasks (AT-25/AT-27) land.

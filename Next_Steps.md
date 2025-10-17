@@ -25,6 +25,9 @@
 - [x] CI summary artefacts for dashboard ingestion — Owner: Platform — Due: 2025-10-24
 - [x] Document dotenv-linter invocation in ops runbook — Owner: Docs — Due: 2025-10-16
 - [x] Install quality gate + rollback instrumentation for crawler hallucinations — Owner: AI — Due: 2025-10-17
+- [x] Codex DX integration — Owner: Platform — Due: 2025-10-17
+  - [x] Promptfoo smoke tests aligned to pipeline quality gates — Owner: Platform — Due: 2025-10-17
+  - [ ] Extend Promptfoo coverage to evidence-log remediation narratives — Owner: Platform — Due: 2025-11-07
 
 ## Steps
 
@@ -57,6 +60,8 @@
 - [x] Harden compliance MX lookup fallback for offline/NoNameservers scenarios and verify async pipeline enrichments (2025-10-17)
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
+- [x] Integrate Codex developer experience scaffold (2025-10-17)
+- [ ] Expand Promptfoo scenarios to cover evidence-log remediation guidance (2025-11-07)
 - [ ] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28)
 - [ ] Phase 3.2 — Instrument whylogs drift monitors + alert routing (AT-30)
 - [ ] Phase 4.1 — Integrate Ragas scoring + release gating thresholds (AT-31)
@@ -72,6 +77,7 @@
 - [x] Adapter authoring guidance in docs/architecture.md
 - [x] Exemplar regulator/press/ML adapters packaged with deterministic dataset
 - [x] Infrastructure plan drift snapshot + regression coverage
+- [x] Codex developer experience bundle (Promptfoo smoke tests + MCP integration notes)
 - [ ] Great Expectations/dbt/Deequ suites published with CI integration (AT-24)
 - [ ] Lineage + provenance catalogue (OpenLineage, PROV-O, DCAT) live with reproducible run book (AT-25, AT-27)
 - [ ] ACID data lake baseline (Delta Lake/Iceberg) + DVC/lakeFS automation scripts (AT-26, AT-27)
@@ -112,6 +118,7 @@
 - [x] Types (2025-10-17 10:47 UTC): mypy . (with pandas-stubs installed).
 - [x] Security (2025-10-17 10:48 UTC): bandit -r firecrawl_demo.
 - [x] Build (2025-10-17 10:49 UTC): poetry build.
+- [ ] Codex smoke tests (2025-11-07 target): promptfoo eval codex/evals/promptfooconfig.yaml executed before enabling agent sessions.
 - [x] Env lint (2025-10-17 10:50 UTC): dotenv-linter lint .env.example.
 
 ## Phase Plan (2025 Q4 → 2026 Q1)
@@ -138,6 +145,7 @@
 - [x] GX/dbt/Deequ suites (Phase 1) — docs/data-quality.md (Phase 1.1 & 1.2 sections)
 - [x] dbt contracts project — analytics/dbt_project.yml; analytics/models/staging/stg_curated_dataset.sql; analytics/tests/generic
 - [x] Lineage + lakehouse configuration docs (Phase 2) — docs/lineage-lakehouse.md
+- [x] Codex DX bundle — codex/README.md; codex/evals/promptfooconfig.yaml
 - [ ] Graph semantics mapping repo + drift dashboards (Phase 3) — TBC
 - [ ] LLM safety + MCP governance pack (Phase 4) — TBC
 
@@ -149,6 +157,7 @@
 - [ ] Monitor pre-commit hook runtimes once CI enables them to avoid exceeding build minutes.
 - [ ] Enforced pandas/requests type stubs—watch for downstream mypy regressions without `type: ignore` escapes.
 - [ ] Validate streaming evidence sink against real Kafka/REST endpoints once roadmap work begins; document throughput targets.
+- [ ] Promptfoo smoke tests currently only cover pipeline/compliance happy paths; extend to evidence-log narratives after lineage instrumentation lands (AT-25/AT-27 dependency).
 - [x] Secrets manager paths blocked until boto3 / Azure SDK packages are bundled with the project dependencies.
 - [x] Evidence log remediation warnings now trigger for sparse or unofficial sourcing; schedule analyst refresher to interpret the new notes.
 - [ ] Monitor fresh-evidence blocks for legitimate analyst updates; capture false-positive patterns for adapter tuning (2025-10-18).
