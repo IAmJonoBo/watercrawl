@@ -4,8 +4,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from firecrawl_demo.excel import EXPECTED_COLUMNS
-from firecrawl_demo.graph_semantics import build_csvw_metadata, build_r2rml_mapping
+from firecrawl_demo.core.excel import EXPECTED_COLUMNS
+from firecrawl_demo.integrations.graph_semantics import (
+    build_csvw_metadata,
+    build_r2rml_mapping,
+)
 
 
 def _sample_frame() -> pd.DataFrame:

@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from firecrawl_demo.mcp.server import CopilotMCPServer
-from firecrawl_demo.models import EvidenceRecord
-from firecrawl_demo.pipeline import Pipeline
-from firecrawl_demo.research import ResearchAdapter, ResearchFinding
+from firecrawl_demo.core.models import EvidenceRecord
+from firecrawl_demo.core.pipeline import Pipeline
+from firecrawl_demo.integrations.research import ResearchAdapter, ResearchFinding
+from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 
 
 class DummyPipeline(Pipeline):

@@ -2,27 +2,29 @@
 
 ## Layered Design
 
-1. **Dataset Ingestion** (`firecrawl_demo.excel`)
+1. **Dataset Ingestion** (`firecrawl_demo.core.excel`)
    - Handles CSV/XLSX parity with a unified reader/writer.
    - Normalises sheet naming and preserves canonical column order.
-2. **Validation Layer** (`firecrawl_demo.validation`)
+2. **Validation Layer** (`firecrawl_demo.core.validation`)
    - Enforces South African provincial lists and ACES status taxonomy.
    - Emits structured `ValidationIssue` instances for UI/automation consumption.
-3. **Research Adapter Layer** (`firecrawl_demo.research`)
+3. **Research Adapter Layer** (`firecrawl_demo.integrations.research`)
    - Provides a protocol-driven interface so tests can inject deterministic findings while production can swap in Firecrawl or OSINT clients.
    - `TriangulatingResearchAdapter` merges Firecrawl, regulator, press, and directory intelligence governed by feature toggles.
-4. **Compliance Utilities** (`firecrawl_demo.compliance`)
+4. **Compliance Utilities** (`firecrawl_demo.core.compliance`)
    - Normalises phone numbers to +27 E.164, verifies email domains against official websites, and calculates confidence scores.
-5. **Pipeline Orchestrator** (`firecrawl_demo.pipeline`)
+5. **Pipeline Orchestrator** (`firecrawl_demo.core.pipeline`)
    - Applies validation, enrichment, evidence logging, and metrics collection.
    - Generates `PipelineReport` objects for CLI/MCP consumers.
-6. **Audit Sinks** (`firecrawl_demo.audit`)
+6. **Audit Sinks** (`firecrawl_demo.core.audit`)
    - `EvidenceSink` protocol decouples evidence persistence from the pipeline.
    - `CSVEvidenceSink` preserves the legacy append-to-file behaviour for analysts.
    - `StreamingEvidenceSink` logs Kafka/REST publication stubs so future streaming graphs can subscribe without modifying the pipeline.
 7. **Interfaces**
-   - **CLI** (`firecrawl_demo.cli`): human-friendly commands for validation and enrichment.
-   - **MCP Server** (`firecrawl_demo.mcp.server`): JSON-RPC surface for GitHub Copilot automation.
+   - **CLI** (`firecrawl_demo.interfaces.cli`): human-friendly commands for validation and enrichment.
+   - **MCP Server** (`firecrawl_demo.interfaces.mcp.server`): JSON-RPC surface for GitHub Copilot automation.
+
+> **Package boundaries.** `firecrawl_demo.core` owns the enrichment contract, `firecrawl_demo.integrations` wraps optional adapters and metadata services, `firecrawl_demo.governance` isolates safety and secrets logic, and `firecrawl_demo.interfaces` exposes human/automation entrypoints. Production wheels exclude `codex/`, `dev/`, and other development directories via `pyproject.toml` so deployments only ship the hardened packages.
 
 ## Data Flow
 
@@ -48,7 +50,7 @@ flowchart LR
 
 ### Research Adapter Registry
 
-The `firecrawl_demo.research.registry` module centralises adapter discovery so new intelligence sources can be added without editing the core pipeline.
+The `firecrawl_demo.integrations.research.registry` module centralises adapter discovery so new intelligence sources can be added without editing the core pipeline.
 
 1. Author an adapter that implements the `ResearchAdapter` protocol (expose a `lookup(organisation, province)` method returning a `ResearchFinding`).
 2. Register it during import with `register_adapter("my-adapter", my_factory)`. Factories receive an `AdapterContext` and should return a new adapter instance (or `None` when disabled).
@@ -61,7 +63,7 @@ This registry keeps `build_research_adapter()` thin while allowing optional modu
 
 ### Exemplar adapters
 
-- `firecrawl_demo.research.exemplars` ships offline-friendly implementations for regulator (`RegulatorRegistryAdapter`), press (`PressMonitoringAdapter`), and ML (`MLInferenceAdapter`) intelligence.
+- `firecrawl_demo.integrations.research.exemplars` ships offline-friendly implementations for regulator (`RegulatorRegistryAdapter`), press (`PressMonitoringAdapter`), and ML (`MLInferenceAdapter`) intelligence.
 - They register themselves with the adapter registry on import and are part of the default adapter chain (`regulator, press, ml, firecrawl, null`).
 - Each adapter respects the relevant feature flags (`FEATURE_ENABLE_REGULATOR_LOOKUP`, `FEATURE_ENABLE_PRESS_RESEARCH`, `FEATURE_ENABLE_ML_INFERENCE`) so analysts can toggle data sources without editing code.
 - The exemplar dataset is deterministic, ensuring unit tests and dry-run demos can rely on consistent findings without touching external networks.
@@ -79,5 +81,5 @@ The planner is intentionally declarative—call `build_infrastructure_plan()` to
 
 ### Lineage & Lakehouse Services
 
-- `firecrawl_demo.lineage` captures OpenLineage, PROV-O, and DCAT artefacts for each pipeline run so provenance bundles accompany enriched datasets.
-- `firecrawl_demo.lakehouse` provides a local lakehouse writer that snapshots curated tables to Parquet with manifest metadata, forming the foundation for future Delta Lake/Iceberg and DVC/lakeFS integrations.
+- `firecrawl_demo.integrations.lineage` captures OpenLineage, PROV-O, and DCAT artefacts for each pipeline run so provenance bundles accompany enriched datasets.
+- `firecrawl_demo.integrations.lakehouse` provides a local lakehouse writer that snapshots curated tables to Parquet with manifest metadata, forming the foundation for future Delta Lake/Iceberg and DVC/lakeFS integrations.

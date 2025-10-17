@@ -5,8 +5,8 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
 ## Transport
 
 - **Mode**: JSON-RPC 2.0 over stdio.
-- **Server**: `firecrawl_demo.mcp.server.CopilotMCPServer`.
-- **CLI Entry**: `poetry run python -m firecrawl_demo.cli mcp-server`.
+- **Server**: `firecrawl_demo.interfaces.mcp.server.CopilotMCPServer`.
+- **CLI Entry**: `poetry run python -m firecrawl_demo.interfaces.cli mcp-server`.
 
 ## Methods
 

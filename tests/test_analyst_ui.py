@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from firecrawl_demo import analyst_ui
-from firecrawl_demo import config as project_config
+from firecrawl_demo.core import config as project_config
+from firecrawl_demo.interfaces import analyst_ui
 
 
 def test_loaders_use_configured_paths(monkeypatch, tmp_path):

@@ -8,7 +8,7 @@ from typing import Any
 
 from firecrawl import Firecrawl
 
-from firecrawl_demo.config import resolve_api_key
+from firecrawl_demo.core.config import resolve_api_key
 
 
 def ensure_api_key() -> str:

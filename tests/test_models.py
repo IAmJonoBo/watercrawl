@@ -1,4 +1,4 @@
-from firecrawl_demo import models
+from firecrawl_demo.core import models
 
 
 def test_models_import():

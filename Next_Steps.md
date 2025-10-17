@@ -28,6 +28,8 @@
 - [x] Codex DX integration — Owner: Platform — Due: 2025-10-17
   - [x] Promptfoo smoke tests aligned to pipeline quality gates — Owner: Platform — Due: 2025-10-17
   - [x] Extend Promptfoo coverage to evidence-log remediation narratives — Owner: Platform — Due: 2025-11-07 (evidence guidance assertions now live under `codex/evals/tests/evidence_log.yaml`).
+- [x] Segment runtime packages into core/integrations/governance/interfaces — Owner: Architecture — Completed 2025-10-17
+- [ ] Validate Poetry exclude list in release pipeline — Owner: Platform — Due: 2025-10-31
 
 ## Steps
 
@@ -58,6 +60,7 @@
 - [x] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Pint-backed ingest normalization and Hypothesis contracts merged; surface suite telemetry in CLI/observability dashboards next.
 - [x] Phase 1.2 hardening — Fix Excel dataset reader for XLSX inputs and extend regression tests for unsupported unit payloads (2025-10-17)
 - [x] Harden compliance MX lookup fallback for offline/NoNameservers scenarios and verify async pipeline enrichments (2025-10-17)
+- [x] Segment package boundaries and update docs/tests (2025-10-17)
 - [x] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Pipeline now records OpenLineage, PROV-O, and DCAT artefacts via `LineageManager`; CLI surfaces artefact paths.
 - [x] Phase 2.2 hardening — Versioning manager records fingerprinted manifests with reproduce commands (2025-10-17).
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md; local manifests now expose fingerprints and environment metadata to unblock remote wiring.
@@ -86,6 +89,7 @@
 - [x] Infrastructure plan drift snapshot + regression coverage
 - [x] Codex developer experience bundle (Promptfoo smoke tests + MCP integration notes)
 - [x] Optional Firecrawl integration deferred until SDK opt-in; registry default sequence updated (2025-10-17)
+- [x] CODEOWNERS, PR template, and ADR baseline documenting package boundaries (2025-10-17)
 - [ ] Great Expectations/dbt/Deequ suites published with CI integration (AT-24)
 - [x] Lineage artefact bundle (OpenLineage + PROV + DCAT) persisted for every CLI enrichment run (AT-25)
 - [x] Lakehouse snapshot scaffolding (local Parquet-backed writer with manifest metadata) available for curated outputs (AT-26/27 foundation)
@@ -180,6 +184,7 @@
 - [ ] Validate streaming evidence sink against real Kafka/REST endpoints once roadmap work begins; document throughput targets.
 - [ ] Promptfoo smoke tests currently only cover pipeline/compliance happy paths; extend to evidence-log narratives after lineage instrumentation lands (AT-25/AT-27 dependency).
 - [ ] Dist deployments must keep Codex disabled; add automated guard that blocks MCP/agent sessions unless `promptfoo eval codex/evals/promptfooconfig.yaml` has passed in the active branch.
+- [ ] Communicate new `firecrawl_demo.core/*` module paths to downstream automation before deployment windows.
 - [x] Secrets manager paths blocked until boto3 / Azure SDK packages are bundled with the project dependencies.
 - [x] Evidence log remediation warnings now trigger for sparse or unofficial sourcing; schedule analyst refresher to interpret the new notes.
 - [ ] Monitor fresh-evidence blocks for legitimate analyst updates; capture false-positive patterns for adapter tuning (2025-10-18).
@@ -445,6 +450,7 @@ Why MCP here? It standardises how Copilot calls your stack, and it’s natively 
 ## Risks/Notes
 
 - [ ] Running Great Expectations locally regenerates `great_expectations/uncommitted/config_variables.yml`; keep it ignored in VCS and document environment-specific overrides per analyst run.
+- [ ] Confirm repository-root anchored paths in `firecrawl_demo.core.config` propagate cleanly to packaging workflows; update release docs if downstream tooling expected package-root locations. (2025-10-17)
 
 ## Baseline QA Snapshot — 2025-10-16
 
@@ -457,3 +463,14 @@ Why MCP here? It standardises how Copilot calls your stack, and it’s natively 
 - ⚠️ `poetry run dotenv-linter` (requires explicit target file; no `.env` committed)
 - ✅ `poetry run pre-commit run --all-files`
 - ✅ `poetry run poetry build`
+
+## Baseline QA Snapshot — 2025-10-17
+
+- ✅ `poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing`
+- ✅ `poetry run ruff check .`
+- ✅ `poetry run black --check .`
+- ✅ `poetry run mypy .`
+- ✅ `poetry run bandit -r firecrawl_demo`
+- ✅ `poetry run pre-commit run --all-files`
+- ✅ `poetry build`
+- ✅ `poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'`

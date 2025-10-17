@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from firecrawl_demo import models
-from firecrawl_demo.lineage import (
+from firecrawl_demo.core import models
+from firecrawl_demo.integrations.lineage import (
     LineageContext,
     LineageManager,
     build_catalog_entry,

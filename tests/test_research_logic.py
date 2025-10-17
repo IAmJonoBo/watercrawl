@@ -1,8 +1,10 @@
 import pytest
 
-from firecrawl_demo import config, research
-from firecrawl_demo.external_sources import triangulate_organisation
-from firecrawl_demo.research import (
+from firecrawl_demo.core import config
+from firecrawl_demo.core.external_sources import triangulate_organisation
+from firecrawl_demo.governance.secrets import EnvSecretsProvider
+from firecrawl_demo.integrations import research
+from firecrawl_demo.integrations.research import (
     AdapterLoaderSettings,
     NullResearchAdapter,
     ResearchAdapter,
@@ -12,8 +14,7 @@ from firecrawl_demo.research import (
     merge_findings,
     register_adapter,
 )
-from firecrawl_demo.research import registry as research_registry
-from firecrawl_demo.secrets import EnvSecretsProvider
+from firecrawl_demo.integrations.research import registry as research_registry
 
 
 class DummyAdapter(ResearchAdapter):
@@ -226,7 +227,7 @@ def test_build_research_adapter_handles_missing_firecrawl(
 
 
 def test_triangulate_organisation_merges_live_sources(monkeypatch):
-    from firecrawl_demo import external_sources
+    from firecrawl_demo.core import external_sources
 
     monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", True)
 

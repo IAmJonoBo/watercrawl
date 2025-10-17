@@ -1,4 +1,4 @@
-from firecrawl_demo import cache
+from firecrawl_demo.core import cache
 
 
 def test_cache_set_and_get():

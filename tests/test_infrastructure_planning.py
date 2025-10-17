@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from firecrawl_demo import config
+from firecrawl_demo.core import config
 from firecrawl_demo.infrastructure import planning
 
 

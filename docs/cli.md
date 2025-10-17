@@ -1,6 +1,6 @@
 # CLI Guide
 
-The CLI lives in `firecrawl_demo.cli` and is available via `python -m firecrawl_demo.cli ...` when the Poetry environment is active.
+The CLI lives in `firecrawl_demo.interfaces.cli` and is available via `python -m firecrawl_demo.interfaces.cli ...` when the Poetry environment is active.
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
@@ -9,7 +9,7 @@ enrich immediately after installing dependencies.
 ### `validate`
 
 ```bash
-poetry run python -m firecrawl_demo.cli validate data/input.csv --format json
+poetry run python -m firecrawl_demo.interfaces.cli validate data/input.csv --format json
 ```
 
 - Loads CSV/XLSX data.
@@ -21,7 +21,7 @@ poetry run python -m firecrawl_demo.cli validate data/input.csv --format json
 ### `enrich`
 
 ```bash
-poetry run python -m firecrawl_demo.cli enrich data/input.csv --output data/output.csv --format text
+poetry run python -m firecrawl_demo.interfaces.cli enrich data/input.csv --output data/output.csv --format text
 ```
 
 - Validates, enriches, and writes the dataset.
@@ -33,7 +33,7 @@ poetry run python -m firecrawl_demo.cli enrich data/input.csv --output data/outp
 ### `contracts`
 
 ```bash
-poetry run python -m firecrawl_demo.cli contracts data/output.csv --format json
+poetry run python -m firecrawl_demo.interfaces.cli contracts data/output.csv --format json
 ```
 
 - Executes the curated Great Expectations suite stored under `great_expectations/`.
@@ -43,7 +43,7 @@ poetry run python -m firecrawl_demo.cli contracts data/output.csv --format json
 ### `mcp-server`
 
 ```bash
-poetry run python -m firecrawl_demo.cli mcp-server
+poetry run python -m firecrawl_demo.interfaces.cli mcp-server
 ```
 
 - Runs the MCP JSON-RPC bridge over stdio.

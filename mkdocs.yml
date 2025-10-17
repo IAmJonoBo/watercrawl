@@ -6,6 +6,9 @@ nav:
   - Home: index.md
   - Gap Analysis: gap-analysis.md
   - Architecture: architecture.md
+  - ADRs:
+      - Overview: adr/index.md
+      - Segmented Package Boundaries: adr/0001-architecture-boundaries.md
   - Data Quality & Research: data-quality.md
   - CLI Guide: cli.md
   - MCP Integration: mcp.md

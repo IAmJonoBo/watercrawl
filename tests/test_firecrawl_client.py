@@ -1,10 +1,13 @@
 import pytest
 
-from firecrawl_demo.firecrawl_client import FirecrawlClient, summarize_extract_payload
+from firecrawl_demo.integrations.firecrawl_client import (
+    FirecrawlClient,
+    summarize_extract_payload,
+)
 
 
 def test_firecrawl_client_without_sdk_raises(monkeypatch):
-    import firecrawl_demo.firecrawl_client as fc_mod
+    import firecrawl_demo.integrations.firecrawl_client as fc_mod
 
     monkeypatch.setattr(fc_mod, "Firecrawl", None)
     client = FirecrawlClient(api_key="dummy")

@@ -3,9 +3,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from firecrawl_demo.excel import EXPECTED_COLUMNS
-from firecrawl_demo.lakehouse import LakehouseConfig, LocalLakehouseWriter
-from firecrawl_demo.versioning import VersioningManager, fingerprint_dataframe
+from firecrawl_demo.core.excel import EXPECTED_COLUMNS
+from firecrawl_demo.integrations.lakehouse import LakehouseConfig, LocalLakehouseWriter
+from firecrawl_demo.integrations.versioning import (
+    VersioningManager,
+    fingerprint_dataframe,
+)
 
 
 def _sample_frame() -> pd.DataFrame:

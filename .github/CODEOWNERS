@@ -1,0 +1,19 @@
+# Global owners
+* @ACES-Aerodynamics/platform-team
+
+# Documentation
+/docs/ @ACES-Aerodynamics/docs-team
+/mkdocs.yml @ACES-Aerodynamics/docs-team
+
+# Core runtime packages
+/firecrawl_demo/core/ @ACES-Aerodynamics/platform-team
+/firecrawl_demo/integrations/ @ACES-Aerodynamics/data-engineering
+/firecrawl_demo/governance/ @ACES-Aerodynamics/security
+/firecrawl_demo/interfaces/ @ACES-Aerodynamics/automation
+
+# Infrastructure and analytics
+/analytics/ @ACES-Aerodynamics/data-engineering
+/firecrawl_demo/infrastructure/ @ACES-Aerodynamics/platform-team
+
+# Tests
+/tests/ @ACES-Aerodynamics/qa

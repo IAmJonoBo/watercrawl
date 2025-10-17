@@ -19,9 +19,9 @@ poetry env use 3.13
 poetry install --no-root
 
 # Run CLI commands
-poetry run python -m firecrawl_demo.cli validate data/sample.csv --format json
-poetry run python -m firecrawl_demo.cli enrich data/sample.csv --output data/sample_enriched.csv
-poetry run python -m firecrawl_demo.cli contracts data/sample_enriched.csv --format text
+poetry run python -m firecrawl_demo.interfaces.cli validate data/sample.csv --format json
+poetry run python -m firecrawl_demo.interfaces.cli enrich data/sample.csv --output data/sample_enriched.csv
+poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample_enriched.csv --format text
 ```
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
@@ -37,19 +37,19 @@ The repository now ships a ready-to-run sample dataset at `data/sample.csv` so a
 
 ## Features
 
-- **Dataset validation** with detailed issue reporting (`firecrawl_demo.validation`).
-- **Research adapters** for deterministic enrichment and future OSINT integrations (`firecrawl_demo.research`).
+- **Dataset validation** with detailed issue reporting (`firecrawl_demo.core.validation`).
+- **Research adapters** for deterministic enrichment and future OSINT integrations (`firecrawl_demo.integrations.research`).
 - **Feature-flagged Firecrawl integration** guarded by `FEATURE_ENABLE_FIRECRAWL_SDK` and `ALLOW_NETWORK_RESEARCH` so offline QA stays deterministic.
 - **Triangulated intelligence** that merges regulator, press, and directory evidence to spot rebrands or ownership changes.
-- **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.pipeline`).
-- **CLI** commands for analysts and automation runs (`firecrawl_demo.cli`).
+- **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.core.pipeline`).
+- **CLI** commands for analysts and automation runs (`firecrawl_demo.interfaces.cli`).
 - **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
   remediation guidance into the evidence log and MCP.
 - **Data contracts** with a dual Great Expectations + dbt suite, executed via the `contracts`
   CLI command and archived as evidence artefacts for each dataset revision.
 - **Lineage + lakehouse artefacts** generated alongside every enrichment run (OpenLineage, PROV-O, DCAT, and snapshot manifests) so analysts can trace provenance and reproduce curated tables.
 - **Versioned lakehouse snapshots** with deterministic fingerprints and reproduce commands captured in `data/versioning/`.
-- **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.mcp.server`).
+- **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.interfaces.mcp.server`).
 - **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
 - **MkDocs documentation** under `docs/` with architecture, gap analysis, and SOPs.
 
@@ -91,6 +91,10 @@ Key pages:
 
 ## Repository layout
 
+- `firecrawl_demo/core/` — canonical business logic, validation, pipeline orchestration, and shared models.
+- `firecrawl_demo/integrations/` — contracts, research adapters, lineage, lakehouse, drift, and Firecrawl client bindings.
+- `firecrawl_demo/governance/` — safety, evaluation, and secrets providers isolated from crawler orchestration.
+- `firecrawl_demo/interfaces/` — CLI, analyst UI, and MCP orchestration entrypoints.
 - `dev/` — experimentation workspace for analysts/developers. Codex allowed only after Promptfoo smoke tests pass.
 - `tools/` — shared automation helpers (Promptfoo configs, audit recipes, QA fixtures).
 - `app/` — deployable application surface consuming the enrichment libraries.

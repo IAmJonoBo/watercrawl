@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pandas as pd
 
-from firecrawl_demo.drift import DriftBaseline, DriftReport, compare_to_baseline
+from firecrawl_demo.integrations.drift import (
+    DriftBaseline,
+    DriftReport,
+    compare_to_baseline,
+)
 
 
 def _sample_frame() -> pd.DataFrame:

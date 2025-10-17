@@ -1,6 +1,6 @@
 import pandas as pd
 
-from firecrawl_demo.validation import DatasetValidator
+from firecrawl_demo.core.validation import DatasetValidator
 
 
 def test_validator_flags_missing_columns():
