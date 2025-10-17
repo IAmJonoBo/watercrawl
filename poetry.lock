@@ -1264,14 +1264,14 @@ files = [
 
 [[package]]
 name = "firecrawl-py"
-version = "4.4.0"
+version = "4.5.0"
 description = "Python SDK for Firecrawl API"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "firecrawl_py-4.4.0-py3-none-any.whl", hash = "sha256:528984379d2a0383c7ff4c59e33ba8f2fe18964927bafdffaae38e26314eb199"},
-    {file = "firecrawl_py-4.4.0.tar.gz", hash = "sha256:d428f60638f1a223fa3049175d274171032a30d53fa1ba858e19da994a27648b"},
+    {file = "firecrawl_py-4.5.0-py3-none-any.whl", hash = "sha256:8caad0d18c887bc08bc874241daf1d16083d34750beb344bc83f2872657b8620"},
+    {file = "firecrawl_py-4.5.0.tar.gz", hash = "sha256:f0c6c0a11e97bde8fc0364bb2d48866d1241533963335c615296cf980b9eb991"},
 ]
 
 [package.dependencies]
