@@ -1,12 +1,22 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from decimal import Decimal
+from numbers import Real
 from pathlib import Path
+from typing import Any, Callable
 
 import pandas as pd
+from pint import UnitRegistry
+from pint.errors import DimensionalityError, RedefinitionError, UndefinedUnitError
 
 from . import config
-from .models import EnrichmentResult, SchoolRecord
+from .models import (
+    EnrichmentResult,
+    SchoolRecord,
+    normalize_province,
+    normalize_status,
+)
 
 EXPECTED_COLUMNS = [
     "Name of Organisation",
@@ -17,6 +27,35 @@ EXPECTED_COLUMNS = [
     "Contact Number",
     "Contact Email Address",
 ]
+
+
+UNIT_REGISTRY = UnitRegistry()
+for definition in ("count = []", "plane = count", "planes = count", "aircraft = count"):
+    try:
+        UNIT_REGISTRY.define(definition)
+    except (
+        RedefinitionError
+    ):  # pragma: no cover - ignore duplicate definitions during reloads
+        continue
+
+
+NUMERIC_UNIT_RULES: dict[str, dict[str, Any]] = {
+    "Fleet Size": {
+        "canonical_unit": "count",
+        "cast": int,
+        "allowed_units": {"count", "plane", "planes", "aircraft"},
+    },
+    "Runway Length": {
+        "canonical_unit": "meter",
+        "cast": float,
+        "allowed_units": {"meter", "metre", "m", "foot", "feet", "ft"},
+    },
+    "Runway Length (m)": {
+        "canonical_unit": "meter",
+        "cast": float,
+        "allowed_units": {"meter", "metre", "m"},
+    },
+}
 
 
 class ExcelExporter:
@@ -39,10 +78,15 @@ class ExcelExporter:
 def read_dataset(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
     if suffix in {".xlsx", ".xls"}:
-        return pd.read_excel(path, sheet_name=config.CLEANED_SHEET)
-    if suffix == ".csv":
-        return pd.read_csv(path)
-    raise ValueError(f"Unsupported file format: {suffix}")
+        frame = pd.read_excel(path, sheet_name=config.CLEANED_SHEET)
+    elif suffix == ".csv":
+        frame = pd.read_csv(path)
+    else:
+        raise ValueError(f"Unsupported file format: {suffix}")
+
+    normalized = normalize_numeric_units(frame)
+    normalized = normalize_categorical_values(normalized)
+    return normalized
 
 
 def write_dataset(df: pd.DataFrame, path: Path) -> None:
@@ -73,3 +117,83 @@ def append_enrichment_columns(
     enrichment_df = pd.DataFrame(enrichment_rows)
     combined = pd.concat([df.reset_index(drop=True), enrichment_df], axis=1)
     return combined
+
+
+def normalize_numeric_units(frame: pd.DataFrame) -> pd.DataFrame:
+    normalized = frame.copy()
+    for column, rule in NUMERIC_UNIT_RULES.items():
+        if column not in normalized.columns:
+            continue
+        normalized[column] = normalized[column].apply(
+            lambda value: _normalize_quantity(value, column, rule)
+        )
+    return normalized
+
+
+def normalize_categorical_values(frame: pd.DataFrame) -> pd.DataFrame:
+    normalized = frame.copy()
+    if "Province" in normalized.columns:
+        normalized["Province"] = normalized["Province"].apply(normalize_province)
+    if "Status" in normalized.columns:
+        normalized["Status"] = normalized["Status"].apply(normalize_status)
+    return normalized
+
+
+def _normalize_quantity(value: Any, column: str, rule: dict[str, Any]) -> Any:
+    if _is_missing(value):
+        return None
+
+    canonical_unit = rule["canonical_unit"]
+    quantity = _coerce_to_quantity(value, canonical_unit, column)
+    allowed_units = {
+        str(UNIT_REGISTRY(unit).units) for unit in rule.get("allowed_units", set())
+    }
+    if allowed_units:
+        unit_name = str(quantity.units)
+        if unit_name == "dimensionless":
+            unit_name = str(UNIT_REGISTRY(canonical_unit).units)
+        if unit_name not in allowed_units:
+            raise ValueError(f"{column} unit '{unit_name}' is not supported")
+    try:
+        converted = quantity.to(canonical_unit)
+    except DimensionalityError as exc:  # pragma: no cover - defensive safety
+        raise ValueError(f"{column} has incompatible unit: {value}") from exc
+
+    magnitude = converted.magnitude
+    caster: Callable[[Any], Any] = rule.get("cast", float)
+    if caster is int:
+        return int(round(magnitude))
+    return caster(magnitude)
+
+
+def _coerce_to_quantity(value: Any, canonical_unit: str, column: str):
+    if isinstance(value, (Real, Decimal)) and not _is_missing(value):
+        return UNIT_REGISTRY.Quantity(value, canonical_unit)
+
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            quantity = UNIT_REGISTRY(text)
+            if isinstance(quantity, Real):
+                return UNIT_REGISTRY.Quantity(quantity, canonical_unit)
+            return quantity
+        except (UndefinedUnitError, ValueError):
+            try:
+                magnitude = float(text)
+            except ValueError as exc:  # pragma: no cover - invalid literal
+                raise ValueError(f"{column} value '{value}' is not a number") from exc
+            return UNIT_REGISTRY.Quantity(magnitude, canonical_unit)
+
+    raise ValueError(f"{column} value '{value}' is not supported")
+
+
+def _is_missing(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, float) and pd.isna(value):
+        return True
+    if isinstance(value, str) and not value.strip():
+        return True
+    return False

@@ -12,8 +12,8 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeRemaining
 
 from .audit import build_evidence_sink
 from .contracts import (
-    DbtContractResult,
     CuratedDatasetContractResult,
+    DbtContractResult,
     persist_contract_artifacts,
     record_contracts_evidence,
     run_dbt_contract_tests,

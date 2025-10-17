@@ -16,7 +16,7 @@
 - [x] High-risk coverage uplift (analyst_ui.py, compliance.py, cli.py, presets.py, secrets.py) — Owner: QA — Due: 2025-10-30
 - [ ] Phase 1 — Data contracts + evidence enforcement (AT-24, AT-29) — Owner: Data — Due: 2025-11-15
   - [x] Phase 1.1 — Great Expectations + dbt alignment and operationalisation (AT-24) — Owner: Data — Completed 2025-10-17
-  - [ ] Phase 1.2 — Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Owner: Data — Due: 2025-11-15
+  - [x] Phase 1.2 — Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Owner: Data — Due: 2025-11-15 (Pint enforcement + Hypothesis suite landed; CI telemetry/dashboard wiring pending follow-up)
 - [ ] Phase 2 — Lineage, catalogue, and versioning rollout (AT-25, AT-26, AT-27) — Owner: Platform — Due: 2025-12-06
 - [ ] Phase 3 — Graph semantics + drift observability (AT-28, AT-30) — Owner: Data/Platform — Due: 2026-01-10
 - [ ] Phase 4 — LLM safety, evaluation, and MCP plan→commit gating (AT-31, AT-32, AT-33) — Owner: Platform/Security — Due: 2026-01-31
@@ -48,7 +48,8 @@
 - [x] Enforce fresh evidence gating for high-risk updates and update docs (2025-10-18)
 - [x] Phase 1.1 — Great Expectations + dbt suite covering validation + enrichment outputs (AT-24) — CLI now runs GE + dbt, analytics/ dbt project published, artefacts stored under data/contracts/, and evidence log entries capture suite metadata.
 - [x] Regression coverage for persisted contract artefacts — JSON copies from Great Expectations + dbt runs verified via CLI integration test (2025-10-17)
-- [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Execution roadmap outlined in docs/data-quality.md (Phase 1.2 section); fixtures and property suite queued.
+- [x] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Pint-backed ingest normalization and Hypothesis contracts merged; surface suite telemetry in CLI/observability dashboards next.
+- [x] Phase 1.2 hardening — Fix Excel dataset reader for XLSX inputs and extend regression tests for unsupported unit payloads (2025-10-17)
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
 - [ ] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28)
@@ -141,7 +142,8 @@
 - [x] Quickstart references `data/sample.csv` but the repo ships no sample input yet.
 
 - [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
-- [ ] Track Python <3.14 pin introduced for Great Expectations compatibility; review Great Expectations release notes weekly and schedule pin removal once 3.14 wheels land.
+- [ ] Track Python <3.14 pin introduced for Great Expectations compatibility; review Great Expectations release notes weekly and schedule pin removal once 3.14 wheels land (2025-10-17 check blocked by SSL trust issues in build environment; retry when CA bundle updated).
+- [ ] Communicate new Python >=3.11 floor across tooling/CI and verify downstream environments upgrade paths.
 - [ ] Align isort configuration (project vs CLI flags) to avoid manual --profile overrides.
 - [ ] Capture adapter contribution guide (with examples) once regulator/press adapters land.
 - [ ] Type stubs handled via `type: ignore`; consider adding official stubs to dependencies.

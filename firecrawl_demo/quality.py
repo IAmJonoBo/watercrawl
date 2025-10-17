@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import Literal
-from collections.abc import Mapping, Sequence
 
 from .compliance import canonical_domain
 from .models import SchoolRecord
