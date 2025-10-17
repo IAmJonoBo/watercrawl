@@ -26,6 +26,8 @@ Set `FIRECRAWL_API_KEY` in `.env` if you intend to plug in the Firecrawl SDK.
 - **CLI** commands for analysts and automation runs (`firecrawl_demo.cli`).
 - **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
   remediation guidance into the evidence log and MCP.
+- **Data contracts** with a dual Great Expectations + dbt suite, executed via the `contracts`
+  CLI command and archived as evidence artefacts for each dataset revision.
 - **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.mcp.server`).
 - **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
 - **MkDocs documentation** under `docs/` with architecture, gap analysis, and SOPs.
@@ -47,6 +49,7 @@ poetry run ruff check .
 poetry run mypy .
 poetry run bandit -r firecrawl_demo
 poetry run pre-commit run --all-files
+poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
 ## Documentation

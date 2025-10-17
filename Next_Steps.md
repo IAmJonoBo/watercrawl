@@ -15,6 +15,8 @@
 - [x] Ship a runnable sample dataset or adjust README quickstart instructions — Owner: Docs — Due: 2025-10-23
 - [x] High-risk coverage uplift (analyst_ui.py, compliance.py, cli.py, presets.py, secrets.py) — Owner: QA — Due: 2025-10-30
 - [ ] Phase 1 — Data contracts + evidence enforcement (AT-24, AT-29) — Owner: Data — Due: 2025-11-15
+  - [x] Phase 1.1 — Great Expectations + dbt alignment and operationalisation (AT-24) — Owner: Data — Completed 2025-10-17
+  - [ ] Phase 1.2 — Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Owner: Data — Due: 2025-11-15
 - [ ] Phase 2 — Lineage, catalogue, and versioning rollout (AT-25, AT-26, AT-27) — Owner: Platform — Due: 2025-12-06
 - [ ] Phase 3 — Graph semantics + drift observability (AT-28, AT-30) — Owner: Data/Platform — Due: 2026-01-10
 - [ ] Phase 4 — LLM safety, evaluation, and MCP plan→commit gating (AT-31, AT-32, AT-33) — Owner: Platform/Security — Due: 2026-01-31
@@ -44,7 +46,8 @@
 - [x] Extend high-risk coverage edge cases for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-17)
 - [x] Wire quality gate metrics, rollback plan emission, and documentation updates (2025-10-17)
 - [x] Enforce fresh evidence gating for high-risk updates and update docs (2025-10-18)
-- [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24) — Kickoff plan published in docs/data-quality.md (Phase 1.1 section); suite scaffolding scheduled Week 1. ✅ Curated `great_expectations/` suite + CLI contracts command delivered; local GE state sanitised and operations runbook references the CLI flow; dbt + operationalisation pending.
+- [x] Phase 1.1 — Great Expectations + dbt suite covering validation + enrichment outputs (AT-24) — CLI now runs GE + dbt, analytics/ dbt project published, artefacts stored under data/contracts/, and evidence log entries capture suite metadata.
+- [x] Regression coverage for persisted contract artefacts — JSON copies from Great Expectations + dbt runs verified via CLI integration test (2025-10-17)
 - [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Execution roadmap outlined in docs/data-quality.md (Phase 1.2 section); fixtures and property suite queued.
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
@@ -90,7 +93,7 @@
 - [x] Quality gate enforcement (2025-10-17): `quality_rejections` metric >0 halts publish; rollback plan generated for every blocked row
 - [x] Fresh evidence gating (2025-10-18): high-risk updates require ≥2 unique sources including fresh official corroboration; rejection notes call out missing fresh evidence.
 - [x] Restore PipelineReport quality metadata models so CLI/MCP responses include quality issues + rollback plans post-regression (2025-10-16)
-- [ ] Data contracts enforced: GX/dbt/Deequ suites block publishable writes (AT-24)
+- [x] Data contracts enforced: Great Expectations + dbt build (tag:contracts) block publishes; Deequ pending (AT-24)
 - [ ] Provenance completeness: 100% of publishable facts have OpenLineage + PROV-O/DCAT metadata (AT-25)
 - [ ] ACID + versioning: curated tables written via Delta/Iceberg with reproducible DVC/lakeFS commits (AT-26, AT-27)
 - [ ] Graph validation + drift monitoring: CSVW/R2RML checks + whylogs alerts wired (AT-28, AT-30)
@@ -119,6 +122,7 @@
 - [x] Exemplar adapter implementations — firecrawl_demo/research/exemplars.py
 - [x] Infrastructure drift regression tests — tests/test_infrastructure_planning.py
 - [x] GX/dbt/Deequ suites (Phase 1) — docs/data-quality.md (Phase 1.1 & 1.2 sections)
+- [x] dbt contracts project — analytics/dbt_project.yml; analytics/models/staging/stg_curated_dataset.sql; analytics/tests/generic
 - [x] Lineage + lakehouse configuration docs (Phase 2) — docs/lineage-lakehouse.md
 - [ ] Graph semantics mapping repo + drift dashboards (Phase 3) — TBC
 - [ ] LLM safety + MCP governance pack (Phase 4) — TBC
@@ -137,7 +141,7 @@
 - [x] Quickstart references `data/sample.csv` but the repo ships no sample input yet.
 
 - [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
-- [ ] Track Python <3.14 pin introduced for Great Expectations compatibility; revisit once upstream ships 3.14 wheels.
+- [ ] Track Python <3.14 pin introduced for Great Expectations compatibility; review Great Expectations release notes weekly and schedule pin removal once 3.14 wheels land.
 - [ ] Align isort configuration (project vs CLI flags) to avoid manual --profile overrides.
 - [ ] Capture adapter contribution guide (with examples) once regulator/press adapters land.
 - [ ] Type stubs handled via `type: ignore`; consider adding official stubs to dependencies.

@@ -41,32 +41,19 @@ leave the enrichment pipeline. The delivery slices are:
 - ✅ **Suite scaffolding (Week 1) complete**: the repository now includes a
   `great_expectations/` project with a `curated_dataset` expectation suite
   covering schema, province/status taxonomies, HTTPS websites, and contact
-  hygiene checks. Run it locally via
-  `poetry run python -m firecrawl_demo.cli contracts data/output.csv` to produce
+  hygiene checks. Run it locally via the `contracts` CLI command to produce
   analyst-friendly failure reports and CI-friendly exit codes.
-- **Suite scaffolding (Week 1)**
-  - Stand up a `great_expectations/` project rooted in the repo to co-locate
-    batch checkpoints with sample data extracts.
-  - Mirror core validation logic (province list, status taxonomy, contact
-    requirements) as *Expectations* and register them with a `curated_dataset`
-    expectation suite.
-  - Generate `data_docs` artefacts and publish them via MkDocs so analysts can
-    audit the rule catalogue.
-- **dbt contract alignment (Week 2)**
-  - Introduce a lightweight dbt project under `analytics/` with staging models
-    for the canonical flight school dataset.
-  - Encode column types, accepted values, and referential checks using dbt
-    schema tests; add custom tests for evidence source counts and enriched
-    contact completeness.
-  - Configure CI to run `dbt test` alongside the Great Expectations checkpoint
-    so both suites must pass before merge.
-- **Operationalisation (Week 3)**
-  - Wire the CLI and MCP paths to execute the `great_expectations` checkpoint
-    when `ALLOW_NETWORK_RESEARCH=0` to preserve determinism.
-  - Persist expectation suite snapshots to the evidence log to prove which
-    contracts ran for each dataset revision.
-  - Track coverage with a target of ≥95% of curated columns having at least one
-    expectation or dbt test before promoting Phase 1 exit criteria.
+- ✅ **dbt contract alignment (Week 2) complete**: a lightweight dbt project now
+  lives under `analytics/` with a `stg_curated_dataset` model that reads CSV
+  exports via DuckDB. Column typing, accepted values, and custom tests for HTTPS
+  websites, email → domain alignment, and +27 phone formats keep dbt coverage in
+  lock-step with the Great Expectations suite. CI runs `dbt build --select
+  tag:contracts` alongside the checkpoint so both suites gate merges.
+- ✅ **Operationalisation (Week 3) complete**: the CLI `contracts` command now
+  executes Great Expectations and dbt in the same run, persists run artefacts to
+  `data/contracts/<timestamp>/`, and appends an evidence-log entry referencing
+  the suite snapshot. MCP orchestration inherits the same behaviour, keeping
+  offline runs deterministic while preserving audit trails.
 
 Deliverables include the expectation suite, dbt project, CI wiring, and MkDocs
 documentation summarising rule coverage and remediation playbooks.

@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: stg_curated_dataset
+    description: >-
+      Normalised staging view of the curated flight-school dataset used for
+      contract enforcement. Mirrors the columns validated by Great
+      Expectations and exposes them to dbt generic tests.
+    columns:
+      - name: organisation_name
+        description: Canonical organisation name.
+        tests:
+          - not_null
+      - name: province
+        description: South African province derived from the curated dataset.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Eastern Cape
+                  - Free State
+                  - Gauteng
+                  - KwaZulu-Natal
+                  - Limpopo
+                  - Mpumalanga
+                  - Northern Cape
+                  - North West
+                  - Western Cape
+      - name: status
+        description: Curated lifecycle status aligned with ACES taxonomy.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Verified
+                  - Candidate
+                  - Needs Review
+                  - Duplicate
+                  - Do Not Contact (Compliance)
+      - name: website_url
+        description: Primary organisation website, expected to use HTTPS.
+        tests:
+          - not_null
+          - https_prefix
+      - name: contact_person
+        description: Named contact aligned to enrichment rules.
+        tests:
+          - not_null
+      - name: contact_number
+        description: Primary contact number in +27 E.164 format.
+        tests:
+          - not_null
+          - south_african_phone
+      - name: contact_email_address
+        description: Named contact email aligned to organisation domain.
+        tests:
+          - not_null
+          - email_domain_matches_website:
+              website_column: website_url

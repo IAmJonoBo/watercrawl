@@ -1,0 +1,22 @@
+name: "watercrawl_contracts"
+version: "1.0.0"
+config-version: 2
+
+profile: "watercrawl_contracts"
+
+model-paths:
+  - "models"
+test-paths:
+  - "tests"
+seed-paths: []
+
+vars:
+  curated_source_path: "{{ env_var('CURATED_DATASET_PATH', 'data/sample.csv') }}"
+
+models:
+  watercrawl_contracts:
+    +on_schema_change: append_new_columns
+    staging:
+      +materialized: view
+      +bind: false
+      +tags: ["contracts", "phase1.1"]
