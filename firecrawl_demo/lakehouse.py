@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -30,6 +31,8 @@ class LakehouseManifest:
     manifest_path: Path
     format: str
     version: str
+    fingerprint: str
+    row_count: int
 
 
 class LocalLakehouseWriter:
@@ -56,12 +59,23 @@ class LocalLakehouseWriter:
                 manifest_path=manifest_path,
                 format=self._config.backend,
                 version="disabled",
+                fingerprint="",
+                row_count=0,
             )
 
         timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
         version = f"{timestamp}-{run_id}"
         table_dir = self._config.root_path / self._config.table_name / version
         table_dir.mkdir(parents=True, exist_ok=True)
+
+        normalized = dataframe.reset_index(drop=True).reindex(
+            sorted(dataframe.columns), axis=1
+        )
+        fingerprint = hashlib.sha256(
+            normalized.to_csv(index=False).encode("utf-8")
+        ).hexdigest()
+        row_count = int(len(dataframe))
+        schema = {column: str(dtype) for column, dtype in dataframe.dtypes.items()}
 
         data_path = table_dir / "data.parquet"
         dataframe.to_parquet(data_path, index=False)
@@ -75,6 +89,19 @@ class LocalLakehouseWriter:
                 "data": data_path.name,
             },
             "created_at": datetime.utcnow().isoformat(),
+            "fingerprint": fingerprint,
+            "row_count": row_count,
+            "schema": schema,
+            "environment": {
+                "profile": config.DEPLOYMENT.profile,
+                "codex_enabled": config.DEPLOYMENT.codex_enabled,
+                "crawler_mode": config.DEPLOYMENT.crawler_mode,
+            },
+            "versioning": {
+                "enabled": config.VERSIONING.enabled,
+                "strategy": config.VERSIONING.strategy,
+                "metadata_root": str(config.VERSIONING.metadata_root),
+            },
         }
         manifest_path = table_dir / "manifest.json"
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
@@ -86,6 +113,8 @@ class LocalLakehouseWriter:
             manifest_path=manifest_path,
             format=self._config.backend,
             version=version,
+            fingerprint=fingerprint,
+            row_count=row_count,
         )
 
 

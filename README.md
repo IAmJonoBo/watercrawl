@@ -48,6 +48,7 @@ The repository now ships a ready-to-run sample dataset at `data/sample.csv` so a
 - **Data contracts** with a dual Great Expectations + dbt suite, executed via the `contracts`
   CLI command and archived as evidence artefacts for each dataset revision.
 - **Lineage + lakehouse artefacts** generated alongside every enrichment run (OpenLineage, PROV-O, DCAT, and snapshot manifests) so analysts can trace provenance and reproduce curated tables.
+- **Versioned lakehouse snapshots** with deterministic fingerprints and reproduce commands captured in `data/versioning/`.
 - **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.mcp.server`).
 - **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
 - **MkDocs documentation** under `docs/` with architecture, gap analysis, and SOPs.
@@ -87,6 +88,13 @@ Key pages:
 - `docs/cli.md`: command usage and examples.
 - `docs/mcp.md`: MCP contract for Copilot.
 - `docs/operations.md`: QA gates and release process.
+
+## Repository layout
+
+- `dev/` — experimentation workspace for analysts/developers. Codex allowed only after Promptfoo smoke tests pass.
+- `tools/` — shared automation helpers (Promptfoo configs, audit recipes, QA fixtures).
+- `app/` — deployable application surface consuming the enrichment libraries.
+- `dist/` — hardened crawler distribution footprint with Codex integrations disabled.
 
 ## Codex developer experience
 

@@ -35,11 +35,26 @@ class LineageContext:
     execution_start: datetime = field(default_factory=lambda: datetime.utcnow())
     extras: dict[str, Any] = field(default_factory=dict)
 
-    def with_lakehouse(self, uri: str | None, version: str | None) -> LineageContext:
+    def with_lakehouse(
+        self,
+        uri: str | None,
+        version: str | None,
+        *,
+        manifest_path: Path | None = None,
+        fingerprint: str | None = None,
+    ) -> LineageContext:
         """Return a new context capturing lakehouse outputs."""
 
+        extras = dict(self.extras)
+        if manifest_path is not None:
+            extras["lakehouse_manifest"] = manifest_path
+        if fingerprint is not None:
+            extras["lakehouse_fingerprint"] = fingerprint
         return replace(
-            self, lakehouse_uri=uri, dataset_version=version or self.dataset_version
+            self,
+            lakehouse_uri=uri,
+            dataset_version=version or self.dataset_version,
+            extras=extras,
         )
 
 
@@ -116,8 +131,15 @@ def _dataset_facets(context: LineageContext, metrics: dict[str, int]) -> dict[st
     evidence_uri = _as_uri(context.evidence_path)
     if evidence_uri:
         facets["evidenceLog"] = {"uri": evidence_uri}
+    manifest_path = context.extras.get("lakehouse_manifest")
+    if manifest_path:
+        facets["lakehouseManifest"] = {"uri": _as_uri(manifest_path)}
     if context.lakehouse_uri:
-        facets["lakehouse"] = {"uri": context.lakehouse_uri}
+        lakehouse_facet: dict[str, Any] = {"uri": context.lakehouse_uri}
+        fingerprint = context.extras.get("lakehouse_fingerprint")
+        if fingerprint:
+            lakehouse_facet["fingerprint"] = fingerprint
+        facets["lakehouse"] = lakehouse_facet
     return facets
 
 

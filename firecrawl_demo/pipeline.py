@@ -43,6 +43,11 @@ from .research import (
     lookup_with_adapter_async,
 )
 from .validation import DatasetValidator
+from .versioning import (
+    VersioningManager,
+    build_versioning_manager,
+    fingerprint_dataframe,
+)
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
 logger = logging.getLogger(__name__)
@@ -59,6 +64,9 @@ class Pipeline:
     lineage_manager: LineageManager | None = field(default_factory=LineageManager)
     lakehouse_writer: LocalLakehouseWriter | None = field(
         default_factory=build_lakehouse_writer
+    )
+    versioning_manager: VersioningManager | None = field(
+        default_factory=build_versioning_manager
     )
     _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
 
@@ -99,6 +107,7 @@ class Pipeline:
 
         working_frame = frame.copy(deep=True)
         working_frame_cast = cast(Any, working_frame)
+        input_fingerprint = fingerprint_dataframe(frame)
         evidence_records: list[EvidenceRecord] = []
         enriched_rows = 0
         adapter_failures = 0
@@ -329,16 +338,37 @@ class Pipeline:
             ),
         )
         active_context = lineage_context
+        manifest = None
+        version_info = None
         if self.lakehouse_writer and active_context:
             manifest = self.lakehouse_writer.write(
                 run_id=active_context.run_id, dataframe=report.refined_dataframe
             )
+            version_value = manifest.version
+            if self.versioning_manager:
+                version_info = self.versioning_manager.record_snapshot(
+                    run_id=active_context.run_id,
+                    manifest=manifest,
+                    input_fingerprint=input_fingerprint,
+                    extras={
+                        "source": "pipeline.run_dataframe_async",
+                        "environment": config.DEPLOYMENT.profile,
+                    },
+                )
+                version_value = version_info.version
             active_context = active_context.with_lakehouse(
-                uri=manifest.table_uri, version=manifest.version
+                uri=manifest.table_uri,
+                version=version_value,
+                manifest_path=manifest.manifest_path,
+                fingerprint=manifest.fingerprint,
             )
         if self.lineage_manager and active_context:
             artifacts = self.lineage_manager.capture(report, active_context)
             report.lineage_artifacts = artifacts
+        if manifest is not None:
+            report.lakehouse_manifest = manifest
+        if version_info is not None:
+            report.version_info = version_info
         self._last_report = report
         listener.on_complete(metrics)
         return report

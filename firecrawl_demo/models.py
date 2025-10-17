@@ -9,7 +9,9 @@ import pandas as pd
 from . import config
 
 if TYPE_CHECKING:
+    from .lakehouse import LakehouseManifest
     from .lineage import LineageArtifacts
+    from .versioning import VersionInfo
 
 _CANONICAL_PROVINCES = {province.lower(): province for province in config.PROVINCES}
 _UNKNOWN_PROVINCE = "Unknown"
@@ -200,6 +202,8 @@ class PipelineReport:
     quality_issues: list[QualityIssue] = field(default_factory=list)
     rollback_plan: RollbackPlan | None = None
     lineage_artifacts: LineageArtifacts | None = None
+    lakehouse_manifest: "LakehouseManifest | None" = None
+    version_info: "VersionInfo | None" = None
 
     @property
     def issues(self) -> list[ValidationIssue]:

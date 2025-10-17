@@ -26,6 +26,13 @@ archives run artefacts to `data/contracts/<timestamp>/` for provenance.
 
 Every enrichment run now emits a lineage bundle under `artifacts/lineage/<run_id>/` containing OpenLineage, PROV-O, and DCAT documents together with optional lakehouse manifests. Surface these artefacts in runbooks and attach them to incident reports so provenance checks stay reproducible.
 
+Each run also captures a `version.json` manifest within the versioning metadata root (default `data/versioning/`). The manifest
+records the input fingerprint, output fingerprint, row count, and the command required to reproduce the run. Attach this file to
+release reviews so operators can replay or roll back snapshots deterministically.
+
+> **Codex guardrail:** run `promptfoo eval codex/evals/promptfooconfig.yaml` before enabling any Codex or MCP-assisted sessions.
+> Production (`dist/`) deployments must leave Codex disabled; only the `dev/` workspace may opt in after the smoke tests pass.
+
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command
 > exits non-zero when variables are duplicated, unexported, or malformed, so run
