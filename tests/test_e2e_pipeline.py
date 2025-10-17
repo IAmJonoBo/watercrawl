@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -18,6 +19,9 @@ class StubResearchAdapter(ResearchAdapter):
             return self._findings[organisation]
         except KeyError as exc:  # pragma: no cover - defensive
             raise LookupError(organisation) from exc
+
+    async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
+        return self.lookup(organisation, province)
 
 
 class RecordingProgress(PipelineProgressListener):
@@ -454,3 +458,92 @@ def test_pipeline_rejects_updates_without_fresh_sources():
     notes = report.evidence_log[0].notes.lower()
     assert "fresh" in notes
     assert "quality gate" in notes
+
+
+@pytest.mark.asyncio
+async def test_pipeline_run_dataframe_async():
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "SkyReach Aero",
+                "Province": "gauteng",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "(011) 555 0100",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    adapter = StubResearchAdapter(
+        {
+            "SkyReach Aero": ResearchFinding(
+                website_url="https://www.skyreachaero.co.za",
+                contact_person="Captain Neo Masuku",
+                contact_email="neo.masuku@skyreachaero.co.za",
+                contact_phone="011 555 0100",
+                sources=[
+                    "https://www.skyreachaero.co.za/contact",
+                    "https://www.caa.co.za/operators/skyreachaero",
+                    "https://linkedin.com/company/skyreachaero",
+                ],
+                notes="Directory + LinkedIn cross-check",
+                confidence=96,
+            )
+        }
+    )
+
+    pipeline = Pipeline(research_adapter=adapter)
+    report = await pipeline.run_dataframe_async(df)
+
+    enriched = report.refined_dataframe
+    assert enriched.loc[0, "Website URL"] == "https://www.skyreachaero.co.za"
+    assert enriched.loc[0, "Contact Email Address"] == "neo.masuku@skyreachaero.co.za"
+    assert enriched.loc[0, "Status"] == "Verified"
+    assert report.metrics["enriched_rows"] == 1
+
+
+@pytest.mark.asyncio
+async def test_pipeline_run_file_async(tmp_path: Path):
+    input_path = tmp_path / "async-input.csv"
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Async File School",
+                "Province": "Western Cape",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "021 555 0100",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+    df.to_csv(input_path, index=False)
+
+    adapter = StubResearchAdapter(
+        {
+            "Async File School": ResearchFinding(
+                website_url="https://async-file.aero",
+                contact_person="Zinhle Samuels",
+                contact_email="zinhle.samuels@async-file.aero",
+                contact_phone="021 555 0100",
+                sources=[
+                    "https://async-file.aero/contact",
+                    "https://caa.co.za/operators/async-file",
+                ],
+                notes="Firecrawl + regulator insight",
+                confidence=90,
+            )
+        }
+    )
+
+    pipeline = Pipeline(research_adapter=adapter)
+    output_path = tmp_path / "async-output.csv"
+    report = await pipeline.run_file_async(input_path, output_path)
+
+    assert output_path.exists()
+    saved = pd.read_csv(output_path)
+    assert saved.loc[0, "Website URL"] == "https://async-file.aero"
+    assert report.metrics["enriched_rows"] == 1

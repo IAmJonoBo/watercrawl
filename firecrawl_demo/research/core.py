@@ -1,9 +1,12 @@
+"""Core research adapter primitives and Firecrawl integration helpers."""
+
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Protocol
+from typing import Awaitable, Callable, Protocol, runtime_checkable
 
 from .. import config
 from ..compliance import normalize_phone
@@ -13,12 +16,25 @@ from ..firecrawl_client import FirecrawlClient, summarize_extract_payload
 logger = logging.getLogger(__name__)
 
 
+@runtime_checkable
+class SupportsAsyncLookup(Protocol):
+    """Protocol for adapters that expose an async lookup API."""
+
+    async def lookup_async(
+        self, organisation: str, province: str
+    ) -> ResearchFinding: ...
+
+
 class ResearchAdapter(Protocol):
+    """Protocol describing the synchronous adapter surface."""
+
     def lookup(self, organisation: str, province: str) -> ResearchFinding: ...
 
 
 @dataclass(frozen=True)
 class ResearchFinding:
+    """Container for enrichment data returned by research adapters."""
+
     website_url: str | None = None
     contact_person: str | None = None
     contact_email: str | None = None
@@ -31,6 +47,8 @@ class ResearchFinding:
     physical_address: str | None = None
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
+        """Normalise collection fields for deterministic comparisons."""
+
         object.__setattr__(self, "sources", _unique(self.sources))
         object.__setattr__(self, "alternate_names", _unique(self.alternate_names))
         object.__setattr__(
@@ -43,9 +61,12 @@ class ResearchFinding:
 
 
 class NullResearchAdapter:
-    """Fallback adapter that provides empty research findings."""
+    """Fallback adapter that returns empty findings."""
 
     def lookup(self, organisation: str, province: str) -> ResearchFinding:
+        return ResearchFinding()
+
+    async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
         return ResearchFinding()
 
 
@@ -58,6 +79,9 @@ class StaticResearchAdapter:
     def lookup(self, organisation: str, province: str) -> ResearchFinding:
         return self._findings.get(organisation, ResearchFinding())
 
+    async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
+        return self.lookup(organisation, province)
+
 
 @dataclass
 class CompositeResearchAdapter:
@@ -67,6 +91,15 @@ class CompositeResearchAdapter:
 
     def lookup(self, organisation: str, province: str) -> ResearchFinding:
         findings = [adapter.lookup(organisation, province) for adapter in self.adapters]
+        return merge_findings(*findings)
+
+    async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
+        findings = await asyncio.gather(
+            *[
+                lookup_with_adapter_async(adapter, organisation, province)
+                for adapter in self.adapters
+            ]
+        )
         return merge_findings(*findings)
 
 
@@ -85,14 +118,31 @@ class TriangulatingResearchAdapter:
         triangulated = self.triangulate(organisation, province, baseline)
         return merge_findings(baseline, triangulated)
 
+    async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
+        baseline = await lookup_with_adapter_async(
+            self.base_adapter, organisation, province
+        )
+        triangulated = await asyncio.to_thread(
+            self.triangulate, organisation, province, baseline
+        )
+        return merge_findings(baseline, triangulated)
+
 
 class FirecrawlResearchAdapter:
     """Adapter that queries the Firecrawl SDK when feature flags allow."""
 
-    def __init__(self, client: FirecrawlClient) -> None:
-        self._client = client
+    def __init__(self, client: FirecrawlClient | None = None) -> None:
+        self._client = client or FirecrawlClient()
 
     def lookup(self, organisation: str, province: str) -> ResearchFinding:
+        return self._lookup_sync(organisation, province)
+
+    async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
+        return await self._lookup_async(organisation, province)
+
+    def _lookup_sync(self, organisation: str, province: str) -> ResearchFinding:
+        if not config.FEATURE_FLAGS.enable_firecrawl_sdk:
+            return ResearchFinding(notes="Firecrawl SDK disabled by feature flag.")
         if not config.ALLOW_NETWORK_RESEARCH:
             return ResearchFinding(
                 notes=(
@@ -105,7 +155,6 @@ class FirecrawlResearchAdapter:
         sources: list[str] = []
         notes: list[str] = []
         confidence = 0
-        extract_payload = {}
 
         try:
             search_result = self._client.search(
@@ -122,6 +171,7 @@ class FirecrawlResearchAdapter:
             notes.append("Firecrawl search returned no actionable URLs")
             return ResearchFinding(notes="; ".join(notes))
 
+        extract_payload: dict[str, object] = {}
         try:
             extract_payload = self._client.extract(
                 urls=sources[: config.FIRECRAWL.behaviour.map_limit],
@@ -137,27 +187,90 @@ class FirecrawlResearchAdapter:
         else:
             confidence = 70
 
-        summary = summarize_extract_payload(extract_payload)
+        return self._finalise_result(sources, notes, extract_payload, confidence)
+
+    async def _lookup_async(self, organisation: str, province: str) -> ResearchFinding:
+        if not config.FEATURE_FLAGS.enable_firecrawl_sdk:
+            return ResearchFinding(notes="Firecrawl SDK disabled by feature flag.")
+        if not config.ALLOW_NETWORK_RESEARCH:
+            return ResearchFinding(
+                notes=(
+                    "Firecrawl SDK available but network research disabled. "
+                    "Run with ALLOW_NETWORK_RESEARCH=1 to enable live enrichment."
+                )
+            )
+
+        query = f"{organisation} {province} South Africa flight school"
+        sources: list[str] = []
+        notes: list[str] = []
+        confidence = 0
+
+        try:
+            search_result = await asyncio.to_thread(
+                self._client.search,
+                query,
+                limit=config.FIRECRAWL.behaviour.search_limit,
+            )
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.warning("Firecrawl search failed for %s: %s", organisation, exc)
+            notes.append(f"Firecrawl search failed: {exc}")
+        else:
+            sources.extend(_extract_urls(search_result))
+
+        if not sources:
+            notes.append("Firecrawl search returned no actionable URLs")
+            return ResearchFinding(notes="; ".join(notes))
+
+        extract_payload: dict[str, object] = {}
+        try:
+            extract_payload = await asyncio.to_thread(
+                self._client.extract,
+                sources[: config.FIRECRAWL.behaviour.map_limit],
+                (
+                    "Summarise contact information, official website, and any recent "
+                    "ownership or brand changes for {organisation} in {province}, "
+                    "South Africa."
+                ).format(organisation=organisation, province=province),
+            )
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.warning("Firecrawl extract failed for %s: %s", organisation, exc)
+            notes.append(f"Firecrawl extract failed: {exc}")
+        else:
+            confidence = 70
+
+        return self._finalise_result(sources, notes, extract_payload, confidence)
+
+    def _finalise_result(
+        self,
+        sources: Sequence[str],
+        notes: Sequence[str],
+        extract_payload: Mapping[str, object],
+        confidence: int,
+    ) -> ResearchFinding:
+        summary = summarize_extract_payload(dict(extract_payload))
         investigation: list[str] = []
         for key in ("ownership_change", "rebrand_note"):
             value = summary.get(key)
             if isinstance(value, str) and value:
                 investigation.append(value)
 
-        finding = ResearchFinding(
+        message = "; ".join(notes) if notes else "Firecrawl insight gathered"
+        return ResearchFinding(
             website_url=summary.get("website_url"),
             contact_person=summary.get("contact_person"),
             contact_email=summary.get("contact_email"),
             contact_phone=summary.get("contact_phone"),
-            sources=sources,
-            notes="; ".join(notes) if notes else "Firecrawl insight gathered",
+            sources=_unique(list(sources)),
+            notes=message,
             confidence=confidence,
             investigation_notes=investigation,
+            physical_address=summary.get("physical_address"),
         )
-        return finding
 
 
 def merge_findings(*findings: ResearchFinding) -> ResearchFinding:
+    """Combine multiple findings, favouring non-empty attributes from later entries."""
+
     website_url: str | None = None
     contact_person: str | None = None
     contact_email: str | None = None
@@ -199,7 +312,7 @@ def merge_findings(*findings: ResearchFinding) -> ResearchFinding:
         contact_email=contact_email,
         contact_phone=contact_phone,
         sources=sources,
-        notes="; ".join(notes),
+        notes="; ".join(notes) if notes else "",
         confidence=confidence,
         alternate_names=alternate_names,
         investigation_notes=investigation_notes,
@@ -210,33 +323,21 @@ def merge_findings(*findings: ResearchFinding) -> ResearchFinding:
 def triangulate_via_sources(
     organisation: str, province: str, baseline: ResearchFinding
 ) -> ResearchFinding:
-    features = config.FEATURE_FLAGS
-    if not (features.enable_press_research or features.enable_regulator_lookup):
-        return ResearchFinding()
+    """Use deterministic offline sources to augment Firecrawl findings."""
 
-    if not config.ALLOW_NETWORK_RESEARCH:
-        investigation = []
-        if features.investigate_rebrands:
-            investigation.append(
-                f"Manual verification required to confirm any rebrand for {organisation}."
-            )
-        return ResearchFinding(
-            notes="Network research disabled; perform manual triangulation.",
-            investigation_notes=investigation,
-        )
-
+    flags = config.FEATURE_FLAGS
     return triangulate_organisation(
         organisation,
         province,
         baseline,
-        include_press=features.enable_press_research,
-        include_regulator=features.enable_regulator_lookup,
-        investigate_rebrands=features.investigate_rebrands,
+        include_press=flags.enable_press_research,
+        include_regulator=flags.enable_regulator_lookup,
+        investigate_rebrands=flags.investigate_rebrands,
     )
 
 
 def build_research_adapter() -> ResearchAdapter:
-    """Assemble the active research pipeline based on the adapter registry."""
+    """Assemble the default adapter stack declared in configuration."""
 
     from .registry import AdapterLoaderSettings, load_enabled_adapters
 
@@ -246,9 +347,8 @@ def build_research_adapter() -> ResearchAdapter:
     if not adapters:
         adapters = [NullResearchAdapter()]
 
-    base: ResearchAdapter
     if len(adapters) == 1:
-        base = adapters[0]
+        base: ResearchAdapter = adapters[0]
     else:
         base = CompositeResearchAdapter(tuple(adapters))
 
@@ -260,13 +360,23 @@ def build_research_adapter() -> ResearchAdapter:
 def _build_firecrawl_adapter() -> ResearchAdapter | None:
     try:
         client = FirecrawlClient()
-        # Trigger lazy validation of credentials
         if config.ALLOW_NETWORK_RESEARCH:
             client._client()
     except Exception as exc:  # pragma: no cover - defensive
         logger.info("Firecrawl adapter unavailable: %s", exc)
         return None
     return FirecrawlResearchAdapter(client)
+
+
+async def lookup_with_adapter_async(
+    adapter: ResearchAdapter, organisation: str, province: str
+) -> ResearchFinding:
+    if isinstance(adapter, SupportsAsyncLookup):
+        result = adapter.lookup_async(organisation, province)
+        if isinstance(result, Awaitable):
+            return await result
+        return result  # type: ignore[return-value]
+    return await asyncio.to_thread(adapter.lookup, organisation, province)
 
 
 def _extract_urls(payload: object) -> list[str]:

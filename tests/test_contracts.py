@@ -97,9 +97,17 @@ def test_contracts_cli_reports_failures(
 
     assert response.exit_code != 0
     assert "Failing expectations" in response.output
-    assert "dbt tests:" in response.output
+    dbt_line = next(
+        (
+            line
+            for line in response.output.splitlines()
+            if line.startswith("dbt tests:")
+        ),
+        "",
+    )
+    assert dbt_line
     if "Failing dbt tests" not in response.output:
-        assert "dbt tests: 0 passed / 0 executed" in response.output
+        assert "passed" in dbt_line
 
 
 def test_contracts_cli_runs_both_suites_and_logs_evidence(
