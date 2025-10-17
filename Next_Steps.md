@@ -61,6 +61,7 @@
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
 - [x] Integrate Codex developer experience scaffold (2025-10-17)
+- [x] Default research adapter sequence excludes Firecrawl until SDK rollout opt-in (2025-10-17)
 - [ ] Expand Promptfoo scenarios to cover evidence-log remediation guidance (2025-11-07)
 - [ ] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28)
 - [ ] Phase 3.2 — Instrument whylogs drift monitors + alert routing (AT-30)
@@ -78,6 +79,7 @@
 - [x] Exemplar regulator/press/ML adapters packaged with deterministic dataset
 - [x] Infrastructure plan drift snapshot + regression coverage
 - [x] Codex developer experience bundle (Promptfoo smoke tests + MCP integration notes)
+- [x] Optional Firecrawl integration deferred until SDK opt-in; registry default sequence updated (2025-10-17)
 - [ ] Great Expectations/dbt/Deequ suites published with CI integration (AT-24)
 - [ ] Lineage + provenance catalogue (OpenLineage, PROV-O, DCAT) live with reproducible run book (AT-25, AT-27)
 - [ ] ACID data lake baseline (Delta Lake/Iceberg) + DVC/lakeFS automation scripts (AT-26, AT-27)
@@ -163,7 +165,7 @@
 - [ ] Monitor fresh-evidence blocks for legitimate analyst updates; capture false-positive patterns for adapter tuning (2025-10-18).
 - [x] Quickstart references `data/sample.csv` but the repo ships no sample input yet.
 
-- [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
+- [x] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now. — Owner: Platform — Completed 2025-10-17 (default adapter sequence now omits Firecrawl until feature flag + SDK opt-in)
 - [ ] Track Python <3.14 pin introduced for Great Expectations compatibility; review Great Expectations release notes weekly and schedule pin removal once 3.14 wheels land (2025-10-17 check blocked by SSL trust issues in build environment; retry when CA bundle updated).
 - [ ] Communicate new Python >=3.11 floor across tooling/CI and verify downstream environments upgrade paths.
 - [ ] Align isort configuration (project vs CLI flags) to avoid manual --profile overrides.
