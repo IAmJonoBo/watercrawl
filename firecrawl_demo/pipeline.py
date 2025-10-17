@@ -23,6 +23,8 @@ from .compliance import (
     validate_email,
 )
 from .excel import EXPECTED_COLUMNS, read_dataset, write_dataset
+from .lakehouse import LocalLakehouseWriter, build_lakehouse_writer
+from .lineage import LineageContext, LineageManager
 from .models import (
     EvidenceRecord,
     PipelineReport,
@@ -54,18 +56,27 @@ class Pipeline:
     validator: DatasetValidator = field(default_factory=DatasetValidator)
     evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
     quality_gate: QualityGate = field(default_factory=QualityGate)
+    lineage_manager: LineageManager | None = field(default_factory=LineageManager)
+    lakehouse_writer: LocalLakehouseWriter | None = field(
+        default_factory=build_lakehouse_writer
+    )
     _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
 
     def run_dataframe(
         self,
         frame: pd.DataFrame,
         progress: PipelineProgressListener | None = None,
+        lineage_context: LineageContext | None = None,
     ) -> PipelineReport:
         """Synchronously run the enrichment pipeline for a dataframe."""
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(self.run_dataframe_async(frame, progress))
+            return asyncio.run(
+                self.run_dataframe_async(
+                    frame, progress=progress, lineage_context=lineage_context
+                )
+            )
         raise RuntimeError(
             "Pipeline.run_dataframe cannot be used inside an active event loop; "
             "call run_dataframe_async instead."
@@ -75,6 +86,7 @@ class Pipeline:
         self,
         frame: pd.DataFrame,
         progress: PipelineProgressListener | None = None,
+        lineage_context: LineageContext | None = None,
     ) -> PipelineReport:
         """Asynchronously run the enrichment pipeline for a dataframe."""
         validation = self.validator.validate_dataframe(frame)
@@ -316,6 +328,17 @@ class Pipeline:
                 RollbackPlan(rollback_actions) if rollback_actions else None
             ),
         )
+        active_context = lineage_context
+        if self.lakehouse_writer and active_context:
+            manifest = self.lakehouse_writer.write(
+                run_id=active_context.run_id, dataframe=report.refined_dataframe
+            )
+            active_context = active_context.with_lakehouse(
+                uri=manifest.table_uri, version=manifest.version
+            )
+        if self.lineage_manager and active_context:
+            artifacts = self.lineage_manager.capture(report, active_context)
+            report.lineage_artifacts = artifacts
         self._last_report = report
         listener.on_complete(metrics)
         return report
@@ -326,10 +349,22 @@ class Pipeline:
         output_path: Path | None = None,
         *,
         progress: PipelineProgressListener | None = None,
+        lineage_context: LineageContext | None = None,
     ) -> PipelineReport:
         """Asynchronously process a dataset file through the pipeline."""
         dataset = read_dataset(input_path)
-        report = await self.run_dataframe_async(dataset, progress=progress)
+        active_context = lineage_context
+        if active_context:
+            input_uri = input_path.resolve().as_uri()
+            output_uri = output_path.resolve().as_uri() if output_path else None
+            active_context = replace(
+                active_context,
+                input_uri=input_uri,
+                output_uri=output_uri or active_context.output_uri,
+            )
+        report = await self.run_dataframe_async(
+            dataset, progress=progress, lineage_context=active_context
+        )
         if output_path:
             write_dataset(report.refined_dataframe, output_path)
         return report
@@ -340,10 +375,13 @@ class Pipeline:
         output_path: Path | None = None,
         *,
         progress: PipelineProgressListener | None = None,
+        lineage_context: LineageContext | None = None,
     ) -> PipelineReport:
         """Synchronously process a dataset file through the pipeline."""
         dataset = read_dataset(input_path)
-        report = self.run_dataframe(dataset, progress=progress)
+        report = self.run_dataframe(
+            dataset, progress=progress, lineage_context=lineage_context
+        )
         if output_path:
             write_dataset(report.refined_dataframe, output_path)
         return report

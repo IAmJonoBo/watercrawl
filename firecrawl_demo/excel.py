@@ -11,12 +11,7 @@ from pint import UnitRegistry
 from pint.errors import DimensionalityError, RedefinitionError, UndefinedUnitError
 
 from . import config
-from .models import (
-    EnrichmentResult,
-    SchoolRecord,
-    normalize_province,
-    normalize_status,
-)
+from .models import EnrichmentResult, SchoolRecord, normalize_province, normalize_status
 
 EXPECTED_COLUMNS = [
     "Name of Organisation",

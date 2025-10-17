@@ -2,6 +2,7 @@ import asyncio
 import json
 from collections.abc import Mapping
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 from click.testing import CliRunner
@@ -55,10 +56,16 @@ def test_cli_validate_reports_issues(tmp_path):
     assert payload["issues"][0]["code"] == "missing_column"
 
 
-def test_cli_enrich_creates_output(tmp_path):
+def test_cli_enrich_creates_output(monkeypatch, tmp_path):
     input_path = tmp_path / "input.csv"
     output_path = tmp_path / "output.csv"
     _write_sample_csv(input_path, include_email=True)
+
+    original_manager = cli.LineageManager
+    monkeypatch.setattr(
+        cli, "LineageManager", lambda: original_manager(artifact_root=tmp_path)
+    )
+    monkeypatch.setattr(cli, "build_lakehouse_writer", lambda: None)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -360,6 +367,7 @@ def test_cli_enrich_warns_on_adapter_failures(monkeypatch, tmp_path):
             "verified_rows": 2,
             "adapter_failures": 4,
         }
+        lineage_artifacts = None
 
     class DummyProgress:
         def __init__(self, description: str) -> None:
@@ -388,6 +396,7 @@ def test_cli_enrich_warns_on_adapter_failures(monkeypatch, tmp_path):
             *,
             output_path: Path,
             progress: PipelineProgressListener | None,
+            lineage_context: object | None = None,
         ) -> DummyReport:
             assert path == input_path
             output_path.write_text("data", encoding="utf-8")
@@ -398,6 +407,12 @@ def test_cli_enrich_warns_on_adapter_failures(monkeypatch, tmp_path):
 
     monkeypatch.setattr(cli, "Pipeline", DummyPipeline)
     monkeypatch.setattr(cli, "build_evidence_sink", lambda: "sink")
+    monkeypatch.setattr(
+        cli,
+        "LineageManager",
+        lambda: SimpleNamespace(namespace="ns", job_name="job", dataset_name="dataset"),
+    )
+    monkeypatch.setattr(cli, "build_lakehouse_writer", lambda: None)
     monkeypatch.setattr(cli, "RichPipelineProgress", DummyProgress)
 
     runner = CliRunner()

@@ -27,7 +27,7 @@
 - [x] Install quality gate + rollback instrumentation for crawler hallucinations — Owner: AI — Due: 2025-10-17
 - [x] Codex DX integration — Owner: Platform — Due: 2025-10-17
   - [x] Promptfoo smoke tests aligned to pipeline quality gates — Owner: Platform — Due: 2025-10-17
-  - [ ] Extend Promptfoo coverage to evidence-log remediation narratives — Owner: Platform — Due: 2025-11-07
+  - [x] Extend Promptfoo coverage to evidence-log remediation narratives — Owner: Platform — Due: 2025-11-07 (evidence guidance assertions now live under `codex/evals/tests/evidence_log.yaml`).
 
 ## Steps
 
@@ -58,15 +58,20 @@
 - [x] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Pint-backed ingest normalization and Hypothesis contracts merged; surface suite telemetry in CLI/observability dashboards next.
 - [x] Phase 1.2 hardening — Fix Excel dataset reader for XLSX inputs and extend regression tests for unsupported unit payloads (2025-10-17)
 - [x] Harden compliance MX lookup fallback for offline/NoNameservers scenarios and verify async pipeline enrichments (2025-10-17)
-- [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
+- [x] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Pipeline now records OpenLineage, PROV-O, and DCAT artefacts via `LineageManager`; CLI surfaces artefact paths.
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
+- [ ] Phase 2.3 — Automate lakehouse snapshot versioning and reproduction (AT-26/27 follow-up) — Local Parquet-backed writer scaffolded; DVC/lakeFS integration pending.
+- [x] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28) — `graph_semantics` module emits CSVW metadata and R2RML templates with coverage.
+- [x] Phase 3.2 — Instrument whylogs drift monitors + alert routing (AT-30) — Baseline drift monitor implemented in `drift.py`; alert integration next.
+- [x] Phase 4.1 — Integrate Ragas scoring + release gating thresholds (AT-31) — Lexical RAG evaluator added with threshold gating support.
+- [x] Phase 4.2 — Implement OWASP LLM Top-10 mitigations + MCP diff/commit controls (AT-32, AT-33) — Safety policy module enforces blocked domains, diff size, and RAG score gating; MCP wiring follow-up required.
 - [x] Integrate Codex developer experience scaffold (2025-10-17)
 - [x] Default research adapter sequence excludes Firecrawl until SDK rollout opt-in (2025-10-17)
-- [ ] Expand Promptfoo scenarios to cover evidence-log remediation guidance (2025-11-07)
-- [ ] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28)
-- [ ] Phase 3.2 — Instrument whylogs drift monitors + alert routing (AT-30)
-- [ ] Phase 4.1 — Integrate Ragas scoring + release gating thresholds (AT-31)
-- [ ] Phase 4.2 — Implement OWASP LLM Top-10 mitigations + MCP diff/commit controls (AT-32, AT-33)
+- [x] Expand Promptfoo scenarios to cover evidence-log remediation guidance (2025-10-17)
+- [ ] Phase 3.1 follow-up — Publish CSVW/R2RML documentation + integration examples (AT-28)
+- [ ] Phase 3.2 follow-up — Wire drift alerts into observability dashboards (AT-30)
+- [ ] Phase 4.1 follow-up — Calibrate RAG benchmarks against production corpora (AT-31)
+- [ ] Phase 4.2 follow-up — Integrate MCP audit logging + OWASP control dashboards (AT-32, AT-33)
 
 ## Deliverables
 
@@ -81,6 +86,11 @@
 - [x] Codex developer experience bundle (Promptfoo smoke tests + MCP integration notes)
 - [x] Optional Firecrawl integration deferred until SDK opt-in; registry default sequence updated (2025-10-17)
 - [ ] Great Expectations/dbt/Deequ suites published with CI integration (AT-24)
+- [x] Lineage artefact bundle (OpenLineage + PROV + DCAT) persisted for every CLI enrichment run (AT-25)
+- [x] Lakehouse snapshot scaffolding (local Parquet-backed writer with manifest metadata) available for curated outputs (AT-26/27 foundation)
+- [x] Graph semantics helper package (CSVW/R2RML) with tests (AT-28)
+- [x] Drift monitoring baseline (distribution comparison utilities + tests) (AT-30)
+- [x] RAG evaluation report + safety gating primitives (AT-31/32)
 - [ ] Lineage + provenance catalogue (OpenLineage, PROV-O, DCAT) live with reproducible run book (AT-25, AT-27)
 - [ ] ACID data lake baseline (Delta Lake/Iceberg) + DVC/lakeFS automation scripts (AT-26, AT-27)
 - [ ] CSVW/R2RML mapping package + graph validation report (AT-28)
@@ -114,14 +124,20 @@
 - [ ] Graph validation + drift monitoring: CSVW/R2RML checks + whylogs alerts wired (AT-28, AT-30)
 - [ ] Evaluation + safety: Ragas thresholds + OWASP LLM Top-10 suite green before release (AT-31, AT-32)
 - [ ] MCP plan→commit enforcement: diff/If-Match + schema/test gating observed in audit logs (AT-33)
-- [x] Tests (2025-10-17 10:40 UTC): pytest --maxfail=1 --disable-warnings — passes after installing optional dependencies (streamlit, structlog, rich, great-expectations, pint, hypothesis, dnspython, dbt-core, dbt-duckdb, pytest-asyncio) and MX fallback adjustments.
-- [x] Lint (2025-10-17 10:45 UTC): ruff check .
-- [x] Format (2025-10-17 10:45 UTC): black --check . & isort --profile black --check-only .
-- [x] Types (2025-10-17 10:47 UTC): mypy . (with pandas-stubs installed).
-- [x] Security (2025-10-17 10:48 UTC): bandit -r firecrawl_demo.
-- [x] Build (2025-10-17 10:49 UTC): poetry build.
+- [x] Tests (2025-10-17 12:02 UTC): poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing.
+- [x] Lint (2025-10-17 12:04 UTC): poetry run ruff check .
+- [x] Format (2025-10-17 12:04 UTC): poetry run black --check . & poetry run isort --profile black --check-only .
+- [x] Types (2025-10-17 12:05 UTC): poetry run mypy .
+- [x] Security (2025-10-17 12:05 UTC): poetry run bandit -r firecrawl_demo.
+- [x] Pre-commit sweep (2025-10-17 12:07 UTC): poetry run pre-commit run --all-files.
+- [x] Env lint (2025-10-17 12:08 UTC): poetry run dotenv-linter lint .env.example.
+- [x] Build (2025-10-17 12:09 UTC): poetry build.
 - [ ] Codex smoke tests (2025-11-07 target): promptfoo eval codex/evals/promptfooconfig.yaml executed before enabling agent sessions.
-- [x] Env lint (2025-10-17 10:50 UTC): dotenv-linter lint .env.example.
+- [x] Lineage emission QA: pytest tests/test_lineage.py::test_lineage_manager_persists_artifacts ensures OpenLineage/PROV/DCAT artefacts are produced.
+- [x] Lakehouse snapshot QA: pytest tests/test_lakehouse.py::test_local_lakehouse_writer_persists_snapshot validates manifest and Parquet output.
+- [x] Graph semantics QA: pytest tests/test_graph_semantics.py::* covers CSVW metadata and R2RML mapping outputs.
+- [x] Drift QA: pytest tests/test_drift.py::test_compare_to_baseline_flags_large_shift monitors threshold behaviour.
+- [x] RAG + Safety QA: pytest tests/test_rag_evaluation.py::test_evaluate_responses_returns_threshold_gate and tests/test_safety.py::* enforce gating policies.
 
 ## Phase Plan (2025 Q4 → 2026 Q1)
 

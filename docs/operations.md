@@ -24,6 +24,8 @@ non-zero on any expectation or dbt test failure, mirroring CI contract
 enforcement. `dbt build --select tag:contracts` is invoked under the hood and
 archives run artefacts to `data/contracts/<timestamp>/` for provenance.
 
+Every enrichment run now emits a lineage bundle under `artifacts/lineage/<run_id>/` containing OpenLineage, PROV-O, and DCAT documents together with optional lakehouse manifests. Surface these artefacts in runbooks and attach them to incident reports so provenance checks stay reproducible.
+
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command
 > exits non-zero when variables are duplicated, unexported, or malformed, so run

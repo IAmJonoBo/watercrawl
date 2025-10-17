@@ -25,6 +25,7 @@
 - Provide environment-driven configuration: `OPENLINEAGE_URL`, `OPENLINEAGE_NAMESPACE`, `OPENLINEAGE_API_KEY`.
 - Capture evidence log paths and DVC/lakeFS commit IDs as OpenLineage `inputs`/`outputs` facets.
 - Add pytest coverage to assert that events are produced and schema-valid for the sample dataset.
+- ✅ **2025-10-17 update**: `firecrawl_demo.lineage` now emits OpenLineage start/complete events alongside PROV-O and DCAT artefacts and persists them under `artifacts/lineage/<run_id>/` with regression coverage in `tests/test_lineage.py`.
 
 ### 2. PROV-O and DCAT
 
@@ -39,6 +40,7 @@
 - Abstract write operations in the pipeline so curated tables pass through a `LakehouseWriter` interface.
 - Implement local CI support using DuckDB with the `delta-rs` bindings; document production expectations for Spark or Trino deployments.
 - Add dbt models to read from the Delta/Iceberg tables, ensuring contract suites continue to run against lakehouse-backed storage.
+- ✅ **2025-10-17 update**: Introduced `LocalLakehouseWriter` and manifest metadata scaffold writing Parquet snapshots to a configurable lakehouse root while capturing versioned manifests for future DVC/lakeFS integration.
 
 ### 4. Versioning and reproducibility
 
@@ -53,6 +55,7 @@
 - Provide troubleshooting guides for missing lineage events, failed ACID commits, or versioning drift.
 - Record decision trade-offs (Delta vs Iceberg, DVC vs lakeFS) in future ADRs.
 - Align security reviews with POPIA compliance, ensuring provenance artefacts do not leak personal data.
+- ✅ **2025-10-17 update**: CLI enrichment output now surfaces lineage artefact directories, enabling operators to verify provenance bundles during runbooks.
 
 ## Risks & mitigations
 

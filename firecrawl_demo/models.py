@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pandas as pd
 
 from . import config
+
+if TYPE_CHECKING:
+    from .lineage import LineageArtifacts
 
 _CANONICAL_PROVINCES = {province.lower(): province for province in config.PROVINCES}
 _UNKNOWN_PROVINCE = "Unknown"
@@ -187,7 +190,7 @@ class RollbackPlan:
         return {"actions": [action.as_dict() for action in self.actions]}
 
 
-@dataclass(frozen=True)
+@dataclass
 class PipelineReport:
     refined_dataframe: pd.DataFrame
     validation_report: ValidationReport
@@ -196,6 +199,7 @@ class PipelineReport:
     sanity_findings: list[SanityCheckFinding] = field(default_factory=list)
     quality_issues: list[QualityIssue] = field(default_factory=list)
     rollback_plan: RollbackPlan | None = None
+    lineage_artifacts: LineageArtifacts | None = None
 
     @property
     def issues(self) -> list[ValidationIssue]:

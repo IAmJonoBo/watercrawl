@@ -11,9 +11,7 @@ import pandas as pd
 from great_expectations.core.batch import Batch
 from great_expectations.core.batch_spec import RuntimeDataBatchSpec
 from great_expectations.core.expectation_suite import ExpectationSuite
-from great_expectations.data_context.data_context.context_factory import (
-    project_manager,
-)
+from great_expectations.data_context.data_context.context_factory import project_manager
 from great_expectations.execution_engine.pandas_execution_engine import (
     PandasExecutionEngine,
 )

@@ -1,0 +1,10 @@
+- vars:
+    file: "docs/data-quality.md"
+    test: "Evidence log remediation guidance"
+  assert:
+    - type: icontains
+      value: "evidence log"
+    - type: icontains
+      value: "remediation"
+    - type: icontains
+      value: "fresh evidence"

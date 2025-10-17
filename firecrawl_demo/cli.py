@@ -5,11 +5,13 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import click
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeRemainingColumn
 
+from . import config
 from .audit import build_evidence_sink
 from .contracts import (
     CuratedDatasetContractResult,
@@ -20,6 +22,8 @@ from .contracts import (
     validate_curated_file,
 )
 from .excel import read_dataset
+from .lakehouse import build_lakehouse_writer
+from .lineage import LineageContext, LineageManager
 from .mcp.server import CopilotMCPServer
 from .models import SchoolRecord
 from .pipeline import Pipeline
@@ -173,7 +177,14 @@ def enrich(
 ) -> None:
     """Validate, enrich, and export a dataset."""
 
-    pipeline = Pipeline(evidence_sink=build_evidence_sink())
+    evidence_sink = build_evidence_sink()
+    lineage_manager = LineageManager()
+    lakehouse_writer = build_lakehouse_writer()
+    pipeline = Pipeline(
+        evidence_sink=evidence_sink,
+        lineage_manager=lineage_manager,
+        lakehouse_writer=lakehouse_writer,
+    )
     target = output_path or input_path.with_name(
         f"{input_path.stem}_enriched{input_path.suffix}"
     )
@@ -181,10 +192,24 @@ def enrich(
     listener: PipelineProgressListener | None = (
         RichPipelineProgress("Enriching dataset") if show_progress else None
     )
+    lineage_context: LineageContext | None = None
+    run_id = f"enrichment-{uuid4()}"
+    if lineage_manager:
+        lineage_context = LineageContext(
+            run_id=run_id,
+            namespace=lineage_manager.namespace,
+            job_name=lineage_manager.job_name,
+            dataset_name=lineage_manager.dataset_name,
+            input_uri=input_path.resolve().as_uri(),
+            output_uri=target.resolve().as_uri(),
+            evidence_path=config.EVIDENCE_LOG,
+            dataset_version=target.stem,
+        )
     report = pipeline.run_file(
         input_path,
         output_path=target,
         progress=listener,
+        lineage_context=lineage_context,
     )
     issues_payload = [issue.__dict__ for issue in report.issues]
     payload = {
@@ -195,6 +220,12 @@ def enrich(
         "output_path": str(target),
         "adapter_failures": report.metrics["adapter_failures"],
     }
+    if report.lineage_artifacts:
+        payload["lineage_artifacts"] = {
+            "openlineage": str(report.lineage_artifacts.openlineage_path),
+            "prov": str(report.lineage_artifacts.prov_path),
+            "catalog": str(report.lineage_artifacts.catalog_path),
+        }
     if output_format == "json":
         click.echo(json.dumps(payload, indent=2))
     else:
@@ -206,6 +237,11 @@ def enrich(
         if payload["adapter_failures"]:
             click.echo(
                 f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."
+            )
+        if report.lineage_artifacts:
+            click.echo(
+                "Lineage artefacts: "
+                f"{report.lineage_artifacts.openlineage_path.parent}"
             )
 
 
