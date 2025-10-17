@@ -44,3 +44,13 @@ pydocstyle = "^6.3.0"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = "\\.pyi?$"
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["firecrawl_demo", "analytics", "scripts"]

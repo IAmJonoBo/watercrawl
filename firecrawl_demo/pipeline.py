@@ -1,5 +1,8 @@
+"""Pipeline orchestration utilities for enrichment and validation."""
+
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field, replace
@@ -31,7 +34,12 @@ from .models import (
 )
 from .progress import NullPipelineProgressListener, PipelineProgressListener
 from .quality import QualityFinding, QualityGate, QualityGateDecision
-from .research import ResearchAdapter, ResearchFinding, build_research_adapter
+from .research import (
+    ResearchAdapter,
+    ResearchFinding,
+    build_research_adapter,
+    lookup_with_adapter_async,
+)
 from .validation import DatasetValidator
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
@@ -40,6 +48,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Pipeline:
+    """Coordinate validation, enrichment, and evidence logging."""
+
     research_adapter: ResearchAdapter = field(default_factory=build_research_adapter)
     validator: DatasetValidator = field(default_factory=DatasetValidator)
     evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
@@ -51,6 +61,22 @@ class Pipeline:
         frame: pd.DataFrame,
         progress: PipelineProgressListener | None = None,
     ) -> PipelineReport:
+        """Synchronously run the enrichment pipeline for a dataframe."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.run_dataframe_async(frame, progress))
+        raise RuntimeError(
+            "Pipeline.run_dataframe cannot be used inside an active event loop; "
+            "call run_dataframe_async instead."
+        )
+
+    async def run_dataframe_async(
+        self,
+        frame: pd.DataFrame,
+        progress: PipelineProgressListener | None = None,
+    ) -> PipelineReport:
+        """Asynchronously run the enrichment pipeline for a dataframe."""
         validation = self.validator.validate_dataframe(frame)
         missing_column_errors = [
             issue for issue in validation.issues if issue.code == "missing_column"
@@ -83,7 +109,9 @@ class Pipeline:
             row_number_lookup[idx] = row_id
 
             try:
-                finding = self.research_adapter.lookup(record.name, record.province)
+                finding = await lookup_with_adapter_async(
+                    self.research_adapter, record.name, record.province
+                )
             except Exception as exc:  # pragma: no cover - defensive guard
                 adapter_failures += 1
                 logger.warning(
@@ -292,6 +320,20 @@ class Pipeline:
         listener.on_complete(metrics)
         return report
 
+    async def run_file_async(
+        self,
+        input_path: Path,
+        output_path: Path | None = None,
+        *,
+        progress: PipelineProgressListener | None = None,
+    ) -> PipelineReport:
+        """Asynchronously process a dataset file through the pipeline."""
+        dataset = read_dataset(input_path)
+        report = await self.run_dataframe_async(dataset, progress=progress)
+        if output_path:
+            write_dataset(report.refined_dataframe, output_path)
+        return report
+
     def run_file(
         self,
         input_path: Path,
@@ -299,6 +341,7 @@ class Pipeline:
         *,
         progress: PipelineProgressListener | None = None,
     ) -> PipelineReport:
+        """Synchronously process a dataset file through the pipeline."""
         dataset = read_dataset(input_path)
         report = self.run_dataframe(dataset, progress=progress)
         if output_path:
@@ -306,6 +349,7 @@ class Pipeline:
         return report
 
     def available_tasks(self) -> dict[str, str]:
+        """Describe the tasks supported by the pipeline orchestrator."""
         return {
             "validate_dataset": "Validate the provided dataset",
             "enrich_dataset": "Validate and enrich the provided dataset",
@@ -314,6 +358,7 @@ class Pipeline:
         }
 
     def run_task(self, task: str, payload: dict[str, object]) -> dict[str, object]:
+        """Execute a named pipeline task and return a serialisable payload."""
         if task == "validate_dataset":
             frame = self._frame_from_payload(payload)
             validation_report = self.validator.validate_dataframe(frame)

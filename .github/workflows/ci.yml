@@ -17,7 +17,26 @@ jobs:
         run: pip install poetry
       - name: Install dependencies
         run: poetry install --no-root
+      - name: Run isort check
+        run: poetry run isort --profile black --check-only .
+      - name: Run black check
+        run: poetry run black --check .
       - name: Run pre-commit
         run: poetry run pre-commit run --all-files
       - name: Run tests
-        run: poetry run pytest --maxfail=5 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+        run: >-
+          poetry run pytest --maxfail=5 --disable-warnings --cov=firecrawl_demo
+          --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=pytest-results.xml
+      - name: Generate CI summary
+        run: |
+          poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json
+          cat ci-summary.md >> $GITHUB_STEP_SUMMARY
+      - name: Upload CI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-dashboards
+          path: |
+            coverage.xml
+            pytest-results.xml
+            ci-summary.md
+            ci-dashboard.json

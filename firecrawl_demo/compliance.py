@@ -17,7 +17,14 @@ try:  # pragma: no cover - optional dependency
 except ImportError:  # pragma: no cover - fallback path
     dns_resolver = None  # type: ignore[assignment]
 else:  # pragma: no cover - optional dependency
-    dns_resolver = dns.resolver.Resolver()
+    # Use the dns.resolver module directly so exception types such as
+    # NXDOMAIN remain accessible. The resolver module exposes a `resolve`
+    # function with the same signature used throughout the codebase while
+    # also exporting the typed exception classes that our callers expect to
+    # catch. Instantiating Resolver() hides these attributes on the returned
+    # object, leading to AttributeError when trying to access
+    # ``resolver.NXDOMAIN`` under newer dnspython releases.
+    dns_resolver = dns.resolver  # type: ignore[assignment]
 
 _PHONE_RE = re.compile(r"^\+27\d{9}$")
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
@@ -100,10 +107,31 @@ def _check_mx_records(domain: str) -> Optional[str]:
         answers = resolver.resolve(domain, "MX", lifetime=config.MX_LOOKUP_TIMEOUT)
         if not list(answers):
             return "No MX records found"
-    except resolver.NXDOMAIN:  # type: ignore[attr-defined]
-        return "Domain has no DNS records"
-    except (resolver.NoAnswer, resolver.Timeout):  # type: ignore[attr-defined]
-        return "MX lookup failed"
+    except Exception as error:  # pragma: no cover - exercised via integration tests
+        nxdomain_exc = getattr(resolver, "NXDOMAIN", None)
+        if nxdomain_exc and isinstance(error, nxdomain_exc):
+            return "Domain has no DNS records"
+
+        no_nameservers_exc = getattr(resolver, "NoNameservers", None)
+        if no_nameservers_exc and isinstance(error, no_nameservers_exc):
+            return "MX lookup unavailable"
+
+        transient_exceptions = tuple(
+            exc
+            for exc in (
+                getattr(resolver, "NoAnswer", None),
+                getattr(resolver, "Timeout", None),
+            )
+            if exc is not None
+        )
+        if transient_exceptions and isinstance(error, transient_exceptions):
+            return "MX lookup failed"
+
+        fallback_exc = getattr(resolver, "NoResolverConfiguration", None)
+        if fallback_exc and isinstance(error, fallback_exc):
+            return "MX lookup unavailable"
+
+        raise
     return None
 
 

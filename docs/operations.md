@@ -16,6 +16,8 @@ poetry run python -m firecrawl_demo.cli contracts data/sample.csv --format json
 poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
+- Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
+
 Run the `contracts` command against the latest curated export (swap in the
 appropriate path if you are validating a non-sample dataset). The command exits
 non-zero on any expectation or dbt test failure, mirroring CI contract

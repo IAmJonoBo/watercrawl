@@ -21,6 +21,8 @@
 - [ ] Phase 3 — Graph semantics + drift observability (AT-28, AT-30) — Owner: Data/Platform — Due: 2026-01-10
 - [ ] Phase 4 — LLM safety, evaluation, and MCP plan→commit gating (AT-31, AT-32, AT-33) — Owner: Platform/Security — Due: 2026-01-31
 - [x] Import order remediation (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — Owner: Platform — Due: 2025-10-23
+- [x] Async pipeline entrypoints + Firecrawl adapter centralisation — Owner: Platform — Due: 2025-10-24
+- [x] CI summary artefacts for dashboard ingestion — Owner: Platform — Due: 2025-10-24
 - [x] Document dotenv-linter invocation in ops runbook — Owner: Docs — Due: 2025-10-16
 - [x] Install quality gate + rollback instrumentation for crawler hallucinations — Owner: AI — Due: 2025-10-17
 
@@ -43,6 +45,8 @@
 - [x] Publish onboarding-ready sample dataset guidance (2025-10-23)
 - [x] Document dotenv-linter invocation in operations guide (2025-10-16)
 - [x] Backfill targeted coverage for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-16)
+- [x] Asynchronous pipeline entrypoint validated via new pytest suites (2025-10-24)
+- [x] CI summary generator publishes Markdown + JSON artefacts for dashboards (2025-10-24)
 - [x] Extend high-risk coverage edge cases for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-17)
 - [x] Wire quality gate metrics, rollback plan emission, and documentation updates (2025-10-17)
 - [x] Enforce fresh evidence gating for high-risk updates and update docs (2025-10-18)
@@ -50,6 +54,7 @@
 - [x] Regression coverage for persisted contract artefacts — JSON copies from Great Expectations + dbt runs verified via CLI integration test (2025-10-17)
 - [x] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Pint-backed ingest normalization and Hypothesis contracts merged; surface suite telemetry in CLI/observability dashboards next.
 - [x] Phase 1.2 hardening — Fix Excel dataset reader for XLSX inputs and extend regression tests for unsupported unit payloads (2025-10-17)
+- [x] Harden compliance MX lookup fallback for offline/NoNameservers scenarios and verify async pipeline enrichments (2025-10-17)
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
 - [ ] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28)
@@ -78,6 +83,7 @@
 ## Quality Gates
 
 - [x] Tests: pytest with coverage >= existing baseline (TBD after remediation)
+- [x] CI summary artefacts available for dashboards (coverage + JUnit exported each run)
 - [x] Lint: Ruff/Black/Isort clean
 - [x] Type: mypy clean with strict config (to be defined)
 - [x] Security: bandit critical findings resolved
@@ -100,6 +106,13 @@
 - [ ] Graph validation + drift monitoring: CSVW/R2RML checks + whylogs alerts wired (AT-28, AT-30)
 - [ ] Evaluation + safety: Ragas thresholds + OWASP LLM Top-10 suite green before release (AT-31, AT-32)
 - [ ] MCP plan→commit enforcement: diff/If-Match + schema/test gating observed in audit logs (AT-33)
+- [x] Tests (2025-10-17 10:40 UTC): pytest --maxfail=1 --disable-warnings — passes after installing optional dependencies (streamlit, structlog, rich, great-expectations, pint, hypothesis, dnspython, dbt-core, dbt-duckdb, pytest-asyncio) and MX fallback adjustments.
+- [x] Lint (2025-10-17 10:45 UTC): ruff check .
+- [x] Format (2025-10-17 10:45 UTC): black --check . & isort --profile black --check-only .
+- [x] Types (2025-10-17 10:47 UTC): mypy . (with pandas-stubs installed).
+- [x] Security (2025-10-17 10:48 UTC): bandit -r firecrawl_demo.
+- [x] Build (2025-10-17 10:49 UTC): poetry build.
+- [x] Env lint (2025-10-17 10:50 UTC): dotenv-linter lint .env.example.
 
 ## Phase Plan (2025 Q4 → 2026 Q1)
 
@@ -153,6 +166,7 @@
 - [x] Coverage hotspots: analyst_ui.py, compliance.py, cli.py, presets.py, and secrets.py below 60% test coverage — target uplift by 2025-10-30 (see Tasks). Coverage now ≥82% for each module after new unit suites landed (2025-10-16).
 - [ ] Explore CI gating on the `sanity_issues` metric once monitoring data stabilises.
 - [x] Import ordering drift flagged by `isort` (tests/test_mcp.py, firecrawl_demo/secrets.py, firecrawl_demo/research/exemplars.py) — remediation completed and checks green (2025-10-16).
+- [ ] Monitor new MX lookup "unavailable" fallback so legitimate DNS misconfigurations are still surfaced once networked environments return.
 - [x] `.env` hygiene tooling (`dotenv-linter`) requires explicit target files — invocation documented in docs/operations.md (2025-10-16); evaluate stub env templates separately.
 
 - [ ] Architecture: Keep a classic crawl stack (frontier → fetch → parse → normalise → extract → store) but make the policy loop learning-based (bandits/RL for what to crawl next) and the knowledge loop graph-first (entities/relations landing in a streaming graph DB). ￼
