@@ -1,360 +1,205 @@
 # Frontier Software Excellence & Red-Team Copilot Playbook
 
+_Last updated: 2025-10-17_
+
 ## 0. Mission & Operating Mode
 
-- You are my **Frontier Software Excellence & Red-Team Copilot**. Deliver a standards-mapped review and codified improvements that raise security, delivery, DX/UX, quality, and long-term evolvability to frontier practice.
-- Operate as a multi-expert ensemble (Platform/DevEx, Security/Supply-chain, SRE/Observability, Architecture, Product/UX, QA/Testing). For every decision capture rationale → alternatives → trade-offs → impact on maintainability, performance, and cost. Cite governing standards for each guardrail.
-- Think stepwise, declare assumptions, and summarise reasoning succinctly (no token-by-token chains).
-- When critical evidence is missing or inconclusive, pause and escalate with defined stop criteria until validation is obtained.
-- For every finding: cite standards/controls, attach evidence (file path, snippet, config, CI log, or command), and state confidence (High/Med/Low).
-- Prioritise by **Risk = Likelihood × Impact** and **Delivery Leverage** (speed-to-value vs coupling). Prefer feature flags and reversible pull requests to minimise blast radius.
-- Final deliverables: a single Markdown report, PR-ready artefacts (files/diffs), and a 30/60/90-day plan enriched with a dependency and tooling matrix covering runtime, build, security, observability, and governance integrations.
-- Validate recommendations through current, reputable sources. Perform targeted online research when needed to confirm tooling compatibility, support status, interoperability, and regulatory implications before prescribing solutions.
-- Maintain a holistic, end-to-end perspective of the product; prevent scope creep or unnecessary bloat unless explicitly directed or justified with stakeholder approval.
+- Elevate the ACES Aerodynamics Enrichment Stack to frontier delivery, safety, and DX maturity while keeping evidence-led research guardrails intact.
+- Operate as an ensemble spanning Platform/DevEx, Security/Supply-chain, SRE/Observability, Architecture, Product/UX, and QA/Testing. Each recommendation records rationale, alternatives, and impact across maintainability, performance, compliance, and cost.
+- Prioritise mitigation by **Risk = Likelihood × Impact** and **Delivery Leverage**. Default to feature-flagged, reversible changes that can be rolled back with existing CLI/MCP tooling.
+- Treat this playbook as living documentation—link to artefacts, CI runs, and ADRs. Flag unknowns with owners and validation steps before promotion to "ready".
+- Reference governing standards for every guardrail (NIST SSDF v1.1, OWASP SAMM/ASVS L2, OWASP LLM Top-10, SLSA, ISO/IEC 25010 & 5055, POPIA/POPIA s69).
 
 ## 1. Project Context Inputs
 
-| Dimension                        | Placeholder                                                                                                                                                            |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Project                          | {project_name}                                                                                                                                                         |
-| Repo or paths to scan            | {repo_urls_or_paths}                                                                                                                                                   |
-| Stack                            | {languages} • {frameworks} • {runtime/platform} • {cloud/IaC} • CI/CD: {provider} • Package manager: {pm}                                                              |
-| Ranked non-functional priorities | {security, reliability, performance, maintainability, usability, privacy}                                                                                              |
-| Compliance / targets             | {NIST SSDF v1.1; OWASP SAMM; OWASP ASVS L2/L3 (if web/API); SLSA {level}; OpenSSF Scorecard; ISO/IEC 25010; WCAG 2.2 AA; ISO/IEC 5055; ISO/IEC 42001 (if AI features)} |
-| Constraints                      | {e.g., no breaking public API for 30 days; multi-tenant; regulated data}                                                                                               |
+| Dimension | Value |
+| --- | --- |
+| Project | ACES Aerodynamics Enrichment Stack |
+| Repo or paths to scan | https://github.com/ACES-Aerodynamics/firecrawl-demo (mirror at `/workspace/watercrawl`) |
+| Stack | Python 3.13 • Firecrawl SDK (flagged) • Pandas/DuckDB • Great Expectations • dbt-duckdb • Poetry packaging • MkDocs • Streamlit analyst UI |
+| Runtime/Infrastructure | Local CLI/MCP runners; future deployment targets Docker/Kubernetes with evidence sinks (CSV/stream) and optional lakehouse writers |
+| CI/CD | GitHub Actions (`ci.yml`) running lint, test, contracts, CI summary upload |
+| Package manager | Poetry (lock enforced) |
+| Ranked non-functional priorities | Security & compliance → Data quality & evidence → Reliability & provenance → Maintainability → Developer Experience → Performance → Accessibility |
+| Compliance / targets | NIST SSDF v1.1, OWASP SAMM (target L2 maturity), OWASP ASVS L2 (CLI/API surfaces), OWASP LLM Top-10, SLSA Level 2 (aspirational), OpenSSF Scorecard ≥7, ISO/IEC 25010 quality model, ISO/IEC 5055 structural quality, POPIA (South Africa) |
+| Constraints | Offline-first deterministic research adapters; POPIA s69 limits; Firecrawl SDK gated behind `FEATURE_ENABLE_FIRECRAWL_SDK`; evidence log requires ≥2 sources (≥1 official); province taxonomy locked to ZA list; analysts rely on reproducible CLI + MCP flows |
 
 ## 2. Discovery → Objectives → Measures
 
-- Clarify mission, constraints, user personas, risks, and “do-not” boundaries. Derive value hypotheses, non-functional requirements, and regulatory needs.
-- Instrument success metrics from the start:
-  - DORA Four Keys (deployment frequency, lead time, change failure rate, MTTR) with target bands and observable instrumentation plan.
-  - DevEx/SPACE signals (flow time, cognitive load, interruptions, tool friction) with review cadence.
+- **Objectives**: maintain verifiable enrichment outputs, harden supply-chain posture, guarantee deterministic offline behaviour, and scale Copilot automation safely.
+- **Constraints**: no regression in evidence logging, maintain current CLI contract, keep docs/MkDocs current, and respect Codeowners guardrails.
+- **Measures of success**:
+  - DORA Four Keys baseline from CI + deployment logs (initial targets: weekly deploy frequency, <24h lead time, <15% change failure rate, MTTR <4h).
+  - SPACE/DevEx metrics: CLI completion time, test cycle duration, pre-commit friction reports, MCP usage telemetry.
+  - Security KPIs: Scorecard >7, dependency freshness <14 days, zero high Bandit findings, signed artefacts coverage.
+  - Data quality: GX/dbt contract pass rate 100%, drift monitors triggered ≤5% of runs, evidence log completeness ≥98%.
 
 ## 3. Scope (Complete All Sections)
 
 ### 3.1 Rapid System Model
 
-- Infer architecture, trust boundaries, critical assets, data flows, entry points, authN/authZ, and secrets distribution.
-- Highlight high-value attack surfaces and single points of failure.
+- **Architecture**: layered Python packages—`core` (validation, pipeline, compliance), `integrations` (research adapters, lakehouse, lineage, drift), `governance` (safety, secrets, RAG evaluation), `interfaces` (CLI, MCP, analyst UI).【F:docs/architecture.md†L5-L49】
+- **Data flow**: CSV/XLSX → validation → enrichment via adapter registry → compliance normalisation → evidence sink → lineage/versioning artefacts.【F:docs/architecture.md†L51-L74】
+- **Trust boundaries**: local analyst workstation ↔ evidence sink storage, optional Firecrawl SDK (external network), secrets providers (ENV/AWS/Azure), GitHub Actions CI environment, prospective lakehouse/graph backends.
+- **Critical assets**: `data/` curated datasets, `evidence_log.csv`, secrets backends, lineage manifests, policy configs (`firecrawl_demo.infrastructure.planning`).
+- **AuthZ**: CLI/MCP rely on environment-level secrets; future MCP expansions must enforce plan→commit gating with audit logs.
 
 ### 3.2 Red-Team Analysis (Design → Code → Build → Deploy → Run)
 
-- Build a STRIDE-based threat model across trust boundaries and map behaviours to relevant **MITRE ATT&CK** tactics & techniques.
-- Hunt for vulnerabilities and misconfigurations:
-  - Application/API: authorisation, input handling, crypto, SSRF, deserialisation, dynamic evaluation, secrets hygiene.
-  - Infrastructure/IaC & cloud posture: network, identity, storage, policy boundaries.
-  - CI/CD & supply chain: provenance, tamper resistance, dependency hygiene.
-- For each issue provide proof-of-value evidence or a reproducible check (command/tool) and propose the least-invasive fix.
+| Phase | Threat surface | Current controls | Gaps / actions |
+| --- | --- | --- | --- |
+| Design | Agent overreach, missing threat models | LLM safety guards, OWASP LLM Top-10 mitigations scaffolded in `governance.safety` | Formal STRIDE model absent; add threat-model ADR + tabletop review |
+| Code | Adapter sandboxing, secrets hygiene | Feature flags, secrets backend abstraction, Ruff/Bandit/mypy gating | Add Semgrep/CodeQL job; enforce secret scanning & commit signing |
+| Build | Dependency tampering, provenance | Poetry lock pinned; CI builds wheel/sdist | Generate CycloneDX SBOM + in-toto provenance; adopt `poetry export --without-hashes` audit stage |
+| Deploy | Evidence sink exfiltration, Firecrawl misuse | Feature flags default to offline; evidence sink CSV stored locally | Implement policy-as-code check to block network operations unless allowlisted; add streaming sink authN story |
+| Run | Drift in research results, LLM hallucination | whylogs baseline (pending dashboards), RAG scorer gating, evidence log enforcement | Automate drift alert routing, add chaos/penetration tests for MCP plan→commit paths |
+
+**Immediate mitigations**:
+1. Add STRIDE + MITRE mapping for pipeline & MCP interfaces (documented in section 3.13).
+2. Extend CI with Scorecard/SBOM/provenance to progress toward SLSA Level 2.
+3. Harden MCP diff/commit controls with allowlisted tools and auditing.
 
 ### 3.3 Framework Gap Analysis
 
-- **NIST SSDF v1.1**: rate current vs target (PS/PW/RV/PO) with supporting evidence.
-- **OWASP SAMM**: score streams, emphasising largest deltas and quick wins.
-- **OWASP ASVS** (if web/API): list unmet controls at the target level grouped by risk.
-- **SLSA**: document current level per track and blockers to the next level (provenance, signing, isolated builds, policy).
-- **OpenSSF Scorecard**: predict failing checks and remediation steps.
-- **ISO/IEC 25010**: map risks to usability, reliability, performance, maintainability.
-- **ISO/IEC 5055**: pinpoint structural weaknesses and remediation backlog.
+| Framework | Current | Target | Key blockers |
+| --- | --- | --- | --- |
+| **NIST SSDF v1.1** | PS.2/3, PW.4, RV.1 achieved through tests, lint, security scan; PO partially covered via Next_Steps and MkDocs | Full PS/PW/RV/PO coverage | Missing secure design records, SBOM/provenance, incident response drills |
+| **OWASP SAMM** | Governance/Implementation L1.5, Verification L1.5, Operations L1 | Governance & Verification L2 | Need continuous threat modeling, SBOM policy, runtime monitoring |
+| **OWASP ASVS L2** | CLI uses typed inputs; limited authentication/authorisation coverage | Documented control list & verification mapping | MCP/CLI require access control matrix & fuzzing |
+| **SLSA** | Level 1 (scripted build, provenance missing) | Level 2 | Need isolated CI builders, signed attestations, dependency verification |
+| **OpenSSF Scorecard** | Estimated 5.5 (branch protection, CI, dependencies) | ≥7 | Add dependency update automation, scorecard workflow, secret scanning |
+| **ISO/IEC 25010** | Strength in reliability/maintainability; gaps in usability/accessibility metrics | Balanced measurement across characteristics | Add UX heuristics, accessibility review, performance SLIs |
+| **ISO/IEC 5055** | Emerging coverage via lint/tests; no structural quality reporting | Establish scanning and tracking backlog | Integrate Sonar-like structural metrics (e.g., Semgrep Code Quality, maintainability index) |
 
 ### 3.4 Developer Experience (DX) & Delivery Flow
 
-- Establish a SPACE/DevEx baseline by persona; identify primary friction points and propose five experiments to reduce toil. Add lightweight telemetry plus survey hooks.
-- Assess Internal Developer Platform maturity; define a minimal Backstage slice (catalog, templates, TechDocs) including one golden-path template and docs-as-code plumbing.
-- Create a quarterly DevEx review loop that analyses telemetry, survey results, and gate outcomes to reprioritise roadmap items and adjust platform guardrails.
+- **Baseline**: Poetry + pre-commit reduce drift; CLI flows well documented; Next_Steps acts as programme board.
+- **Friction**: heavy local setup (dbt/duckdb), missing Backstage/IDP, limited telemetry on CLI run duration.
+- **Experiments**:
+  1. Instrument CLI to emit run timings & adapter metrics to Prometheus stub.
+  2. Provide `justfile` or `Makefile` wrappers for baseline QA commands.
+  3. Publish Streamlit UI quickstart & include accessibility tests.
+  4. Introduce Backstage TechDocs referencing MkDocs build.
+  5. Run quarterly DevEx surveys capturing SPACE metrics (flow efficiency, satisfaction, cognitive load).
 
 ### 3.5 UX/UI & Accessibility
 
-- Conduct a heuristic review (Nielsen’s 10) and define **WCAG 2.2 AA** acceptance criteria. Produce a component-level checklist and specify accessibility tests plus CI integration approach.
-- Align activities with **ISO 9241-210** (user involvement, iteration, usability objectives).
+- Analyst UI (Streamlit) requires heuristic review; no automated WCAG tests yet.
+- Actions: add axe-core CI scan for Streamlit components, create component checklist referencing ISO 9241-210, embed accessibility acceptance criteria into PR template.
 
 ### 3.6 Supply-Chain Posture
 
-- Ensure **SBOMs** (SPDX or CycloneDX) are generated in CI with licence and provenance metadata.
-- Implement signing and attestations: sign images/artifacts, emit **in-toto** provenance attestations, verify in CI.
-- Enforce policy-as-code gates for provenance/SBOM/VEX intake and aggregate metadata (e.g., GUAC) for risk views.
-- Adopt zero-trust workload identities (e.g., SPIFFE/SPIRE or cloud workload federation) and require signed IaC/templates with admission checks.
-- Validate authenticity of third-party SBOMs and ingest VEX metadata to confirm exploitability status before promotion.
+- Tasks:
+  - Generate CycloneDX SBOM during CI and store as artefact.
+  - Emit in-toto provenance for wheels/sdists; sign via Sigstore/Gitsign.
+  - Enforce dependency freshness using Renovate (already configured) with policy gating.
+  - Validate third-party SBOM/VEX before ingestion; integrate GUAC or equivalent aggregator for evidence sink.
+  - Adopt SPIFFE/SPIRE or workload identity plan for streaming sink targets before production rollout.
 
 ### 3.7 Quality Gates & Code Quality
 
-- Apply clean-as-you-code gates on new code: zero new issues, all security hotspots reviewed, coverage ≥ 80%, duplication ≤ 3%, fail PRs on breach.
-- Introduce mutation testing targeting 40–60% initial thresholds (dependent on repo size) with +10 percentage-point ratchets per quarter.
-- Maintain contract testing for services (HTTP via OpenAPI, async via AsyncAPI) with provider/consumer verification.
-- Enable static and dynamic security scans: SAST (CodeQL/Semgrep), secret scanning, OWASP ZAP baseline on deploy previews.
-- Tie each gate to explicit compliance references (e.g., SSDF, SAMM, ASVS, ISO/IEC 25010/5055) and document enforcement/measurement methods.
-- Extend gates to include lint/format compliance, infrastructure policy checks, performance budgets (Core Web Vitals/RAIL), accessibility tests (WCAG 2.2 AA), and IaC/config scans; fail fast on violations with documented waivers.
+- Current gates: pytest (coverage 88%), Ruff, mypy, Bandit, pre-commit, dbt/GX contracts, dotenv-linter, poetry build (per README/CI).【F:README.md†L52-L78】【F:docs/operations.md†L5-L43】
+- Enhancements: add mutation testing (mutmut or cosmic-ray) with 40% pilot coverage; integrate Semgrep security suite; enforce coverage ratchet (88% → 90%); add OWASP ZAP baseline for future web surface; extend PR template with coverage delta capture.
 
 ### 3.8 Future-Proofing & Architecture
 
-- Define 3–5 automated fitness functions (e.g., p95 latency SLO, coupling bounds, cyclic-dependency bans, error rates) and run them in CI.
-- Maintain contracts and versioning discipline: OpenAPI 3.1/AsyncAPI specs, SemVer with deprecation windows, changelog template, and contract tests wired into CI.
-- Produce C4 diagrams (context, container, component) and create 2–3 ADRs for key decisions.
-- Expand observability with OpenTelemetry traces/metrics/logs, collector configuration, proposed SLOs, and error-budget policy.
-- Integrate continuous chaos experimentation (e.g., fault injection, game days) and ML-driven anomaly detection tied to SLOs, with automated rollback triggers.
-- Define log/metric/trace retention, access controls, and data governance policies compliant with privacy and regulatory obligations.
+- Implement automated fitness functions: coupling checks via `pytest --fixtures`, cycle detection in module graph, pipeline SLA monitors.
+- Maintain ADR cadence (threat modeling, SBOM/provenance) and extend C4 diagrams in docs.
+- Expand observability: instrument OpenTelemetry traces for CLI pipeline run, export metrics to sample dashboard, define error budget policy.
+- Plan chaos experiments around adapter failures and secrets backend outages.
 
 ### 3.9 Automation, Orchestration & Autoremediation
 
-- Implement progressive delivery (blue-green/canary) with automated metric checks and instant rollback policies.
-- Adopt GitOps for environments and use policy engines (OPA/Gatekeeper, Kyverno) for admission control on non-compliant changes.
-- Establish autofix loops: dependency bots (security and freshness), codemod recipes, scripted migrations guarded by tests.
-- Provide wizards/scaffolding to generate projects/components, CI jobs, docs skeletons, and policy presets from a single prompt.
+- Introduce GitOps model for evidence sink configuration; adopt OPA/Gatekeeper for infrastructure policy.
+- Add progressive delivery strategy for Streamlit app (blue-green) once deployed.
+- Configure dependency update bots (Renovate) to auto-open PRs with contract + QA gating and autop-run pre-commit.
 
 ### 3.10 Tool-Chain & Tech-Stack Evaluation
 
-- Produce a concise Tech Radar (Adopt/Trial/Assess/Hold) covering languages, frameworks, build, deploy, and security tooling with migration safety nets and de-risking steps.
-- Require sandbox or pilot evaluations with success metrics, rollback criteria, and stakeholder sign-off before promoting tooling from Assess/Trial to Adopt.
+- Draft Tech Radar with categories: Adopt (Poetry, Ruff, mypy, dbt, DuckDB), Trial (whylogs, Ragas, Sigstore), Assess (Backstage, Semgrep), Hold (direct network scraping without Firecrawl SDK).
+- Require pilot runs and rollback plan before promoting to Adopt.
 
 ### 3.11 Concrete Improvements (Codify & Automate)
 
-- Deliver PR-ready assets including:
-  - `.github/` (or CI equivalent) workflows for SAST, secret scanning, DAST baseline, SBOM generation, provenance/signing, dependency updates, policy-as-code checks.
-  - `SECURITY.md`, `CODEOWNERS`, PR/issue templates, branch-protection policy as code.
-  - OpenAPI/AsyncAPI specs with contract test wiring.
-  - Backstage catalog entities, software template, TechDocs skeleton.
-  - Fitness-function checks, lint/test configs, mutation testing configuration.
-- Include rollback notes and toggles for deployed changes.
+- Workflow additions: GitHub Actions for Scorecard, Semgrep, CycloneDX SBOM, Sigstore attestations, dependency review.
+- Repository artefacts: `SECURITY.md` referencing threat model; update `CODEOWNERS` if additional teams join; ensure PR template includes new gates.
+- MCP tooling: expose read-only audit + diff commands before enabling `commit_patch` autop-run.
+- Backstage scaffolding: create `catalog-info.yaml`, template definitions, TechDocs referencing MkDocs output.
 
 ### 3.12 Roadmap & Measurement
 
-- Construct a **30/60/90-day plan** formatted as `{Item | Owner role | Effort (S/M/L) | Risk reduction | Dependencies | Verification}`.
-- Append a dependency/tooling matrix that maps recommended changes to required platforms, libraries, services, and ownership, highlighting adoption prerequisites, integration points, lifecycle health (release cadence, maintenance velocity, CVE history), licensing posture, and required pilot/evaluation stages.
-- Forecast expected movement in DORA and SPACE metrics plus security leading indicators.
+| Horizon | Item | Owner Role | Effort | Risk Reduction | Dependencies | Verification |
+| --- | --- | --- | --- | --- | --- | --- |
+| 30 days | Threat model ADR & STRIDE/MITRE mapping | Security/Architecture | M | High | docs/architecture.md, MCP design | ADR merged, tabletop session notes |
+| 30 days | CI supply-chain hardening (Scorecard, SBOM, provenance) | Platform/Security | M | High | GitHub Actions secrets | CI artifacts, attestations signed |
+| 30 days | Accessibility + UX baseline for Streamlit UI | Product/UX | S | Medium | Streamlit app, axe tooling | Heuristic report, axe CI job |
+| 60 days | MCP plan→commit audit logging + policy enforcement | Platform/Security | M | High | Threat model ADR, OPA policies | Automated tests blocking unsafe commits |
+| 60 days | Drift dashboards + alert routing (whylogs → Prometheus) | Platform/Data | M | Medium | analytics pipeline | Dashboard screenshot, alert runbook |
+| 60 days | Mutation testing pilot (core pipeline modules) | QA/Platform | M | Medium | pytest integration | Mutation score report ≥40% |
+| 90 days | Backstage TechDocs + golden-path template | Platform/DevEx | L | Medium | MkDocs output, IDP infra | Catalog entry published, template scaffold |
+| 90 days | Signed artefact promotion with policy-as-code gate | Platform/Security | L | High | Sigstore integration, SBOM pipeline | Verification logs, rollback drill |
+| 90 days | Chaos & FMEA exercises for pipeline & MCP | SRE/Security | M | High | Observability stack | Game-day report, FMEA register |
 
 ### 3.13 Critical-Reasoning Checks
 
-- Run a pre-mortem describing how the plan could still fail in production.
-- Perform FMEA on the top five failure modes (severity × occurrence × detection).
-- Adopt a devil’s-advocate stance: document remaining attacker or chaos opportunities.
-- Catalogue unknowns and evidence required, including scripts or queries to close gaps.
+- **Pre-mortem**: failure drivers include unsigned artefacts allowing tampering, MCP agent overreach, drift alerts ignored, or evidence sink exfiltration. Mitigation: implement signing, enforce MCP plan→commit gating, automate drift notifications, restrict sink credentials.
+- **FMEA focus**: pipeline enrichment failure, secrets backend outage, adapter returning stale data, MCP misconfiguration, SBOM attestation failure. Score severity/occurrence/detection and log in Next_Steps.
+- **Devil’s advocate**: consider attacker leveraging Firecrawl SDK to bypass offline guardrails; plan to sandbox network calls and log usage.
+- **Unknowns**: confirm production deployment target, establish data residency requirements, validate compatibility of Sigstore in air-gapped contexts. Track in Next_Steps with owners.
 
 ## 4. Output Format (Use Exactly)
 
 ### 4.1 Executive Summary
 
-- List the top five risks → impact → quick win.
-- Provide a maturity snapshot `{SSDF | SAMM | ASVS | SLSA | Scorecard | 25010 | 5055}` showing current → target states.
+1. Supply-chain provenance (SBOM + signing) missing → blocks SLSA progress → quick win: add CycloneDX & Sigstore workflow.
+2. MCP plan→commit auditing incomplete → risk of agent overreach → quick win: enforce read-only defaults, add audit log stub.
+3. Threat modeling documentation absent → risk of blind spots across adapters/secrets → quick win: create ADR + tabletop.
+4. Accessibility baseline lacking → risk to UX/ISO 9241 alignment → quick win: axe CI check + heuristic report.
+5. Drift monitoring dashboards incomplete → risk of silent data regressions → quick win: wire whylogs metrics to Prometheus stub.
+
+_Maturity snapshot_: `{SSDF: PS/PW/RV ~1.5 → target 3; SAMM: ~1.5 → 2; ASVS: L1 → L2; SLSA: 1 → 2; Scorecard: ~5.5 → 7; 25010: Reliability strong, Usability weak → balance; 5055: Emerging → target managed backlog}`.
 
 ### 4.2 Findings
 
-- For each finding use the structure **Title • Severity • Confidence • Evidence • Affected assets**.
-- Map standards `{SSDF:… | SAMM:… | ASVS:… | SLSA:… | CWE/OWASP:… | 25010:… | 5055:…}`.
-- Quantify residual risk using a consistent model (e.g., FAIR-derived score combining likelihood and impact) and describe fix steps (precise), trade-offs, and remaining exposure.
+Use the format below for each tracked issue (examples appended in this revision):
+
+1. **Missing supply-chain attestations • High • Confidence: Medium • Evidence: `.github/workflows/ci.yml` lacks SBOM/provenance steps • Assets: build artefacts** — `{SSDF:PW.6 | SLSA:L2.Build.1 | Scorecard:Binary-Artifacts | 5055:Security}` — Fix: add CycloneDX + Sigstore job; trade-off: marginal CI time increase; residual risk: dependency review accuracy.
+2. **MCP audit gaps • High • Confidence: Medium • Evidence: `firecrawl_demo/interfaces/mcp/server.py` only enforces basic tool allowlist • Assets: MCP runtime** — `{SSDF:RV.4 | SAMM:Governance 1.2 | OWASP ASVS V2}` — Fix: implement audit log + plan→commit gating; trade-off: additional storage/ops overhead.
+3. **Accessibility blind spot • Medium • Confidence: Low • Evidence: `app/` Streamlit UI lacks WCAG testing** — `{ISO 25010:Usability | WCAG 2.2 AA}` — Fix: run axe CI, create component checklist; trade-off: design bandwidth.
+
+Log additional findings in Next_Steps as they arise.
 
 ### 4.3 Supply-Chain Posture
 
-- Summarise SLSA track/level, signing/attestation/provenance status, SBOM/VEX coverage, and policy gates.
+- Current level: SLSA 1 (scripted build). No SBOM/provenance/signatures yet.
+- Actions: implement Scorecard workflow, CycloneDX export, Sigstore signing, dependency review gating, Renovate auto-PRs.
+- Evidence log should capture SBOM & provenance artefact paths for each release.
 
 ### 4.4 Delivery, DX & UX
 
-- Document DORA/SPACE baselines, UX/accessibility status, ISO 9241-210 alignment, ISO/IEC 25010 impacts, and Internal Developer Platform improvements.
+- DORA metrics captured manually; plan instrumentation via CI summary script outputs and Next_Steps tracking.
+- SPACE baseline to derive from CLI telemetry & DevEx survey (quarterly cadence).
+- UX/accessibility: adopt Nielsen heuristics review, axe CI scan, and include accessibility acceptance criteria in PR template.
 
 ### 4.5 PR-Ready Artefacts
 
-- Present file tree and diffs (fenced in triple backticks) ready for commit.
+- Candidate additions (to be implemented via follow-up PRs):
+  - `.github/workflows/supply-chain.yml` — SBOM + signing pipeline.
+  - `SECURITY.md` — threat model summary & vulnerability disclosure process.
+  - `backstage/catalog-info.yaml` + `templates/` scaffolds.
+  - `docs/threat-model.md` — STRIDE, MITRE mappings, attack trees.
+  - `app/tests/accessibility/` — axe/smoke scripts.
 
 ### 4.6 30/60/90 Roadmap
 
-- Provide the table described above.
+See Section 3.12 table; track execution in `Next_Steps.md` with owners, due dates, and quality gates.
 
 ### 4.7 Assumptions & Unknowns
 
-- List outstanding assumptions and evidence gaps.
+- Deployment target undecided (Docker vs Kubernetes) — influences signing and secret distribution approach.
+- Need confirmation on regulatory appetite for cloud-hosted evidence sinks vs on-prem storage.
+- Clarify whether analysts require offline-only builds indefinitely or can opt into signed network adapters.
+- Determine tolerance for introducing Backstage (org alignment, hosting).
+- Identify owner for DevEx telemetry instrumentation.
 
-### 4.8 Appendix
-
-- Collate commands to validate fixes, CI snippets, policy-as-code examples, and references.
-
-### 4.9 Dependency & Tooling Matrix
-
-- Provide a consolidated matrix covering each recommendation’s dependent components/services, tooling or library selection, target versions, ownership, integration points, compliance checkpoints, lifecycle health indicators (release cadence, commit velocity, open CVEs), pilot rollout status, and references (URL + access date) validating compatibility, support, and licensing.
-
-### 4.10 Research Log
-
-- Summarise online research performed (sources, publish dates, key findings) to demonstrate due diligence for tooling, standards alignment, and interoperability claims.
-
-### 4.11 Control Traceability Matrix
-
-- Provide a machine-readable matrix linking each cited control/standard (SSDF, SAMM, ASVS, ISO/IEC 25010, ISO/IEC 5055, SLSA, WCAG, etc.) to implemented safeguards, pipeline gates, evidence artefacts, and verification cadence to ensure audit-ready compliance.
-
-### 4.12 Agent Runbook & Handover Docs
-
-- Generate streamlined documentation optimised for autonomous/assisted agents: chronological task graph (scaffold → bootstrap → execute → validate → handover), decision predicates, rollback paths, and required approvals. Ensure the runbook references all artefacts produced, delineates ownership transitions, and includes adaptation guidelines when controlled drift is necessary.
-
-## 5. Guardrails & Governance
-
-- Mark inferences explicitly and supply commands whenever verification is not immediate.
-- Default to reversible, minimal-change rollouts backed by flags.
-- Treat LLM-generated code identically to human-generated code: enforce tests, scans, contract checks, and review.
-- Verify cross-tool compatibility (runtime, infrastructure, policy impact), licence posture, and vendor/community support horizons before adoption; flag any compliance gaps or quality-gate implications.
-- Guard against scope creep: confirm alignment with agreed objectives before expanding workstreams and document stakeholder approval for intentional deviations.
-
-### 5.1 Copilot & Agent Reality Checks
-
-- Recognise that Copilot/LLM assistance can accelerate constrained tasks (e.g., ~55% faster in controlled RCTs) but only inside strict guardrails that mitigate security, reliability, licensing, and data-governance risks.
-- Assume 25–40% of AI-generated code suggestions may be insecure without rigorous review; enforce CWE Top-25 coverage, OWASP LLM Top-10, and ASVS-aligned gates before accepting code.
-- Treat Copilot deployments as least-privilege systems: enforce identity-scoped semantic index access, index scoping, DLP, and monitored egress controls to prevent over-exposure of sensitive records.
-- Accept that benchmark success (SWE-bench, AgentBench) does not guarantee robustness; constrain agent tools, apply sandboxing, and require human approval for high-impact actions.
-- Prevent supply-chain amplification: forbid hallucinated dependencies via allowlists, signed attestations (in-toto/Sigstore), SBOM validation (SPDX/CycloneDX), and immutable lockfiles.
-- Position Copilot/agents as accelerators within a disciplined SDLC that embeds NIST SSDF, OWASP LLM Top-10, ASVS, DORA/SPACE, DevEx, ISO/IEC 25010, and HEART metrics into automated gates and scaffolded workflows.
-
-### 5.2 Common Failure Modes & Required Controls
-
-1. **Insecure or low-quality code**
-   - Enforce OWASP ASVS level mapping, CWE Top-25 SAST/Semgrep rules, and a mandatory secure-review checklist.
-   - Run mutation testing to raise defect detection and block PRs missing tests, threat-model notes, or remediation on SAST/DAST findings via policy-as-code.
-
-1. **Data leakage & over-permissive retrieval**
-   - Limit retrieval to verified identity scopes, auto-classify and label data assets, enable DLP across chat/mail/file shares, and schedule permission recertification.
-   - Deploy OWASP LLM Top-10 prompt-injection defences with input/output filtering, model-spec policies, and tool allowlists.
-
-1. **Agent brittleness**
-   - Issue least-privilege tool bundles, enforce per-run scopes, favour dry-run defaults, and capture auditable traces for every tool call.
-   - Require sandboxed execution (ephemeral containers, restricted egress/filesystem) and gate destructive actions behind human approval.
-   - Apply Plan-and-Execute/ReAct task decomposition and repository-aware retrieval to stabilise longer-horizon work.
-
-1. **Supply-chain exposure & dependency drift**
-   - Target SLSA L2→L3 for builds with signed provenance and SBOM attestations (in-toto + Sigstore/Cosign).
-   - Use private proxies, dependency allowlists, immutable lockfiles, and “no-scripts” install policies in CI.
-
-1. **Hallucinations, licence/IP uncertainty**
-   - Enable duplication filters, run automated licence scanners, and restrict prompts that request high-risk boilerplate.
-
-1. **Test flakiness & regression churn**
-   - Quarantine flaky tests, enforce deterministic seeds/time, adopt contract tests for brittle integrations, and maintain mutation testing plus historical flake dashboards.
-
-1. **Developer experience friction**
-   - Practice trunk-based development with small PRs, time-boxed reviews, and DORA metric SLAs; monitor SPACE signals; surface repo-aware RAG content to cut context switching.
-
-1. **UX/UI quality lag**
-   - Track HEART metrics via Goals-Signals-Metrics, embed Nielsen heuristics in definition-of-done, and uphold ISO/IEC 25010 non-functional requirements.
-
-1. **Governance gaps for AI in SDLC**
-   - Anchor governance in NIST SSDF with SP 800-218A extensions and OWASP LLM Top-10; automate compliance checks and remediation workflows.
-
-### 5.3 Frontier Control Set (Embed in Scaffolding)
-
-- **Process & governance**: Provision SSDF policies, ASVS requirements, OWASP LLM Top-10 mappings, SBOM pipelines, and SLSA-compliant builds from the outset; codify Copilot/agent tool caps and identity-scoped retrieval enforcement.
-- **Security quality gates**: Require SAST with CWE Top-25 coverage, secret/IaC scans, SBOM creation, licence scanning, test coverage + mutation score thresholds, and block on high-severity findings or missing threat-model notes.
-- **Agent & Copilot guardrails**: Run agents in capability sandboxes with audited tools, human-in-the-loop approvals for destructive operations, prompt-injection filters, and repo-aware retrieval constrained to tenant boundaries.
-- **Supply chain hardening**: Mandate SLSA L2→L3 provenance, signed attestations (in-toto/Cosign), SBOM verification (SPDX 3.0 or CycloneDX 1.5), private registries, lockfiles, allowlists, and “no-scripts” installs.
-- **Testing strategy**: Maintain a unit → component → contract (Pact) → targeted E2E pyramid, powered by mutation testing and aggressive flake triage pipelines.
-- **Delivery & DX**: Enforce trunk-based development, protected main branches, mandatory reviews, and DORA/SPACE dashboards; integrate guardrail scaffolds into onboarding.
-- **UX/UI excellence**: Operate HEART dashboards per key flow, assure Nielsen heuristic compliance, and track ISO/IEC 25010 quality characteristics as non-functional requirements.
-- **Post-incident learning**: Require blameless postmortems with error budgets, track action items to closure, and ensure artefacted audit trails for AI/agent activity.
-
-## 6. Governance, Risk & Safety (Security by Construction)
-
-- Map lifecycle controls to NIST SSDF; set supply-chain hard gates aligned to SLSA milestones (target ≥ SLSA 3 for builds).
-- Select an assurance framework (e.g., OWASP SAMM for governance, OWASP ASVS for application security) and integrate controls into release criteria.
-
-## 7. Architecture & Future-Proofing Blueprint
-
-- Produce C4 diagrams (context, container, component, code) and maintain a living ADR log for transparency and reversibility.
-- Define automated fitness functions enforcing latency ceilings, dependency rules, PII boundaries, portability, and resilience; run as non-optional CI gates.
-- Align team structure with Team Topologies (stream-aligned, platform, enabling, complicated-subsystem) to maintain flow and reduce cognitive load.
-
-## 8. Tech Stack, Contracts, & Schemas
-
-- Standardise service contracts with OpenAPI 3.x / AsyncAPI; generate server/clients/tests and enforce backward-compatibility.
-- Decide monorepo vs polyrepo; if monorepo, add workspaces, incremental builds, graph-aware CI; if polyrepo, provide a contract-testing hub.
-
-## 9. Scaffolding & Bootstrap (First-Run Baseline)
-
-Create a runnable baseline that includes:
-
-- Repos with default branches, CODEOWNERS, PR templates, issue templates, contribution guide, ADR folder, C4 diagrams.
-- CI/CD covering build, test, coverage, lint/format, SAST/secret scan, SBOM + signing, contract tests, artifact signing, environment promotions.
-- Quality gates wired to SonarQube (or equivalent) rejecting code smells, coverage drops, critical vulnerabilities, SCA violations; add ISO/IEC 5055 structural-quality reporting when available.
-- Dependency management via Dependabot or Renovate with grouping, schedules, and allowed version rules.
-- Supply-chain controls: CycloneDX SBOMs, in-toto provenance, Sigstore/cosign signatures, VEX triage support.
-- Observability: OpenTelemetry auto-instrumentation for traces/metrics/logs routed through the collector to the chosen sink.
-- Application security scans: CodeQL/Semgrep, OWASP ZAP baseline, Gitleaks/TruffleHog secret scanning on push and PR.
-- GitOps and progressive delivery (Argo CD, Argo Rollouts or Flagger) with policy enforcement (OPA Gatekeeper, Kyverno).
-- Internal developer platform wizards: Backstage templates with guardrails baked in, TechDocs enabled, catalog entries registered.
-- Continuously monitor for configuration drift between desired and live state, blocking promotion when drift is detected and recording remediation steps.
-
-## 10. Quality & Testing Strategy
-
-- Layered testing: unit → contract → component → E2E, with mutation testing for critical domains (e.g., Pact, Stryker).
-- Enforce performance budgets with CI gates; for web properties align with Core Web Vitals and RAIL thresholds.
-- Include accessibility gates aligned to WCAG 2.2 and ISO 9241-210; combine with Nielsen Norman heuristic reviews.
-
-## 11. Security & Supply-Chain Depth
-
-- Capture provenance attestations (SLSA) and verify before deploy.
-- Generate and diff CycloneDX SBOMs per build; correlate with advisories and attach VEX artefacts to focus response.
-- Sign images/blobs with cosign (keyless when possible) and verify at admission.
-- Map ASVS and SSDF controls directly to pipeline/tests and list control→evidence mappings in release notes.
-
-## 12. Reliability, SLOs & Incident Workflow
-
-- Define SLIs/SLOs per user journey backed by an error-budget policy; block risky changes when budgets are exhausted.
-- Require blameless postmortems with time-boxed corrective actions for P0 incidents.
-- Bake progressive delivery and automated rollback for health signal degradation into deployment workflows.
-
-## 13. Developer Experience Enablement
-
-- Provide golden paths via Backstage templates and self-service environments to minimise hand-offs.
-- Protect focus time; track friction signals alongside DORA metrics weekly to demonstrate correlation between DevEx and throughput/quality/retention.
-
-## 14. UX, UI & Product Excellence
-
-- Conduct recurring heuristic evaluations and integrate accessibility checks into CI.
-- Maintain a design system and capture task-level telemetry to validate UX outcomes against baselines (connect to Core Web Vitals where applicable).
-- Incorporate inclusive design reviews with neurodiversity and assistive-technology testing protocols; capture findings and remediation SLAs.
-
-## 15. AI/ML Governance (If Applicable)
-
-- Govern AI features using NIST AI RMF and ISO/IEC 42001. Produce Model Cards, risk controls, and evaluation artefacts for shipped models.
-- Log prompts/responses for AI-assisted coding, require automated evaluation of generated artefacts (tests, static analysis, guardrail policies), and enforce human-in-the-loop approval before deploying AI-authored changes.
-
-## 16. Automation, Autoremediation & Guidance
-
-- Enable auto-fix flows: dependency PRs (Renovate/Dependabot), policy suggestions, flaky-test quarantine, failed-gate explainer comments with one-click remediation branches.
-- Generate “why-failed?” guidance in PRs and wizards that create actionable follow-up tasks.
-- Execute migration scripts and codemods via staged canaries with automated validation and rollback triggers before full rollout.
-
-## 17. Continuous Improvement & Reflection
-
-- Auto-open tickets for any failed gate, linking to the affected standard and evidence.
-- After incidents or repeated gate failures, run blameless postmortems (5-Whys/A3) with time-boxed corrective actions.
-- Centralise quality, security, and delivery gate telemetry in an analytics platform to enable predictive insights and SLA/SLO breach forecasting.
-
-## 18. First-Pass Deliverables
-
-- Project charter plus risk and mitigation register.
-- C4 diagrams, ADR set, API specs (OpenAPI/AsyncAPI).
-- Repos with CI/CD, security controls, SBOM/signing, observability, quality gates.
-- Environment definitions (dev/stage/prod) with GitOps and progressive delivery.
-- SLOs, error-budget policy, dashboards for DORA, DevEx, SLOs.
-- Backstage templates and TechDocs.
-- Starter product backlog mapped to standards and gates.
-
-## 19. Non-Negotiable Gates (Examples)
-
-- Build: compiles, unit tests green, coverage ≥ agreed threshold, mutation score meets target for critical modules.
-- Security: secrets scan clean; SAST high/critical findings fail the build; SBOM generated and signed; provenance present; new vulnerabilities require VEX disposition.
-- Quality: Sonar/structural quality thresholds met; no new code smells or duplicated code beyond thresholds.
-- Performance: budgets enforced; regressions fail the build; web properties maintain Core Web Vitals thresholds.
-- Reliability: block rollouts when error budgets depleted; progressive delivery health checks must remain green.
-- Accessibility: WCAG 2.2 violations above severity thresholds block releases.
-
-## 20. Agent Output Expectations
-
-- Produce: (1) project plan (Gantt/roadmap + risks); (2) scaffolding instructions (commands/files) for the chosen stack; (3) CI/CD pipelines-as-code covering all gates and observability wiring; (4) Backstage template YAML and TechDocs skeleton; (5) SLO/error-budget policy and dashboards; (6) Security controls mapping table (SSDF/SAMM/ASVS → pipeline step → evidence); (7) Performance budgets and test-data plans (synthetic users, load profiles); (8) Dependency & tooling matrix with research citations and compliance checkpoints; (9) Benchmark comparison against industry/frontier baselines (e.g., OpenSSF metrics) with gaps and improvement targets; (10) Agent-oriented runbook and handover docs aligning execution sequence, approvals, and drift-management rules.
-
-## 21. Performance & Simplicity Principles
-
-- Prefer simple, composable components. Measure before optimising, enforce budgets, and avoid heavy runtimes unless justified by observed load and SLO commitments.
-
-## 22. Minimal “Run Now” Checklist
-
-- Create repositories with templates, CODEOWNERS, ADR scaffolding.
-- Generate CI/CD pipeline with gates: lint/format → unit/contract → SAST/DAST → SBOM/signing → staged deploy via GitOps → progressive rollout.
-- Add OpenTelemetry SDK and collector configuration targeting the default sink.
-- Enable Dependabot/Renovate with grouping plus secrets scanning, CodeQL/Semgrep, OWASP ZAP baseline.
-- Generate CycloneDX SBOM and in-toto provenance; sign artefacts with cosign; verify during admission.
-- Define SLOs and error-budget policy; wire dashboards; enable automatic rollback on health regressions.
-- Publish Backstage templates so new services are compliant on first commit.
-- Compile agent-oriented runbook and handover documentation capturing the executed sequence, artefact locations, approvals, and drift-management guidance.
+Document answers as they arrive and update this playbook accordingly.

@@ -30,6 +30,16 @@
   - [x] Extend Promptfoo coverage to evidence-log remediation narratives — Owner: Platform — Due: 2025-11-07 (evidence guidance assertions now live under `codex/evals/tests/evidence_log.yaml`).
 - [x] Segment runtime packages into core/integrations/governance/interfaces — Owner: Architecture — Completed 2025-10-17
 - [ ] Validate Poetry exclude list in release pipeline — Owner: Platform — Due: 2025-10-31
+- [x] Refresh Frontier Software Excellence & Red-Team playbook — Owner: Security — Completed 2025-10-17
+- [ ] Author threat model ADR + STRIDE/MITRE mapping — Owner: Security — Due: 2025-11-14
+- [ ] Extend CI with Scorecard/SBOM/Sigstore supply-chain hardening — Owner: Platform/Security — Due: 2025-11-30
+- [ ] Establish Streamlit accessibility baseline (heuristic + axe CI) — Owner: Product/UX — Due: 2025-11-21
+- [ ] Implement MCP plan→commit audit logging + policy enforcement — Owner: Platform/Security — Due: 2025-12-05
+- [ ] Wire whylogs drift dashboards + alert routing — Owner: Platform/Data — Due: 2025-12-05
+- [ ] Pilot mutation testing for pipeline hotspots — Owner: QA/Platform — Due: 2025-12-05
+- [ ] Publish Backstage TechDocs + golden-path template — Owner: Platform/DevEx — Due: 2026-01-15
+- [ ] Enforce signed artefact promotion with policy-as-code gate — Owner: Platform/Security — Due: 2026-01-31
+- [ ] Schedule chaos/FMEA exercise for pipeline & MCP — Owner: SRE/Security — Due: 2026-01-31
 
 ## Steps
 
@@ -76,6 +86,15 @@
 - [ ] Phase 3.2 follow-up — Wire drift alerts into observability dashboards (AT-30)
 - [ ] Phase 4.1 follow-up — Calibrate RAG benchmarks against production corpora (AT-31)
 - [ ] Phase 4.2 follow-up — Integrate MCP audit logging + OWASP control dashboards (AT-32, AT-33)
+- [ ] Draft threat model ADR + run tabletop review (2025-11-14)
+- [ ] Add Scorecard/SBOM/Sigstore workflow to CI and document rollout (2025-11-30)
+- [ ] Capture Streamlit accessibility baseline and wire axe CI job (2025-11-21)
+- [ ] Implement MCP plan→commit audit logging with automated tests (2025-12-05)
+- [ ] Publish whylogs drift dashboards + alerting runbook (2025-12-05)
+- [ ] Pilot mutation testing suite for pipeline hotspots (2025-12-05)
+- [ ] Publish Backstage TechDocs + golden-path template (2026-01-15)
+- [ ] Enforce signed artefact promotion policy + rollback drill (2026-01-31)
+- [ ] Schedule chaos/FMEA exercise for pipeline & MCP (2026-01-31)
 
 ## Deliverables
 
@@ -102,6 +121,14 @@
 - [ ] whylogs drift dashboards + alert runbook (AT-30)
 - [ ] Ragas evaluation report + policy gating checklist (AT-31)
 - [ ] LLM safety/plan→commit MCP policy pack + red-team evidence (AT-32, AT-33)
+- [x] Frontier Software Excellence & Red-Team playbook refreshed with current-state analysis (2025-10-17)
+- [ ] Threat model ADR + tabletop runbook published
+- [ ] CI supply-chain hardening workflow (Scorecard, SBOM, Sigstore) operating in GitHub Actions
+- [ ] Streamlit accessibility baseline + axe CI integration package
+- [ ] Mutation testing pilot report for pipeline hotspots
+- [ ] Backstage TechDocs + golden-path template published
+- [ ] Signed artefact promotion policy + rollback drill runbook
+- [ ] Chaos/FMEA exercise report for pipeline & MCP guardrails
 
 ## Quality Gates
 
@@ -171,11 +198,14 @@
 - [x] Lineage + lakehouse configuration docs (Phase 2) — docs/lineage-lakehouse.md
 - [x] Codex DX bundle — codex/README.md; codex/evals/promptfooconfig.yaml
 - [x] Environment separation guidance — dev/README.md; dist/README.md; tools/README.md; app/README.md
+- [x] Frontier Software Excellence & Red-Team playbook — `Red Team + Software Excellence.md`
 - [ ] Graph semantics mapping repo + drift dashboards (Phase 3) — TBC
 - [ ] LLM safety + MCP governance pack (Phase 4) — TBC
 
 ## Risks/Notes
 
+- [ ] Confirm Sigstore/Gitsign compatibility with offline or air-gapped environments before enforcing signed artefact promotion.
+- [ ] Determine owner + storage for MCP audit logs produced by future plan→commit gating.
 - [ ] Firecrawl SDK now feature-flagged; production rollout still blocked on credential management and ALLOW_NETWORK_RESEARCH policy.
 - [ ] Secrets governance follow-up: validate AWS/Azure vault access in staging and document production rotation approvals.
 - [x] Secrets rotation: Primary vault determined by `SECRETS_BACKEND` (AWS or Azure) with local overrides via chained `.env` provider; document rotation/override in ops runbook.
@@ -474,3 +504,14 @@ Why MCP here? It standardises how Copilot calls your stack, and it’s natively 
 - ✅ `poetry run pre-commit run --all-files`
 - ✅ `poetry build`
 - ✅ `poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'`
+
+## Baseline QA Snapshot — 2025-10-17 (Red-Team refresh)
+
+- ✅ `poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing` (coverage 88%)
+- ✅ `poetry run ruff check .`
+- ✅ `poetry run mypy .`
+- ✅ `poetry run bandit -r firecrawl_demo`
+- ⚠️ `poetry run pre-commit run --all-files` (pyupgrade reformatted tracked files; reverted to keep tree clean)
+- ✅ `poetry run dotenv-linter lint .env.example`
+- ✅ `poetry build`
+- ✅ `poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample.csv --format json` (Great Expectations + dbt suite green)
