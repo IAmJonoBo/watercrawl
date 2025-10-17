@@ -59,8 +59,9 @@
 - [x] Phase 1.2 hardening — Fix Excel dataset reader for XLSX inputs and extend regression tests for unsupported unit payloads (2025-10-17)
 - [x] Harden compliance MX lookup fallback for offline/NoNameservers scenarios and verify async pipeline enrichments (2025-10-17)
 - [x] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Pipeline now records OpenLineage, PROV-O, and DCAT artefacts via `LineageManager`; CLI surfaces artefact paths.
-- [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
-- [ ] Phase 2.3 — Automate lakehouse snapshot versioning and reproduction (AT-26/27 follow-up) — Local Parquet-backed writer scaffolded; DVC/lakeFS integration pending.
+- [x] Phase 2.2 hardening — Versioning manager records fingerprinted manifests with reproduce commands (2025-10-17).
+- [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md; local manifests now expose fingerprints and environment metadata to unblock remote wiring.
+- [ ] Phase 2.3 — Automate lakehouse snapshot versioning and reproduction (AT-26/27 follow-up) — Local Parquet-backed writer scaffolded; deterministic version manifests with reproduce commands landed; DVC/lakeFS integration pending.
 - [x] Phase 3.1 — Finalise CSVW/R2RML mappings + regression tests for graph build (AT-28) — `graph_semantics` module emits CSVW metadata and R2RML templates with coverage.
 - [x] Phase 3.2 — Instrument whylogs drift monitors + alert routing (AT-30) — Baseline drift monitor implemented in `drift.py`; alert integration next.
 - [x] Phase 4.1 — Integrate Ragas scoring + release gating thresholds (AT-31) — Lexical RAG evaluator added with threshold gating support.
@@ -135,6 +136,7 @@
 - [ ] Codex smoke tests (2025-11-07 target): promptfoo eval codex/evals/promptfooconfig.yaml executed before enabling agent sessions.
 - [x] Lineage emission QA: pytest tests/test_lineage.py::test_lineage_manager_persists_artifacts ensures OpenLineage/PROV/DCAT artefacts are produced.
 - [x] Lakehouse snapshot QA: pytest tests/test_lakehouse.py::test_local_lakehouse_writer_persists_snapshot validates manifest and Parquet output.
+- [x] Version manifest QA (2025-10-17): pytest tests/test_versioning.py::test_versioning_manager_records_snapshot ensures fingerprints and reproduce commands are captured.
 - [x] Graph semantics QA: pytest tests/test_graph_semantics.py::* covers CSVW metadata and R2RML mapping outputs.
 - [x] Drift QA: pytest tests/test_drift.py::test_compare_to_baseline_flags_large_shift monitors threshold behaviour.
 - [x] RAG + Safety QA: pytest tests/test_rag_evaluation.py::test_evaluate_responses_returns_threshold_gate and tests/test_safety.py::* enforce gating policies.
@@ -164,6 +166,7 @@
 - [x] dbt contracts project — analytics/dbt_project.yml; analytics/models/staging/stg_curated_dataset.sql; analytics/tests/generic
 - [x] Lineage + lakehouse configuration docs (Phase 2) — docs/lineage-lakehouse.md
 - [x] Codex DX bundle — codex/README.md; codex/evals/promptfooconfig.yaml
+- [x] Environment separation guidance — dev/README.md; dist/README.md; tools/README.md; app/README.md
 - [ ] Graph semantics mapping repo + drift dashboards (Phase 3) — TBC
 - [ ] LLM safety + MCP governance pack (Phase 4) — TBC
 
@@ -176,6 +179,7 @@
 - [ ] Enforced pandas/requests type stubs—watch for downstream mypy regressions without `type: ignore` escapes.
 - [ ] Validate streaming evidence sink against real Kafka/REST endpoints once roadmap work begins; document throughput targets.
 - [ ] Promptfoo smoke tests currently only cover pipeline/compliance happy paths; extend to evidence-log narratives after lineage instrumentation lands (AT-25/AT-27 dependency).
+- [ ] Dist deployments must keep Codex disabled; add automated guard that blocks MCP/agent sessions unless `promptfoo eval codex/evals/promptfooconfig.yaml` has passed in the active branch.
 - [x] Secrets manager paths blocked until boto3 / Azure SDK packages are bundled with the project dependencies.
 - [x] Evidence log remediation warnings now trigger for sparse or unofficial sourcing; schedule analyst refresher to interpret the new notes.
 - [ ] Monitor fresh-evidence blocks for legitimate analyst updates; capture false-positive patterns for adapter tuning (2025-10-18).

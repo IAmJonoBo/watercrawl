@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -40,5 +41,10 @@ def test_local_lakehouse_writer_persists_snapshot(tmp_path: Path) -> None:
     assert manifest.table_path.exists()
     assert (manifest.table_path / "data.parquet").exists()
     assert manifest.manifest_path.exists()
-    manifest_data = manifest.manifest_path.read_text()
-    assert "run-001" in manifest_data
+    assert manifest.fingerprint
+    manifest_payload = json.loads(manifest.manifest_path.read_text())
+    assert manifest_payload["run_id"] == "run-001"
+    assert manifest_payload["row_count"] == 1
+    assert manifest_payload["fingerprint"] == manifest.fingerprint
+    assert manifest_payload["schema"]["Name of Organisation"]
+    assert manifest_payload["environment"]["profile"] == "dev"

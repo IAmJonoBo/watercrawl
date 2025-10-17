@@ -207,6 +207,70 @@ class LakehouseSettings:
     table_name: str = "flight_schools"
 
 
+@dataclass(frozen=True)
+class DeploymentSettings:
+    profile: str = "dev"
+    codex_enabled: bool = True
+    crawler_mode: str = "full"
+
+
+@dataclass(frozen=True)
+class VersioningSettings:
+    enabled: bool = True
+    strategy: str = "manifest"
+    metadata_root: Path = field(default_factory=lambda: DATA_DIR / "versioning")
+    dvc_remote: str | None = None
+    lakefs_repo: str | None = None
+    reproduce_command: tuple[str, ...] = (
+        "poetry",
+        "run",
+        "python",
+        "-m",
+        "firecrawl_demo.cli",
+        "enrich",
+    )
+
+
+def _build_deployment_settings(provider: SecretsProvider) -> DeploymentSettings:
+    profile = (_get_value("DEPLOYMENT_PROFILE", "dev", provider) or "dev").lower()
+    override = _get_value("DEPLOYMENT_CODEX_ENABLED", None, provider)
+    codex_enabled = (
+        override.strip().lower() in {"1", "true", "yes", "on"}
+        if override is not None
+        else profile != "dist"
+    )
+    crawler_mode = _get_value("CRAWLER_MODE", "full", provider) or "full"
+    return DeploymentSettings(
+        profile=profile,
+        codex_enabled=codex_enabled,
+        crawler_mode=crawler_mode,
+    )
+
+
+def _build_versioning_settings(provider: SecretsProvider) -> VersioningSettings:
+    enabled = _env_bool("VERSIONING_ENABLED", True, provider)
+    strategy = _get_value("VERSIONING_STRATEGY", "manifest", provider) or "manifest"
+    metadata_root = _env_path("VERSIONING_METADATA_ROOT", provider)
+    default_command = (
+        "poetry",
+        "run",
+        "python",
+        "-m",
+        "firecrawl_demo.cli",
+        "enrich",
+    )
+    command_list = _env_list("VERSIONING_REPRODUCE_COMMAND", provider)
+    reproduce_command = tuple(command_list) if command_list else default_command
+    return VersioningSettings(
+        enabled=enabled,
+        strategy=strategy,
+        metadata_root=metadata_root or DATA_DIR / "versioning",
+        dvc_remote=_get_value("VERSIONING_DVC_REMOTE", None, provider),
+        lakefs_repo=_get_value("VERSIONING_LAKEFS_REPO", None, provider),
+        reproduce_command=reproduce_command,
+    )
+
+
 def _get_value(name: str, default: str | None, provider: SecretsProvider) -> str | None:
     value = provider.get(name)
     return value if value is not None else default
@@ -324,6 +388,8 @@ POLICY_GUARDS: PolicySettings
 PLAN_COMMIT: PlanCommitSettings
 LINEAGE: LineageSettings
 LAKEHOUSE: LakehouseSettings
+DEPLOYMENT: DeploymentSettings
+VERSIONING: VersioningSettings
 
 
 def _build_firecrawl_settings(provider: SecretsProvider) -> FirecrawlSettings:
@@ -394,6 +460,8 @@ def configure(provider: SecretsProvider | None = None) -> None:
     global PLAN_COMMIT
     global LINEAGE
     global LAKEHOUSE
+    global DEPLOYMENT
+    global VERSIONING
 
     SECRETS_PROVIDER = provider or build_provider_from_environment()
 
@@ -563,6 +631,9 @@ def configure(provider: SecretsProvider | None = None) -> None:
         )
         or "flight_schools",
     )
+
+    DEPLOYMENT = _build_deployment_settings(SECRETS_PROVIDER)
+    VERSIONING = _build_versioning_settings(SECRETS_PROVIDER)
 
 
 def resolve_api_key(

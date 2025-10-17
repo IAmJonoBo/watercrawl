@@ -6,6 +6,8 @@
 - Promote reproducible, versioned storage for enriched tables via Delta Lake or Apache Iceberg.
 - Attach each published dataset to an immutable run artefact (DVC or lakeFS) with rollback and reproduce playbooks.
 - Update analyst and automation workflows so lineage and lakehouse controls are observable, auditable, and enforced in CI/CD.
+- Maintain clear separation between `dev/`, `tools/`, `app/`, and `dist/` so development experiments never bypass hardened
+  distribution policies.
 
 ## Delivery timeline
 
@@ -48,6 +50,9 @@
 - Automate snapshot creation after each successful pipeline run, attaching metadata (input hash, expectation suite version, OpenLineage run ID).
 - Extend CLI with `pipeline reproduce --run-id <id>` to fetch the correct snapshot and rerun enrichment deterministically.
 - Capture reproduction success metrics in `Next_Steps.md` quality gates.
+- ✅ **2025-10-17 update**: Added `VersioningManager` and deterministic dataframe fingerprinting so every run records a
+  `version.json` manifest containing input/output hashes, reproduction commands, and links to the lakehouse manifest. Dev and dist
+  environments consume the same metadata structure but dist disables Codex integrations to honour crawler guardrails.
 
 ### 5. Governance & documentation
 
@@ -56,6 +61,8 @@
 - Record decision trade-offs (Delta vs Iceberg, DVC vs lakeFS) in future ADRs.
 - Align security reviews with POPIA compliance, ensuring provenance artefacts do not leak personal data.
 - ✅ **2025-10-17 update**: CLI enrichment output now surfaces lineage artefact directories, enabling operators to verify provenance bundles during runbooks.
+- ✅ **2025-10-17 update**: Created top-level `dev/`, `tools/`, `app/`, and `dist/` directories with role-specific README files
+  to guide analysts, developers, and operators through the appropriate workflows and QA gates.
 
 ## Risks & mitigations
 

@@ -65,6 +65,7 @@ def _sample_report() -> models.PipelineReport:
 
 def test_build_openlineage_events_include_metrics(tmp_path: Path) -> None:
     report = _sample_report()
+    manifest_path = tmp_path / "manifest.json"
     context = LineageContext(
         run_id="run-123",
         namespace="aces-aerodynamics",
@@ -74,6 +75,11 @@ def test_build_openlineage_events_include_metrics(tmp_path: Path) -> None:
         output_uri="file://output.csv",
         evidence_path=tmp_path / "evidence.csv",
         dataset_version="2025-10-17",
+        lakehouse_uri="file://lakehouse/flight_schools",
+        extras={
+            "lakehouse_manifest": manifest_path,
+            "lakehouse_fingerprint": "abc123",
+        },
         execution_start=datetime(2025, 10, 17, 12, 0, 0),
     )
 
@@ -86,6 +92,8 @@ def test_build_openlineage_events_include_metrics(tmp_path: Path) -> None:
     assert metrics["rows_total"] == 1
     assert output_facets["datasetVersion"]["version"] == "2025-10-17"
     assert output_facets["evidenceLog"]["uri"].startswith("file://")
+    assert output_facets["lakehouse"]["fingerprint"] == "abc123"
+    assert output_facets["lakehouseManifest"]["uri"].startswith("file://")
 
 
 def test_prov_and_catalogue_documents_capture_sources(tmp_path: Path) -> None:
