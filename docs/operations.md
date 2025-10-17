@@ -13,11 +13,14 @@ poetry run pre-commit run --all-files
 poetry run dotenv-linter lint .env.example
 poetry run poetry build
 poetry run python -m firecrawl_demo.cli contracts data/sample.csv --format json
+poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
 Run the `contracts` command against the latest curated export (swap in the
 appropriate path if you are validating a non-sample dataset). The command exits
-non-zero on any expectation failure, mirroring CI contract enforcement.
+non-zero on any expectation or dbt test failure, mirroring CI contract
+enforcement. `dbt build --select tag:contracts` is invoked under the hood and
+archives run artefacts to `data/contracts/<timestamp>/` for provenance.
 
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command

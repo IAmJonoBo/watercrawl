@@ -11,7 +11,14 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeRemainingColumn
 
 from .audit import build_evidence_sink
-from .contracts import validate_curated_file
+from .contracts import (
+    DbtContractResult,
+    CuratedDatasetContractResult,
+    persist_contract_artifacts,
+    record_contracts_evidence,
+    run_dbt_contract_tests,
+    validate_curated_file,
+)
 from .excel import read_dataset
 from .mcp.server import CopilotMCPServer
 from .models import SchoolRecord
@@ -210,13 +217,15 @@ def enrich(
 def contracts(input_path: Path, output_format: str) -> None:
     """Run Great Expectations contracts against a curated dataset."""
 
-    result = validate_curated_file(input_path)
-    payload: dict[str, Any] = {
-        "success": result.success,
-        "statistics": result.statistics,
-        "unsuccessful_expectations": result.unsuccessful_expectations,
-        "expectation_suite_name": result.expectation_suite_name,
-        "meta": result.meta,
+    ge_result: CuratedDatasetContractResult = validate_curated_file(input_path)
+    dbt_result: DbtContractResult = run_dbt_contract_tests(input_path)
+
+    ge_payload: dict[str, Any] = {
+        "success": ge_result.success,
+        "statistics": ge_result.statistics,
+        "unsuccessful_expectations": ge_result.unsuccessful_expectations,
+        "expectation_suite_name": ge_result.expectation_suite_name,
+        "meta": ge_result.meta,
         "failed_expectations": [
             {
                 "expectation_type": entry.get("expectation_config", {}).get(
@@ -225,27 +234,64 @@ def contracts(input_path: Path, output_format: str) -> None:
                 "kwargs": entry.get("expectation_config", {}).get("kwargs", {}),
                 "result": entry.get("result", {}),
             }
-            for entry in result.results
+            for entry in ge_result.results
             if not entry.get("success", True)
         ],
     }
+
+    dbt_payload: dict[str, Any] = {
+        "success": dbt_result.success,
+        "total": dbt_result.total,
+        "passed": dbt_result.passed,
+        "failures": dbt_result.failures,
+        "elapsed": dbt_result.elapsed,
+        "target_path": str(dbt_result.target_path),
+        "log_path": str(dbt_result.log_path),
+        "results": dbt_result.results,
+    }
+
+    artifact_dir = persist_contract_artifacts(input_path, ge_payload, dbt_result)
+    record_contracts_evidence(input_path, ge_result, dbt_result, artifact_dir)
+
+    payload: dict[str, Any] = {
+        "success": ge_result.success and dbt_result.success,
+        "great_expectations": ge_payload,
+        "dbt": dbt_payload,
+        "artifact_dir": str(artifact_dir),
+    }
+
     if output_format == "json":
         click.echo(json.dumps(payload, indent=2))
     else:
         click.echo(
-            "Contracts " + ("passed" if result.success else "failed"),
+            "Contracts " + ("passed" if payload["success"] else "failed"),
         )
         click.echo(
-            f"Evaluated expectations: {payload['statistics'].get('evaluated_expectations', 0)}"
+            "Great Expectations: "
+            + f"{ge_payload['statistics'].get('successful_expectations', 0)} / "
+            + f"{ge_payload['statistics'].get('evaluated_expectations', 0)}"
         )
-        if payload["failed_expectations"]:
+        if ge_payload["failed_expectations"]:
             click.echo("Failing expectations:")
-            for failure in payload["failed_expectations"]:
+            for failure in ge_payload["failed_expectations"]:
                 expectation = failure.get("expectation_type", "unknown")
                 column = failure.get("kwargs", {}).get("column")
                 scope = f" on column '{column}'" if column else ""
                 click.echo(f" - {expectation}{scope}")
-    if not result.success:
+        click.echo(
+            "dbt tests: "
+            + f"{dbt_payload['passed']} passed / {dbt_payload['total']} executed"
+        )
+        if dbt_payload["failures"]:
+            click.echo("Failing dbt tests:")
+            for record in dbt_payload["results"]:
+                status = record.get("status")
+                if status and str(status).lower() not in {"pass", "skipped", "warn"}:
+                    click.echo(
+                        f" - {record.get('unique_id', record.get('name', 'unknown'))}: {status}"
+                    )
+
+    if not payload["success"]:
         raise click.exceptions.Exit(1)
 
 

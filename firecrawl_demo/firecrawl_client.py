@@ -19,7 +19,7 @@ class FirecrawlClient:
     api_key: str | None = None
     api_url: str | None = None
 
-    def _client(self) -> "Firecrawl":  # type: ignore
+    def _client(self) -> Firecrawl:  # type: ignore
         if Firecrawl is None:
             raise RuntimeError("Firecrawl SDK is not installed")
         try:
