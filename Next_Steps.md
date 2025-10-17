@@ -44,7 +44,7 @@
 - [x] Extend high-risk coverage edge cases for analyst UI, compliance, CLI, presets, and secrets modules (2025-10-17)
 - [x] Wire quality gate metrics, rollback plan emission, and documentation updates (2025-10-17)
 - [x] Enforce fresh evidence gating for high-risk updates and update docs (2025-10-18)
-- [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24) — Kickoff plan published in docs/data-quality.md (Phase 1.1 section); suite scaffolding scheduled Week 1.
+- [ ] Phase 1.1 — Draft Great Expectations/dbt suite covering validation + enrichment outputs (AT-24) — Kickoff plan published in docs/data-quality.md (Phase 1.1 section); suite scaffolding scheduled Week 1. ✅ Curated `great_expectations/` suite + CLI contracts command delivered; local GE state sanitised and operations runbook references the CLI flow; dbt + operationalisation pending.
 - [ ] Phase 1.2 — Embed Pint + Hypothesis contract tests for spreadsheet ingest (AT-29) — Execution roadmap outlined in docs/data-quality.md (Phase 1.2 section); fixtures and property suite queued.
 - [ ] Phase 2.1 — Emit OpenLineage + PROV-O metadata from pipeline runs (AT-25) — Implementation plan available in docs/lineage-lakehouse.md.
 - [ ] Phase 2.2 — Migrate curated outputs to Delta Lake/Iceberg + wire DVC/lakeFS snapshots (AT-26, AT-27) — Lakehouse roadmap captured in docs/lineage-lakehouse.md.
@@ -137,6 +137,7 @@
 - [x] Quickstart references `data/sample.csv` but the repo ships no sample input yet.
 
 - [ ] Optional Firecrawl integration pending real SDK availability; CLI/pipeline operate with research adapters for now.
+- [ ] Track Python <3.14 pin introduced for Great Expectations compatibility; revisit once upstream ships 3.14 wheels.
 - [ ] Align isort configuration (project vs CLI flags) to avoid manual --profile overrides.
 - [ ] Capture adapter contribution guide (with examples) once regulator/press adapters land.
 - [ ] Type stubs handled via `type: ignore`; consider adding official stubs to dependencies.
@@ -384,6 +385,15 @@ Why MCP here? It standardises how Copilot calls your stack, and it’s natively 
 - **whylogs** drift beyond thresholds or missing profiles for a promoted partition (AT‑30).
 - **Ragas** scores below thresholds for publish (AT‑31).
 - **OWASP LLM Top‑10** red‑team failure (AT‑32).
+
+
+## Links
+
+- [x] Operations runbook updated with Great Expectations contract execution guidance — Owner: Docs — Link: [docs/operations.md](docs/operations.md)
+
+## Risks/Notes
+
+- [ ] Running Great Expectations locally regenerates `great_expectations/uncommitted/config_variables.yml`; keep it ignored in VCS and document environment-specific overrides per analyst run.
 
 ## Baseline QA Snapshot — 2025-10-16
 

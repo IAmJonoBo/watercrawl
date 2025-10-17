@@ -38,6 +38,12 @@
 Phase 1.1 introduces automated contracts that gate curated outputs before they
 leave the enrichment pipeline. The delivery slices are:
 
+- ✅ **Suite scaffolding (Week 1) complete**: the repository now includes a
+  `great_expectations/` project with a `curated_dataset` expectation suite
+  covering schema, province/status taxonomies, HTTPS websites, and contact
+  hygiene checks. Run it locally via
+  `poetry run python -m firecrawl_demo.cli contracts data/output.csv` to produce
+  analyst-friendly failure reports and CI-friendly exit codes.
 - **Suite scaffolding (Week 1)**
   - Stand up a `great_expectations/` project rooted in the repo to co-locate
     batch checkpoints with sample data extracts.

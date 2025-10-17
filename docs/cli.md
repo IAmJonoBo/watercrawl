@@ -30,6 +30,16 @@ poetry run python -m firecrawl_demo.cli enrich data/input.csv --output data/outp
 - Displays a Rich-powered progress bar for text output by default (`--no-progress` to disable).
 - JSON responses now include an `adapter_failures` field so pipelines can alert on degraded runs.
 
+### `contracts`
+
+```bash
+poetry run python -m firecrawl_demo.cli contracts data/output.csv --format json
+```
+
+- Executes the curated Great Expectations suite stored under `great_expectations/`.
+- Reports failing expectations and their affected columns for triage.
+- Exits non-zero when any contract fails so CI and analysts can gate publishes.
+
 ### `mcp-server`
 
 ```bash
