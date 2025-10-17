@@ -1401,9 +1401,9 @@ pydantic-core==2.41.4 ; python_version >= "3.11" and python_version < "3.14" \
 pydantic-settings==2.11.0 ; python_version >= "3.11" and python_version < "3.14" \
     --hash=sha256:d0e87a1c7d33593beb7194adb8470fc426e95ba02af83a0f23474a04c9a08180 \
     --hash=sha256:fe2cea3413b9530d10f3a5875adffb17ada5c1e1bab0b2885546d7310415207c
-pydantic==2.12.2 ; python_version >= "3.11" and python_version < "3.14" \
-    --hash=sha256:25ff718ee909acd82f1ff9b1a4acfd781bb23ab3739adaa7144f19a6a4e231ae \
-    --hash=sha256:7b8fa15b831a4bbde9d5b84028641ac3080a4ca2cbd4a621a661687e741624fd
+pydantic==2.12.3; python_version >= "3.11" and python_version < "3.14" \
+    --hash=sha256:1da1c82b0fc140bb0103bc1441ffe062154c8d38491189751ee00fd8ca65ce74 \
+    --hash=sha256:6986454a854bc3bc6e5443e1369e06a3a456af9d339eda45510f517d9ea5c6bf
 pydeck==0.9.1 ; python_version >= "3.11" and python_version < "3.14" \
     --hash=sha256:b3f75ba0d273fc917094fa61224f3f6076ca8752b93d46faf3bcfd9f9d59b038 \
     --hash=sha256:f74475ae637951d63f2ee58326757f8d4f9cd9f2a457cf42950715003e2cb605
