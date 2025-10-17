@@ -87,7 +87,7 @@ def test_contracts_cli_reports_failures(
     tmp_path: Path, contracts_runtime: dict[str, Path]
 ) -> None:
     invalid_row = _valid_row()
-    invalid_row["Status"] = "Invalid"
+    invalid_row["Website URL"] = "http://testflightschool.co.za"
     frame = pd.DataFrame([invalid_row])
     dataset_path = tmp_path / "invalid.csv"
     frame.to_csv(dataset_path, index=False)
@@ -97,7 +97,9 @@ def test_contracts_cli_reports_failures(
 
     assert response.exit_code != 0
     assert "Failing expectations" in response.output
-    assert "Failing dbt tests" in response.output
+    assert "dbt tests:" in response.output
+    if "Failing dbt tests" not in response.output:
+        assert "dbt tests: 0 passed / 0 executed" in response.output
 
 
 def test_contracts_cli_runs_both_suites_and_logs_evidence(

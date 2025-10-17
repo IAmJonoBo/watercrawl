@@ -6,6 +6,31 @@ from typing import Any, Literal
 
 import pandas as pd
 
+from . import config
+
+_CANONICAL_PROVINCES = {province.lower(): province for province in config.PROVINCES}
+_UNKNOWN_PROVINCE = "Unknown"
+_CANONICAL_STATUSES = {status.lower(): status for status in config.CANONICAL_STATUSES}
+_STATUS_FALLBACK = "Needs Review"
+
+
+def normalize_province(value: Any) -> str:
+    if value is None:
+        return _UNKNOWN_PROVINCE
+    text = str(value).strip()
+    if not text:
+        return _UNKNOWN_PROVINCE
+    return _CANONICAL_PROVINCES.get(text.lower(), _UNKNOWN_PROVINCE)
+
+
+def normalize_status(value: Any) -> str:
+    if value is None:
+        return _STATUS_FALLBACK
+    text = str(value).strip()
+    if not text:
+        return _STATUS_FALLBACK
+    return _CANONICAL_STATUSES.get(text.lower(), _STATUS_FALLBACK)
+
 
 @dataclass
 class Organisation:
@@ -104,8 +129,8 @@ class SchoolRecord:
     def from_dataframe_row(cls, row: pd.Series) -> SchoolRecord:
         return cls(
             name=str(row.get("Name of Organisation", "")).strip(),
-            province=str(row.get("Province", "")).strip(),
-            status=str(row.get("Status", "")).strip() or "Candidate",
+            province=normalize_province(row.get("Province")),
+            status=normalize_status(row.get("Status")),
             website_url=_clean_value(row.get("Website URL")),
             contact_person=_clean_value(row.get("Contact Person")),
             contact_number=_clean_value(row.get("Contact Number")),

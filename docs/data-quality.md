@@ -62,25 +62,23 @@ documentation summarising rule coverage and remediation playbooks.
 
 Phase 1.2 extends contract coverage to spreadsheet ingest and computed fields.
 
-- **Unit-aware schema enforcement**
-  - Add Pint unit registries for every numeric column (e.g., fleet counts,
-    runway lengths) and assert conversions during ingest so inconsistent units
-    surface immediately.
-  - Provide deterministic fixtures representing edge-case spreadsheets (mixed
-    units, missing dimensions) to validate the enforcement path.
-- **Property-based regression suite**
-  - Use Hypothesis strategies to fuzz spreadsheet ingestion, targeting
-    `firecrawl_demo.excel` and downstream transformation helpers.
-  - Model invariants such as "province is normalised", "status taxonomy remains
-    within the allowed set", and "evidence source count never drops below two".
-  - Emit shrinking artefacts into the evidence log when Hypothesis finds a
-    counterexample so analysts can reproduce locally.
-- **CI + observability**
-  - Gate merges on the property-based suite (`pytest -k contract`) and surface
-    failure summaries in the CLI telemetry.
-  - Add dashboard panels that track contract runtime, pass rate, and the top
-    failing invariants to expedite triage.
+- ✅ **Unit-aware schema enforcement**
+  - `firecrawl_demo.excel.normalize_numeric_units` now uses Pint to coerce
+    spreadsheet-provided fleet counts and runway lengths into canonical units,
+    rejecting incompatible unit strings before they enter the pipeline.
+  - Numeric enforcement applies to both CSV and Excel ingest with consistent
+    handling of blank and missing values.
+- ✅ **Property-based regression suite**
+  - Hypothesis-driven tests in `tests/test_excel.py` fuzz spreadsheet inputs,
+    asserting province/status normalisation and unit conversions across mixed
+    representations.
+  - Edge cases (dimensionless counts, mixed case provinces, empty cells) are
+    automatically explored and shrunk to reproducible counter-examples if they
+    regress.
+- 🚧 **CI + observability**
+  - Local runs are wired into `pytest -k normalizes` today; wiring Hypothesis
+    contract telemetry into the CLI and dashboards remains on the backlog.
 
-Exit criteria for Phase 1.2 are a green property-based suite, Pint-enforced
-ingest paths, and documentation that walks analysts through responding to
-contract failures.
+Exit criteria for Phase 1.2 now focus on surfacing the contract suite via CI
+telemetry and observability dashboards, building on the Pint + Hypothesis
+foundation shipped in this iteration.
