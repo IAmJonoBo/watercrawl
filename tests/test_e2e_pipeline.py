@@ -4,10 +4,10 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from firecrawl_demo import config
-from firecrawl_demo.pipeline import Pipeline
-from firecrawl_demo.progress import PipelineProgressListener
-from firecrawl_demo.research import ResearchAdapter, ResearchFinding
+from firecrawl_demo.core import config
+from firecrawl_demo.core.pipeline import Pipeline
+from firecrawl_demo.core.progress import PipelineProgressListener
+from firecrawl_demo.integrations.research import ResearchAdapter, ResearchFinding
 
 
 class StubResearchAdapter(ResearchAdapter):

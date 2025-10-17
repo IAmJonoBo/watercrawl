@@ -9,13 +9,13 @@ import pandas as pd
 import pytest
 from click.testing import CliRunner
 
-from firecrawl_demo import config
-from firecrawl_demo.cli import cli
-from firecrawl_demo.contracts import (
+from firecrawl_demo.core import config
+from firecrawl_demo.integrations.contracts import (
     DbtContractResult,
     run_dbt_contract_tests,
     validate_curated_dataframe,
 )
+from firecrawl_demo.interfaces.cli import cli
 
 
 def _valid_row() -> dict[str, str]:

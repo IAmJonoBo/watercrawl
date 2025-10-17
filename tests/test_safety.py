@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from firecrawl_demo.safety import (
+from firecrawl_demo.governance.safety import (
     SafetyDecision,
     SafetyPolicy,
     evaluate_plan_commit,

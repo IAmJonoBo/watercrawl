@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from firecrawl_demo.rag_evaluation import RagEvaluationConfig, evaluate_responses
+from firecrawl_demo.governance.rag_evaluation import (
+    RagEvaluationConfig,
+    evaluate_responses,
+)
 
 
 def test_evaluate_responses_returns_threshold_gate() -> None:

@@ -1,8 +1,8 @@
 import csv
 from pathlib import Path
 
-from firecrawl_demo.audit import CSVEvidenceSink
-from firecrawl_demo.models import EvidenceRecord
+from firecrawl_demo.core.audit import CSVEvidenceSink
+from firecrawl_demo.core.models import EvidenceRecord
 
 
 def test_csv_evidence_sink_appends(tmp_path: Path) -> None:

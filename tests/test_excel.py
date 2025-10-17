@@ -8,7 +8,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.pandas import column, data_frames, range_indexes
 
-from firecrawl_demo import config, excel
+from firecrawl_demo.core import config, excel
 
 
 def test_excel_import():

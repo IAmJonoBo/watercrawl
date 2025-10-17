@@ -8,8 +8,9 @@ from typing import Any, cast
 import pytest
 from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 
-from firecrawl_demo import config, secrets
-from firecrawl_demo.secrets import (
+from firecrawl_demo.core import config
+from firecrawl_demo.governance import secrets
+from firecrawl_demo.governance.secrets import (
     AwsSecretsManagerProvider,
     AzureKeyVaultProvider,
     ChainedSecretsProvider,

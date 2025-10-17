@@ -12,7 +12,7 @@ poetry run bandit -r firecrawl_demo
 poetry run pre-commit run --all-files
 poetry run dotenv-linter lint .env.example
 poetry run poetry build
-poetry run python -m firecrawl_demo.cli contracts data/sample.csv --format json
+poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample.csv --format json
 poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
@@ -40,7 +40,7 @@ release reviews so operators can replay or roll back snapshots deterministically
 
 ## Secrets Provisioning
 
-The stack now resolves credentials and feature flags through `firecrawl_demo.secrets`.
+The stack now resolves credentials and feature flags through `firecrawl_demo.governance.secrets`.
 
 1. Choose a backend by setting `SECRETS_BACKEND` to `env`, `aws`, or `azure`.
 2. For local development (`env`), populate `.env` or OS environment variables as before.

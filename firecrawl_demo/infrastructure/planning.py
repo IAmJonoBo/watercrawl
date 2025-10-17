@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import cast
 
-from .. import config
+from firecrawl_demo.core import config
 
 
 @dataclass(frozen=True)

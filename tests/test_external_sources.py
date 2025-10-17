@@ -1,4 +1,4 @@
-from firecrawl_demo import external_sources
+from firecrawl_demo.core import external_sources
 
 
 def test_external_sources_import():
