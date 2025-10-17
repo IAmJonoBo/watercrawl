@@ -2,19 +2,36 @@
 
 Modular toolkit for validating and enriching South African flight-school datasets. The stack emphasises evidence-backed research, POPIA-compliant contact handling, and automation surfaces for analysts and GitHub Copilot.
 
-## Quickstart
+## Getting Started
+
+**Python version required:** `>=3.11,<3.14` (recommended: 3.13.x)
+
+**Environment setup:**
 
 ```bash
+# Install Poetry if not already installed
+pip install poetry
+
+# Set Python version for the project (recommended: 3.13)
+poetry env use 3.13
+
+# Install all dependencies (including Firecrawl SDK)
 poetry install --no-root
+
+# Run CLI commands
 poetry run python -m firecrawl_demo.cli validate data/sample.csv --format json
 poetry run python -m firecrawl_demo.cli enrich data/sample.csv --output data/sample_enriched.csv
 poetry run python -m firecrawl_demo.cli contracts data/sample_enriched.csv --format text
 ```
 
-The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the
-pipeline without additional setup.
+The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
 
-Set `FIRECRAWL_API_KEY` in `.env` if you intend to plug in the Firecrawl SDK.
+**Firecrawl SDK integration:**
+
+- The [official Firecrawl Python SDK](https://docs.firecrawl.dev/sdks/python) is included as a dependency.
+- Set your `FIRECRAWL_API_KEY` in a `.env` file or as an environment variable to enable Firecrawl-powered enrichment.
+
+**No requirements.txt needed:** Poetry is the single source of dependency management. Use `pyproject.toml` for all dependencies.
 
 ## Features
 
