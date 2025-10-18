@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 # Create a non-root user and switch to it
 RUN useradd --create-home appuser
