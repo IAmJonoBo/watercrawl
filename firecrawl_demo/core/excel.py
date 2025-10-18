@@ -211,15 +211,22 @@ def _coerce_to_quantity(value: Any, canonical_unit: str, column: str) -> Any:
             return None
         try:
             quantity = UNIT_REGISTRY(text)
-            if isinstance(quantity.magnitude, Real):
-                return UNIT_REGISTRY.Quantity(quantity.magnitude, canonical_unit)
-            return quantity
         except (UndefinedUnitError, ValueError):
             try:
                 magnitude = float(text)
             except ValueError as exc:  # pragma: no cover - invalid literal
                 raise ValueError(f"{column} value '{value}' is not a number") from exc
             return UNIT_REGISTRY.Quantity(magnitude, canonical_unit)
+        if hasattr(quantity, "magnitude"):
+            magnitude = quantity.magnitude  # type: ignore[attr-defined]
+            if isinstance(magnitude, Real):
+                if str(getattr(quantity, "units", "dimensionless")) == "dimensionless":
+                    return UNIT_REGISTRY.Quantity(magnitude, canonical_unit)
+                return quantity
+            return quantity
+        if isinstance(quantity, Real):
+            return UNIT_REGISTRY.Quantity(quantity, canonical_unit)
+        raise ValueError(f"{column} value '{value}' is not supported")
 
     raise ValueError(f"{column} value '{value}' is not supported")
 

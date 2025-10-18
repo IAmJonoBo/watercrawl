@@ -6,7 +6,14 @@ cli = _analyst_cli.cli
 RichPipelineProgress = _analyst_cli.RichPipelineProgress
 LineageManager = _analyst_cli.LineageManager
 build_lakehouse_writer = _analyst_cli.build_lakehouse_writer
-# _resolve_progress_flag = _analyst_cli._resolve_progress_flag  # Removed direct access to protected member
+
+
+def _resolve_progress_flag(output_format: str, requested: bool | None) -> bool:
+    """Compatibility wrapper for the analyst progress toggle helper."""
+
+    return _analyst_cli._resolve_progress_flag(output_format, requested)
+
+
 Progress = _analyst_cli.Progress
 asyncio = _analyst_cli.asyncio
 CopilotMCPServer = _analyst_cli.CopilotMCPServer
@@ -20,7 +27,7 @@ __all__ = [
     "RichPipelineProgress",
     "LineageManager",
     "build_lakehouse_writer",
-    # "_resolve_progress_flag",  # Removed from __all__ due to protected member access
+    "_resolve_progress_flag",
     "Progress",
     "asyncio",
     "CopilotMCPServer",

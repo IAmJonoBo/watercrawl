@@ -17,16 +17,34 @@ def test_qa_plan_outputs_table() -> None:
     assert "Pytest" in result.output
 
 
+class _RecordingRunner:
+    """Test helper implementing the CommandRunner protocol."""
+
+    def __init__(self, capture: dict[str, Any]):
+        self.capture = capture
+
+    def __call__(
+        self,
+        specs,
+        *,
+        dry_run: bool,
+        fail_fast: bool = False,
+        console=None,
+    ) -> int:
+        self.capture["specs"] = specs
+        self.capture["dry_run"] = dry_run
+        self.capture["fail_fast"] = fail_fast
+        self.capture["console"] = console
+        return 0
+
+    def describe(self) -> str:
+        return "recording test runner"
+
+
 def test_qa_all_dry_run_skips_dbt() -> None:
     captured: dict[str, Any] = {}
 
-    def fake_run(specs, *, dry_run: bool, fail_fast: bool = False, console=None):  # type: ignore[override]
-        captured["specs"] = specs
-        captured["dry_run"] = dry_run
-        captured["fail_fast"] = fail_fast
-        return 0
-
-    with dev_cli.override_command_runner(fake_run):
+    with dev_cli.override_command_runner(_RecordingRunner(captured)):
         runner = CliRunner()
         result = runner.invoke(dev_cli.cli, ["qa", "all", "--dry-run", "--skip-dbt"])
     assert result.exit_code == 0
@@ -40,12 +58,7 @@ def test_qa_all_dry_run_skips_dbt() -> None:
 def test_qa_security_skip_secrets() -> None:
     captured: dict[str, Any] = {}
 
-    def fake_run(specs, *, dry_run: bool, fail_fast: bool = False, console=None):  # type: ignore[override]
-        captured["specs"] = specs
-        captured["dry_run"] = dry_run
-        return 0
-
-    with dev_cli.override_command_runner(fake_run):
+    with dev_cli.override_command_runner(_RecordingRunner(captured)):
         runner = CliRunner()
         result = runner.invoke(
             dev_cli.cli,

@@ -47,7 +47,8 @@ repos:
         pass_filenames: false
       - id: markdownlint-cli2
         name: markdownlint-cli2
-        entry: markdownlint-cli2 --config .markdownlint-cli2.yaml
+        entry: npx --yes markdownlint-cli2
+        args: [--config, .markdownlint-cli2.yaml]
         language: system
         types_or: [markdown]
       - id: actionlint
@@ -55,7 +56,7 @@ repos:
         entry: actionlint
         language: system
         types_or: [yaml]
-        files: \.github/workflows/.*\.ya?ml$
+        files: ^\.github/workflows/.*\.ya?ml$
   - repo: https://github.com/hadolint/hadolint
     rev: v2.14.0
     hooks:
