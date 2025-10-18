@@ -48,6 +48,7 @@
 - [x] 2025-10-18 — SQLFluff/duckdb hardening: runner reinitialises corrupt DuckDB targets, added regression tests for CLI env setup, pinned Dockerfile Poetry install, resolved markdownlint/hadolint gating, and reran full QA suite (pytest, coverage, ruff, mypy, bandit, safety, sqlfluff, markdownlint, yamllint, hadolint, actionlint, dbt, build).
 - [x] 2025-10-18 — Warning remediation: reordered marshmallow filters, suppressed dbt CLI deprecations, closed dbt log handlers, and reran baseline QA (pytest, ruff, mypy, bandit, safety, build, dbt). Pre-commit still failing on hadolint/actionlint downloads and pymarkdown MD013 allowances.
 - [x] 2025-10-18 — CLI + QA hardening: restored `_resolve_progress_flag` shim, tightened Pint quantity coercion for dimensionless inputs, implemented typed dev CLI command runner overrides, and reworked markdownlint/actionlint hooks to install via `npx`/downloaded binaries. Full baseline rerun (pytest, ruff, mypy, bandit, safety, pre-commit, dbt) green.
+- [x] 2025-10-18 — Extended regression coverage for pipeline orchestration, Excel helpers, and research adapters; added defensive unit tests for lakehouse/versioning flows and Firecrawl behaviour, then reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build).
 
 ---
 

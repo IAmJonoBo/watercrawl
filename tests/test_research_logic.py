@@ -1,9 +1,14 @@
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
+
 import pytest
 
 from firecrawl_demo.core import config
 from firecrawl_demo.core.external_sources import triangulate_organisation
 from firecrawl_demo.governance.secrets import EnvSecretsProvider
 from firecrawl_demo.integrations import research
+from firecrawl_demo.integrations.firecrawl_client import FirecrawlClient
 from firecrawl_demo.integrations.research import (
     AdapterLoaderSettings,
     NullResearchAdapter,
@@ -325,3 +330,196 @@ def test_exemplar_adapters_enrich_from_registry(monkeypatch):
         "press" in note.lower() or "coverage" in note.lower()
         for note in merged.investigation_notes
     )
+
+
+@pytest.mark.asyncio()
+async def test_composite_adapter_lookup_async_combines_findings() -> None:
+    adapter = research.CompositeResearchAdapter(
+        (
+            DummyAdapter(ResearchFinding(contact_person="Nomsa")),
+            DummyAdapter(
+                ResearchFinding(
+                    contact_email="info@example.org",
+                    sources=["https://example.org/profile"],
+                )
+            ),
+        )
+    )
+
+    result = await adapter.lookup_async("Example Org", "Gauteng")
+    assert result.contact_person == "Nomsa"
+    assert result.contact_email == "info@example.org"
+    assert "https://example.org/profile" in result.sources
+
+
+@pytest.mark.asyncio()
+async def test_lookup_with_adapter_async_prefers_async_method() -> None:
+    class AsyncAdapter:
+        async def lookup_async(
+            self, organisation: str, province: str
+        ) -> ResearchFinding:
+            assert organisation and province
+            return ResearchFinding(notes="async-path")
+
+        def lookup(
+            self, organisation: str, province: str
+        ) -> ResearchFinding:  # pragma: no cover
+            raise AssertionError("Synchronous lookup should not be used")
+
+    result = await research.lookup_with_adapter_async(AsyncAdapter(), "Org", "GP")
+    assert result.notes == "async-path"
+
+
+@pytest.mark.asyncio()
+async def test_lookup_with_adapter_async_wraps_sync_adapter() -> None:
+    class SyncAdapter:
+        def __init__(self) -> None:
+            self.called = False
+
+        def lookup(self, organisation: str, province: str) -> ResearchFinding:
+            self.called = True
+            return ResearchFinding(notes="sync-path")
+
+    adapter = SyncAdapter()
+    result = await research.lookup_with_adapter_async(adapter, "Org", "GP")
+    assert adapter.called
+    assert result.notes == "sync-path"
+
+
+def test_firecrawl_research_adapter_respects_feature_flag(monkeypatch) -> None:
+    flags = config.FeatureFlags(
+        enable_firecrawl_sdk=False,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+
+    adapter = research.FirecrawlResearchAdapter()
+    result = adapter.lookup("Example Org", "Gauteng")
+    assert "disabled by feature flag" in result.notes
+
+
+def test_firecrawl_research_adapter_blocks_when_network_disabled(monkeypatch) -> None:
+    flags = config.FeatureFlags(
+        enable_firecrawl_sdk=True,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+    monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", False)
+
+    class GuardClient(FirecrawlClient):
+        def __init__(self) -> None:
+            super().__init__(api_key=None, api_url=None)
+            self.search_called = False
+
+        def search(
+            self, query: str, *, limit: int = 5
+        ) -> dict[str, object]:  # pragma: no cover - should not run
+            self.search_called = True
+            raise AssertionError("network calls should be skipped")
+
+        def extract(
+            self, urls: Iterable[str], prompt: str
+        ) -> dict[str, object]:  # pragma: no cover - should not run
+            raise AssertionError("network calls should be skipped")
+
+    client = GuardClient()
+    adapter = research.FirecrawlResearchAdapter(client)
+    result = adapter.lookup("Example Org", "Gauteng")
+    assert "network research disabled" in result.notes
+    assert not client.search_called
+
+
+def test_firecrawl_research_adapter_collects_sources(monkeypatch) -> None:
+    flags = config.FeatureFlags(
+        enable_firecrawl_sdk=True,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+    monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", True)
+
+    def _summary_override(payload: Mapping[str, object]) -> dict[str, str | None]:
+        def _maybe(value: object) -> str | None:
+            return value if isinstance(value, str) else None
+
+        return {
+            "contact_person": _maybe(payload.get("contact_person")),
+            "contact_email": _maybe(payload.get("contact_email")),
+            "contact_phone": _maybe(payload.get("contact_phone")),
+            "website_url": _maybe(payload.get("website_url")),
+            "physical_address": _maybe(payload.get("physical_address")),
+            "ownership_change": _maybe(payload.get("ownership_change")),
+            "rebrand_note": _maybe(payload.get("rebrand_note")),
+        }
+
+    monkeypatch.setattr(research.core, "summarize_extract_payload", _summary_override)
+
+    class TrackingClient(FirecrawlClient):
+        def __init__(self) -> None:
+            super().__init__(api_key=None, api_url=None)
+            self.search_args: tuple[str, int] | None = None
+            self.extract_args: tuple[tuple[str, ...], str] | None = None
+
+        def search(self, query: str, *, limit: int = 5) -> dict[str, object]:
+            self.search_args = (query, limit)
+            return {
+                "data": {
+                    "results": [
+                        {"url": "https://example.org/contact"},
+                        {"link": "https://official.gov.za/profile"},
+                    ]
+                }
+            }
+
+        def extract(self, urls: Iterable[str], prompt: str) -> dict[str, object]:
+            self.extract_args = (tuple(urls), prompt)
+            return {
+                "contact_person": "Thabo Ndlovu",
+                "contact_email": "thabo.ndlovu@official.gov.za",
+                "contact_phone": "+27 10 555 0100",
+                "website_url": "https://official.gov.za/profile",
+                "physical_address": "123 Aviation Way",
+                "ownership_change": "Ownership updated in 2024",
+                "rebrand_note": "Rebrand announced in March 2024",
+            }
+
+    client = TrackingClient()
+    adapter = research.FirecrawlResearchAdapter(client)
+    result = adapter.lookup("Example Org", "Gauteng")
+
+    assert client.search_args is not None
+    assert client.extract_args is not None
+    assert "https://official.gov.za/profile" in result.sources
+    assert result.contact_person == "Thabo Ndlovu"
+    assert result.confidence == 70
+    assert result.physical_address == "123 Aviation Way"
+    assert any(
+        "Ownership" in note or "Rebrand" in note for note in result.investigation_notes
+    )
+
+
+def test_extract_urls_and_unique_filters_duplicates() -> None:
+    urls = research.core._extract_urls(
+        {
+            "data": {
+                "results": [
+                    {"url": "https://example.org"},
+                    {"website": "https://example.org"},
+                    {"link": "https://official.gov.za"},
+                ]
+            }
+        }
+    )
+    assert urls == ["https://example.org", "https://official.gov.za"]
+
+    assert research.core._unique(
+        ["", "https://official.gov.za", "https://official.gov.za"]
+    ) == ["https://official.gov.za"]
