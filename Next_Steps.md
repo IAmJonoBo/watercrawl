@@ -29,6 +29,13 @@
 
 ---
 
+## Steps (iteration log)
+
+- [x] 2025-10-18 — Baseline QA suite re-validated; scripted cleanup keeps local artefacts aligned with CI and unblocks failing pushes.
+- [x] 2025-10-18 — Phase 2 hygiene: refreshed governance/drift modules via `pyupgrade` and documented the cleanup workflow for analysts.
+
+---
+
 ## 2) Red‑Team Integration — Quick Index (WC‑01 … WC‑20)
 
 Execute in this order; each item must meet its gate before promotion.
@@ -90,6 +97,7 @@ Execute in this order; each item must meet its gate before promotion.
 ## 6) Links (End)
 
 - [x] Operations runbook — Great Expectations contract execution guidance → `docs/operations.md`
+- [x] Cleanup automation — `scripts/cleanup.py`
 - [ ] Lineage & lakehouse configuration → `docs/lineage-lakehouse.md`
 - [ ] Data quality suites (GX/dbt/Deequ) → `docs/data-quality.md`
 - [ ] Codex DX bundle & evals → `codex/README.md`, `codex/evals/promptfooconfig.yaml`
