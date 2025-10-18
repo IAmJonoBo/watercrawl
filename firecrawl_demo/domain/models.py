@@ -4,7 +4,16 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+    PandasSeries = pd.Series
+    PandasDataFrame = pd.DataFrame
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
+    PandasSeries = Any  # type: ignore
+    PandasDataFrame = Any  # type: ignore
 
 from firecrawl_demo.core import config
 
@@ -12,6 +21,13 @@ if TYPE_CHECKING:
     from firecrawl_demo.integrations.storage.lakehouse import LakehouseManifest
     from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
     from firecrawl_demo.integrations.storage.versioning import VersionInfo
+    if _PANDAS_AVAILABLE:
+        import pandas as pd
+        PandasSeries = pd.Series
+        PandasDataFrame = pd.DataFrame
+    else:
+        PandasSeries = Any  # type: ignore
+        PandasDataFrame = Any  # type: ignore
 
 EXPECTED_COLUMNS = [
     "Name of Organisation",
@@ -141,7 +157,7 @@ class SchoolRecord:
     contact_email: str | None
 
     @classmethod
-    def from_dataframe_row(cls, row: pd.Series) -> SchoolRecord:
+    def from_dataframe_row(cls, row: Any) -> SchoolRecord:
         return cls(
             name=str(row.get("Name of Organisation", "")).strip(),
             province=normalize_province(row.get("Province")),
@@ -170,7 +186,7 @@ class EnrichmentResult:
     issues: list[str] = field(default_factory=list)
     evidence: EvidenceRecord | None = None
 
-    def apply(self, frame: pd.DataFrame, index: int) -> None:
+    def apply(self, frame: Any, index: int) -> None:
         for key, value in self.record.as_dict().items():
             if value is not None:
                 frame.at[index, key] = value
@@ -204,7 +220,7 @@ class RollbackPlan:
 
 @dataclass
 class PipelineReport:
-    refined_dataframe: pd.DataFrame
+    refined_dataframe: Any
     validation_report: ValidationReport
     evidence_log: list[EvidenceRecord]
     metrics: dict[str, int]

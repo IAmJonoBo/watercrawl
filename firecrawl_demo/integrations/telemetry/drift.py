@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.integrations.integration_plugins import (
     IntegrationPlugin,
@@ -52,7 +58,7 @@ def _merge_categories(*mappings: Mapping[str, int]) -> set[str]:
 
 
 def compare_to_baseline(
-    frame: pd.DataFrame, baseline: DriftBaseline, threshold: float
+    frame: Any, baseline: DriftBaseline, threshold: float
 ) -> DriftReport:
     """Compare observed distributions to a stored baseline and flag drift."""
 

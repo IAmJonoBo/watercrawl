@@ -10,7 +10,12 @@ from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.application.interfaces import EvidenceSink, PipelineService
 from firecrawl_demo.application.progress import (
@@ -23,7 +28,16 @@ from firecrawl_demo.application.quality import (
     QualityGateDecision,
 )
 from firecrawl_demo.core import config
-from firecrawl_demo.core.excel import EXPECTED_COLUMNS, read_dataset, write_dataset
+
+if _PANDAS_AVAILABLE:
+    from firecrawl_demo.core.excel import EXPECTED_COLUMNS, read_dataset, write_dataset
+else:
+    EXPECTED_COLUMNS = []  # type: ignore
+    def read_dataset(path: Any) -> Any:  # type: ignore
+        raise NotImplementedError("Dataset operations require pandas (Python < 3.14)")
+    def write_dataset(df: Any, path: Any) -> None:  # type: ignore
+        raise NotImplementedError("Dataset operations require pandas (Python < 3.14)")
+
 from firecrawl_demo.domain.compliance import (
     canonical_domain,
     confidence_for_status,
@@ -126,7 +140,7 @@ class Pipeline(PipelineService):
 
     def run_dataframe(
         self,
-        frame: pd.DataFrame,
+        frame: Any,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
     ) -> PipelineReport:
@@ -146,7 +160,7 @@ class Pipeline(PipelineService):
 
     async def run_dataframe_async(
         self,
-        frame: pd.DataFrame,
+        frame: Any,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
     ) -> PipelineReport:
@@ -522,18 +536,20 @@ class Pipeline(PipelineService):
             return self._list_sanity_issues()
         raise KeyError(task)
 
-    def _frame_from_payload(self, payload: dict[str, object]) -> pd.DataFrame:
+    def _frame_from_payload(self, payload: dict[str, object]) -> Any:
         if "path" in payload:
             return read_dataset(Path(str(payload["path"])))
         if "rows" in payload:
             rows_obj = payload["rows"] or []
             if not isinstance(rows_obj, list):
                 raise ValueError("Payload 'rows' must be a list of mappings")
-            return pd.DataFrame(list(rows_obj), columns=list(EXPECTED_COLUMNS))
+            if not _PANDAS_AVAILABLE:
+                raise NotImplementedError("DataFrame creation requires pandas (Python < 3.14)")
+            return pd.DataFrame(list(rows_obj), columns=list(EXPECTED_COLUMNS))  # type: ignore
         raise ValueError("Payload must include 'path' or 'rows'")
 
     def _apply_record(
-        self, frame: pd.DataFrame, index: Hashable, record: SchoolRecord
+        self, frame: Any, index: Hashable, record: SchoolRecord
     ) -> None:
         frame_cast = cast(Any, frame)
         for column, value in record.as_dict().items():
@@ -677,7 +693,7 @@ class Pipeline(PipelineService):
         candidate = source.lower()
         return any(keyword in candidate for keyword in _OFFICIAL_KEYWORDS)
 
-    def _describe_changes(self, original_row: pd.Series, record: SchoolRecord) -> str:
+    def _describe_changes(self, original_row: Any, record: SchoolRecord) -> str:
         changes: list[str] = []
         mapping = {
             "Website URL": record.website_url,
@@ -696,7 +712,7 @@ class Pipeline(PipelineService):
     def _compose_evidence_notes(
         self,
         finding: ResearchFinding,
-        original_row: pd.Series,
+        original_row: Any,
         record: SchoolRecord,
         *,
         has_official_source: bool,
@@ -845,7 +861,7 @@ class Pipeline(PipelineService):
         return updated, notes, findings, normalized_sources, cleared_columns
 
     def _detect_duplicate_schools(
-        self, frame: pd.DataFrame, row_lookup: dict[Hashable, int]
+        self, frame: Any, row_lookup: dict[Hashable, int]
     ) -> list[SanityCheckFinding]:
         if "Name of Organisation" not in frame:
             return []

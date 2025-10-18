@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.integrations.integration_plugins import (
     IntegrationPlugin,
@@ -14,7 +19,7 @@ from firecrawl_demo.integrations.integration_plugins import (
 
 
 def build_csvw_metadata(
-    *, frame: pd.DataFrame, dataset_uri: str, evidence_log_uri: str | None = None
+    *, frame: Any, dataset_uri: str, evidence_log_uri: str | None = None
 ) -> dict[str, Any]:
     """Return CSVW metadata describing the enriched dataset."""
 

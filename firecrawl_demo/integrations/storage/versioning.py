@@ -9,7 +9,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.core import config
 from firecrawl_demo.integrations.integration_plugins import (
@@ -23,7 +28,7 @@ from firecrawl_demo.integrations.integration_plugins import (
 from .lakehouse import LakehouseManifest
 
 
-def fingerprint_dataframe(dataframe: pd.DataFrame) -> str:
+def fingerprint_dataframe(dataframe: Any) -> str:
     """Generate a deterministic fingerprint for the provided dataframe."""
 
     normalized = dataframe.reset_index(drop=True).reindex(

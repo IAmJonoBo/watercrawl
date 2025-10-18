@@ -14,7 +14,13 @@ from firecrawl_demo.core import config
 from firecrawl_demo.domain.compliance import append_evidence_log
 
 from .dbt_runner import DbtContractResult
-from .great_expectations_runner import CuratedDatasetContractResult
+
+try:
+    from .great_expectations_runner import CuratedDatasetContractResult
+    GREAT_EXPECTATIONS_AVAILABLE = True
+except ImportError:
+    CuratedDatasetContractResult = Any  # type: ignore
+    GREAT_EXPECTATIONS_AVAILABLE = False
 
 _CONTRACTS_DIR_ENV = "CONTRACTS_ARTIFACT_DIR"
 
@@ -56,7 +62,7 @@ def persist_contract_artifacts(
 
 def record_contracts_evidence(
     dataset_path: Path,
-    ge_result: CuratedDatasetContractResult,
+    ge_result: Any,
     dbt_result: DbtContractResult,
     artifact_dir: Path,
     sink: EvidenceSink,

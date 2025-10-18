@@ -7,7 +7,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.core import config
 from firecrawl_demo.integrations.integration_plugins import (
@@ -52,7 +57,7 @@ class LocalLakehouseWriter:
     def enabled(self) -> bool:
         return self._config.enabled
 
-    def write(self, run_id: str, dataframe: pd.DataFrame) -> LakehouseManifest:
+    def write(self, run_id: str, dataframe: Any) -> LakehouseManifest:
         if not self.enabled:
             table_dir = self._config.root_path / "disabled"
             table_dir.mkdir(parents=True, exist_ok=True)

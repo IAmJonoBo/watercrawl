@@ -16,11 +16,23 @@ from firecrawl_demo.integrations.integration_plugins import (
 )
 
 from .dbt_runner import DbtContractResult, run_dbt_contract_tests
-from .great_expectations_runner import (
-    CuratedDatasetContractResult,
-    validate_curated_dataframe,
-    validate_curated_file,
-)
+
+# Conditionally import Great Expectations components if available
+try:
+    import great_expectations  # noqa: F401
+    from .great_expectations_runner import (
+        CuratedDatasetContractResult,
+        validate_curated_dataframe,
+        validate_curated_file,
+    )
+    GREAT_EXPECTATIONS_AVAILABLE = True
+except ImportError:
+    # Define dummy types/functions when Great Expectations is not available
+    CuratedDatasetContractResult = None  # type: ignore
+    validate_curated_dataframe = None  # type: ignore
+    validate_curated_file = None  # type: ignore
+    GREAT_EXPECTATIONS_AVAILABLE = False
+
 from .operations import persist_contract_artifacts, record_contracts_evidence
 
 if TYPE_CHECKING:
@@ -65,13 +77,29 @@ def _contracts_health_probe(context: PluginContext) -> PluginHealthStatus:
 
 
 def _build_contracts_toolkit(context: PluginContext) -> ContractsToolkit:
-    return ContractsToolkit(
-        validate_dataframe=validate_curated_dataframe,
-        validate_file=validate_curated_file,
-        run_dbt_contracts=run_dbt_contract_tests,
-        persist_artifacts=persist_contract_artifacts,
-        record_evidence=record_contracts_evidence,
-    )
+    if GREAT_EXPECTATIONS_AVAILABLE:
+        return ContractsToolkit(
+            validate_dataframe=validate_curated_dataframe,  # type: ignore
+            validate_file=validate_curated_file,  # type: ignore
+            run_dbt_contracts=run_dbt_contract_tests,
+            persist_artifacts=persist_contract_artifacts,
+            record_evidence=record_contracts_evidence,
+        )
+    else:
+        # Provide dummy functions when Great Expectations is not available
+        def dummy_validate_dataframe(df):  # type: ignore
+            raise NotImplementedError("Great Expectations not available (requires Python < 3.14)")
+        
+        def dummy_validate_file(path):  # type: ignore
+            raise NotImplementedError("Great Expectations not available (requires Python < 3.14)")
+        
+        return ContractsToolkit(
+            validate_dataframe=dummy_validate_dataframe,
+            validate_file=dummy_validate_file,
+            run_dbt_contracts=run_dbt_contract_tests,
+            persist_artifacts=persist_contract_artifacts,
+            record_evidence=record_contracts_evidence,
+        )
 
 
 register_plugin(

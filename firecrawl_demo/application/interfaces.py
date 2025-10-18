@@ -5,9 +5,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.domain.models import EvidenceRecord, PipelineReport
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext
@@ -30,7 +35,7 @@ class PipelineService(ABC):
     @abstractmethod
     def run_dataframe(
         self,
-        frame: pd.DataFrame,
+        frame: Any,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
     ) -> PipelineReport:
@@ -39,7 +44,7 @@ class PipelineService(ABC):
     @abstractmethod
     async def run_dataframe_async(
         self,
-        frame: pd.DataFrame,
+        frame: Any,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
     ) -> PipelineReport:

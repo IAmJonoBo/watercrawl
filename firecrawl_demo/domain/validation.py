@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None  # type: ignore
+    _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.core import config
 
@@ -13,7 +19,7 @@ from .models import EXPECTED_COLUMNS, ValidationIssue, ValidationReport
 class DatasetValidator:
     """Validates input datasets for mandatory columns and value constraints."""
 
-    def validate_dataframe(self, frame: pd.DataFrame) -> ValidationReport:
+    def validate_dataframe(self, frame: Any) -> ValidationReport:
         issues: list[ValidationIssue] = []
         missing_columns = [col for col in EXPECTED_COLUMNS if col not in frame.columns]
         for column in missing_columns:
@@ -32,7 +38,7 @@ class DatasetValidator:
         issues.extend(self._validate_statuses(frame))
         return ValidationReport(issues=issues, rows=len(frame))
 
-    def _validate_provinces(self, frame: pd.DataFrame) -> list[ValidationIssue]:
+    def _validate_provinces(self, frame: Any) -> list[ValidationIssue]:
         allowed = {province.lower(): province for province in config.PROVINCES}
         province_series = frame["Province"].fillna("")
         issues: list[ValidationIssue] = []
@@ -52,7 +58,7 @@ class DatasetValidator:
             )
         return issues
 
-    def _validate_statuses(self, frame: pd.DataFrame) -> list[ValidationIssue]:
+    def _validate_statuses(self, frame: Any) -> list[ValidationIssue]:
         allowed = {status.lower() for status in config.CANONICAL_STATUSES}
         issues: list[ValidationIssue] = []
         for offset, (_, raw_value) in enumerate(
