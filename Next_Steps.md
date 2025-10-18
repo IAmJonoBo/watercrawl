@@ -31,6 +31,8 @@
 
 ## Steps (iteration log)
 
+- [x] 2025-10-18 — Carved out `firecrawl_demo.domain` and `firecrawl_demo.application`, added application interfaces, migrated evidence sinks to infrastructure, refreshed docs, and recorded ADR 0002.
+- [x] 2025-10-18 — Reviewed domain/application refactor commit, reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build) to confirm clean slate and capture coverage hotspots.
 - [x] 2025-10-18 — Hardened problems_report pipeline with structured truncation, added actionlint/hadolint bootstrappers, and re-ran full QA suite (pytest, ruff, mypy, bandit, safety, pre-commit, build, CLI contracts, dbt, problems collector).
 - [x] 2025-10-18 — Hardened CLI bootstrap downloads with atomic writes, SSL fallback guardrails, and path traversal detection; added regression tests for hadolint/actionlint bootstrapping and re-ran full QA suite (pytest+coverage, ruff, black, isort, mypy, bandit, safety, sqlfluff, pre-commit, dotenv-linter, build, CLI contracts, dbt).
 - [x] 2025-10-18 — Baseline QA suite re-validated; scripted cleanup keeps local artefacts aligned with CI and unblocks failing pushes.

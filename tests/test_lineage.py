@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import pandas as pd
 
-from firecrawl_demo.core import models
+from firecrawl_demo.domain import models
 from firecrawl_demo.integrations.lineage import (
     LineageContext,
     LineageManager,

@@ -5,7 +5,7 @@ import json
 import sys
 from typing import Any
 
-from firecrawl_demo.core.pipeline import Pipeline
+from firecrawl_demo.application.pipeline import Pipeline
 
 _JSONRPC = "2.0"
 

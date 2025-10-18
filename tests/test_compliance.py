@@ -3,10 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from firecrawl_demo.core import compliance
 from firecrawl_demo.core import config as project_config
-from firecrawl_demo.core.audit import CSVEvidenceSink
-from firecrawl_demo.core.models import EvidenceRecord
+from firecrawl_demo.domain import compliance
+from firecrawl_demo.domain.models import EvidenceRecord
+from firecrawl_demo.infrastructure.evidence import CSVEvidenceSink
 
 
 def test_normalize_helpers_cover_edge_cases():
@@ -133,7 +133,7 @@ def test_status_and_confidence_decisions():
     assert compliance.confidence_for_status("Unknown", 10) == 20
 
 
-def test_evidence_entry_and_append(monkeypatch, tmp_path):
+def test_evidence_entry_and_append(tmp_path):
     entry = compliance.evidence_entry(
         5,
         "Atlas",
@@ -156,7 +156,6 @@ def test_evidence_entry_and_append(monkeypatch, tmp_path):
     assert "Evidence shortfall" in shortfall_entry["Notes"]
 
     evidence_log_path = tmp_path / "evidence.csv"
-    monkeypatch.setattr(project_config, "EVIDENCE_LOG", evidence_log_path)
 
     recorded: list[list[EvidenceRecord]] = []
 
@@ -167,9 +166,9 @@ def test_evidence_entry_and_append(monkeypatch, tmp_path):
         def record(self, entries):  # type: ignore[override]
             recorded.append(list(entries))
 
-    monkeypatch.setattr(compliance, "CSVEvidenceSink", lambda path: DummySink(path))
+    sink = DummySink(evidence_log_path)
 
-    compliance.append_evidence_log([entry, shortfall_entry])
+    compliance.append_evidence_log([entry, shortfall_entry], sink)
 
     assert recorded and recorded[0][0].organisation == "Atlas"
     assert recorded[0][0].sources == [
@@ -179,7 +178,7 @@ def test_evidence_entry_and_append(monkeypatch, tmp_path):
     assert isinstance(recorded[0][0].timestamp, datetime)
 
 
-def test_append_evidence_log_handles_invalid_rows(monkeypatch):
+def test_append_evidence_log_handles_invalid_rows():
     captured: list[list[EvidenceRecord]] = []
 
     class DummySink(CSVEvidenceSink):
@@ -189,8 +188,7 @@ def test_append_evidence_log_handles_invalid_rows(monkeypatch):
         def record(self, entries):  # type: ignore[override]
             captured.append(list(entries))
 
-    monkeypatch.setattr(compliance, "CSVEvidenceSink", lambda path: DummySink(path))
-    monkeypatch.setattr(project_config, "EVIDENCE_LOG", Path("ignored.csv"))
+    sink = DummySink(Path("ignored.csv"))
 
     compliance.append_evidence_log(
         [
@@ -203,7 +201,8 @@ def test_append_evidence_log_handles_invalid_rows(monkeypatch):
                 "Confidence": "unknown",
                 "Timestamp": "not-a-timestamp",
             }
-        ]
+        ],
+        sink,
     )
 
     assert captured
@@ -214,7 +213,17 @@ def test_append_evidence_log_handles_invalid_rows(monkeypatch):
 
 
 def test_append_evidence_log_returns_early_on_empty_list():
-    compliance.append_evidence_log([])
+    class DummySink(CSVEvidenceSink):
+        def __init__(self) -> None:
+            self.record_calls = 0
+            self.path = Path("ignored.csv")
+
+        def record(self, entries):  # type: ignore[override]
+            self.record_calls += 1
+
+    sink = DummySink()
+    compliance.append_evidence_log([], sink)
+    assert sink.record_calls == 0
 
 
 def test_payload_hash_and_describe_changes():

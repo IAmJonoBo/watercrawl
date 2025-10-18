@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from firecrawl_demo.core.models import EvidenceRecord
-from firecrawl_demo.core.pipeline import Pipeline
+from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.domain.models import EvidenceRecord
 from firecrawl_demo.integrations.research import ResearchAdapter, ResearchFinding
 from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 

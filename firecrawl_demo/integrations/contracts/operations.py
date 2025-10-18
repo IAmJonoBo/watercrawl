@@ -9,8 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from firecrawl_demo.application.interfaces import EvidenceSink
 from firecrawl_demo.core import config
-from firecrawl_demo.core.compliance import append_evidence_log
+from firecrawl_demo.domain.compliance import append_evidence_log
 
 from .dbt_runner import DbtContractResult
 from .great_expectations_runner import CuratedDatasetContractResult
@@ -58,8 +59,12 @@ def record_contracts_evidence(
     ge_result: CuratedDatasetContractResult,
     dbt_result: DbtContractResult,
     artifact_dir: Path,
+    sink: EvidenceSink,
 ) -> None:
     """Append an evidence-log entry describing the contract run."""
+
+    # The sink is provided by the caller so CLI, automation, or tests can
+    # determine the appropriate persistence backend (CSV, streaming, etc.).
 
     ge_stats = ge_result.statistics
     evaluated = int(ge_stats.get("evaluated_expectations", 0))
@@ -89,5 +94,6 @@ def record_contracts_evidence(
                 "Timestamp": datetime.now(tz=timezone.utc).isoformat(),
                 "Confidence": "100",
             }
-        ]
+        ],
+        sink,
     )
