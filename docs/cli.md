@@ -1,15 +1,22 @@
 # CLI Guide
 
-The CLI lives in `firecrawl_demo.interfaces.cli` and is available via `python -m firecrawl_demo.interfaces.cli ...` when the Poetry environment is active.
+Two complementary CLIs ship with the repository:
+
+- `app.cli` — the analyst- and end-user-focused surface that wraps the enrichment tooling.
+- `dev.cli` — a developer experience helper that mirrors the CI quality gates.
+
+Both entry points run through Poetry: `poetry run python -m app.cli ...` and `poetry run python -m dev.cli ...`.
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
-## Commands
+> **Compatibility note:** `firecrawl_demo.interfaces.cli` remains available for backwards compatibility and simply re-exports the analyst CLI.
+
+## Analyst commands (`app.cli`)
 
 ### `validate`
 
 ```bash
-poetry run python -m firecrawl_demo.interfaces.cli validate data/input.csv --format json
+poetry run python -m app.cli validate data/input.csv --format json
 ```
 
 - Loads CSV/XLSX data.
@@ -21,7 +28,7 @@ poetry run python -m firecrawl_demo.interfaces.cli validate data/input.csv --for
 ### `enrich`
 
 ```bash
-poetry run python -m firecrawl_demo.interfaces.cli enrich data/input.csv --output data/output.csv --format text
+poetry run python -m app.cli enrich data/input.csv --output data/output.csv --format text
 ```
 
 - Validates, enriches, and writes the dataset.
@@ -33,7 +40,7 @@ poetry run python -m firecrawl_demo.interfaces.cli enrich data/input.csv --outpu
 ### `contracts`
 
 ```bash
-poetry run python -m firecrawl_demo.interfaces.cli contracts data/output.csv --format json
+poetry run python -m app.cli contracts data/output.csv --format json
 ```
 
 - Executes the curated Great Expectations suite stored under `great_expectations/`.
@@ -43,7 +50,7 @@ poetry run python -m firecrawl_demo.interfaces.cli contracts data/output.csv --f
 ### `mcp-server`
 
 ```bash
-poetry run python -m firecrawl_demo.interfaces.cli mcp-server
+poetry run python -m app.cli mcp-server
 ```
 
 - Runs the MCP JSON-RPC bridge over stdio.
@@ -62,3 +69,36 @@ poetry run python -m firecrawl_demo.interfaces.cli mcp-server
 
 - `FIRECRAWL_API_KEY`: Loaded via `config.Settings` for future Firecrawl integrations.
 - `FIRECRAWL_API_URL`: Override default API endpoint.
+
+## Developer QA helpers (`dev.cli`)
+
+The developer CLI mirrors the GitHub Actions workflow locally and adds DX-focused conveniences.
+
+### `qa plan`
+
+```bash
+poetry run python -m dev.cli qa plan
+```
+
+- Prints the full QA execution plan as a Rich table.
+- Accepts `--skip-dbt` to omit long-running contract steps when iterating quickly.
+
+### `qa all`
+
+```bash
+poetry run python -m dev.cli qa all --dry-run
+```
+
+- Executes (or previews with `--dry-run`) the cleanup, test, lint, type-check, security, pre-commit, build, and dbt stages.
+- Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
+
+### Targeted QA commands
+
+Each QA stage is also exposed individually:
+
+- `poetry run python -m dev.cli qa tests`
+- `poetry run python -m dev.cli qa lint`
+- `poetry run python -m dev.cli qa typecheck`
+- `poetry run python -m dev.cli qa security --skip-secrets`
+- `poetry run python -m dev.cli qa build`
+- `poetry run python -m dev.cli qa contracts --dry-run`
