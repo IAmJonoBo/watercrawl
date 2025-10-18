@@ -1,0 +1,19 @@
+[sqlfluff]
+templater = dbt
+dialect = duckdb
+ignore = analytics/target,analytics/dbt_packages
+exclude_rules = CP01,RF06,LT01,LT08,LT09
+
+[sqlfluff:templater:dbt]
+project_dir = analytics
+profiles_dir = analytics
+
+[sqlfluff:rules:layout.long_lines]
+max_line_length = 120
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:structure.file_location]
+# Allow dbt seeds/macros outside of the standard models directory.
+allow_non_dbt_dirs = True
