@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import warnings
 from dataclasses import dataclass
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
 from firecrawl_demo.core import config
+
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="dbt.cli.options")
 
 
 @dataclass(frozen=True)
@@ -40,6 +45,46 @@ def _ensure_directory(path: Path) -> Path:
     return path
 
 
+def _close_dbt_log_handlers(log_directory: Path) -> None:
+    """Close file-based dbt log handlers to avoid resource warnings."""
+
+    resolved_log_dir = log_directory.resolve()
+    candidate_loggers: list[logging.Logger] = [logging.getLogger()]
+
+    for name in list(logging.root.manager.loggerDict.keys()):
+        logger = logging.getLogger(name)
+        if isinstance(logger, logging.Logger) and logger not in candidate_loggers:
+            candidate_loggers.append(logger)
+
+    for logger in candidate_loggers:
+        for handler in list(logger.handlers):
+            if not isinstance(handler, RotatingFileHandler):
+                continue
+
+            base_filename = getattr(handler, "baseFilename", "")
+            if not base_filename:
+                continue
+
+            try:
+                handler_path = Path(base_filename).resolve()
+            except OSError:
+                handler_path = None
+
+            if handler_path is not None:
+                try:
+                    handler_path.relative_to(resolved_log_dir)
+                except ValueError:
+                    continue
+
+            try:
+                handler.flush()
+            except OSError:
+                pass
+
+            handler.close()
+            logger.removeHandler(handler)
+
+
 def run_dbt_contract_tests(
     dataset_path: Path,
     *,
@@ -50,6 +95,10 @@ def run_dbt_contract_tests(
     threads: int | None = None,
 ) -> DbtContractResult:
     """Execute dbt tests against the curated dataset staging model."""
+
+    warnings.filterwarnings(
+        "ignore", category=DeprecationWarning, module=r"dbt\.cli\.options", append=False
+    )
 
     try:
         from dbt.cli.main import dbtRunner
@@ -112,6 +161,8 @@ def run_dbt_contract_tests(
                 os.environ[key] = previous[key]
             else:
                 os.environ.pop(key, None)
+
+        _close_dbt_log_handlers(log_path)
 
     run_results_path = Path(overrides["DBT_TARGET_PATH"]) / "run_results.json"
     results: list[dict[str, Any]] = []
