@@ -59,7 +59,7 @@ jobs:
       - name: Install Node.js and markdownlint-cli2
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Install markdownlint-cli2
         run: npm install --no-save markdownlint-cli2@^0.9.0
       - name: Lint Markdown
