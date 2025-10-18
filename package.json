@@ -1,0 +1,8 @@
+{
+  "name": "watercrawl-lint-tools",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "markdownlint-cli2": "^0.9.0"
+  }
+}

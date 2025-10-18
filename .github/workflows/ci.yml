@@ -56,3 +56,27 @@ jobs:
             ci-summary.md
             ci-dashboard.json
             problems_report.json
+      - name: Install Node.js and markdownlint-cli2
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install markdownlint-cli2
+        run: npm install --no-save markdownlint-cli2@^0.9.0
+      - name: Lint Markdown
+        run: npx markdownlint-cli2 '**/*.md' '#node_modules' || true
+      - name: Install Hadolint
+        run: |
+          HADOLINT_URL="https://github.com/hadolint/hadolint/releases/latest/download/hadolint-$(uname -s)-$(uname -m)"
+          wget -O /usr/local/bin/hadolint "$HADOLINT_URL"
+          chmod +x /usr/local/bin/hadolint
+      - name: Lint Dockerfiles with Hadolint
+        run: hadolint Dockerfile || true
+      - name: Install ActionLint
+        run: |
+          BASE_URL="https://github.com/rhysd/actionlint/releases/latest/download"
+          FILE_NAME="actionlint_$(uname -s)_$(uname -m).tar.gz"
+          ACTIONLINT_URL="$BASE_URL/$FILE_NAME"
+          curl -sSL "$ACTIONLINT_URL" | tar xz -C /usr/local/bin
+          chmod +x /usr/local/bin/actionlint
+      - name: Lint GitHub Actions workflows with ActionLint
+        run: actionlint -color || true
