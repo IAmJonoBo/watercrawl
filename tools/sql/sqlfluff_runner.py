@@ -6,24 +6,44 @@ import argparse
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
+from contextlib import suppress
 from pathlib import Path
-from typing import Sequence
+
+import duckdb
 
 DEFAULT_DBT_PROJECT = Path("analytics")
 DEFAULT_DUCKDB = Path("target/contracts.duckdb")
 
 
-def _ensure_duckdb(project_dir: Path, relative_path: Path) -> None:
-    materialised_path = project_dir / relative_path
+def _ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
+    materialised_path = (project_dir / relative_path).resolve()
     materialised_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _initialise(path: Path) -> None:
+        with duckdb.connect(str(path)) as connection:
+            connection.execute("PRAGMA database_list;")
+
     if not materialised_path.exists():
-        materialised_path.touch()
+        _initialise(materialised_path)
+        return materialised_path
+
+    try:
+        _initialise(materialised_path)
+    except duckdb.Error:
+        with suppress(FileNotFoundError):
+            materialised_path.unlink()
+        _initialise(materialised_path)
+
+    return materialised_path
 
 
-def run_sqlfluff(project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]) -> int:
-    _ensure_duckdb(project_dir, duckdb_path)
+def run_sqlfluff(
+    project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]
+) -> int:
+    materialised_path = _ensure_duckdb(project_dir, duckdb_path)
     env = os.environ.copy()
-    env.setdefault("DBT_DUCKDB_PATH", duckdb_path.as_posix())
+    env.setdefault("DBT_DUCKDB_PATH", materialised_path.as_posix())
     cmd = ["sqlfluff", "lint", str(project_dir), *extra_args]
     print("Executing:", " ".join(cmd))
     completed = subprocess.run(cmd, env=env, check=False)
@@ -31,7 +51,9 @@ def run_sqlfluff(project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run SQLFluff with offline-friendly defaults.")
+    parser = argparse.ArgumentParser(
+        description="Run SQLFluff with offline-friendly defaults."
+    )
     parser.add_argument(
         "--project-dir",
         type=Path,

@@ -38,7 +38,11 @@ jobs:
           --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=pytest-results.xml
       - name: Generate CI summary
         run: |
-          poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json
+          poetry run python -m scripts.ci_summary \
+            --coverage coverage.xml \
+            --junit pytest-results.xml \
+            --output ci-summary.md \
+            --json ci-dashboard.json
           cat ci-summary.md >> $GITHUB_STEP_SUMMARY
       - name: Upload CI artifacts
         uses: actions/upload-artifact@v4

@@ -41,6 +41,7 @@
 - [x] 2025-10-18 — Hardened in-memory cache expiry semantics with type-safe TTL handling, added regression coverage for `cache.load` edge cases, and re-ran the full QA suite to verify guards across pytest, lint, type, security, build, and dbt contracts.
 - [x] 2025-10-18 — DevEx baseline refreshed: full QA suite (pytest, coverage, ruff, mypy, bandit, pre-commit, build, dbt) recorded; gitignore, ruff, and pre-commit configs prepped for modernization; CI now caches Poetry envs and surfaces diffs for hook failures.
 - [x] 2025-10-18 — Linting uplift: integrate Safety, SQLFluff (dbt-aware), markdownlint, yamllint, hadolint, and actionlint into pre-commit + CI with docs updated; confirm Safety offline workflow and SQLFluff dbt target path automation.
+- [x] 2025-10-18 — SQLFluff/duckdb hardening: runner reinitialises corrupt DuckDB targets, added regression tests for CLI env setup, pinned Dockerfile Poetry install, resolved markdownlint/hadolint gating, and reran full QA suite (pytest, coverage, ruff, mypy, bandit, safety, sqlfluff, markdownlint, yamllint, hadolint, actionlint, dbt, build).
 
 ---
 
@@ -122,3 +123,4 @@ Execute in this order; each item must meet its gate before promotion.
 - Decide owner + storage for MCP audit logs (plan→diff→commit) and retention policy.
 - Block MCP/agent sessions in `dist` builds unless `promptfoo eval` has passed in the active branch.
 - Kafka lineage transport requires the optional `kafka-python` dependency; platform team to confirm packaging before enabling Kafka emission in CI/staging.
+- Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments.

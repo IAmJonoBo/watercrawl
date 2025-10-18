@@ -5,9 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
@@ -64,8 +65,12 @@ def _parse_requirements(path: Path) -> list[RequirementPin]:
         try:
             requirement = Requirement(entry)
         except Exception:  # pragma: no cover - packaging raises varied errors
-            raise ValueError(f"Unable to parse requirement line '{entry}' in {path}.") from None
-        exact_spec = next((spec for spec in requirement.specifier if spec.operator == "=="), None)
+            raise ValueError(
+                f"Unable to parse requirement line '{entry}' in {path}."
+            ) from None
+        exact_spec = next(
+            (spec for spec in requirement.specifier if spec.operator == "=="), None
+        )
         if not exact_spec:
             continue
         try:
@@ -85,7 +90,9 @@ def _parse_requirements(path: Path) -> list[RequirementPin]:
     return pins
 
 
-def _load_vulnerability_index(path: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
+def _load_vulnerability_index(
+    path: Path,
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
     raw_data: Any = json.loads(path.read_text())
     if not isinstance(raw_data, dict):  # pragma: no cover - guards corrupted downloads
         raise TypeError("Expected Safety DB payload to be a JSON object.")
@@ -153,7 +160,9 @@ def audit(requirement_paths: Sequence[Path]) -> int:
     timestamp = meta.get("timestamp")
     header = "Offline Safety DB" + (f" snapshot {timestamp}" if timestamp else "")
     print(f"Loaded {header} from {db_path}.")
-    print(f"Scanned {len(pins)} pinned requirements from {len(requirement_paths)} manifest(s).")
+    print(
+        f"Scanned {len(pins)} pinned requirements from {len(requirement_paths)} manifest(s)."
+    )
     if skipped:
         print("Skipped the following unpinned or VCS requirements:")
         for req_path, raw in skipped:
