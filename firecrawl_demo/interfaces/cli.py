@@ -226,6 +226,16 @@ def enrich(
             "prov": str(report.lineage_artifacts.prov_path),
             "catalog": str(report.lineage_artifacts.catalog_path),
         }
+    if report.lakehouse_manifest:
+        payload["lakehouse_manifest"] = str(report.lakehouse_manifest.manifest_path)
+        payload["lakehouse_version"] = report.lakehouse_manifest.version
+        payload["lakehouse_uri"] = report.lakehouse_manifest.table_uri
+    if report.version_info:
+        payload["version_manifest"] = str(report.version_info.metadata_path)
+        payload["version"] = report.version_info.version
+        payload["version_reproduce_command"] = list(
+            report.version_info.reproduce_command
+        )
     if output_format == "json":
         click.echo(json.dumps(payload, indent=2))
     else:
@@ -234,6 +244,17 @@ def enrich(
             f"{payload['rows_enriched']} of {payload['rows_total']} rows updated."
         )
         click.echo(f"Output written to: {payload['output_path']}")
+        if report.lineage_artifacts:
+            click.echo(
+                "Lineage artifacts: "
+                f"{report.lineage_artifacts.openlineage_path.parent}"
+            )
+        if report.lakehouse_manifest:
+            click.echo(
+                "Lakehouse manifest: " f"{report.lakehouse_manifest.manifest_path}"
+            )
+        if report.version_info:
+            click.echo("Version manifest: " f"{report.version_info.metadata_path}")
         if payload["adapter_failures"]:
             click.echo(
                 f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."

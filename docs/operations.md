@@ -32,7 +32,7 @@ non-zero on any expectation or dbt test failure, mirroring CI contract
 enforcement. `dbt build --select tag:contracts` is invoked under the hood and
 archives run artefacts to `data/contracts/<timestamp>/` for provenance.
 
-Every enrichment run now emits a lineage bundle under `artifacts/lineage/<run_id>/` containing OpenLineage, PROV-O, and DCAT documents together with optional lakehouse manifests. Surface these artefacts in runbooks and attach them to incident reports so provenance checks stay reproducible.
+Every enrichment run now emits a lineage bundle under `artifacts/lineage/<run_id>/` containing OpenLineage, PROV-O, and DCAT documents together with optional lakehouse manifests. The PROV graphs call out the enrichment software agent, evidence counts, and quality metrics while DCAT entries surface reproducibility commands, contact metadata, and distribution records for the evidence log, manifests, and lineage bundle. Surface these artefacts in runbooks and attach them to incident reports so provenance checks stay reproducible.
 
 Each run also captures a `version.json` manifest within the versioning metadata root (default `data/versioning/`). The manifest
 records the input fingerprint, output fingerprint, row count, and the command required to reproduce the run. Attach this file to
@@ -84,6 +84,19 @@ or missing evidence before publishing results.
 - `EVIDENCE_STREAM_REST_ENDPOINT` / `EVIDENCE_STREAM_KAFKA_TOPIC`: document targets for future graph ingestion pipelines.
 
 During enrichment the pipeline calls the configured `EvidenceSink`, so MCP tasks and CLI runs share the same audit trail plumbing. Use a mock sink in tests or dry runs to prevent filesystem writes.
+
+## Lineage emission controls
+
+- `OPENLINEAGE_TRANSPORT`: `file` (default), `http`, `kafka`, or `logging` to choose how events are
+  emitted after enrichment runs.
+- `OPENLINEAGE_URL`: required when using the HTTP transport; events are POSTed with a JSON body per
+  OpenLineage run event.
+- `OPENLINEAGE_API_KEY`: optional bearer token injected as `Authorization: Bearer <token>` for HTTP emission.
+- `OPENLINEAGE_KAFKA_TOPIC` / `OPENLINEAGE_KAFKA_BOOTSTRAP`: required when emitting directly to Kafka.
+- `OPENLINEAGE_NAMESPACE`: overrides the namespace baked into lineage events without touching code.
+
+CLI output surfaces the lineage artefact directory together with the lakehouse manifest and version
+manifest paths so runbooks can link provenance bundles without digging through the filesystem.
 
 ## Infrastructure Configuration
 

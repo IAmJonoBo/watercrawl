@@ -201,6 +201,11 @@ class LineageSettings:
     job_name: str = "enrichment"
     dataset_name: str = "flight-schools"
     artifact_root: Path = field(default_factory=lambda: PROJECT_ROOT / "artifacts")
+    transport: str = "file"
+    endpoint: str | None = None
+    api_key: str | None = None
+    kafka_topic: str | None = None
+    kafka_bootstrap_servers: str | None = None
 
 
 @dataclass(frozen=True)
@@ -610,10 +615,31 @@ def configure(provider: SecretsProvider | None = None) -> None:
     lineage_root = _env_path("LINEAGE_ARTIFACT_ROOT", SECRETS_PROVIDER) or (
         PROJECT_ROOT / "artifacts"
     )
+    lineage_transport = (
+        _get_value("OPENLINEAGE_TRANSPORT", None, SECRETS_PROVIDER)
+        or _get_value("LINEAGE_TRANSPORT", "file", SECRETS_PROVIDER)
+        or "file"
+    )
+    lineage_endpoint = _get_value(
+        "OPENLINEAGE_URL", None, SECRETS_PROVIDER
+    ) or _get_value("LINEAGE_ENDPOINT", None, SECRETS_PROVIDER)
+    lineage_api_key = _get_value(
+        "OPENLINEAGE_API_KEY", None, SECRETS_PROVIDER
+    ) or _get_value("LINEAGE_API_KEY", None, SECRETS_PROVIDER)
+    lineage_kafka_topic = _get_value(
+        "OPENLINEAGE_KAFKA_TOPIC", None, SECRETS_PROVIDER
+    ) or _get_value("LINEAGE_KAFKA_TOPIC", None, SECRETS_PROVIDER)
+    lineage_kafka_bootstrap = _get_value(
+        "OPENLINEAGE_KAFKA_BOOTSTRAP", None, SECRETS_PROVIDER
+    ) or _get_value("LINEAGE_KAFKA_BOOTSTRAP", None, SECRETS_PROVIDER)
+    lineage_namespace = (
+        _get_value("OPENLINEAGE_NAMESPACE", None, SECRETS_PROVIDER)
+        or _get_value("LINEAGE_NAMESPACE", "aces-aerodynamics", SECRETS_PROVIDER)
+        or "aces-aerodynamics"
+    )
     LINEAGE = LineageSettings(
         enabled=_env_bool("LINEAGE_ENABLED", True, SECRETS_PROVIDER),
-        namespace=_get_value("LINEAGE_NAMESPACE", "aces-aerodynamics", SECRETS_PROVIDER)
-        or "aces-aerodynamics",
+        namespace=lineage_namespace,
         job_name=_get_value("LINEAGE_JOB_NAME", "enrichment", SECRETS_PROVIDER)
         or "enrichment",
         dataset_name=_get_value(
@@ -621,6 +647,11 @@ def configure(provider: SecretsProvider | None = None) -> None:
         )
         or "flight-schools",
         artifact_root=lineage_root,
+        transport=lineage_transport,
+        endpoint=lineage_endpoint,
+        api_key=lineage_api_key,
+        kafka_topic=lineage_kafka_topic,
+        kafka_bootstrap_servers=lineage_kafka_bootstrap,
     )
 
     lakehouse_root = _env_path("LAKEHOUSE_ROOT", SECRETS_PROVIDER) or (
