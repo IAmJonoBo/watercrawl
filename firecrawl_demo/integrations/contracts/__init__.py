@@ -1,5 +1,20 @@
 """Contracts and quality gates for curated datasets."""
 
+from __future__ import annotations
+
+import importlib.util
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable
+
+from firecrawl_demo.integrations.integration_plugins import (
+    IntegrationPlugin,
+    PluginConfigSchema,
+    PluginContext,
+    PluginHealthStatus,
+    register_plugin,
+)
+
 from .dbt_runner import DbtContractResult, run_dbt_contract_tests
 from .great_expectations_runner import (
     CuratedDatasetContractResult,
@@ -8,7 +23,80 @@ from .great_expectations_runner import (
 )
 from .operations import persist_contract_artifacts, record_contracts_evidence
 
+if TYPE_CHECKING:
+    import pandas as pd
+
+
+@dataclass(frozen=True)
+class ContractsToolkit:
+    """Convenience wrapper exposing contract execution helpers."""
+
+    validate_dataframe: Callable[["pd.DataFrame"], CuratedDatasetContractResult]
+    validate_file: Callable[[Path], CuratedDatasetContractResult]
+    run_dbt_contracts: Callable[..., DbtContractResult]
+    persist_artifacts: Callable[..., Path]
+    record_evidence: Callable[..., None]
+
+
+def _contracts_health_probe(context: PluginContext) -> PluginHealthStatus:
+    missing_dependencies: list[str] = []
+    for module_name in ("great_expectations", "dbt.cli.main"):
+        if importlib.util.find_spec(module_name) is None:
+            missing_dependencies.append(module_name)
+
+    details = {
+        "optional_dependencies": ["great_expectations", "dbt"],
+        "environment_variables": [
+            "CONTRACTS_ARTIFACT_DIR",
+            "DBT_PROFILES_DIR",
+            "DBT_TARGET_PATH",
+            "DBT_LOG_PATH",
+        ],
+    }
+
+    if missing_dependencies:
+        return PluginHealthStatus(
+            healthy=False,
+            reason=f"Missing contract dependencies: {', '.join(sorted(missing_dependencies))}",
+            details=details,
+        )
+
+    return PluginHealthStatus(healthy=True, reason="Contracts ready", details=details)
+
+
+def _build_contracts_toolkit(context: PluginContext) -> ContractsToolkit:
+    return ContractsToolkit(
+        validate_dataframe=validate_curated_dataframe,
+        validate_file=validate_curated_file,
+        run_dbt_contracts=run_dbt_contract_tests,
+        persist_artifacts=persist_contract_artifacts,
+        record_evidence=record_contracts_evidence,
+    )
+
+
+register_plugin(
+    IntegrationPlugin(
+        name="contracts",
+        category="contracts",
+        factory=_build_contracts_toolkit,
+        config_schema=PluginConfigSchema(
+            environment_variables=(
+                "CONTRACTS_ARTIFACT_DIR",
+                "DBT_PROFILES_DIR",
+                "DBT_TARGET_PATH",
+                "DBT_LOG_PATH",
+            ),
+            optional_dependencies=("great_expectations", "dbt"),
+            description="Execute Great Expectations and dbt contracts for curated datasets.",
+        ),
+        health_probe=_contracts_health_probe,
+        summary="Great Expectations and dbt contract orchestrator",
+    )
+)
+
+
 __all__ = [
+    "ContractsToolkit",
     "DbtContractResult",
     "run_dbt_contract_tests",
     "CuratedDatasetContractResult",

@@ -49,7 +49,7 @@
 - [x] 2025-10-18 — Warning remediation: reordered marshmallow filters, suppressed dbt CLI deprecations, closed dbt log handlers, and reran baseline QA (pytest, ruff, mypy, bandit, safety, build, dbt). Pre-commit still failing on hadolint/actionlint downloads and pymarkdown MD013 allowances.
 - [x] 2025-10-18 — CLI + QA hardening: restored `_resolve_progress_flag` shim, tightened Pint quantity coercion for dimensionless inputs, implemented typed dev CLI command runner overrides, and reworked markdownlint/actionlint hooks to install via `npx`/downloaded binaries. Full baseline rerun (pytest, ruff, mypy, bandit, safety, pre-commit, dbt) green.
 - [x] 2025-10-18 — Extended regression coverage for pipeline orchestration, Excel helpers, and research adapters; added defensive unit tests for lakehouse/versioning flows and Firecrawl behaviour, then reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build).
-- [ ] 2025-10-19 — Restructure integrations into adapter/telemetry/storage packages, introduce plugin registry with health probes, extend discovery tests, and rerun baseline QA (pytest+cov, ruff, mypy, bandit, safety, build) once dependency stubs land.
+- [x] 2025-10-19 — Restructure integrations into adapter/telemetry/storage packages, introduce plugin registry with health probes, extend discovery tests, and rerun baseline QA (pytest+cov, ruff, mypy, bandit, safety, build) once dependency stubs land; contracts toolkit plugin registered with health checks and dev stub packages exported for offline installs.
 
 ---
 

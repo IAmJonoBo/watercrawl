@@ -61,6 +61,11 @@ The `firecrawl_demo.integrations.adapters.research.registry` module centralises 
 
 `firecrawl_demo.integrations.integration_plugins` provides a shared registry that groups plugins by category (`adapters`, `telemetry`, `storage`, `contracts`) and exposes discovery helpers used by the pipeline and CLIs. Built-in plugins register themselves on import and describe their required feature flags, environment variables, optional dependencies, and health probes. Third-party packages can contribute additional plugins via Python entry points or by calling `register_plugin()` during import.
 
+- **Adapters**: Composite research adapter stack that honours feature flags for Firecrawl and offline triangulation.
+- **Telemetry**: Drift, graph semantics, and lineage surfaces, each with a health probe that verifies optional transports (HTTP/Kafka) or baseline prerequisites.
+- **Storage**: Lakehouse and versioning writers that expose their root directories and feature toggles through the config schema.
+- **Contracts**: A `ContractsToolkit` exposing Great Expectations + dbt execution helpers, wiring contract artefact persistence and evidence capture behind optional dependencies.
+
 - `instantiate_plugin(category, name)` replaces ad-hoc import factories inside the pipeline, ensuring research adapters, lineage managers, lakehouse writers, and versioning managers are all resolved consistently.
 - Plugin health probes capture QA readiness for optional transports (e.g., Kafka lineage exporters) so CI can surface missing dependencies before runtime.
 - Registrations are intentionally idempotent and test fixtures can snapshot/reset the registry through `reset_registry()` when isolation is required.

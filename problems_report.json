@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-18T10:36:05.782474+00:00",
+  "generated_at": "2025-10-18T12:37:05.925602+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -19,14 +19,14 @@
       "notes": [
         {
           "path": "tests/test_compliance.py",
-          "line": 161,
+          "line": 160,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         },
         {
           "path": "tests/test_compliance.py",
-          "line": 183,
+          "line": 182,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -162,7 +162,7 @@
         "severity_counts": {},
         "confidence_counts": {},
         "metrics": {
-          "loc": 5983,
+          "loc": 6555,
           "nosec": 0,
           "skipped_tests": 0
         }
@@ -187,7 +187,7 @@
         "issue_count": 0,
         "files_with_issues": 0
       },
-      "stderr": "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_037151ec909c9bef07211e5a3ac8fd56.sql was not found in dbt project \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_bdc05b5898b4743ccad5f00569bb7e0f.sql was not found in dbt project \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_domain_matches_website_s_9607215f04e2c1009e14956c658c9249.sql was not found in dbt project \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/https_prefix_stg_curated_dataset_website_url.sql was not found in dbt project \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_email_address.sql was not found in dbt project \nWARNING    R\u2026 (truncated 7354 characters)"
+      "stderr": "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    Skipped file /workspace/watercrawl/analytics/tests/generic/email_domain_matches_website.sql because it is a macro \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    Skipped file /workspace/watercrawl/analytics/tests/generic/https_prefix.sql because it is a macro \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    Skipped file /workspace/watercrawl/analytics/tests/generic/south_african_phone.sql because it is a macro \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \n"
     }
   ]
 }

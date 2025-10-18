@@ -59,6 +59,13 @@ sqlfluff = "^3.4.2"
 sqlfluff-templater-dbt = "^3.4.2"
 yamllint = "^1.37.1"
 safety-db = "^2021.7.17"
+types-boto3 = "*"
+types-botocore = "*"
+types-pillow = "*"
+types-pyyaml = "*"
+types-setuptools = "*"
+types-urllib3 = "*"
+types-python-dateutil = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
