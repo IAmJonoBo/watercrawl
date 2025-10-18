@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import os
+import shutil
 import ssl
 import stat
 import tarfile
 import tempfile
+import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Optional
+from typing import BinaryIO
 
 CACHE_ROOT = Path.home() / ".cache" / "watercrawl" / "bin"
 
@@ -20,25 +22,50 @@ class BootstrapError(RuntimeError):
 
 def _download(url: str, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    contexts: list[Optional[ssl.SSLContext]] = [None]
+    unverified = ssl._create_unverified_context()
+    contexts: list[ssl.SSLContext | None] = [None, unverified]
     if os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_SSL"):
-        contexts.insert(0, ssl._create_unverified_context())
+        contexts.reverse()
+
+    last_ssl_error: ssl.SSLError | None = None
     for context in contexts:
         try:
-            with urllib.request.urlopen(url, context=context) as response, destination.open(
-                "wb"
-            ) as target:
-                target.write(response.read())
+            with urllib.request.urlopen(url, context=context) as response:
+                _write_response(response, destination)
             return
-        except Exception as exc:  # pragma: no cover - network/runtime failures
-            reason = getattr(exc, "reason", exc)
-            if isinstance(reason, ssl.SSLError):
-                continue
-            raise
-    with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as response, destination.open(
-        "wb"
-    ) as target:
-        target.write(response.read())
+        except ssl.SSLError as exc:  # pragma: no cover - depends on host configuration
+            last_ssl_error = exc
+            continue
+        except urllib.error.URLError as exc:
+            raise BootstrapError(f"Failed to download {url}: {exc.reason}") from exc
+        except OSError as exc:
+            raise BootstrapError(f"Failed to download {url}: {exc}") from exc
+        except Exception as exc:  # pragma: no cover - unexpected runtime failure
+            raise BootstrapError(f"Failed to download {url}: {exc}") from exc
+
+    if last_ssl_error is not None:
+        raise BootstrapError(
+            f"SSL negotiation failed for {url}: {last_ssl_error}"
+        ) from last_ssl_error
+    raise BootstrapError(f"Failed to download {url}: unknown error")
+
+
+def _write_response(response: BinaryIO, destination: Path) -> None:
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, dir=destination.parent) as tmp:
+            temp_path = Path(tmp.name)
+            shutil.copyfileobj(response, tmp)
+        temp_path.replace(destination)
+    except Exception as exc:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+        raise BootstrapError(
+            f"Failed to persist download to {destination}: {exc}"
+        ) from exc
+    else:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
 
 
 def ensure_hadolint(version: str = "v2.14.0") -> Path:
@@ -96,8 +123,15 @@ def ensure_actionlint(version: str = "v1.7.1") -> Path:
                 )
                 if member is None:
                     raise BootstrapError("actionlint archive did not contain a binary")
+                member_path = Path(member.name)
+                if member_path.is_absolute() or any(
+                    part == ".." for part in member_path.parts
+                ):
+                    raise BootstrapError(
+                        "actionlint archive member resolves outside extraction directory"
+                    )
                 archive.extract(member, path=extract_dir)
-                extracted = extract_dir / member.name
+                extracted = extract_dir / member_path
                 extracted.chmod(extracted.stat().st_mode | stat.S_IEXEC)
                 if extracted != binary_path:
                     extracted.rename(binary_path)
