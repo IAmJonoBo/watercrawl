@@ -10,13 +10,21 @@ poetry run python -m scripts.cleanup --dry-run
 poetry run python -m scripts.cleanup
 ```
 
+> The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
+
 Then execute the quality gates:
 
 ```bash
 poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 poetry run ruff check .
+poetry run python -m tools.sql.sqlfluff_runner
+poetry run yamllint --strict -c .yamllint.yaml .
+poetry run pre-commit run markdownlint-cli2 --all-files
+poetry run pre-commit run hadolint --all-files
+poetry run pre-commit run actionlint --all-files
 poetry run mypy .
 poetry run bandit -r firecrawl_demo
+poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
 poetry run dotenv-linter lint .env.example
 poetry run poetry build
@@ -64,9 +72,9 @@ of silencing mypy regressions.
 | Gate          | Threshold/Expectation                                              |
 | ------------- | ------------------------------------------------------------------ |
 | Tests         | 100% pass, coverage tracked via `pytest --cov`.                    |
-| Lint          | No Ruff violations; Black/Isort formatting clean.                  |
+| Lint          | Ruff, Black/Isort, Yamllint, SQLFluff, Markdownlint, Hadolint, Actionlint all green. |
 | Types         | `mypy` success, including third-party stubs.                       |
-| Security      | No `bandit` High/Medium findings without mitigation.               |
+| Security      | No `bandit`/`safety` High/Medium findings without mitigation.      |
 | Evidence      | Every enriched row logged with ≥2 sources.                         |
 | Sanity Checks | `sanity_issues` metric is zero or tracked with remediation owners. |
 | Documentation | MkDocs updated for any behavioural change.                         |

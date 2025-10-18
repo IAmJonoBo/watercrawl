@@ -86,11 +86,21 @@ poetry run python -m scripts.cleanup --dry-run  # inspect cleanup targets
 poetry run python -m scripts.cleanup            # remove cached artefacts
 poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 poetry run ruff check .
+poetry run python -m tools.sql.sqlfluff_runner
+poetry run yamllint --strict -c .yamllint.yaml .
+poetry run pre-commit run markdownlint-cli2 --all-files
+poetry run pre-commit run hadolint --all-files
+poetry run pre-commit run actionlint --all-files
 poetry run mypy .
 poetry run bandit -r firecrawl_demo
+poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
 poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
+
+> Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.
+
+> The offline Safety runner relies on the vendored `safety-db` snapshot so QA can execute without network connectivity. Update the dependency periodically to refresh advisories.
 
 ## Documentation
 

@@ -54,6 +54,11 @@ dbt-core = "^1.8"
 dbt-duckdb = "^1.9"
 hypothesis = "6.142.1"
 pydocstyle = "^6.3.0"
+safety = "^3.6.2"
+sqlfluff = "^3.4.2"
+sqlfluff-templater-dbt = "^3.4.2"
+yamllint = "^1.37.1"
+safety-db = "^2021.7.17"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -75,7 +80,11 @@ target-version = "py311"
 src = ["firecrawl_demo", "app", "analytics", "dev", "scripts", "tests"]
 
 [tool.ruff.lint]
-ignore = ["E203"]
+select = ["E", "F", "W"]
+ignore = ["E203", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["S101", "I001"]
 
 [tool.ruff.format]
 quote-style = "double"

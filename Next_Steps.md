@@ -40,6 +40,7 @@
 - [x] 2025-10-18 — Replaced CLI monkeypatch scaffolding with explicit dependency overrides and taught cleanup automation to detect/skip tracked artefacts with reporting hooks for post-build hygiene reviews.
 - [x] 2025-10-18 — Hardened in-memory cache expiry semantics with type-safe TTL handling, added regression coverage for `cache.load` edge cases, and re-ran the full QA suite to verify guards across pytest, lint, type, security, build, and dbt contracts.
 - [x] 2025-10-18 — DevEx baseline refreshed: full QA suite (pytest, coverage, ruff, mypy, bandit, pre-commit, build, dbt) recorded; gitignore, ruff, and pre-commit configs prepped for modernization; CI now caches Poetry envs and surfaces diffs for hook failures.
+- [x] 2025-10-18 — Linting uplift: integrate Safety, SQLFluff (dbt-aware), markdownlint, yamllint, hadolint, and actionlint into pre-commit + CI with docs updated; confirm Safety offline workflow and SQLFluff dbt target path automation.
 
 ---
 
