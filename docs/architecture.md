@@ -13,18 +13,21 @@
    - `TriangulatingResearchAdapter` merges Firecrawl, regulator, press, and directory intelligence governed by feature toggles.
 4. **Compliance Utilities** (`firecrawl_demo.core.compliance`)
    - Normalises phone numbers to +27 E.164, verifies email domains against official websites, and calculates confidence scores.
-5. **Pipeline Orchestrator** (`firecrawl_demo.core.pipeline`)
+5. **Data Quality Contracts** (`analytics/`, `great_expectations/`)
+   - dbt models for data transformation and contracts.
+   - Great Expectations suites for automated validation and quality checks.
+6. **Pipeline Orchestrator** (`firecrawl_demo.core.pipeline`)
    - Applies validation, enrichment, evidence logging, and metrics collection.
    - Generates `PipelineReport` objects for CLI/MCP consumers.
-6. **Audit Sinks** (`firecrawl_demo.core.audit`)
+7. **Audit Sinks** (`firecrawl_demo.core.audit`)
    - `EvidenceSink` protocol decouples evidence persistence from the pipeline.
    - `CSVEvidenceSink` preserves the legacy append-to-file behaviour for analysts.
    - `StreamingEvidenceSink` logs Kafka/REST publication stubs so future streaming graphs can subscribe without modifying the pipeline.
-7. **Interfaces**
+8. **Interfaces**
    - **CLI** (`firecrawl_demo.interfaces.cli`): human-friendly commands for validation and enrichment.
    - **MCP Server** (`firecrawl_demo.interfaces.mcp.server`): JSON-RPC surface for GitHub Copilot automation.
 
-> **Package boundaries.** `firecrawl_demo.core` owns the enrichment contract, `firecrawl_demo.integrations` wraps optional adapters and metadata services, `firecrawl_demo.governance` isolates safety and secrets logic, and `firecrawl_demo.interfaces` exposes human/automation entrypoints. Production wheels exclude `codex/`, `dev/`, and other development directories via `pyproject.toml` so deployments only ship the hardened packages.
+> **Package boundaries.** `firecrawl_demo.core` owns the enrichment contract, `firecrawl_demo.integrations` wraps optional adapters and metadata services, `firecrawl_demo.governance` isolates safety and secrets logic, `analytics/` contains dbt data contracts, `great_expectations/` holds data quality suites, and `firecrawl_demo.interfaces` exposes human/automation entrypoints. Production wheels exclude `codex/`, `dev/`, and other development directories via `pyproject.toml` so deployments only ship the hardened packages.
 
 ## Data Flow
 

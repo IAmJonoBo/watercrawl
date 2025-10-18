@@ -13,6 +13,15 @@ enrich immediately after installing dependencies.
 
 ## Analyst commands (`app.cli`)
 
+### `overview`
+
+```bash
+poetry run python -m app.cli overview
+```
+
+- Provides a high-level summary of the enrichment stack, including available datasets, recent runs, and system status.
+- Useful for getting started or checking pipeline health.
+
 ### `validate`
 
 ```bash

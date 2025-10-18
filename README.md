@@ -4,7 +4,7 @@ Modular toolkit for validating and enriching South African flight-school dataset
 
 ## Getting Started
 
-**Python version required:** `>=3.11,<3.14` (recommended: 3.13.x)
+**Python version required:** `>=3.13,<3.14` (recommended: 3.13.x)
 
 **Environment setup:**
 
