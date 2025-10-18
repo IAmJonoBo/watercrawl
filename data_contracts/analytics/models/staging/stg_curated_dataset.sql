@@ -12,5 +12,6 @@ select
     trim("Website URL") as website_url,
     trim("Contact Person") as contact_person,
     trim("Contact Number") as contact_number,
-    trim("Contact Email Address") as contact_email_address
+    trim("Contact Email Address") as contact_email_address,
+    cast(coalesce(nullif(trim("Confidence"), ''), '0') as integer) as confidence
 from source

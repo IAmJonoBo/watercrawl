@@ -1,0 +1,15 @@
+watercrawl_contracts:
+  outputs:
+    ci:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'data_contracts/analytics/target/contracts.duckdb') }}"
+      schema: main
+      threads: 4
+      external_root: "{{ env_var('DBT_EXTERNAL_ROOT', 'data_contracts/analytics/external') }}"
+    local:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'data_contracts/analytics/target/contracts.duckdb') }}"
+      schema: main
+      threads: 4
+      external_root: "{{ env_var('DBT_EXTERNAL_ROOT', 'data_contracts/analytics/external') }}"
+  target: ci

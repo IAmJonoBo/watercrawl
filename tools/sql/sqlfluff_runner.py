@@ -12,7 +12,7 @@ from pathlib import Path
 
 import duckdb
 
-DEFAULT_DBT_PROJECT = Path("analytics")
+DEFAULT_DBT_PROJECT = Path("data_contracts/analytics")
 DEFAULT_DUCKDB = Path("target/contracts.duckdb")
 
 
@@ -58,13 +58,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--project-dir",
         type=Path,
         default=DEFAULT_DBT_PROJECT,
-        help="dbt project directory to lint (default: analytics)",
+        help="dbt project directory to lint (default: data_contracts/analytics)",
     )
     parser.add_argument(
         "--duckdb-path",
         type=Path,
         default=DEFAULT_DUCKDB,
-        help="DuckDB target path to materialise if missing (default: analytics/target/contracts.duckdb)",
+        help="DuckDB target path to materialise if missing (default: data_contracts/analytics/target/contracts.duckdb)",
     )
     parser.add_argument(
         "extra_args",

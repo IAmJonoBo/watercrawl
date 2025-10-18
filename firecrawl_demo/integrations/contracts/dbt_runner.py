@@ -13,6 +13,8 @@ from typing import Any
 
 from firecrawl_demo.core import config
 
+from .shared_config import environment_payload
+
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="dbt.cli.options")
 
 
@@ -37,7 +39,7 @@ class DbtContractResult:
 
 
 def _default_project_dir() -> Path:
-    return config.PROJECT_ROOT / "analytics"
+    return config.PROJECT_ROOT / "data_contracts" / "analytics"
 
 
 def _ensure_directory(path: Path) -> Path:
@@ -126,6 +128,7 @@ def run_dbt_contract_tests(
         "DBT_LOG_PATH": str(_ensure_directory(log_path)),
         "CURATED_DATASET_PATH": str(dataset_path),
     }
+    overrides.update(environment_payload())
 
     vars_payload = json.dumps({"curated_source_path": str(dataset_path)})
 

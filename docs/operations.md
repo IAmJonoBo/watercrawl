@@ -29,7 +29,7 @@ poetry run pre-commit run --all-files
 poetry run dotenv-linter lint .env.example
 poetry run poetry build
 poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample.csv --format json
-poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
+poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
 - Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
@@ -39,6 +39,12 @@ appropriate path if you are validating a non-sample dataset). The command exits
 non-zero on any expectation or dbt test failure, mirroring CI contract
 enforcement. `dbt build --select tag:contracts` is invoked under the hood and
 archives run artefacts to `data/contracts/<timestamp>/` for provenance.
+
+The CLI seeds `CONTRACTS_CANONICAL_JSON` so dbt macros and Great Expectations
+share canonical province/status taxonomies and the 70-point evidence confidence
+threshold. When invoking dbt directly, export this environment variable with the
+JSON payload from `firecrawl_demo.integrations.contracts.shared_config` to avoid
+drift between toolchains.
 
 Every enrichment run now emits a lineage bundle under `artifacts/lineage/<run_id>/` containing OpenLineage, PROV-O, and DCAT documents together with optional lakehouse manifests. The PROV graphs call out the enrichment software agent, evidence counts, and quality metrics while DCAT entries surface reproducibility commands, contact metadata, and distribution records for the evidence log, manifests, and lineage bundle. Surface these artefacts in runbooks and attach them to incident reports so provenance checks stay reproducible.
 

@@ -1,12 +1,5 @@
 {
   "expectation_suite_name": "curated_dataset",
-  "meta": {
-    "great_expectations_version": "1.7.1",
-    "notes": [
-      "Contracts derived from docs/data-quality.md Phase 1.1 guidance.",
-      "Validates canonical columns, province/status taxonomies, and contact hygiene."
-    ]
-  },
   "expectations": [
     {
       "expectation_type": "expect_table_columns_to_match_ordered_list",
@@ -100,6 +93,24 @@
       "meta": {
         "notes": "Emails must be syntactically valid when provided."
       }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "Confidence",
+        "max_value": 100,
+        "min_value": 0
+      },
+      "meta": {
+        "notes": "Placeholder bounds; runtime enforces canonical confidence thresholds."
+      }
     }
-  ]
+  ],
+  "meta": {
+    "great_expectations_version": "1.7.1",
+    "notes": [
+      "Contracts derived from docs/data-quality.md Phase 1.1 guidance.",
+      "Validates canonical columns, province/status taxonomies, and contact hygiene."
+    ]
+  }
 }

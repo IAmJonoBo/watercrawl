@@ -8,6 +8,7 @@ title: Data Quality & Research Methodology
 - **Status**: One of `Verified`, `Candidate`, `Needs Review`, `Duplicate`, or `Do Not Contact (Compliance)`. Empty or unrecognised statuses trigger actionable validation issues.
 - **Phones**: Converted to `+27XXXXXXXXX`. Numbers that cannot be normalised generate issues recorded against the row.
 - **Emails**: Must match the organisation domain. MX checks are performed when DNS tooling is available; otherwise a soft warning is recorded.
+- **Confidence**: Evidence confidence scores must be integers between 0 and 100 and remain at or above 70 for publishable records.
 
 ## Enrichment Heuristics
 
@@ -41,21 +42,27 @@ Phase 1.1 introduces automated contracts that gate curated outputs before they
 leave the enrichment pipeline. The delivery slices are:
 
 - ✅ **Suite scaffolding (Week 1) complete**: the repository now includes a
-  `great_expectations/` project with a `curated_dataset` expectation suite
+  `data_contracts/great_expectations/` project with a `curated_dataset`
   covering schema, province/status taxonomies, HTTPS websites, and contact
   hygiene checks. Run it locally via the `contracts` CLI command to produce
   analyst-friendly failure reports and CI-friendly exit codes.
 - ✅ **dbt contract alignment (Week 2) complete**: a lightweight dbt project now
-  lives under `analytics/` with a `stg_curated_dataset` model that reads CSV
+  lives under `data_contracts/analytics/` with a `stg_curated_dataset` model that reads CSV
   exports via DuckDB. Column typing, accepted values, and custom tests for HTTPS
   websites, email → domain alignment, and +27 phone formats keep dbt coverage in
   lock-step with the Great Expectations suite. CI runs `dbt build --select
-tag:contracts` alongside the checkpoint so both suites gate merges.
+  tag:contracts` alongside the checkpoint so both suites gate merges.
 - ✅ **Operationalisation (Week 3) complete**: the CLI `contracts` command now
   executes Great Expectations and dbt in the same run, persists run artefacts to
   `data/contracts/<timestamp>/`, and appends an evidence-log entry referencing
   the suite snapshot. MCP orchestration inherits the same behaviour, keeping
   offline runs deterministic while preserving audit trails.
+
+The contract suite now centralises canonical taxonomies and evidence thresholds
+via `CONTRACTS_CANONICAL_JSON`, ensuring dbt macros and Great Expectations share
+the same province/status lists and a confidence minimum of 70. The curated model
+exposes a numeric `confidence` column which both toolchains validate against the
+shared threshold.
 
 Deliverables include the expectation suite, dbt project, CI wiring, and MkDocs
 documentation summarising rule coverage and remediation playbooks.

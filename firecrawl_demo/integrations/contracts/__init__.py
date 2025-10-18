@@ -34,6 +34,12 @@ except ImportError:
     GREAT_EXPECTATIONS_AVAILABLE = False
 
 from .operations import persist_contract_artifacts, record_contracts_evidence
+from .shared_config import (
+    canonical_contracts_config,
+    environment_payload,
+    restore_environment,
+    seed_environment,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -63,6 +69,7 @@ def _contracts_health_probe(context: PluginContext) -> PluginHealthStatus:
             "DBT_PROFILES_DIR",
             "DBT_TARGET_PATH",
             "DBT_LOG_PATH",
+            "CONTRACTS_CANONICAL_JSON",
         ],
     }
 
@@ -132,4 +139,8 @@ __all__ = [
     "validate_curated_file",
     "record_contracts_evidence",
     "persist_contract_artifacts",
+    "canonical_contracts_config",
+    "environment_payload",
+    "restore_environment",
+    "seed_environment",
 ]

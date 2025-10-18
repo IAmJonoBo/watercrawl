@@ -50,6 +50,7 @@
 - [x] 2025-10-18 — CLI + QA hardening: restored `_resolve_progress_flag` shim, tightened Pint quantity coercion for dimensionless inputs, implemented typed dev CLI command runner overrides, and reworked markdownlint/actionlint hooks to install via `npx`/downloaded binaries. Full baseline rerun (pytest, ruff, mypy, bandit, safety, pre-commit, dbt) green.
 - [x] 2025-10-18 — Extended regression coverage for pipeline orchestration, Excel helpers, and research adapters; added defensive unit tests for lakehouse/versioning flows and Firecrawl behaviour, then reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build).
 - [x] 2025-10-19 — Restructure integrations into adapter/telemetry/storage packages, introduce plugin registry with health probes, extend discovery tests, and rerun baseline QA (pytest+cov, ruff, mypy, bandit, safety, build) once dependency stubs land; contracts toolkit plugin registered with health checks and dev stub packages exported for offline installs.
+- [x] 2025-10-19 — Consolidated dbt/GX projects under `data_contracts/`, introduced shared taxonomy/evidence config seeded via `CONTRACTS_CANONICAL_JSON`, refreshed docs/QA coverage, and added confidence-threshold enforcement to both toolchains.
 
 ---
 
@@ -124,7 +125,7 @@ Execute in this order; each item must meet its gate before promotion.
 
 ## 7) Risks/Notes (active, de‑duplicated)
 
-- Running Great Expectations locally regenerates `great_expectations/uncommitted/config_variables.yml`; keep it ignored and document analyst‑specific overrides per run.
+- Running Great Expectations locally regenerates `data_contracts/great_expectations/uncommitted/config_variables.yml`; keep it ignored and document analyst‑specific overrides per run.
 - Confirm repository‑root anchored paths in `firecrawl_demo.core.config` propagate to packaging/release workflows; adjust docs if downstream tools expect package‑root paths.
 - Keep Firecrawl SDK behind a feature flag until credentials and ALLOW_NETWORK_RESEARCH policy are finalised.
 - Enforce Python ≥3.11; monitor GE compatibility before removing `<3.14` pin.

@@ -23,6 +23,8 @@ from great_expectations.validator.validator import Validator
 from firecrawl_demo.core import config
 from firecrawl_demo.core.excel import read_dataset
 
+from .shared_config import canonical_contracts_config
+
 project_manager.is_using_cloud = lambda: False  # type: ignore[assignment]
 
 
@@ -46,6 +48,7 @@ class CuratedDatasetContractResult:
 def _expectation_suite_path() -> Path:
     return (
         config.PROJECT_ROOT
+        / "data_contracts"
         / "great_expectations"
         / "expectations"
         / "curated_dataset.json"
@@ -66,6 +69,50 @@ def _load_expectation_suite() -> ExpectationSuite:
             for entry in payload.get("expectations", [])
         ]
     )
+    return _apply_canonical_configuration(suite)
+
+
+def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
+    """Ensure the suite reflects canonical taxonomy and thresholds."""
+
+    config_payload = canonical_contracts_config()
+    provinces = list(config_payload.get("provinces", []))
+    statuses = list(config_payload.get("statuses", []))
+    evidence = config_payload.get("evidence", {})
+    min_conf = int(evidence.get("minimum_confidence", 0))
+    max_conf = int(evidence.get("maximum_confidence", 100))
+
+    has_confidence_check = False
+
+    for expectation in suite.expectations:
+        expectation_type = getattr(expectation, "expectation_type", "")
+        column = expectation.kwargs.get("column") if hasattr(expectation, "kwargs") else None
+
+        if expectation_type == "expect_column_values_to_be_in_set":
+            if column == "Province":
+                expectation.kwargs["value_set"] = provinces
+            elif column == "Status":
+                expectation.kwargs["value_set"] = statuses
+        elif expectation_type == "expect_column_values_to_be_between" and column == "Confidence":
+            expectation.kwargs["min_value"] = min_conf
+            expectation.kwargs.setdefault("max_value", max_conf)
+            has_confidence_check = True
+
+    if not has_confidence_check:
+        suite.expectations.append(
+            ExpectationConfiguration(
+                type="expect_column_values_to_be_between",
+                kwargs={
+                    "column": "Confidence",
+                    "min_value": min_conf,
+                    "max_value": max_conf,
+                },
+                meta={
+                    "notes": "Evidence confidence must meet canonical thresholds.",
+                },
+            ).to_domain_obj()
+        )
+
     return suite
 
 
