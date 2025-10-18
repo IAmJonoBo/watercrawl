@@ -38,6 +38,7 @@
 - [x] 2025-10-18 — Phase 2 provenance uplift: PROV graphs now record the enrichment agent, evidence counts, quality metrics, and generated manifests; DCAT entries surface quality measurements, reproducibility commands, contact metadata, and distribution links for evidence, manifests, and lineage bundles with regression coverage in `tests/test_lineage.py`.
 - [x] 2025-10-18 — DX/UX uplift: split analyst vs. developer CLIs (`app.cli`, `dev.cli`), added QA automation helpers, refreshed CLI docs, and extended test coverage for both entry points.
 - [x] 2025-10-18 — Replaced CLI monkeypatch scaffolding with explicit dependency overrides and taught cleanup automation to detect/skip tracked artefacts with reporting hooks for post-build hygiene reviews.
+- [x] 2025-10-18 — Hardened in-memory cache expiry semantics with type-safe TTL handling, added regression coverage for `cache.load` edge cases, and re-ran the full QA suite to verify guards across pytest, lint, type, security, build, and dbt contracts.
 
 ---
 
