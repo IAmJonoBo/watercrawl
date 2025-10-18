@@ -7,9 +7,9 @@ import pytest
 from firecrawl_demo.core import config
 from firecrawl_demo.core.external_sources import triangulate_organisation
 from firecrawl_demo.governance.secrets import EnvSecretsProvider
-from firecrawl_demo.integrations import research
-from firecrawl_demo.integrations.firecrawl_client import FirecrawlClient
-from firecrawl_demo.integrations.research import (
+from firecrawl_demo.integrations.adapters import research
+from firecrawl_demo.integrations.adapters.firecrawl_client import FirecrawlClient
+from firecrawl_demo.integrations.adapters.research import (
     AdapterLoaderSettings,
     NullResearchAdapter,
     ResearchAdapter,
@@ -19,7 +19,9 @@ from firecrawl_demo.integrations.research import (
     merge_findings,
     register_adapter,
 )
-from firecrawl_demo.integrations.research import registry as research_registry
+from firecrawl_demo.integrations.adapters.research import (
+    registry as research_registry,
+)
 
 
 class DummyAdapter(ResearchAdapter):

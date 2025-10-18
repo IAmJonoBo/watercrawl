@@ -7,7 +7,10 @@ import pytest
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.application.progress import PipelineProgressListener
 from firecrawl_demo.core import config
-from firecrawl_demo.integrations.research import ResearchAdapter, ResearchFinding
+from firecrawl_demo.integrations.adapters.research import (
+    ResearchAdapter,
+    ResearchFinding,
+)
 
 
 class StubResearchAdapter(ResearchAdapter):

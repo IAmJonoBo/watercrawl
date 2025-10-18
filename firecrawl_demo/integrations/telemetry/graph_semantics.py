@@ -4,6 +4,14 @@ from typing import Any
 
 import pandas as pd
 
+from firecrawl_demo.integrations.integration_plugins import (
+    IntegrationPlugin,
+    PluginConfigSchema,
+    PluginContext,
+    PluginHealthStatus,
+    register_plugin,
+)
+
 
 def build_csvw_metadata(
     *, frame: pd.DataFrame, dataset_uri: str, evidence_log_uri: str | None = None
@@ -59,3 +67,33 @@ def build_r2rml_mapping(*, dataset_uri: str, table_name: str) -> str:
 
 
 __all__ = ["build_csvw_metadata", "build_r2rml_mapping"]
+
+
+def _graph_health_probe(context: PluginContext) -> PluginHealthStatus:
+    details = {
+        "metadata_context": "csvw",
+        "optional_dependencies": ["pandas"],
+    }
+    return PluginHealthStatus(
+        healthy=True,
+        reason="Graph semantics helpers available",
+        details=details,
+    )
+
+
+register_plugin(
+    IntegrationPlugin(
+        name="graph_semantics",
+        category="telemetry",
+        factory=lambda ctx: {
+            "build_csvw_metadata": build_csvw_metadata,
+            "build_r2rml_mapping": build_r2rml_mapping,
+        },
+        config_schema=PluginConfigSchema(
+            optional_dependencies=("pandas",),
+            description="Generate CSVW metadata and R2RML mappings for curated datasets.",
+        ),
+        health_probe=_graph_health_probe,
+        summary="CSVW and R2RML helpers",
+    )
+)

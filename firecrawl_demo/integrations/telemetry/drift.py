@@ -5,6 +5,14 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from firecrawl_demo.integrations.integration_plugins import (
+    IntegrationPlugin,
+    PluginConfigSchema,
+    PluginContext,
+    PluginHealthStatus,
+    register_plugin,
+)
+
 
 @dataclass(frozen=True)
 class DriftMetric:
@@ -105,3 +113,30 @@ def compare_to_baseline(
 
 
 __all__ = ["DriftBaseline", "DriftMetric", "DriftReport", "compare_to_baseline"]
+
+
+def _drift_health_probe(context: PluginContext) -> PluginHealthStatus:
+    details = {
+        "requires_baseline": True,
+        "optional_dependencies": ["pandas"],
+    }
+    return PluginHealthStatus(
+        healthy=True,
+        reason="Drift module requires external baseline input",
+        details=details,
+    )
+
+
+register_plugin(
+    IntegrationPlugin(
+        name="drift",
+        category="telemetry",
+        factory=lambda ctx: compare_to_baseline,
+        config_schema=PluginConfigSchema(
+            optional_dependencies=("pandas",),
+            description="Detect distribution drift across provincial and status metrics.",
+        ),
+        health_probe=_drift_health_probe,
+        summary="Status and province drift calculations",
+    )
+)

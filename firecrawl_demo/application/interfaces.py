@@ -10,7 +10,7 @@ from typing import Protocol
 import pandas as pd
 
 from firecrawl_demo.domain.models import EvidenceRecord, PipelineReport
-from firecrawl_demo.integrations.lineage import LineageContext
+from firecrawl_demo.integrations.telemetry.lineage import LineageContext
 
 from .progress import PipelineProgressListener
 

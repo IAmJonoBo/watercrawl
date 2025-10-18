@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from firecrawl_demo.integrations.drift import (
+from firecrawl_demo.integrations.telemetry.drift import (
     DriftBaseline,
     DriftReport,
     compare_to_baseline,

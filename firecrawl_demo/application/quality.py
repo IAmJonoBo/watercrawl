@@ -8,7 +8,7 @@ from typing import Literal
 
 from firecrawl_demo.domain.compliance import canonical_domain
 from firecrawl_demo.domain.models import SchoolRecord
-from firecrawl_demo.integrations.research import ResearchFinding
+from firecrawl_demo.integrations.adapters.research import ResearchFinding
 
 
 @dataclass(frozen=True)

@@ -43,41 +43,78 @@ from firecrawl_demo.domain.models import (
 )
 from firecrawl_demo.domain.validation import DatasetValidator
 from firecrawl_demo.infrastructure.evidence import NullEvidenceSink
-from firecrawl_demo.integrations.lakehouse import (
-    LocalLakehouseWriter,
-    build_lakehouse_writer,
-)
-from firecrawl_demo.integrations.lineage import LineageContext, LineageManager
-from firecrawl_demo.integrations.research import (
+from firecrawl_demo.integrations.adapters.research import (
+    NullResearchAdapter,
     ResearchAdapter,
     ResearchFinding,
-    build_research_adapter,
     lookup_with_adapter_async,
 )
-from firecrawl_demo.integrations.versioning import (
+from firecrawl_demo.integrations.integration_plugins import (
+    PluginLookupError,
+    instantiate_plugin,
+)
+from firecrawl_demo.integrations.storage.lakehouse import LocalLakehouseWriter
+from firecrawl_demo.integrations.storage.versioning import (
     VersioningManager,
-    build_versioning_manager,
     fingerprint_dataframe,
 )
+from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
 logger = logging.getLogger(__name__)
+
+
+def _load_research_adapter() -> ResearchAdapter:
+    try:
+        adapter = instantiate_plugin("adapters", "research")
+    except PluginLookupError:
+        logger.warning("Research plugin not registered; falling back to NullResearchAdapter")
+        return NullResearchAdapter()
+    if adapter is None:
+        return NullResearchAdapter()
+    return cast(ResearchAdapter, adapter)
+
+
+def _load_lakehouse_writer() -> LocalLakehouseWriter | None:
+    try:
+        writer = instantiate_plugin("storage", "lakehouse", allow_missing=True)
+    except PluginLookupError:
+        return None
+    return cast(LocalLakehouseWriter | None, writer)
+
+
+def _load_versioning_manager() -> VersioningManager | None:
+    try:
+        manager = instantiate_plugin("storage", "versioning", allow_missing=True)
+    except PluginLookupError:
+        return None
+    return cast(VersioningManager | None, manager)
+
+
+def _load_lineage_manager() -> LineageManager | None:
+    try:
+        manager = instantiate_plugin("telemetry", "lineage", allow_missing=True)
+    except PluginLookupError:
+        return None
+    return cast(LineageManager | None, manager)
 
 
 @dataclass
 class Pipeline(PipelineService):
     """Coordinate validation, enrichment, and evidence logging."""
 
-    research_adapter: ResearchAdapter = field(default_factory=build_research_adapter)
+    research_adapter: ResearchAdapter = field(default_factory=lambda: _load_research_adapter())
     validator: DatasetValidator = field(default_factory=DatasetValidator)
     evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
     quality_gate: QualityGate = field(default_factory=QualityGate)
-    lineage_manager: LineageManager | None = field(default_factory=LineageManager)
+    lineage_manager: LineageManager | None = field(
+        default_factory=lambda: _load_lineage_manager()
+    )
     lakehouse_writer: LocalLakehouseWriter | None = field(
-        default_factory=build_lakehouse_writer
+        default_factory=lambda: _load_lakehouse_writer()
     )
     versioning_manager: VersioningManager | None = field(
-        default_factory=build_versioning_manager
+        default_factory=lambda: _load_versioning_manager()
     )
     _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
 
