@@ -1,40 +1,97 @@
-## <!-- markdownlint-disable MD033 MD034 MD041 MD046 -->
-
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
-hero:
-tagline: Congrats on setting up a new Starlight project!
-image:
-file: ../../assets/houston.webp
-actions: - text: Example Guide
-link: /guides/example/
-icon: right-arrow - text: Read the Starlight docs
-link: <https://starlight.astro.build>
-icon: external
-variant: minimal
+<!--
+markdownlint-disable MD025 MD033 MD041
+-->
 
 ---
 
+title: ACES Aerodynamics Enrichment Stack
+description: Consolidated intelligence and enrichment toolkit for ACES Aerodynamics
+
+---
+
+# ACES Aerodynamics Enrichment Stack
+
+Welcome to the consolidated intelligence and enrichment toolkit for ACES Aerodynamics. This stack transforms raw flight-school datasets into fully validated, evidence-backed records aligned with POPIA and SACAA expectations.
+
+## Overview
+
+The ACES Enrichment Stack is a modular, compliance-driven pipeline for B2B data enrichment and OSINT research focused on South African flight schools. Built with Python 3.13, it leverages modern tools like Poetry for dependency management, dbt for data transformation, Great Expectations for data quality, and MCP for AI-assisted workflows.
+
+## Key Features
+
+- **🔍 Intelligent Research**: Automated OSINT gathering with triangulation from multiple sources
+- **✅ Data Validation**: South African provincial and aviation industry compliance checks
+- **📊 Quality Assurance**: Great Expectations suites and dbt data contracts
+- **🤖 AI Integration**: MCP server for GitHub Copilot automation
+- **📈 Analytics**: Lakehouse architecture with lineage tracking
+- **🔒 Compliance**: POPIA and data protection compliance built-in
+
+## Quick Start
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run enrichment pipeline
+python -m app.cli enrich --input data/sample.csv --output results/
+
+# Start MCP server for AI integration
+python -m firecrawl_demo.interfaces.mcp.server
+```
+
+## Architecture
+
+```mermaid
+---
+config:
+  theme: 'base'
+  themeVariables:
+    background: '#ffffff'
+    primaryColor: '#f6f8fa'
+    primaryTextColor: '#24292f'
+    primaryBorderColor: '#d1d9e0'
+    lineColor: '#656d76'
+    secondaryColor: '#0969da'
+    tertiaryColor: '#ffffff'
+    textColor: '#24292f'
+    mainBkg: '#f6f8fa'
+    secondBkg: '#ffffff'
+    border1: '#d1d9e0'
+    border2: '#d1d9e0'
+---
+graph TD
+    A[Raw CSV/XLSX] --> B[DatasetValidator]
+    B -->|Issues| C[Validation Report]
+    B -->|Clean frame| D[Pipeline]
+    D --> E[Research Adapter]
+    E --> D
+    D --> F[Compliance Normalisers]
+    D --> G[Enriched DataFrame]
+    D --> H[Evidence Log]
+    G --> I[Export]
+```
+
+## Documentation Sections
+
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
-## Next steps
-
-<CardGrid stagger>
-  <Card title="Update content" icon="pencil">
-    Edit `src/content/docs/index.mdx` to see this page change.
+<CardGrid>
+  <Card title="Architecture" icon="document">
+    Learn about the layered design and data flow patterns.
   </Card>
-  <Card title="Change page layout" icon="document">
-    Delete `template: splash` in `src/content/docs/index.mdx` to display a
-    sidebar on this page.
+  <Card title="CLI Guide" icon="terminal">
+    Command-line interface for analysts and developers.
   </Card>
-  <Card title="Add new content" icon="add-document">
-    Add Markdown or MDX files to `src/content/docs` to create new pages.
+  <Card title="Data Quality" icon="data">
+    Validation rules and research methodologies.
   </Card>
-  <Card title="Configure your site" icon="setting">
-    Edit your `sidebar` and other config in `astro.config.mjs`.
+  <Card title="MCP Integration" icon="robot">
+    AI-assisted workflows with GitHub Copilot.
   </Card>
-  <Card title="Read the docs" icon="open-book">
-    Learn more in [the Starlight Docs](https://starlight.astro.build/).
+  <Card title="Operations" icon="gear">
+    Quality gates and maintenance procedures.
+  </Card>
+  <Card title="Lakehouse" icon="database">
+    Data lineage and analytics architecture.
   </Card>
 </CardGrid>
