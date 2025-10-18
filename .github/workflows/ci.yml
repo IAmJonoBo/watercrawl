@@ -57,7 +57,7 @@ jobs:
             ci-dashboard.json
             problems_report.json
       - name: Install Node.js and markdownlint-cli2
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Install markdownlint-cli2
