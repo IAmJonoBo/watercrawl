@@ -12,8 +12,13 @@ import pandas as pd
 from pint import UnitRegistry
 from pint.errors import DimensionalityError, RedefinitionError, UndefinedUnitError
 
-from . import config
-from .models import EnrichmentResult, SchoolRecord, normalize_province, normalize_status
+from . import config  # type: ignore
+from .models import (  # type: ignore
+    EnrichmentResult,
+    SchoolRecord,
+    normalize_province,
+    normalize_status,
+)
 
 EXPECTED_COLUMNS = [
     "Name of Organisation",
@@ -175,7 +180,7 @@ def _normalize_quantity(
     if quantity is None:
         return None
 
-    unit_name = str(quantity.units)
+    unit_name = str(quantity.units)  # type: ignore
     # If the parsed quantity is 'dimensionless', it means the value was numeric without a unit;
     # substitute the canonical unit so validation against allowed units works as expected.
     if unit_name == "dimensionless":
@@ -184,7 +189,7 @@ def _normalize_quantity(
         raise ValueError(f"{column} unit '{unit_name}' is not supported")
 
     try:
-        converted = quantity.to(canonical_unit)
+        converted = quantity.to(canonical_unit)  # type: ignore
     except DimensionalityError as exc:  # pragma: no cover - defensive safety
         raise ValueError(f"{column} value '{value}' has incompatible units") from exc
 
@@ -195,7 +200,7 @@ def _normalize_quantity(
     return caster(magnitude)
 
 
-def _coerce_to_quantity(value: Any, canonical_unit: str, column: str):
+def _coerce_to_quantity(value: Any, canonical_unit: str, column: str) -> Any:
     """Coerce a value to a quantity with the canonical unit."""
     if isinstance(value, (int, float, Decimal)) and not _is_missing(value):
         return UNIT_REGISTRY.Quantity(value, canonical_unit)
