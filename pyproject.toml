@@ -68,3 +68,15 @@ include = "\\.pyi?$"
 profile = "black"
 line_length = 88
 known_first_party = ["firecrawl_demo", "analytics", "scripts"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["firecrawl_demo", "app", "analytics", "dev", "scripts", "tests"]
+
+[tool.ruff.lint]
+ignore = ["E203"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

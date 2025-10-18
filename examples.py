@@ -27,7 +27,7 @@ def ensure_api_key() -> str:
 
 def pretty_print(label: str, obj: Any) -> None:
     """Print a label followed by a formatted representation of obj."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"{label}")
     print("=" * 60)
 
@@ -163,7 +163,7 @@ def main() -> None:
         demo_crawling(client)
         demo_actions(client)
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("✅ All demos completed successfully!")
         print("='*60")
 

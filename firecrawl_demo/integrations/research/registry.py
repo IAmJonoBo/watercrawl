@@ -1,17 +1,11 @@
 from __future__ import annotations
 
 import logging
-import sys
-from collections.abc import Iterable, Sequence
+import tomllib
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Callable
-
-if sys.version_info >= (3, 11):  # pragma: no branch
-    import tomllib
-else:  # pragma: no cover - fallback for <3.11
-    import tomli as tomllib  # type: ignore[import-not-found]
 
 from firecrawl_demo.core import config
 from firecrawl_demo.governance.secrets import SecretsProvider
