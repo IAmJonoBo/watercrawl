@@ -36,6 +36,7 @@
 - [x] 2025-10-18 — Hardened quality/evidence coverage: added QualityGate regression tests, exercised evidence sink fan-out, and enforced backend validation through docs + pre-commit cleanups.
 - [x] 2025-10-18 — Phase 2 progress: OpenLineage transport toggles (HTTP/Kafka/logging) wired via config, CLI now emits lineage/lakehouse/version manifest paths, and lineage events capture version metadata for downstream reproducibility.
 - [x] 2025-10-18 — Phase 2 provenance uplift: PROV graphs now record the enrichment agent, evidence counts, quality metrics, and generated manifests; DCAT entries surface quality measurements, reproducibility commands, contact metadata, and distribution links for evidence, manifests, and lineage bundles with regression coverage in `tests/test_lineage.py`.
+- [x] 2025-10-18 — DX/UX uplift: split analyst vs. developer CLIs (`app.cli`, `dev.cli`), added QA automation helpers, refreshed CLI docs, and extended test coverage for both entry points.
 
 ---
 
@@ -102,6 +103,7 @@ Execute in this order; each item must meet its gate before promotion.
 - [x] Operations runbook — Great Expectations contract execution guidance → `docs/operations.md`
 - [x] Cleanup automation — `scripts/cleanup.py`
 - [x] Lineage & lakehouse configuration → `docs/lineage-lakehouse.md`
+- [x] CLI surfaces → `docs/cli.md`
 - [ ] Data quality suites (GX/dbt/Deequ) → `docs/data-quality.md`
 - [ ] Codex DX bundle & evals → `codex/README.md`, `codex/evals/promptfooconfig.yaml`
 

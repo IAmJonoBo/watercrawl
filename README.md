@@ -18,10 +18,15 @@ poetry env use 3.13
 # Install all dependencies (including Firecrawl SDK)
 poetry install --no-root
 
-# Run CLI commands
-poetry run python -m firecrawl_demo.interfaces.cli validate data/sample.csv --format json
-poetry run python -m firecrawl_demo.interfaces.cli enrich data/sample.csv --output data/sample_enriched.csv
-poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample_enriched.csv --format text
+# Run end-user CLI commands (analyst workflow)
+poetry run python -m app.cli overview
+poetry run python -m app.cli validate data/sample.csv --format json
+poetry run python -m app.cli enrich data/sample.csv --output data/sample_enriched.csv
+poetry run python -m app.cli contracts data/sample_enriched.csv --format text
+
+# Developer DX helpers mirroring CI
+poetry run python -m dev.cli qa plan
+poetry run python -m dev.cli qa all --dry-run
 ```
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
