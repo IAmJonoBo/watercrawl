@@ -51,3 +51,15 @@ Name of Organisation | Province | Status | Website URL | Contact Person | Contac
 - ITU-T E.164 phone formatting with `+27`.
 - Email domains must publish MX records.
 - POPIA s69 direct marketing guidance (Information Regulator).
+
+## Problems Reporting & Remediation (for Copilot and Ephemeral Runners)
+
+- All linter, type, and QA errors are aggregated into `problems_report.json` after each run (see `scripts/collect_problems.py`).
+- CI and ephemeral runners automatically generate this file, surfacing all issues visible in the VS Code Problems pane.
+- Copilot agents and analysts must:
+  - Check `problems_report.json` for outstanding issues before remediation or enrichment.
+  - Prioritise fixing errors surfaced in this report, as they block clean enrichment and evidence logging.
+  - Use the shell script `scripts/collect_problems.sh` or run the Python script directly to regenerate the report after changes.
+- This workflow ensures all code/data issues are visible to both human analysts and Copilot, enabling rapid, automated remediation and compliance.
+
+> **Best Practice:** Integrate `problems_report.json` as a required artefact in CI and review gates. Always remediate issues before publishing or updating evidence logs.
