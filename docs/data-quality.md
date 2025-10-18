@@ -31,7 +31,7 @@
   - `notes`: Concise justification of the enrichment decision.
   - `confidence`: Integer 0–100 reflecting evidence strength.
 - Keep adapters stateless; persist caching or rate limiting externally.
-- Add new adapters under `firecrawl_demo.integrations.research` or compose them within the pipeline factory.
+- Add new adapters under `firecrawl_demo.integrations.adapters.research` or compose them within the plugin registry.
 
 ## Phase 1.1 — Great Expectations + dbt quality suites
 

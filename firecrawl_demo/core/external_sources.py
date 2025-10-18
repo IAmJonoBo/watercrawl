@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 
 if TYPE_CHECKING:  # pragma: no cover - typing aid
-    from firecrawl_demo.integrations.research import ResearchFinding
+    from firecrawl_demo.integrations.adapters.research import ResearchFinding
 
 from firecrawl_demo.domain.compliance import canonical_domain, normalize_phone
 
@@ -63,7 +63,7 @@ def triangulate_organisation(
     include_regulator: bool,
     investigate_rebrands: bool,
 ) -> ResearchFinding:
-    from firecrawl_demo.integrations.research import (  # local import to avoid circular dependency
+    from firecrawl_demo.integrations.adapters.research import (
         ResearchFinding,
     )
 

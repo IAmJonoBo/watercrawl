@@ -12,7 +12,7 @@
    - Coordinates orchestration through the `pipeline`, `quality`, and `progress` modules.
    - Defines interfaces in `application.interfaces` so pipelines and evidence sinks can be swapped or decorated without touching domain logic.
 4. **Integrations** (`firecrawl_demo.integrations`)
-   - Research adapters, lineage capture, lakehouse writers, and contract runners live behind feature-flag friendly factories.
+   - Adapter, telemetry, storage, and contract integrations register themselves with the shared plugin registry.
    - External systems plug into the application layer via protocols so deterministic offline adapters continue to drive the QA suite.
 5. **Infrastructure** (`firecrawl_demo.infrastructure`)
    - Implements persistence for the application interfaces, including CSV/streaming evidence sinks and the infrastructure planning scaffold.
@@ -48,14 +48,22 @@ flowchart LR
 
 ### Research Adapter Registry
 
-The `firecrawl_demo.integrations.research.registry` module centralises adapter discovery so new intelligence sources can be added without editing the pipeline.
+The `firecrawl_demo.integrations.adapters.research.registry` module centralises adapter discovery so new intelligence sources can be added without editing the pipeline.
 
 1. Author an adapter that implements the `ResearchAdapter` protocol (expose a `lookup(organisation, province)` method returning a `ResearchFinding`).
 2. Register it during import with `register_adapter("my-adapter", my_factory)`. Factories receive an `AdapterContext` and should return a new adapter instance (or `None` when disabled).
 3. Declare the execution order with configuration:
    - `RESEARCH_ADAPTERS="firecrawl,my-adapter,null"` for quick overrides.
    - Point `RESEARCH_ADAPTERS_FILE` to a YAML/TOML file containing an `adapters` list for more complex stacks.
-4. When `load_enabled_adapters()` runs, the registry handles deduplication and feature-flag checks; `build_research_adapter()` ensures a Null adapter is used if every factory opts out.
+4. When `load_enabled_adapters()` runs, the registry handles deduplication and feature-flag checks; the plugin registry defaults to the composite adapter while ensuring a Null adapter is used if every factory opts out.
+
+### Integration Plugin Registry
+
+`firecrawl_demo.integrations.integration_plugins` provides a shared registry that groups plugins by category (`adapters`, `telemetry`, `storage`, `contracts`) and exposes discovery helpers used by the pipeline and CLIs. Built-in plugins register themselves on import and describe their required feature flags, environment variables, optional dependencies, and health probes. Third-party packages can contribute additional plugins via Python entry points or by calling `register_plugin()` during import.
+
+- `instantiate_plugin(category, name)` replaces ad-hoc import factories inside the pipeline, ensuring research adapters, lineage managers, lakehouse writers, and versioning managers are all resolved consistently.
+- Plugin health probes capture QA readiness for optional transports (e.g., Kafka lineage exporters) so CI can surface missing dependencies before runtime.
+- Registrations are intentionally idempotent and test fixtures can snapshot/reset the registry through `reset_registry()` when isolation is required.
 
 This registry keeps `build_research_adapter()` thin while allowing optional modules (press intelligence, regulator lookups, ML enrichers) to live in their own packages.
 

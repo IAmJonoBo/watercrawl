@@ -9,9 +9,9 @@ import pandas as pd
 from firecrawl_demo.core import config
 
 if TYPE_CHECKING:
-    from firecrawl_demo.integrations.lakehouse import LakehouseManifest
-    from firecrawl_demo.integrations.lineage import LineageArtifacts
-    from firecrawl_demo.integrations.versioning import VersionInfo
+    from firecrawl_demo.integrations.storage.lakehouse import LakehouseManifest
+    from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
+    from firecrawl_demo.integrations.storage.versioning import VersionInfo
 
 EXPECTED_COLUMNS = [
     "Name of Organisation",

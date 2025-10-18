@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from firecrawl_demo.core.excel import EXPECTED_COLUMNS
-from firecrawl_demo.integrations.graph_semantics import (
+from firecrawl_demo.integrations.telemetry.graph_semantics import (
     build_csvw_metadata,
     build_r2rml_mapping,
 )
