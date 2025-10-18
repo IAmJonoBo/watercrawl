@@ -2,7 +2,15 @@
 
 ## Baseline Checks
 
-Run these before changes (already automated in CI):
+Run these before changes (already automated in CI). Start by clearing local
+artefacts so the suite mirrors CI output:
+
+```bash
+poetry run python -m scripts.cleanup --dry-run
+poetry run python -m scripts.cleanup
+```
+
+Then execute the quality gates:
 
 ```bash
 poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing

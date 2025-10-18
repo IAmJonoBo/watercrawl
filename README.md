@@ -77,6 +77,8 @@ When offline, the pipeline still records reminders in the evidence log so analys
 ## Tests & QA
 
 ```bash
+poetry run python -m scripts.cleanup --dry-run  # inspect cleanup targets
+poetry run python -m scripts.cleanup            # remove cached artefacts
 poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 poetry run ruff check .
 poetry run mypy .
