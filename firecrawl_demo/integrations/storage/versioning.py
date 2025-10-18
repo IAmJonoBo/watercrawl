@@ -12,7 +12,15 @@ from typing import Any
 import pandas as pd
 
 from firecrawl_demo.core import config
-from firecrawl_demo.integrations.lakehouse import LakehouseManifest
+from firecrawl_demo.integrations.integration_plugins import (
+    IntegrationPlugin,
+    PluginConfigSchema,
+    PluginContext,
+    PluginHealthStatus,
+    register_plugin,
+)
+
+from .lakehouse import LakehouseManifest
 
 
 def fingerprint_dataframe(dataframe: pd.DataFrame) -> str:
@@ -139,6 +147,50 @@ def build_versioning_manager() -> VersioningManager | None:
     if not config.VERSIONING.enabled:
         return None
     return VersioningManager()
+
+
+def _versioning_health_probe(context: PluginContext) -> PluginHealthStatus:
+    settings = config.VERSIONING
+    details = {
+        "enabled": settings.enabled,
+        "metadata_root": str(settings.metadata_root),
+        "strategy": settings.strategy,
+    }
+
+    if not settings.enabled:
+        return PluginHealthStatus(healthy=True, reason="Versioning disabled", details=details)
+
+    if not settings.metadata_root.exists():
+        return PluginHealthStatus(
+            healthy=False,
+            reason="Metadata root does not exist",
+            details=details,
+        )
+
+    if not settings.metadata_root.is_dir():
+        return PluginHealthStatus(
+            healthy=False,
+            reason="Metadata root is not a directory",
+            details=details,
+        )
+
+    return PluginHealthStatus(healthy=True, reason="Versioning ready", details=details)
+
+
+register_plugin(
+    IntegrationPlugin(
+        name="versioning",
+        category="storage",
+        factory=lambda ctx: build_versioning_manager(),
+        config_schema=PluginConfigSchema(
+            feature_flags=("VERSIONING_ENABLED",),
+            environment_variables=("VERSIONING_METADATA_ROOT", "VERSIONING_STRATEGY"),
+            description="Persist dataset manifests and reproduce commands for curated outputs.",
+        ),
+        health_probe=_versioning_health_probe,
+        summary="Versioning manager for curated datasets",
+    )
+)
 
 
 __all__ = [

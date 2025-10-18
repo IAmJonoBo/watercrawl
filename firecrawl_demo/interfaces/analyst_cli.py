@@ -29,8 +29,8 @@ from firecrawl_demo.integrations.contracts import (
     run_dbt_contract_tests,
     validate_curated_file,
 )
-from firecrawl_demo.integrations.lakehouse import build_lakehouse_writer
-from firecrawl_demo.integrations.lineage import LineageContext, LineageManager
+from firecrawl_demo.integrations.storage.lakehouse import build_lakehouse_writer
+from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
 from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 
 T = TypeVar("T")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import logging
 from collections.abc import Mapping, Sequence
@@ -12,6 +13,13 @@ import requests
 
 from firecrawl_demo.core import config
 from firecrawl_demo.domain import models
+from firecrawl_demo.integrations.integration_plugins import (
+    IntegrationPlugin,
+    PluginConfigSchema,
+    PluginContext,
+    PluginHealthStatus,
+    register_plugin,
+)
 
 ACES_LINEAGE_NS = "https://acesaero.co.za/ns/lineage#"
 ACES_CONTEXT_PREFIX = "aces"
@@ -685,3 +693,64 @@ __all__ = [
     "build_prov_document",
     "build_catalog_entry",
 ]
+
+
+def _lineage_health_probe(context: PluginContext) -> PluginHealthStatus:
+    settings = config.LINEAGE
+    details = {
+        "enabled": settings.enabled,
+        "transport": settings.transport,
+        "endpoint": settings.endpoint,
+        "kafka_topic": settings.kafka_topic,
+        "kafka_bootstrap_servers": settings.kafka_bootstrap_servers,
+    }
+
+    if not settings.enabled:
+        return PluginHealthStatus(healthy=True, reason="Lineage disabled", details=details)
+
+    transport = (settings.transport or "").lower()
+    if transport == "http" and not settings.endpoint:
+        return PluginHealthStatus(
+            healthy=False,
+            reason="HTTP transport enabled without endpoint",
+            details=details,
+        )
+    if transport == "kafka":
+        if not settings.kafka_topic or not settings.kafka_bootstrap_servers:
+            return PluginHealthStatus(
+                healthy=False,
+                reason="Kafka transport missing configuration",
+                details=details,
+            )
+        if importlib.util.find_spec("kafka") is None:
+            return PluginHealthStatus(
+                healthy=False,
+                reason="Kafka transport enabled but kafka-python missing",
+                details=details,
+            )
+
+    return PluginHealthStatus(healthy=True, reason="Lineage ready", details=details)
+
+
+register_plugin(
+    IntegrationPlugin(
+        name="lineage",
+        category="telemetry",
+        factory=lambda ctx: LineageManager(),
+        config_schema=PluginConfigSchema(
+            feature_flags=("LINEAGE_ENABLED",),
+            environment_variables=(
+                "LINEAGE_TRANSPORT",
+                "LINEAGE_ENDPOINT",
+                "LINEAGE_KAFKA_TOPIC",
+                "LINEAGE_KAFKA_BOOTSTRAP_SERVERS",
+            ),
+            optional_dependencies=("requests", "kafka"),
+            description=(
+                "Emit OpenLineage, PROV-O, and DCAT artefacts with configurable transports."
+            ),
+        ),
+        health_probe=_lineage_health_probe,
+        summary="Lineage manager producing OpenLineage/PROV/DCAT outputs",
+    )
+)

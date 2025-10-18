@@ -10,6 +10,13 @@ from typing import Any
 import pandas as pd
 
 from firecrawl_demo.core import config
+from firecrawl_demo.integrations.integration_plugins import (
+    IntegrationPlugin,
+    PluginConfigSchema,
+    PluginContext,
+    PluginHealthStatus,
+    register_plugin,
+)
 
 
 @dataclass(slots=True)
@@ -125,6 +132,53 @@ def build_lakehouse_writer() -> LocalLakehouseWriter | None:
     if not settings.enabled:
         return None
     return LocalLakehouseWriter(settings)
+
+
+def _lakehouse_health_probe(context: PluginContext) -> PluginHealthStatus:
+    settings = LakehouseConfig()
+    details = {
+        "enabled": settings.enabled,
+        "backend": settings.backend,
+        "root_path": str(settings.root_path),
+    }
+
+    if not settings.enabled:
+        return PluginHealthStatus(healthy=True, reason="Lakehouse disabled", details=details)
+
+    if not settings.root_path.exists():
+        return PluginHealthStatus(
+            healthy=False,
+            reason="Lakehouse root path does not exist",
+            details=details,
+        )
+
+    if not settings.root_path.is_dir():
+        return PluginHealthStatus(
+            healthy=False,
+            reason="Lakehouse root path is not a directory",
+            details=details,
+        )
+
+    return PluginHealthStatus(healthy=True, reason="Lakehouse ready", details=details)
+
+
+register_plugin(
+    IntegrationPlugin(
+        name="lakehouse",
+        category="storage",
+        factory=lambda ctx: build_lakehouse_writer(),
+        config_schema=PluginConfigSchema(
+            feature_flags=("LAKEHOUSE_ENABLED",),
+            environment_variables=("LAKEHOUSE_ROOT", "LAKEHOUSE_TABLE_NAME"),
+            optional_dependencies=("pandas",),
+            description=(
+                "Persist curated datasets to local lakehouse storage when enabled."
+            ),
+        ),
+        health_probe=_lakehouse_health_probe,
+        summary="Local Parquet lakehouse writer",
+    )
+)
 
 
 __all__ = [

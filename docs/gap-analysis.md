@@ -25,6 +25,8 @@
 - ✅ Firecrawl SDK integration available behind feature toggles with offline-safe defaults and type stubs for pandas/requests.
 - 🔄 Follow-up: replace placeholder `.env` credentials with secrets manager integration.
 - ✅ Infrastructure planning module added to codify crawler, observability, and policy guardrails with environment-driven overrides.
+- ✅ Integrations restructured into adapter/telemetry/storage subpackages with a shared plugin registry and health probes for QA.
+- ✅ Dependency stubs for boto3/botocore/urllib3/pillow now ship with the dev toolchain so mypy and pytest imports stay green in clean environments.
 
 ## 2025-10-16 Audit Findings
 

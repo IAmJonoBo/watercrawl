@@ -4,8 +4,11 @@ from pathlib import Path
 import pandas as pd
 
 from firecrawl_demo.core.excel import EXPECTED_COLUMNS
-from firecrawl_demo.integrations.lakehouse import LakehouseConfig, LocalLakehouseWriter
-from firecrawl_demo.integrations.versioning import (
+from firecrawl_demo.integrations.storage.lakehouse import (
+    LakehouseConfig,
+    LocalLakehouseWriter,
+)
+from firecrawl_demo.integrations.storage.versioning import (
     VersioningManager,
     fingerprint_dataframe,
 )

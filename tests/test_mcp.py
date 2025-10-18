@@ -5,7 +5,10 @@ from dataclasses import dataclass
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.domain.models import EvidenceRecord
-from firecrawl_demo.integrations.research import ResearchAdapter, ResearchFinding
+from firecrawl_demo.integrations.adapters.research import (
+    ResearchAdapter,
+    ResearchFinding,
+)
 from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 
 
