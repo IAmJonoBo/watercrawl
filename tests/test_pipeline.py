@@ -1,4 +1,4 @@
-from firecrawl_demo.core import pipeline
+from firecrawl_demo.application import pipeline
 
 
 def test_pipeline_import():

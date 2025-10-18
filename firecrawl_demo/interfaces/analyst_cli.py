@@ -15,12 +15,12 @@ import click
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeRemainingColumn
 
+from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.application.progress import PipelineProgressListener
 from firecrawl_demo.core import config
-from firecrawl_demo.core.audit import build_evidence_sink
 from firecrawl_demo.core.excel import read_dataset
-from firecrawl_demo.core.models import SchoolRecord
-from firecrawl_demo.core.pipeline import Pipeline
-from firecrawl_demo.core.progress import PipelineProgressListener
+from firecrawl_demo.domain.models import SchoolRecord
+from firecrawl_demo.infrastructure.evidence import build_evidence_sink
 from firecrawl_demo.integrations.contracts import (
     CuratedDatasetContractResult,
     DbtContractResult,
@@ -317,6 +317,9 @@ def enrich(
 def contracts(input_path: Path, output_format: str) -> None:
     """Run Great Expectations contracts against a curated dataset."""
 
+    sink_factory = _get_cli_override("build_evidence_sink", build_evidence_sink)
+    evidence_sink = sink_factory()
+
     ge_result: CuratedDatasetContractResult = validate_curated_file(input_path)
     dbt_result: DbtContractResult = run_dbt_contract_tests(input_path)
 
@@ -351,7 +354,9 @@ def contracts(input_path: Path, output_format: str) -> None:
     }
 
     artifact_dir = persist_contract_artifacts(input_path, ge_payload, dbt_result)
-    record_contracts_evidence(input_path, ge_result, dbt_result, artifact_dir)
+    record_contracts_evidence(
+        input_path, ge_result, dbt_result, artifact_dir, evidence_sink
+    )
 
     payload: dict[str, Any] = {
         "success": ge_result.success and dbt_result.success,

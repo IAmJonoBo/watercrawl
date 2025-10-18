@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from . import config
-from .excel import EXPECTED_COLUMNS
-from .models import ValidationIssue, ValidationReport
+from firecrawl_demo.core import config
+
+from .models import EXPECTED_COLUMNS, ValidationIssue, ValidationReport
 
 
 @dataclass(frozen=True)

@@ -5,11 +5,20 @@ import json
 import re
 from collections.abc import Iterable, Sequence
 from datetime import datetime
+from typing import TYPE_CHECKING, Protocol
 from urllib.parse import urlparse
 
-from . import config
-from .audit import CSVEvidenceSink
+from firecrawl_demo.core import config
+
 from .models import EvidenceRecord
+
+if TYPE_CHECKING:
+    from firecrawl_demo.application.interfaces import EvidenceSink
+else:  # pragma: no cover - runtime protocol for loose coupling
+
+    class EvidenceSink(Protocol):
+        def record(self, entries: Iterable[EvidenceRecord]) -> None: ...
+
 
 try:  # pragma: no cover - optional dependency
     import dns.resolver  # type: ignore[import-not-found]
@@ -196,7 +205,12 @@ def evidence_entry(
     }
 
 
-def append_evidence_log(rows: Iterable[dict[str, str]]) -> None:
+def append_evidence_log(
+    rows: Iterable[dict[str, str]],
+    sink: EvidenceSink,
+) -> None:
+    """Normalise raw evidence rows and forward them to the provided sink."""
+
     entries = list(rows)
     if not entries:
         return
@@ -236,7 +250,7 @@ def append_evidence_log(rows: Iterable[dict[str, str]]) -> None:
             )
         )
 
-    CSVEvidenceSink(path=config.EVIDENCE_LOG).record(evidence_rows)
+    sink.record(evidence_rows)
 
 
 def payload_hash(payload: dict[str, object]) -> str:

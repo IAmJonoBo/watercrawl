@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from firecrawl_demo.core import config
-from firecrawl_demo.core.compliance import normalize_phone
 from firecrawl_demo.core.external_sources import triangulate_organisation
+from firecrawl_demo.domain.compliance import normalize_phone
 
 from ..firecrawl_client import FirecrawlClient, summarize_extract_payload
 

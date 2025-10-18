@@ -6,10 +6,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import Literal
 
+from firecrawl_demo.domain.compliance import canonical_domain
+from firecrawl_demo.domain.models import SchoolRecord
 from firecrawl_demo.integrations.research import ResearchFinding
-
-from .compliance import canonical_domain
-from .models import SchoolRecord
 
 
 @dataclass(frozen=True)

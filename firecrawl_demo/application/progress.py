@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol
 
-from .models import SchoolRecord
+from firecrawl_demo.domain.models import SchoolRecord
 
 
 class PipelineProgressListener(Protocol):

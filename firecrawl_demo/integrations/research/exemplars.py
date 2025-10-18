@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from firecrawl_demo.core import config
-from firecrawl_demo.core.compliance import normalize_phone
+from firecrawl_demo.domain.compliance import normalize_phone
 
 from .core import ResearchAdapter, ResearchFinding
 from .registry import AdapterContext, register_adapter

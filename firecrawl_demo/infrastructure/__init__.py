@@ -1,5 +1,6 @@
-"""Infrastructure scaffolding and planning utilities."""
+"""Infrastructure scaffolding and persistence adapters."""
 
+from . import evidence
 from .planning import (
     InfrastructurePlan,
     ObservabilityPlan,
@@ -9,6 +10,7 @@ from .planning import (
 )
 
 __all__ = [
+    "evidence",
     "InfrastructurePlan",
     "ObservabilityPlan",
     "PlanCommitContract",

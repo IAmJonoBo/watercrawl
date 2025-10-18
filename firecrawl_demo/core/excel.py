@@ -12,23 +12,17 @@ import pandas as pd
 from pint import UnitRegistry
 from pint.errors import DimensionalityError, RedefinitionError, UndefinedUnitError
 
-from . import config  # type: ignore
-from .models import (  # type: ignore
+from firecrawl_demo.domain.models import EXPECTED_COLUMNS as DOMAIN_EXPECTED_COLUMNS
+from firecrawl_demo.domain.models import (
     EnrichmentResult,
     SchoolRecord,
     normalize_province,
     normalize_status,
 )
 
-EXPECTED_COLUMNS = [
-    "Name of Organisation",
-    "Province",
-    "Status",
-    "Website URL",
-    "Contact Person",
-    "Contact Number",
-    "Contact Email Address",
-]
+from . import config  # type: ignore
+
+EXPECTED_COLUMNS = list(DOMAIN_EXPECTED_COLUMNS)
 
 
 UNIT_REGISTRY = UnitRegistry()

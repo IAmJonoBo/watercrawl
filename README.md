@@ -54,11 +54,11 @@ The exported requirements files include pinned versions with SHA256 hashes for r
 
 ## Features
 
-- **Dataset validation** with detailed issue reporting (`firecrawl_demo.core.validation`).
+- **Dataset validation** with detailed issue reporting (`firecrawl_demo.domain.validation`).
 - **Research adapters** for deterministic enrichment and future OSINT integrations (`firecrawl_demo.integrations.research`).
 - **Feature-flagged Firecrawl integration** guarded by `FEATURE_ENABLE_FIRECRAWL_SDK` and `ALLOW_NETWORK_RESEARCH` so offline QA stays deterministic.
 - **Triangulated intelligence** that merges regulator, press, and directory evidence to spot rebrands or ownership changes.
-- **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.core.pipeline`).
+- **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.application.pipeline`).
 - **CLI** commands for analysts and automation runs (`firecrawl_demo.interfaces.cli`).
 - **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
   remediation guidance into the evidence log and MCP.
