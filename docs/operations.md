@@ -69,15 +69,15 @@ of silencing mypy regressions.
 
 ## Acceptance Criteria
 
-| Gate          | Threshold/Expectation                                              |
-| ------------- | ------------------------------------------------------------------ |
-| Tests         | 100% pass, coverage tracked via `pytest --cov`.                    |
+| Gate          | Threshold/Expectation                                                                |
+| ------------- | ------------------------------------------------------------------------------------ |
+| Tests         | 100% pass, coverage tracked via `pytest --cov`.                                      |
 | Lint          | Ruff, Black/Isort, Yamllint, SQLFluff, Markdownlint, Hadolint, Actionlint all green. |
-| Types         | `mypy` success, including third-party stubs.                       |
-| Security      | No `bandit`/`safety` High/Medium findings without mitigation.      |
-| Evidence      | Every enriched row logged with ≥2 sources.                         |
-| Sanity Checks | `sanity_issues` metric is zero or tracked with remediation owners. |
-| Documentation | MkDocs updated for any behavioural change.                         |
+| Types         | `mypy` success, including third-party stubs.                                         |
+| Security      | No `bandit`/`safety` High/Medium findings without mitigation.                        |
+| Evidence      | Every enriched row logged with ≥2 sources.                                           |
+| Sanity Checks | `sanity_issues` metric is zero or tracked with remediation owners.                   |
+| Documentation | MkDocs updated for any behavioural change.                                           |
 
 Monitor `adapter_failures` and `sanity_issues` in pipeline metrics/CLI output;
 any non-zero count should trigger investigation into upstream research adapters

@@ -20,7 +20,9 @@ def _ensure_duckdb(project_dir: Path, relative_path: Path) -> None:
         materialised_path.touch()
 
 
-def run_sqlfluff(project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]) -> int:
+def run_sqlfluff(
+    project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]
+) -> int:
     _ensure_duckdb(project_dir, duckdb_path)
     env = os.environ.copy()
     env.setdefault("DBT_DUCKDB_PATH", duckdb_path.as_posix())
@@ -31,7 +33,9 @@ def run_sqlfluff(project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run SQLFluff with offline-friendly defaults.")
+    parser = argparse.ArgumentParser(
+        description="Run SQLFluff with offline-friendly defaults."
+    )
     parser.add_argument(
         "--project-dir",
         type=Path,
