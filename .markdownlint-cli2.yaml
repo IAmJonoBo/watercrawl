@@ -5,6 +5,7 @@ config:
     heading_line_length: 200
     code_block_line_length: 600
     tables: false
+  MD025: false
   MD033: false
   MD041: false
   MD046:
@@ -15,3 +16,4 @@ ignores:
   - dist/**
   - analytics/target/**
   - node_modules/**
+  - docs-starlight/**
