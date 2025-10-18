@@ -5,7 +5,6 @@ import json
 import re
 from collections.abc import Iterable, Sequence
 from datetime import datetime
-from typing import Optional
 from urllib.parse import urlparse
 
 from . import config
@@ -31,7 +30,7 @@ _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 _ROLE_INBOX_RE = re.compile(r"^(?:info|sales|contact|enquiries|admin|support)@", re.I)
 
 
-def normalize_province(province: Optional[str]) -> str:
+def normalize_province(province: str | None) -> str:
     if not province:
         return "Unknown"
     cleaned = province.strip()
@@ -41,7 +40,7 @@ def normalize_province(province: Optional[str]) -> str:
     return "Unknown"
 
 
-def canonical_domain(url: Optional[str]) -> Optional[str]:
+def canonical_domain(url: str | None) -> str | None:
     if not url:
         return None
     parsed = urlparse(url.strip())
@@ -52,11 +51,11 @@ def canonical_domain(url: Optional[str]) -> Optional[str]:
     return host or None
 
 
-def normalize_phone(raw_phone: Optional[str]) -> tuple[Optional[str], list[str]]:
+def normalize_phone(raw_phone: str | None) -> tuple[str | None, list[str]]:
     if not raw_phone:
         return None, ["Phone missing"]
     digits = re.sub(r"\D", "", raw_phone)
-    normalized: Optional[str]
+    normalized: str | None
     if digits.startswith("27") and len(digits) == 11:
         normalized = "+27" + digits[2:]
     elif digits.startswith("0") and len(digits) == 10:
@@ -77,8 +76,8 @@ def normalize_phone(raw_phone: Optional[str]) -> tuple[Optional[str], list[str]]
 
 
 def validate_email(
-    email: Optional[str], organisation_domain: Optional[str]
-) -> tuple[Optional[str], list[str]]:
+    email: str | None, organisation_domain: str | None
+) -> tuple[str | None, list[str]]:
     if not email:
         return None, ["Email missing"]
     cleaned = email.strip()
@@ -97,7 +96,7 @@ def validate_email(
     return cleaned.lower(), issues
 
 
-def _check_mx_records(domain: str) -> Optional[str]:
+def _check_mx_records(domain: str) -> str | None:
     if not domain:
         return "Missing email domain"
     resolver = dns_resolver
@@ -246,7 +245,7 @@ def payload_hash(payload: dict[str, object]) -> str:
 
 
 def describe_changes(
-    original: dict[str, Optional[str]], enriched: dict[str, Optional[str]]
+    original: dict[str, str | None], enriched: dict[str, str | None]
 ) -> str:
     changes: list[str] = []
     for key, original_value in original.items():

@@ -39,6 +39,7 @@
 - [x] 2025-10-18 — DX/UX uplift: split analyst vs. developer CLIs (`app.cli`, `dev.cli`), added QA automation helpers, refreshed CLI docs, and extended test coverage for both entry points.
 - [x] 2025-10-18 — Replaced CLI monkeypatch scaffolding with explicit dependency overrides and taught cleanup automation to detect/skip tracked artefacts with reporting hooks for post-build hygiene reviews.
 - [x] 2025-10-18 — Hardened in-memory cache expiry semantics with type-safe TTL handling, added regression coverage for `cache.load` edge cases, and re-ran the full QA suite to verify guards across pytest, lint, type, security, build, and dbt contracts.
+- [x] 2025-10-18 — DevEx baseline refreshed: full QA suite (pytest, coverage, ruff, mypy, bandit, pre-commit, build, dbt) recorded; gitignore, ruff, and pre-commit configs prepped for modernization; CI now caches Poetry envs and surfaces diffs for hook failures.
 
 ---
 

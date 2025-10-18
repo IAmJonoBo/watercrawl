@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from decimal import Decimal
 from numbers import Real
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import pandas as pd
 from pint import UnitRegistry

@@ -1,34 +1,33 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.14.1
     hooks:
       - id: ruff
         args: [--fix]
-      - id: ruff-format
   - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+    rev: 7.0.0
     hooks:
       - id: isort
         args: [--profile=black]
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 25.9.0
     hooks:
       - id: black
         language_version: python3
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.0
+    rev: v3.21.0
     hooks:
       - id: pyupgrade
-        args: [--py39-plus]
+        args: [--py311-plus]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies:
           - pandas-stubs
           - types-requests
   - repo: https://github.com/pycqa/bandit
-    rev: 1.7.9
+    rev: 1.8.6
     hooks:
       - id: bandit
         args: [-r, firecrawl_demo]

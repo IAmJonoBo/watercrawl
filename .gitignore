@@ -1,0 +1,58 @@
+# Project-wide ignores for local builds, caches, and generated artefacts
+
+# Python bytecode and cache directories
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments and Python tooling state
+.venv/
+.venv*/
+.python-version
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+
+# Environment and secrets overlays
+.env
+.env.*
+
+# Editor and OS cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# Coverage, test, and QA artefacts
+.coverage*
+coverage.xml
+pytest-results.xml
+htmlcov/
+ci-summary.md
+ci-dashboard.json
+
+# MkDocs and documentation builds
+site/
+
+# Analytics / dbt generated targets
+analytics/target/
+analytics/dbt_packages/
+dbt_packages/
+dbt_modules/
+
+# Notebooks and data exploration caches
+.ipynb_checkpoints/
+
+# Local logs and scratch files
+*.log
+*.tmp
+*.cache
+

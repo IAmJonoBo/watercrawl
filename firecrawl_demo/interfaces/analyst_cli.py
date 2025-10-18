@@ -293,23 +293,19 @@ def enrich(
         click.echo(f"Output written to: {payload['output_path']}")
         if report.lineage_artifacts:
             click.echo(
-                "Lineage artifacts: "
-                f"{report.lineage_artifacts.openlineage_path.parent}"
+                f"Lineage artifacts: {report.lineage_artifacts.openlineage_path.parent}"
             )
         if report.lakehouse_manifest:
-            click.echo(
-                "Lakehouse manifest: " f"{report.lakehouse_manifest.manifest_path}"
-            )
+            click.echo(f"Lakehouse manifest: {report.lakehouse_manifest.manifest_path}")
         if report.version_info:
-            click.echo("Version manifest: " f"{report.version_info.metadata_path}")
+            click.echo(f"Version manifest: {report.version_info.metadata_path}")
         if payload["adapter_failures"]:
             click.echo(
                 f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."
             )
         if report.lineage_artifacts:
             click.echo(
-                "Lineage artefacts: "
-                f"{report.lineage_artifacts.openlineage_path.parent}"
+                f"Lineage artefacts: {report.lineage_artifacts.openlineage_path.parent}"
             )
 
 
