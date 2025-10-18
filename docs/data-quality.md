@@ -12,7 +12,7 @@
 1. **Website discovery**: Prefer research adapter findings; fall back to existing row data.
 2. **Contact inference**: Named contacts supplied by adapters override blanks. Role inboxes downgrade status to `Candidate`.
 3. **Triangulation**: The default adapter cross-references Firecrawl (when enabled), regulator registries, press coverage, and professional directories. Offline runs log follow-up instructions instead of performing live lookups.
-4. **Evidence sourcing**: Merge the organisation website with adapter-provided URLs. If fewer than two *unique* sources are available or no fresh evidence accompanies a change, the pipeline now blocks the update and records remediation guidance for analysts.
+4. **Evidence sourcing**: Merge the organisation website with adapter-provided URLs. If fewer than two _unique_ sources are available or no fresh evidence accompanies a change, the pipeline now blocks the update and records remediation guidance for analysts.
 5. **Status promotion**: Rows with website, named contact, valid phone, and domain-aligned email become `Verified`; otherwise `Candidate` or `Needs Review` based on defect severity.
 6. **Rename detection**: When a new website domain or alias is discovered, the pipeline logs an investigation note encouraging analysts to confirm potential ownership changes.
 
@@ -48,7 +48,7 @@ leave the enrichment pipeline. The delivery slices are:
   exports via DuckDB. Column typing, accepted values, and custom tests for HTTPS
   websites, email → domain alignment, and +27 phone formats keep dbt coverage in
   lock-step with the Great Expectations suite. CI runs `dbt build --select
-  tag:contracts` alongside the checkpoint so both suites gate merges.
+tag:contracts` alongside the checkpoint so both suites gate merges.
 - ✅ **Operationalisation (Week 3) complete**: the CLI `contracts` command now
   executes Great Expectations and dbt in the same run, persists run artefacts to
   `data/contracts/<timestamp>/`, and appends an evidence-log entry referencing

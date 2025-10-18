@@ -10,12 +10,12 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
 
 ## Methods
 
-| Method      | Description                                      | Params                                  |
-|-------------|--------------------------------------------------|------------------------------------------|
-| initialize  | Negotiates capabilities.                         | None                                     |
-| list_tasks  | Returns available pipeline tasks.                | None                                     |
-| run_task    | Runs a task with a payload.                      | `{ "task": str, "payload": dict }`     |
-| shutdown    | Gracefully stops the server.                     | None                                     |
+| Method     | Description                       | Params                             |
+| ---------- | --------------------------------- | ---------------------------------- |
+| initialize | Negotiates capabilities.          | None                               |
+| list_tasks | Returns available pipeline tasks. | None                               |
+| run_task   | Runs a task with a payload.       | `{ "task": str, "payload": dict }` |
+| shutdown   | Gracefully stops the server.      | None                               |
 
 ### Payload Shapes
 

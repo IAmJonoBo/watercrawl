@@ -11,13 +11,13 @@
 
 ## Delivery timeline
 
-| Week | Focus | Key Deliverables | Quality Gates |
-|------|-------|------------------|---------------|
-| 1 | **OpenLineage emitter** | Instrument `PipelineReport` generation with OpenLineage job/run events; add configuration for namespace, job name, and transport (HTTP/Kafka). | Events emitted for every CLI and MCP run in staging; schema validated with `openlineage-python`. |
-| 2 | **PROV-O/DCAT modelling** | Define canonical PROV entities and activities (dataset version, evidence log, enrichment steps); generate DCAT JSON-LD catalog entries. | 100% of curated rows reference a PROV entity; catalogue builds without schema warnings. |
-| 3 | **Delta/Iceberg adoption** | Stand up a storage abstraction for writing curated outputs to Delta Lake or Iceberg, backed by DuckDB/Spark runner in CI. | Time-travel restore demonstrated in automated test; ACID invariants validated via dbt tests. |
-| 4 | **Versioning automation** | Integrate DVC or lakeFS to capture dataset snapshots; embed commit hashes in lineage payloads and evidence log. | `dvc repro` (or `lakefs fs diff`) recreates the last run end-to-end; commit IDs visible in OpenLineage. |
-| 5 | **Operational hardening** | Document rollback, retention, and access policies; extend MkDocs with lineage dashboards and lakehouse runbooks. | Runbooks approved by Platform/Security; CI blocks merge when lineage or versioning artefacts are missing. |
+| Week | Focus                      | Key Deliverables                                                                                                                               | Quality Gates                                                                                             |
+| ---- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 1    | **OpenLineage emitter**    | Instrument `PipelineReport` generation with OpenLineage job/run events; add configuration for namespace, job name, and transport (HTTP/Kafka). | Events emitted for every CLI and MCP run in staging; schema validated with `openlineage-python`.          |
+| 2    | **PROV-O/DCAT modelling**  | Define canonical PROV entities and activities (dataset version, evidence log, enrichment steps); generate DCAT JSON-LD catalog entries.        | 100% of curated rows reference a PROV entity; catalogue builds without schema warnings.                   |
+| 3    | **Delta/Iceberg adoption** | Stand up a storage abstraction for writing curated outputs to Delta Lake or Iceberg, backed by DuckDB/Spark runner in CI.                      | Time-travel restore demonstrated in automated test; ACID invariants validated via dbt tests.              |
+| 4    | **Versioning automation**  | Integrate DVC or lakeFS to capture dataset snapshots; embed commit hashes in lineage payloads and evidence log.                                | `dvc repro` (or `lakefs fs diff`) recreates the last run end-to-end; commit IDs visible in OpenLineage.   |
+| 5    | **Operational hardening**  | Document rollback, retention, and access policies; extend MkDocs with lineage dashboards and lakehouse runbooks.                               | Runbooks approved by Platform/Security; CI blocks merge when lineage or versioning artefacts are missing. |
 
 ## Workstreams
 
@@ -66,12 +66,12 @@
 
 ## Risks & mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| OpenLineage event schema drift | CI failures and broken observability | Lock event schema tests against pinned `openlineage-python` and add contract tests in CI. |
-| Delta/Iceberg operational overhead | Increased infrastructure complexity | Start with Delta via `delta-rs` for local runs; document migration path to managed lakehouse services. |
-| Versioning storage costs | Higher object storage spend | Configure retention policies and pruning jobs; tag critical snapshots for long-term retention. |
-| Sensitive data in provenance artefacts | POPIA compliance breach | Redact PII from PROV/DCAT outputs; include compliance review in release checklist. |
+| Risk                                   | Impact                               | Mitigation                                                                                             |
+| -------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| OpenLineage event schema drift         | CI failures and broken observability | Lock event schema tests against pinned `openlineage-python` and add contract tests in CI.              |
+| Delta/Iceberg operational overhead     | Increased infrastructure complexity  | Start with Delta via `delta-rs` for local runs; document migration path to managed lakehouse services. |
+| Versioning storage costs               | Higher object storage spend          | Configure retention policies and pruning jobs; tag critical snapshots for long-term retention.         |
+| Sensitive data in provenance artefacts | POPIA compliance breach              | Redact PII from PROV/DCAT outputs; include compliance review in release checklist.                     |
 
 ## Next actions
 

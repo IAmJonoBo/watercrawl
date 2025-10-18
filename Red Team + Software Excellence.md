@@ -12,17 +12,17 @@ _Last updated: 2025-10-17_
 
 ## 1. Project Context Inputs
 
-| Dimension | Value |
-| --- | --- |
-| Project | ACES Aerodynamics Enrichment Stack |
-| Repo or paths to scan | https://github.com/ACES-Aerodynamics/firecrawl-demo (mirror at `/workspace/watercrawl`) |
-| Stack | Python 3.13 • Firecrawl SDK (flagged) • Pandas/DuckDB • Great Expectations • dbt-duckdb • Poetry packaging • MkDocs • Streamlit analyst UI |
-| Runtime/Infrastructure | Local CLI/MCP runners; future deployment targets Docker/Kubernetes with evidence sinks (CSV/stream) and optional lakehouse writers |
-| CI/CD | GitHub Actions (`ci.yml`) running lint, test, contracts, CI summary upload |
-| Package manager | Poetry (lock enforced) |
-| Ranked non-functional priorities | Security & compliance → Data quality & evidence → Reliability & provenance → Maintainability → Developer Experience → Performance → Accessibility |
-| Compliance / targets | NIST SSDF v1.1, OWASP SAMM (target L2 maturity), OWASP ASVS L2 (CLI/API surfaces), OWASP LLM Top-10, SLSA Level 2 (aspirational), OpenSSF Scorecard ≥7, ISO/IEC 25010 quality model, ISO/IEC 5055 structural quality, POPIA (South Africa) |
-| Constraints | Offline-first deterministic research adapters; POPIA s69 limits; Firecrawl SDK gated behind `FEATURE_ENABLE_FIRECRAWL_SDK`; evidence log requires ≥2 sources (≥1 official); province taxonomy locked to ZA list; analysts rely on reproducible CLI + MCP flows |
+| Dimension                        | Value                                                                                                                                                                                                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project                          | ACES Aerodynamics Enrichment Stack                                                                                                                                                                                                                             |
+| Repo or paths to scan            | [ACES Aerodynamics firecrawl-demo](https://github.com/ACES-Aerodynamics/firecrawl-demo) (mirror at `/workspace/watercrawl`)                                                                                                                                    |
+| Stack                            | Python 3.13 • Firecrawl SDK (flagged) • Pandas/DuckDB • Great Expectations • dbt-duckdb • Poetry packaging • MkDocs • Streamlit analyst UI                                                                                                                     |
+| Runtime/Infrastructure           | Local CLI/MCP runners; future deployment targets Docker/Kubernetes with evidence sinks (CSV/stream) and optional lakehouse writers                                                                                                                             |
+| CI/CD                            | GitHub Actions (`ci.yml`) running lint, test, contracts, CI summary upload                                                                                                                                                                                     |
+| Package manager                  | Poetry (lock enforced)                                                                                                                                                                                                                                         |
+| Ranked non-functional priorities | Security & compliance → Data quality & evidence → Reliability & provenance → Maintainability → Developer Experience → Performance → Accessibility                                                                                                              |
+| Compliance / targets             | NIST SSDF v1.1, OWASP SAMM (target L2 maturity), OWASP ASVS L2 (CLI/API surfaces), OWASP LLM Top-10, SLSA Level 2 (aspirational), OpenSSF Scorecard ≥7, ISO/IEC 25010 quality model, ISO/IEC 5055 structural quality, POPIA (South Africa)                     |
+| Constraints                      | Offline-first deterministic research adapters; POPIA s69 limits; Firecrawl SDK gated behind `FEATURE_ENABLE_FIRECRAWL_SDK`; evidence log requires ≥2 sources (≥1 official); province taxonomy locked to ZA list; analysts rely on reproducible CLI + MCP flows |
 
 ## 2. Discovery → Objectives → Measures
 
@@ -46,30 +46,31 @@ _Last updated: 2025-10-17_
 
 ### 3.2 Red-Team Analysis (Design → Code → Build → Deploy → Run)
 
-| Phase | Threat surface | Current controls | Gaps / actions |
-| --- | --- | --- | --- |
-| Design | Agent overreach, missing threat models | LLM safety guards, OWASP LLM Top-10 mitigations scaffolded in `governance.safety` | Formal STRIDE model absent; add threat-model ADR + tabletop review |
-| Code | Adapter sandboxing, secrets hygiene | Feature flags, secrets backend abstraction, Ruff/Bandit/mypy gating | Add Semgrep/CodeQL job; enforce secret scanning & commit signing |
-| Build | Dependency tampering, provenance | Poetry lock pinned; CI builds wheel/sdist | Generate CycloneDX SBOM + in-toto provenance; adopt `poetry export --without-hashes` audit stage |
-| Deploy | Evidence sink exfiltration, Firecrawl misuse | Feature flags default to offline; evidence sink CSV stored locally | Implement policy-as-code check to block network operations unless allowlisted; add streaming sink authN story |
-| Run | Drift in research results, LLM hallucination | whylogs baseline (pending dashboards), RAG scorer gating, evidence log enforcement | Automate drift alert routing, add chaos/penetration tests for MCP plan→commit paths |
+| Phase  | Threat surface                               | Current controls                                                                   | Gaps / actions                                                                                                |
+| ------ | -------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Design | Agent overreach, missing threat models       | LLM safety guards, OWASP LLM Top-10 mitigations scaffolded in `governance.safety`  | Formal STRIDE model absent; add threat-model ADR + tabletop review                                            |
+| Code   | Adapter sandboxing, secrets hygiene          | Feature flags, secrets backend abstraction, Ruff/Bandit/mypy gating                | Add Semgrep/CodeQL job; enforce secret scanning & commit signing                                              |
+| Build  | Dependency tampering, provenance             | Poetry lock pinned; CI builds wheel/sdist                                          | Generate CycloneDX SBOM + in-toto provenance; adopt `poetry export --without-hashes` audit stage              |
+| Deploy | Evidence sink exfiltration, Firecrawl misuse | Feature flags default to offline; evidence sink CSV stored locally                 | Implement policy-as-code check to block network operations unless allowlisted; add streaming sink authN story |
+| Run    | Drift in research results, LLM hallucination | whylogs baseline (pending dashboards), RAG scorer gating, evidence log enforcement | Automate drift alert routing, add chaos/penetration tests for MCP plan→commit paths                           |
 
 **Immediate mitigations**:
+
 1. Add STRIDE + MITRE mapping for pipeline & MCP interfaces (documented in section 3.13).
 2. Extend CI with Scorecard/SBOM/provenance to progress toward SLSA Level 2.
 3. Harden MCP diff/commit controls with allowlisted tools and auditing.
 
 ### 3.3 Framework Gap Analysis
 
-| Framework | Current | Target | Key blockers |
-| --- | --- | --- | --- |
-| **NIST SSDF v1.1** | PS.2/3, PW.4, RV.1 achieved through tests, lint, security scan; PO partially covered via Next_Steps and MkDocs | Full PS/PW/RV/PO coverage | Missing secure design records, SBOM/provenance, incident response drills |
-| **OWASP SAMM** | Governance/Implementation L1.5, Verification L1.5, Operations L1 | Governance & Verification L2 | Need continuous threat modeling, SBOM policy, runtime monitoring |
-| **OWASP ASVS L2** | CLI uses typed inputs; limited authentication/authorisation coverage | Documented control list & verification mapping | MCP/CLI require access control matrix & fuzzing |
-| **SLSA** | Level 1 (scripted build, provenance missing) | Level 2 | Need isolated CI builders, signed attestations, dependency verification |
-| **OpenSSF Scorecard** | Estimated 5.5 (branch protection, CI, dependencies) | ≥7 | Add dependency update automation, scorecard workflow, secret scanning |
-| **ISO/IEC 25010** | Strength in reliability/maintainability; gaps in usability/accessibility metrics | Balanced measurement across characteristics | Add UX heuristics, accessibility review, performance SLIs |
-| **ISO/IEC 5055** | Emerging coverage via lint/tests; no structural quality reporting | Establish scanning and tracking backlog | Integrate Sonar-like structural metrics (e.g., Semgrep Code Quality, maintainability index) |
+| Framework             | Current                                                                                                        | Target                                         | Key blockers                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **NIST SSDF v1.1**    | PS.2/3, PW.4, RV.1 achieved through tests, lint, security scan; PO partially covered via Next_Steps and MkDocs | Full PS/PW/RV/PO coverage                      | Missing secure design records, SBOM/provenance, incident response drills                    |
+| **OWASP SAMM**        | Governance/Implementation L1.5, Verification L1.5, Operations L1                                               | Governance & Verification L2                   | Need continuous threat modeling, SBOM policy, runtime monitoring                            |
+| **OWASP ASVS L2**     | CLI uses typed inputs; limited authentication/authorisation coverage                                           | Documented control list & verification mapping | MCP/CLI require access control matrix & fuzzing                                             |
+| **SLSA**              | Level 1 (scripted build, provenance missing)                                                                   | Level 2                                        | Need isolated CI builders, signed attestations, dependency verification                     |
+| **OpenSSF Scorecard** | Estimated 5.5 (branch protection, CI, dependencies)                                                            | ≥7                                             | Add dependency update automation, scorecard workflow, secret scanning                       |
+| **ISO/IEC 25010**     | Strength in reliability/maintainability; gaps in usability/accessibility metrics                               | Balanced measurement across characteristics    | Add UX heuristics, accessibility review, performance SLIs                                   |
+| **ISO/IEC 5055**      | Emerging coverage via lint/tests; no structural quality reporting                                              | Establish scanning and tracking backlog        | Integrate Sonar-like structural metrics (e.g., Semgrep Code Quality, maintainability index) |
 
 ### 3.4 Developer Experience (DX) & Delivery Flow
 
@@ -128,17 +129,17 @@ _Last updated: 2025-10-17_
 
 ### 3.12 Roadmap & Measurement
 
-| Horizon | Item | Owner Role | Effort | Risk Reduction | Dependencies | Verification |
-| --- | --- | --- | --- | --- | --- | --- |
-| 30 days | Threat model ADR & STRIDE/MITRE mapping | Security/Architecture | M | High | docs/architecture.md, MCP design | ADR merged, tabletop session notes |
-| 30 days | CI supply-chain hardening (Scorecard, SBOM, provenance) | Platform/Security | M | High | GitHub Actions secrets | CI artifacts, attestations signed |
-| 30 days | Accessibility + UX baseline for Streamlit UI | Product/UX | S | Medium | Streamlit app, axe tooling | Heuristic report, axe CI job |
-| 60 days | MCP plan→commit audit logging + policy enforcement | Platform/Security | M | High | Threat model ADR, OPA policies | Automated tests blocking unsafe commits |
-| 60 days | Drift dashboards + alert routing (whylogs → Prometheus) | Platform/Data | M | Medium | analytics pipeline | Dashboard screenshot, alert runbook |
-| 60 days | Mutation testing pilot (core pipeline modules) | QA/Platform | M | Medium | pytest integration | Mutation score report ≥40% |
-| 90 days | Backstage TechDocs + golden-path template | Platform/DevEx | L | Medium | MkDocs output, IDP infra | Catalog entry published, template scaffold |
-| 90 days | Signed artefact promotion with policy-as-code gate | Platform/Security | L | High | Sigstore integration, SBOM pipeline | Verification logs, rollback drill |
-| 90 days | Chaos & FMEA exercises for pipeline & MCP | SRE/Security | M | High | Observability stack | Game-day report, FMEA register |
+| Horizon | Item                                                    | Owner Role            | Effort | Risk Reduction | Dependencies                        | Verification                               |
+| ------- | ------------------------------------------------------- | --------------------- | ------ | -------------- | ----------------------------------- | ------------------------------------------ |
+| 30 days | Threat model ADR & STRIDE/MITRE mapping                 | Security/Architecture | M      | High           | docs/architecture.md, MCP design    | ADR merged, tabletop session notes         |
+| 30 days | CI supply-chain hardening (Scorecard, SBOM, provenance) | Platform/Security     | M      | High           | GitHub Actions secrets              | CI artifacts, attestations signed          |
+| 30 days | Accessibility + UX baseline for Streamlit UI            | Product/UX            | S      | Medium         | Streamlit app, axe tooling          | Heuristic report, axe CI job               |
+| 60 days | MCP plan→commit audit logging + policy enforcement      | Platform/Security     | M      | High           | Threat model ADR, OPA policies      | Automated tests blocking unsafe commits    |
+| 60 days | Drift dashboards + alert routing (whylogs → Prometheus) | Platform/Data         | M      | Medium         | analytics pipeline                  | Dashboard screenshot, alert runbook        |
+| 60 days | Mutation testing pilot (core pipeline modules)          | QA/Platform           | M      | Medium         | pytest integration                  | Mutation score report ≥40%                 |
+| 90 days | Backstage TechDocs + golden-path template               | Platform/DevEx        | L      | Medium         | MkDocs output, IDP infra            | Catalog entry published, template scaffold |
+| 90 days | Signed artefact promotion with policy-as-code gate      | Platform/Security     | L      | High           | Sigstore integration, SBOM pipeline | Verification logs, rollback drill          |
+| 90 days | Chaos & FMEA exercises for pipeline & MCP               | SRE/Security          | M      | High           | Observability stack                 | Game-day report, FMEA register             |
 
 ### 3.13 Critical-Reasoning Checks
 
@@ -203,3 +204,54 @@ See Section 3.12 table; track execution in `Next_Steps.md` with owners, due date
 - Identify owner for DevEx telemetry instrumentation.
 
 Document answers as they arrive and update this playbook accordingly.
+
+---
+
+## 5. Applied Red‑Team Findings & Action Plan (v2025‑10‑18)
+
+> The items below fold in the latest red‑team recommendations with **specific, testable actions**. Use these IDs in issues/PR titles. All actions are **feature‑flagged** where applicable and must prove reversibility.
+
+### 5.1 High‑Impact Actions (execute first)
+
+|        ID | Description                                                                                                                                                                                | Owner    | Due | Dependencies | Acceptance / Quality Gates                                                                                              | Evidence / Artefacts                                                  | Links                                      |
+| --------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | --- | ------------ | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------ |
+| **WC‑01** | **Secrets & PII purge**: rotate any credentials, remove `.env` and sensitive XLSX from history (git‑filter‑repo/BFG), enable GitHub Secret Scanning & push protection, add `.env.example`. | Security | TBC | None         | Git history free of `.env`/XLSX; all keys rotated and documented; Secret Scanning on; pushes with secrets are blocked.  | Rotation runbook; filter‑repo logs; GH Security settings screenshots. | ADR: Secrets Policy; Issue: Purge & Rotate |
+| **WC‑02** | **Legal & disclosure**: add `LICENSE` (MIT/Apache‑2.0) and `SECURITY.md` with VDP and contact.                                                                                             | Platform | TBC | None         | Files present in `main`; VDP email tested; repo shows license metadata.                                                 | PR diff; test email receipt.                                          | Issue: Add License & VDP                   |
+| **WC‑03** | **Robots & politeness (RFC 9309)**: per‑host queues, adaptive backoff, deny/allow lists; cache robots ≤24h; canonicalise URLs; trap detection (calendars/facets).                          | Crawler  | TBC | None         | Test corpus shows **0 violations**; trap FP rate <2%; performance unchanged ±10%.                                       | Compliance test suite; crawler logs; config samples.                  | ADR: Crawl Policy                          |
+| **WC‑04** | **Boilerplate removal & dedupe**: integrate Trafilatura/jusText + SimHash/MinHash with thresholds and evaluation fixtures.                                                                 | Data     | TBC | WC‑03        | Boilerplate removal ≥90% on sample; dedupe precision ≥0.98, recall ≥0.90.                                               | Eval notebook; fixtures; CI job output.                               | Issue: Content Hygiene                     |
+| **WC‑05** | **MCP plan→diff→commit**: all writes require `*.plan` then `*.commit` with `If‑Match`/ETag; deny‑by‑default tool allow‑list; audit log for each commit.                                    | Platform | TBC | WC‑02        | Negative tests prove 412 on stale; Copilot shows human‑readable diff; audit entry contains inputs, actor, ETag, result. | Tool schema; tests; sample audit log.                                 | ADR: MCP Write Safety                      |
+| **WC‑06** | **LLM safety (OWASP Top‑10)**: implement prompt‑injection filters, typed args, output sanitisation; red‑team suite for LLM01/02/08.                                                        | Security | TBC | WC‑05        | Red‑team suite passes; no out‑of‑policy tool calls; sanitiser blocks scriptable payloads.                               | Test reports; policy docs.                                            | Threat Model + Tests                       |
+
+### 5.2 Data Trust & Graph Semantics
+
+|        ID | Description                                                                                                                                              | Owner      | Due | Dependencies | Acceptance / Quality Gates                                                                          | Evidence / Artefacts                                |
+| --------: | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | ------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| **WC‑07** | **Data contracts before compute**: gate ingest/transform with Great Expectations, dbt tests, and/or Deequ; block publish on failure; generate Data Docs. | Data       | TBC | WC‑01        | 100% curated models covered by not‑null/unique/range/ref tests; failing checks block CI.            | GX suites; dbt tests; CI logs; Data Docs.           |
+| **WC‑08** | **Lineage & catalogue**: emit OpenLineage for runs; attach PROV‑O per fact/edge; catalogue datasets with DCAT.                                           | Data       | TBC | WC‑07        | Each published fact resolves to runID + ≥1 PROV record; DCAT entries exist and are discoverable.    | Emitter config; PROV store; DCAT docs.              |
+| **WC‑09** | **ACID tables + versioning**: store curated tables in Delta Lake or Iceberg; tag each run with DVC/lakeFS commit.                                        | Platform   | TBC | WC‑07        | Time‑travel restore proven; run reproducible from commit alone.                                     | Restore demo; commit IDs; runbook.                  |
+| **WC‑10** | **Tabular→graph by spec**: define CSVW metadata; R2RML mappings (RML for non‑SQL); load to GQL‑ready graph; run PageRank/Louvain on rolling windows.     | Data       | TBC | WC‑08        | Mapping validation passes; post‑build checks on node/edge counts and degree distributions in range. | Mapping repo; validator output; graph check report. |
+| **WC‑11** | **Profiling & drift**: instrument whylogs on each dataset/partition; thresholds + alerts wired.                                                          | Platform   | TBC | WC‑07        | Baselines captured; simulated drift triggers alert; promotion blocked on drift.                     | Profiles; alert runbook; dashboard.                 |
+| **WC‑12** | **RAG/agent evaluation**: integrate Ragas metrics (faithfulness, context precision, tool‑use accuracy) as a promotion gate.                              | Governance | TBC | WC‑05, WC‑07 | Below‑threshold scores block "authoritative"; evaluation trace stored.                              | Ragas reports; CI gate.                             |
+
+### 5.3 Supply‑Chain & Runtime Hardening
+
+|        ID | Description                                                                                                                            | Owner        | Due | Dependencies | Acceptance / Quality Gates                                                              | Evidence / Artefacts                          |
+| --------: | -------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --- | ------------ | --------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **WC‑13** | **Harden Docker**: multi‑stage build; minimal base; `USER app:app`; read‑only FS; pinned digest; drop capabilities.                    | Platform     | TBC | None         | Container runs non‑root; image size reduced ≥30%; Hadolint clean; runtime immutable FS. | Dockerfile; SBOM; hadolint log.               |
+| **WC‑14** | **SBOM & signing**: generate CycloneDX SBOM; sign wheels/sdists via Sigstore; emit in‑toto provenance; add OpenSSF Scorecard workflow. | Security     | TBC | WC‑13        | SBOM attached to releases; verified signatures in CI; Scorecard ≥7.                     | CI artefacts; attestations; Scorecard report. |
+| **WC‑15** | **Repo & CI guards**: Semgrep/CodeQL, coverage ratchet, mutation testing pilot (≥40% modules).                                         | QA           | TBC | None         | CI blocks on critical findings; coverage ≥90%; mutation score ≥40% in pilot.            | CI logs; reports.                             |
+| **WC‑16** | **Accessibility & UX**: run axe CI on Streamlit UI; heuristic review; add accessibility acceptance criteria to PR template.            | Product/UX   | TBC | None         | Axe baseline passes; heuristic report filed; PR template updated.                       | CI logs; report; PR template diff.            |
+| **WC‑17** | **Observability**: instrument OpenTelemetry traces for CLI; export metrics to Prometheus; define error budgets.                        | SRE          | TBC | None         | Traces visible; metrics dashboard; SLOs with alerts.                                    | OTel config; dashboard screenshot; SLO doc.   |
+| **WC‑18** | **DevEx telemetry & tooling**: `justfile` for common tasks; CLI emits run timings; SPACE survey scheduled.                             | DevEx        | TBC | None         | Just targets pass locally/CI; telemetry captured; survey template published.            | `justfile`; metrics snapshot; survey doc.     |
+| **WC‑19** | **Backstage TechDocs**: publish catalog entry and TechDocs sourced from MkDocs; template golden path.                                  | Platform     | TBC | None         | Backstage shows service with TechDocs; template can scaffold a new adapter.             | `catalog-info.yaml`; template repo.           |
+| **WC‑20** | **Chaos & FMEA**: game‑day for adapters/secrets backend; maintain FMEA register linked to Next_Steps.                                  | SRE/Security | TBC | WC‑17        | Chaos drills pass rollback MTTR <30 min; FMEA updated.                                  | Game‑day report; FMEA doc.                    |
+
+### 5.4 Standards Mapping (traceability)
+
+- **WC‑01/02** → NIST SSDF PS.3, PW.1; OWASP SAMM Gov 1.2; POPIA compliance hygiene.
+- **WC‑03/04** → RFC 9309; ethical crawling norms; ISO 25010 Reliability.
+- **WC‑05/06** → OWASP LLM Top‑10 (LLM01/02/08); OWASP ASVS V2/V4.
+- **WC‑07..12** → OpenLineage, W3C PROV‑O, W3C DCAT; Delta/Iceberg; FAIR; evaluability (Ragas/whylogs).
+- **WC‑13..20** → SLSA L2, OpenSSF Scorecard, ISO 5055 (structural quality), DORA/SPACE observability.
+
+> **Promotion policy**: An output may be marked **authoritative** only if WC‑07/08/09/11 are green for the referenced datasets **and** WC‑05/06/12 are green for the agent/tool path.

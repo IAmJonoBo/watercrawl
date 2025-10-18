@@ -5,16 +5,16 @@ description = "Modular, async-ready, compliance-driven enrichment pipeline for F
 authors = ["ACES Aerodynamics Analyst <info@acesaero.co.za>"]
 packages = [{ include = "firecrawl_demo" }]
 exclude = [
-    "analytics",
-    "codex",
-    "dev",
-    "docs",
-    "examples.py",
-    "main.py",
-    "presets",
-    "scripts",
-    "tests",
-    "tools",
+  "analytics",
+  "codex",
+  "dev",
+  "docs",
+  "examples.py",
+  "main.py",
+  "presets",
+  "scripts",
+  "tests",
+  "tools",
 ]
 
 [tool.poetry.dependencies]
