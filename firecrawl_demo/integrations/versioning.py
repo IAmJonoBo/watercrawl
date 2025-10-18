@@ -35,6 +35,7 @@ class VersionInfo:
     output_fingerprint: str
     input_fingerprint: str
     reproduce_command: tuple[str, ...] = field(default_factory=tuple)
+    extras: dict[str, Any] = field(default_factory=dict)
 
 
 class VersioningManager:
@@ -92,6 +93,7 @@ class VersioningManager:
                 output_fingerprint=manifest.fingerprint,
                 input_fingerprint=input_fingerprint,
                 reproduce_command=self._reproduce_command,
+                extras=dict(extras),
             )
 
         snapshot_dir = self._metadata_root / manifest.version
@@ -127,6 +129,7 @@ class VersioningManager:
             output_fingerprint=manifest.fingerprint,
             input_fingerprint=input_fingerprint,
             reproduce_command=self._reproduce_command,
+            extras=dict(extras),
         )
 
 

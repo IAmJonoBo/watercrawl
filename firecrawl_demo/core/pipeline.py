@@ -366,6 +366,17 @@ class Pipeline:
                 manifest_path=manifest.manifest_path,
                 fingerprint=manifest.fingerprint,
             )
+            if version_info is not None:
+                active_context = active_context.with_version(
+                    version=version_info.version,
+                    metadata_path=version_info.metadata_path,
+                    reproduce_command=version_info.reproduce_command,
+                    input_fingerprint=version_info.input_fingerprint,
+                    output_fingerprint=version_info.output_fingerprint,
+                    extras=version_info.extras,
+                )
+            else:
+                active_context = active_context.with_version(version=version_value)
         if self.lineage_manager and active_context:
             artifacts = self.lineage_manager.capture(report, active_context)
             report.lineage_artifacts = artifacts

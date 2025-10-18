@@ -83,6 +83,9 @@ def test_cli_enrich_creates_output(monkeypatch, tmp_path):
     payload = json.loads(result.output)
     assert payload["rows_enriched"] == 1
     assert output_path.exists()
+    assert "lineage_artifacts" in payload
+    lineage_dir = Path(payload["lineage_artifacts"]["openlineage"]).parent
+    assert lineage_dir.exists()
 
 
 def test_cli_validate_text_mode_without_progress(tmp_path):
@@ -368,6 +371,8 @@ def test_cli_enrich_warns_on_adapter_failures(monkeypatch, tmp_path):
             "adapter_failures": 4,
         }
         lineage_artifacts = None
+        lakehouse_manifest = None
+        version_info = None
 
     class DummyProgress:
         def __init__(self, description: str) -> None:

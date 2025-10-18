@@ -28,6 +28,10 @@
 - Capture evidence log paths and DVC/lakeFS commit IDs as OpenLineage `inputs`/`outputs` facets.
 - Add pytest coverage to assert that events are produced and schema-valid for the sample dataset.
 - ✅ **2025-10-17 update**: `firecrawl_demo.integrations.lineage` now emits OpenLineage start/complete events alongside PROV-O and DCAT artefacts and persists them under `artifacts/lineage/<run_id>/` with regression coverage in `tests/test_lineage.py`.
+- ✅ **New**: HTTP/Kafka transports can be toggled with `OPENLINEAGE_TRANSPORT`; HTTP emission respects
+  `OPENLINEAGE_URL`/`OPENLINEAGE_API_KEY` while Kafka honours `OPENLINEAGE_KAFKA_TOPIC` and
+  `OPENLINEAGE_KAFKA_BOOTSTRAP`. CLI enrichment output now prints the lineage artefact directory plus
+  lakehouse and version manifests for runbook copy/paste.
 
 ### 2. PROV-O and DCAT
 
@@ -35,6 +39,7 @@
 - Emit PROV serialisations (JSON-LD) alongside pipeline reports; store them under `artifacts/prov/<run_id>.jsonld`.
 - Publish DCAT dataset/page metadata under `docs/catalogue/` and wire MkDocs navigation.
 - Create regression tests that parse the JSON-LD and ensure required properties (title, description, temporal coverage, distribution URL) are present.
+- ✅ **2025-10-18 update**: PROV graphs now include the enrichment software agent, evidence counts, quality metrics, and generated artefacts (lakehouse manifest, version manifest, lineage bundle). DCAT entries expose the same metadata via `dqv:QualityMeasurement`, reproducibility notes, and distribution records for the evidence log, manifests, and lineage artefacts with contact information for platform support.
 
 ### 3. Lakehouse foundation
 

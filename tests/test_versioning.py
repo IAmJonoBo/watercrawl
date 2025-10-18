@@ -54,3 +54,4 @@ def test_versioning_manager_records_snapshot(tmp_path: Path) -> None:
     assert metadata["output_fingerprint"] == manifest.fingerprint
     assert metadata["extras"]["initiator"] == "unit-test"
     assert metadata["reproduce"]["command"][0] == "poetry"
+    assert version_info.extras["initiator"] == "unit-test"

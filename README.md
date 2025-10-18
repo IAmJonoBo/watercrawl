@@ -59,7 +59,7 @@ The exported requirements files include pinned versions with SHA256 hashes for r
   remediation guidance into the evidence log and MCP.
 - **Data contracts** with a dual Great Expectations + dbt suite, executed via the `contracts`
   CLI command and archived as evidence artefacts for each dataset revision.
-- **Lineage + lakehouse artefacts** generated alongside every enrichment run (OpenLineage, PROV-O, DCAT, and snapshot manifests) so analysts can trace provenance and reproduce curated tables.
+- **Lineage + lakehouse artefacts** generated alongside every enrichment run (OpenLineage, PROV-O, DCAT, and snapshot manifests) so analysts can trace provenance and reproduce curated tables. PROV graphs record the enrichment agent, evidence counts, and quality metrics while DCAT entries expose reproducibility commands, contact metadata, and distribution links for manifests and lineage bundles. CLI runs now print the lineage directory plus lakehouse/version manifest paths for immediate runbook inclusion.
 - **Versioned lakehouse snapshots** with deterministic fingerprints and reproduce commands captured in `data/versioning/`.
 - **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.interfaces.mcp.server`).
 - **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
