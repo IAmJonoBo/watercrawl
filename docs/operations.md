@@ -49,6 +49,96 @@ release reviews so operators can replay or roll back snapshots deterministically
 > **Codex guardrail:** run `promptfoo eval codex/evals/promptfooconfig.yaml` before enabling any Codex or MCP-assisted sessions.
 > Production (`dist/`) deployments must leave Codex disabled; only the `dev/` workspace may opt in after the smoke tests pass.
 
+## Problems Report Aggregation
+
+The `problems_report.json` artefact aggregates findings from multiple QA tools into a unified, machine-readable format for automated triage and human review. This pipeline ensures that linter errors, type issues, security vulnerabilities, and other code quality problems are surfaced consistently across CI, ephemeral runners, and local development environments.
+
+### Pipeline Overview
+
+The aggregation is performed by `scripts/collect_problems.py`, which executes a suite of QA tools in parallel and parses their outputs into a standardized JSON structure. The script is designed to be fast, with output truncation for large reports (max 2000 characters per message, 100 issues per tool) to prevent context overflow.
+
+Supported QA tools include:
+
+- **Ruff**: Python linter and formatter.
+- **Mypy**: Static type checker.
+- **Pylint**: Advanced Python linter (optional, may not be installed).
+- **Bandit**: Security linter for Python code.
+- **Yamllint**: YAML file linter.
+- **SQLFluff**: SQL linter for dbt models (using DuckDB dialect).
+
+Each tool's results are captured with status, return code, parsed issues, and summary metrics. The report includes a generation timestamp for freshness tracking.
+
+### JSON Structure
+
+The `problems_report.json` file follows this schema:
+
+```json
+{
+  "generated_at": "2025-10-18T12:37:05.925602+00:00",
+  "tools": [
+    {
+      "tool": "ruff",
+      "status": "completed",
+      "returncode": 0,
+      "issues": [
+        {
+          "path": "file.py",
+          "line": 10,
+          "column": 5,
+          "code": "E501",
+          "message": "Line too long"
+        }
+      ],
+      "summary": {
+        "issue_count": 1,
+        "fixable": 1
+      }
+    }
+  ]
+}
+```
+
+- `generated_at`: ISO 8601 timestamp of report generation.
+- `tools`: Array of tool results, each with:
+  - `tool`: Tool name.
+  - `status`: Execution status (e.g., "completed", "failed").
+  - `returncode`: Exit code from the tool.
+  - `issues`: Array of parsed issues (truncated if excessive).
+  - `summary`: Tool-specific metrics (e.g., issue counts, severity breakdowns).
+  - Optional fields: `stderr`, `notes`, `raw` (for parsing failures).
+
+### Wiring and Integration
+
+- **CI Pipeline**: In `.github/workflows/ci.yml`, the report is generated after tests via `poetry run python scripts/collect_problems.py` and uploaded as a CI artifact named `ci-dashboards`. This ensures problems are visible in GitHub Actions runs.
+- **Ephemeral Runners**: Automatically generated during containerized or serverless executions to surface issues without full IDE access.
+- **Local Development**: Run manually or via the shell wrapper `scripts/collect_problems.sh` to check code quality before commits.
+- **Dev CLI**: While `poetry run python -m dev.cli qa all` mirrors most CI checks, the problems report is generated separately to aggregate findings post-QA.
+
+Analysts and Copilot agents must check `problems_report.json` for outstanding issues before remediation or enrichment tasks. This workflow blocks clean evidence logging and enrichment until problems are resolved.
+
+### Usage
+
+To generate the problems report locally:
+
+```bash
+# Via Python script
+poetry run python scripts/collect_problems.py
+
+# Via shell wrapper
+bash scripts/collect_problems.sh
+```
+
+The script outputs the path to the generated `problems_report.json`. Review the file to identify issues by tool, and address them using the standard QA commands (e.g., `poetry run ruff check . --fix` for auto-fixable Ruff issues).
+
+For CI-like execution, run the full QA suite first:
+
+```bash
+poetry run python -m dev.cli qa all
+poetry run python scripts/collect_problems.py
+```
+
+This mirrors the CI sequence and ensures the report reflects the latest code state.
+
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command
 > exits non-zero when variables are duplicated, unexported, or malformed, so run
