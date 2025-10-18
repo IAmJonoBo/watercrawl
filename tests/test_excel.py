@@ -217,3 +217,59 @@ def test_normalize_numeric_units_rejects_unsupported_type() -> None:
 
     with pytest.raises(ValueError):
         excel.normalize_numeric_units(frame)
+
+
+def test_excel_exporter_creates_workbook_and_provenance(tmp_path: Path) -> None:
+    exporter = excel.ExcelExporter(
+        tmp_path / "exports" / "enriched.xlsx",
+        tmp_path / "exports" / "provenance.csv",
+    )
+    frame = pd.DataFrame([{"Name of Organisation": "Example"}])
+
+    exporter.write(frame, [{"source": "internal", "notes": "baseline"}])
+
+    workbook_path = tmp_path / "exports" / "enriched.xlsx"
+    provenance_path = tmp_path / "exports" / "provenance.csv"
+    assert workbook_path.exists()
+    assert provenance_path.exists()
+
+
+def test_read_dataset_rejects_unsupported_extension(tmp_path: Path) -> None:
+    payload = tmp_path / "dataset.txt"
+    payload.write_text("invalid", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Unsupported file format"):
+        excel.read_dataset(payload)
+
+
+def test_write_dataset_rejects_unsupported_extension(tmp_path: Path) -> None:
+    frame = pd.DataFrame([{"Name of Organisation": "Example"}])
+    target = tmp_path / "dataset.json"
+
+    with pytest.raises(ValueError, match="Unsupported file format"):
+        excel.write_dataset(frame, target)
+
+
+def test_load_school_records_requires_expected_columns(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset.csv"
+    pd.DataFrame([{"Name of Organisation": "Example"}]).to_csv(dataset, index=False)
+
+    with pytest.raises(ValueError, match="Missing expected columns"):
+        excel.load_school_records(dataset)
+
+
+def test_normalize_numeric_units_handles_dimensionless_and_invalid() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "Runway Length": "100",
+                "Fleet Size": "5",
+            }
+        ]
+    )
+    normalized = excel.normalize_numeric_units(frame)
+    assert normalized.loc[0, "Runway Length"] == pytest.approx(100.0, rel=1e-6)
+    assert normalized.loc[0, "Fleet Size"] == 5
+
+    with pytest.raises(ValueError):
+        excel.normalize_numeric_units(pd.DataFrame([{"Runway Length": "not-a-number"}]))

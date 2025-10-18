@@ -7,6 +7,8 @@
 
 # Core runtime packages
 /firecrawl_demo/core/ @ACES-Aerodynamics/platform-team
+/firecrawl_demo/domain/ @ACES-Aerodynamics/platform-team
+/firecrawl_demo/application/ @ACES-Aerodynamics/platform-team
 /firecrawl_demo/integrations/ @ACES-Aerodynamics/data-engineering
 /firecrawl_demo/governance/ @ACES-Aerodynamics/security
 /firecrawl_demo/interfaces/ @ACES-Aerodynamics/automation

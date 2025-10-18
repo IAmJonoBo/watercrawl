@@ -12,6 +12,37 @@ from urllib.parse import urlparse
 
 import pandas as pd
 
+from firecrawl_demo.application.interfaces import EvidenceSink, PipelineService
+from firecrawl_demo.application.progress import (
+    NullPipelineProgressListener,
+    PipelineProgressListener,
+)
+from firecrawl_demo.application.quality import (
+    QualityFinding,
+    QualityGate,
+    QualityGateDecision,
+)
+from firecrawl_demo.core import config
+from firecrawl_demo.core.excel import EXPECTED_COLUMNS, read_dataset, write_dataset
+from firecrawl_demo.domain.compliance import (
+    canonical_domain,
+    confidence_for_status,
+    determine_status,
+    normalize_phone,
+    normalize_province,
+    validate_email,
+)
+from firecrawl_demo.domain.models import (
+    EvidenceRecord,
+    PipelineReport,
+    QualityIssue,
+    RollbackAction,
+    RollbackPlan,
+    SanityCheckFinding,
+    SchoolRecord,
+)
+from firecrawl_demo.domain.validation import DatasetValidator
+from firecrawl_demo.infrastructure.evidence import NullEvidenceSink
 from firecrawl_demo.integrations.lakehouse import (
     LocalLakehouseWriter,
     build_lakehouse_writer,
@@ -29,36 +60,12 @@ from firecrawl_demo.integrations.versioning import (
     fingerprint_dataframe,
 )
 
-from . import config
-from .audit import EvidenceSink, NullEvidenceSink
-from .compliance import (
-    canonical_domain,
-    confidence_for_status,
-    determine_status,
-    normalize_phone,
-    normalize_province,
-    validate_email,
-)
-from .excel import EXPECTED_COLUMNS, read_dataset, write_dataset
-from .models import (
-    EvidenceRecord,
-    PipelineReport,
-    QualityIssue,
-    RollbackAction,
-    RollbackPlan,
-    SanityCheckFinding,
-    SchoolRecord,
-)
-from .progress import NullPipelineProgressListener, PipelineProgressListener
-from .quality import QualityFinding, QualityGate, QualityGateDecision
-from .validation import DatasetValidator
-
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class Pipeline:
+class Pipeline(PipelineService):
     """Coordinate validation, enrichment, and evidence logging."""
 
     research_adapter: ResearchAdapter = field(default_factory=build_research_adapter)
@@ -73,6 +80,12 @@ class Pipeline:
         default_factory=build_versioning_manager
     )
     _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
+
+    @property
+    def last_report(self) -> PipelineReport | None:
+        """Return the most recent pipeline report, if available."""
+
+        return self._last_report
 
     def run_dataframe(
         self,

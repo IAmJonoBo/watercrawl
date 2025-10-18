@@ -1,25 +1,25 @@
+"""Infrastructure-backed implementations of evidence sinks."""
+
 from __future__ import annotations
 
 import csv
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import structlog
 from structlog.typing import FilteringBoundLogger
 
-from . import config
-from .models import EvidenceRecord
+from firecrawl_demo.core import config
+from firecrawl_demo.domain.models import EvidenceRecord
 
+if TYPE_CHECKING:
+    from firecrawl_demo.application.interfaces import EvidenceSink
+else:  # pragma: no cover - runtime protocol for loose coupling
 
-class EvidenceSink(Protocol):
-    """Protocol for recording evidence records to an audit sink."""
-
-    def record(
-        self, entries: Iterable[EvidenceRecord]
-    ) -> None:  # pragma: no cover - interface
-        """Persist a batch of evidence entries."""
+    class EvidenceSink(Protocol):
+        def record(self, entries: Iterable[EvidenceRecord]) -> None: ...
 
 
 class NullEvidenceSink:

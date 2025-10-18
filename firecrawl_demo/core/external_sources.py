@@ -9,8 +9,9 @@ import requests
 if TYPE_CHECKING:  # pragma: no cover - typing aid
     from firecrawl_demo.integrations.research import ResearchFinding
 
+from firecrawl_demo.domain.compliance import canonical_domain, normalize_phone
+
 from . import config
-from .compliance import canonical_domain, normalize_phone
 
 logger = logging.getLogger(__name__)
 

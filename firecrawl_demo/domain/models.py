@@ -6,12 +6,22 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import pandas as pd
 
-from . import config
+from firecrawl_demo.core import config
 
 if TYPE_CHECKING:
     from firecrawl_demo.integrations.lakehouse import LakehouseManifest
     from firecrawl_demo.integrations.lineage import LineageArtifacts
     from firecrawl_demo.integrations.versioning import VersionInfo
+
+EXPECTED_COLUMNS = [
+    "Name of Organisation",
+    "Province",
+    "Status",
+    "Website URL",
+    "Contact Person",
+    "Contact Number",
+    "Contact Email Address",
+]
 
 _CANONICAL_PROVINCES = {province.lower(): province for province in config.PROVINCES}
 _UNKNOWN_PROVINCE = "Unknown"

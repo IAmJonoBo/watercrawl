@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import pandas as pd
 from click.testing import CliRunner
 
-from firecrawl_demo.core.models import SchoolRecord
-from firecrawl_demo.core.progress import PipelineProgressListener
+from firecrawl_demo.application.progress import PipelineProgressListener
+from firecrawl_demo.domain.models import SchoolRecord
 from firecrawl_demo.interfaces import cli
 from firecrawl_demo.interfaces.cli import cli as cli_group
 

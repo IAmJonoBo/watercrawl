@@ -4,9 +4,9 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.application.progress import PipelineProgressListener
 from firecrawl_demo.core import config
-from firecrawl_demo.core.pipeline import Pipeline
-from firecrawl_demo.core.progress import PipelineProgressListener
 from firecrawl_demo.integrations.research import ResearchAdapter, ResearchFinding
 
 

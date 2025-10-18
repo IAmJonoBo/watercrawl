@@ -10,7 +10,8 @@ from typing import Any, Protocol, cast
 
 import requests
 
-from firecrawl_demo.core import config, models
+from firecrawl_demo.core import config
+from firecrawl_demo.domain import models
 
 ACES_LINEAGE_NS = "https://acesaero.co.za/ns/lineage#"
 ACES_CONTEXT_PREFIX = "aces"

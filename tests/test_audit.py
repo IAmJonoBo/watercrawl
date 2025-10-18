@@ -6,13 +6,13 @@ import pytest
 from structlog.typing import FilteringBoundLogger
 
 from firecrawl_demo.core import config
-from firecrawl_demo.core.audit import (
+from firecrawl_demo.domain.models import EvidenceRecord
+from firecrawl_demo.infrastructure.evidence import (
     CompositeEvidenceSink,
     CSVEvidenceSink,
     StreamingEvidenceSink,
     build_evidence_sink,
 )
-from firecrawl_demo.core.models import EvidenceRecord
 
 
 def test_csv_evidence_sink_appends(tmp_path: Path) -> None:
