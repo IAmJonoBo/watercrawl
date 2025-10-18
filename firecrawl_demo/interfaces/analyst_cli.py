@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, TypeVar
 from uuid import uuid4
@@ -32,15 +33,31 @@ from firecrawl_demo.integrations.lakehouse import build_lakehouse_writer
 from firecrawl_demo.integrations.lineage import LineageContext, LineageManager
 from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 
-
 T = TypeVar("T")
 
 
+_CLI_OVERRIDE_STACK: list[dict[str, Any]] = []
+
+
 def _get_cli_override(name: str, default: T) -> T:
+    for overrides in reversed(_CLI_OVERRIDE_STACK):
+        if name in overrides:
+            return overrides[name]
     cli_module = sys.modules.get("firecrawl_demo.interfaces.cli")
     if cli_module is not None and hasattr(cli_module, name):
         return getattr(cli_module, name)
     return default
+
+
+@contextmanager
+def override_cli_dependencies(**overrides: Any) -> Iterator[None]:
+    """Temporarily override CLI dependencies for testing and tooling."""
+
+    _CLI_OVERRIDE_STACK.append(overrides)
+    try:
+        yield
+    finally:
+        _CLI_OVERRIDE_STACK.pop()
 
 
 class RichPipelineProgress(PipelineProgressListener):
@@ -196,9 +213,13 @@ def enrich(
 ) -> None:
     """Validate, enrich, and export a dataset."""
 
-    evidence_sink_factory = _get_cli_override("build_evidence_sink", build_evidence_sink)
+    evidence_sink_factory = _get_cli_override(
+        "build_evidence_sink", build_evidence_sink
+    )
     lineage_manager_factory = _get_cli_override("LineageManager", LineageManager)
-    lakehouse_writer_factory = _get_cli_override("build_lakehouse_writer", build_lakehouse_writer)
+    lakehouse_writer_factory = _get_cli_override(
+        "build_lakehouse_writer", build_lakehouse_writer
+    )
     pipeline_factory = _get_cli_override("Pipeline", Pipeline)
     evidence_sink = evidence_sink_factory()
     lineage_manager = lineage_manager_factory()
@@ -388,7 +409,8 @@ def mcp_server(stdio: bool) -> None:
     server_factory = _get_cli_override("CopilotMCPServer", CopilotMCPServer)
     server = server_factory(pipeline=pipeline_factory(evidence_sink=sink_factory()))
     if stdio:
-        asyncio.run(server.serve_stdio())
+        asyncio_run = _get_cli_override("asyncio_run", asyncio.run)
+        asyncio_run(server.serve_stdio())
     else:
         raise click.UsageError("Only stdio transport is supported in this build.")
 

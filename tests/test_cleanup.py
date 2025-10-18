@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -39,6 +40,7 @@ def test_cleanup_removes_default_targets(tmp_path: Path) -> None:
     assert not (tmp_path / "dist").exists()
     assert not (tmp_path / "coverage.xml").exists()
     assert result.removed  # ensure at least one removal occurred
+    assert result.tracked == ()
 
 
 def test_cleanup_dry_run_does_not_modify_files(tmp_path: Path) -> None:
@@ -55,6 +57,7 @@ def test_cleanup_dry_run_does_not_modify_files(tmp_path: Path) -> None:
     assert (tmp_path / "artifacts").exists()
     assert result.dry_run is True
     assert target in result.removed
+    assert result.tracked == ()
 
 
 def test_cleanup_rejects_paths_outside_project_root(tmp_path: Path) -> None:
@@ -66,3 +69,26 @@ def test_cleanup_rejects_paths_outside_project_root(tmp_path: Path) -> None:
             project_root=tmp_path,
             include=("../outside",),
         )
+
+
+def test_cleanup_skips_tracked_targets(tmp_path: Path) -> None:
+    subprocess.run(("git", "init"), check=True, cwd=tmp_path)
+    subprocess.run(
+        ("git", "-C", str(tmp_path), "config", "user.email", "test@example.com"),
+        check=True,
+    )
+    subprocess.run(
+        ("git", "-C", str(tmp_path), "config", "user.name", "Test User"),
+        check=True,
+    )
+    tracked = tmp_path / "dist" / "keep.txt"
+    tracked.parent.mkdir(parents=True)
+    tracked.write_text("keep", encoding="utf-8")
+    subprocess.run(("git", "-C", str(tmp_path), "add", "dist/keep.txt"), check=True)
+
+    result = cleanup.cleanup(project_root=tmp_path)
+
+    assert tracked.exists()
+    assert tracked in result.tracked
+    assert (tmp_path / "dist") in result.skipped
+    assert (tmp_path / "dist") not in result.removed

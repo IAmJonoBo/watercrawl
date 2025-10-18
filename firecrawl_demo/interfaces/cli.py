@@ -13,6 +13,7 @@ CopilotMCPServer = _analyst_cli.CopilotMCPServer
 Pipeline = _analyst_cli.Pipeline
 build_evidence_sink = _analyst_cli.build_evidence_sink
 read_dataset = _analyst_cli.read_dataset
+override_cli_dependencies = _analyst_cli.override_cli_dependencies
 
 __all__ = [
     "cli",
@@ -26,6 +27,7 @@ __all__ = [
     "Pipeline",
     "build_evidence_sink",
     "read_dataset",
+    "override_cli_dependencies",
 ]
 
 
