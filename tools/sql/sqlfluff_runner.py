@@ -16,7 +16,7 @@ DEFAULT_DBT_PROJECT = Path("analytics")
 DEFAULT_DUCKDB = Path("target/contracts.duckdb")
 
 
-def _ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
+def ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
     materialised_path = (project_dir / relative_path).resolve()
     materialised_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -41,7 +41,7 @@ def _ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
 def run_sqlfluff(
     project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]
 ) -> int:
-    materialised_path = _ensure_duckdb(project_dir, duckdb_path)
+    materialised_path = ensure_duckdb(project_dir, duckdb_path)
     env = os.environ.copy()
     env.setdefault("DBT_DUCKDB_PATH", materialised_path.as_posix())
     cmd = ["sqlfluff", "lint", str(project_dir), *extra_args]
@@ -76,6 +76,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if extra and extra[0] == "--":
         extra = extra[1:]
     return run_sqlfluff(args.project_dir, args.duckdb_path, extra)
+
+
+# Backwards compatibility for callers still importing the private helper.
+_ensure_duckdb = ensure_duckdb
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entrypoint

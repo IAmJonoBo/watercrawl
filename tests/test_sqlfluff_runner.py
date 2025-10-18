@@ -18,7 +18,7 @@ def test_ensure_duckdb_initialises_database(tmp_path: Path) -> None:
     project_dir = tmp_path
     relative_path = Path("target/contracts.duckdb")
 
-    materialised = sqlfluff_runner._ensure_duckdb(project_dir, relative_path)
+    materialised = sqlfluff_runner.ensure_duckdb(project_dir, relative_path)
 
     assert materialised == (project_dir / relative_path).resolve()
     _assert_valid_duckdb(materialised)
@@ -31,7 +31,7 @@ def test_ensure_duckdb_rebuilds_invalid_databases(tmp_path: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(b"")
 
-    materialised = sqlfluff_runner._ensure_duckdb(project_dir, relative_path)
+    materialised = sqlfluff_runner.ensure_duckdb(project_dir, relative_path)
 
     assert materialised == target
     _assert_valid_duckdb(materialised)

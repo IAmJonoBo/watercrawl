@@ -47,20 +47,23 @@ repos:
         pass_filenames: false
       - id: markdownlint-cli2
         name: markdownlint-cli2
-        entry: npx --yes markdownlint-cli2
+        entry: npx --yes --package markdownlint-cli2@0.18.0 markdownlint-cli2
         args: [--config, .markdownlint-cli2.yaml]
         language: system
         types_or: [markdown]
       - id: actionlint
         name: actionlint
-        entry: actionlint
+        entry: poetry run python -m tools.hooks.run_actionlint
         language: system
         types_or: [yaml]
         files: ^\.github/workflows/.*\.ya?ml$
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.14.0
+  - repo: local
     hooks:
       - id: hadolint
+        name: hadolint
+        entry: poetry run python -m tools.hooks.run_hadolint
+        language: system
+        types: [dockerfile]
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
     hooks:
