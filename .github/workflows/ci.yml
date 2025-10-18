@@ -45,7 +45,7 @@ jobs:
             --junit pytest-results.xml \
             --output ci-summary.md \
             --json ci-dashboard.json
-          cat ci-summary.md >> $GITHUB_STEP_SUMMARY
+          cat ci-summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload CI artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -62,6 +62,8 @@ jobs:
           node-version: "22"
       - name: Install markdownlint-cli2
         run: npm install --no-save markdownlint-cli2@^0.9.0
+      - name: Install yaml (dependency for markdownlint-cli2)
+        run: npm install yaml
       - name: Lint Markdown
         run: npx markdownlint-cli2 '**/*.md' '#node_modules' || true
       - name: Install Hadolint
