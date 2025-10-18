@@ -77,7 +77,8 @@ or missing evidence before publishing results.
 
 ## Evidence Sink Configuration
 
-- `EVIDENCE_SINK_BACKEND`: choose `csv`, `stream`, or `csv+stream` to fan out.
+- `EVIDENCE_SINK_BACKEND`: choose `csv`, `stream`, or `csv+stream` to fan out. Invalid
+  backends now raise a configuration error so mis-typed values are caught early.
 - `EVIDENCE_STREAM_ENABLED`: toggle Kafka/REST emission when using the streaming stub.
 - `EVIDENCE_STREAM_TRANSPORT`: `rest` (default) or `kafka` to switch log context.
 - `EVIDENCE_STREAM_REST_ENDPOINT` / `EVIDENCE_STREAM_KAFKA_TOPIC`: document targets for future graph ingestion pipelines.

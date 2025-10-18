@@ -33,6 +33,7 @@
 
 - [x] 2025-10-18 — Baseline QA suite re-validated; scripted cleanup keeps local artefacts aligned with CI and unblocks failing pushes.
 - [x] 2025-10-18 — Phase 2 hygiene: refreshed governance/drift modules via `pyupgrade` and documented the cleanup workflow for analysts.
+- [x] 2025-10-18 — Hardened quality/evidence coverage: added QualityGate regression tests, exercised evidence sink fan-out, and enforced backend validation through docs + pre-commit cleanups.
 
 ---
 

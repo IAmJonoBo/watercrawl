@@ -119,6 +119,7 @@ def build_evidence_sink(
     backend_parts = [
         part.strip().lower() for part in resolved.backend.split("+") if part.strip()
     ]
+    backend_parts = list(dict.fromkeys(backend_parts))
 
     sinks: list[EvidenceSink] = []
     for backend in backend_parts or ["csv"]:
@@ -133,6 +134,8 @@ def build_evidence_sink(
                     enabled=resolved.stream_enabled,
                 )
             )
+        else:
+            raise ValueError(f"Unknown evidence sink backend '{backend}'")
 
     if not sinks:
         return NullEvidenceSink()
