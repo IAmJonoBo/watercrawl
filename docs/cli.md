@@ -13,15 +13,6 @@ enrich immediately after installing dependencies.
 
 ## Analyst commands (`app.cli`)
 
-### `overview`
-
-```bash
-poetry run python -m app.cli overview
-```
-
-- Provides a high-level summary of the enrichment stack, including available datasets, recent runs, and system status.
-- Useful for getting started or checking pipeline health.
-
 ### `validate`
 
 ```bash
@@ -111,3 +102,19 @@ Each QA stage is also exposed individually:
 - `poetry run python -m dev.cli qa security --skip-secrets`
 - `poetry run python -m dev.cli qa build`
 - `poetry run python -m dev.cli qa contracts --dry-run`
+
+## Analyst UI
+
+The repository includes a Streamlit-based analyst UI for interactive review and feedback on enriched datasets.
+
+```bash
+poetry run streamlit run firecrawl_demo/interfaces/analyst_ui.py
+```
+
+Features:
+
+- View enriched records and relationship graphs
+- Annotate/flag specific records with feedback
+- Audit trail for all feedback submissions
+
+> **Note:** The UI is currently a basic prototype for analyst workflows.

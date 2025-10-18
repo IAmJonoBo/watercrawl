@@ -221,6 +221,8 @@ _QA_DEFAULT_SEQUENCE = (
 
 
 class CommandRunner(Protocol):
+    """Protocol for running a sequence of CommandSpec objects with QA orchestration."""
+
     def __call__(
         self,
         specs: Sequence[CommandSpec],
@@ -229,6 +231,10 @@ class CommandRunner(Protocol):
         fail_fast: bool = False,
         console: Console | None = None,
     ) -> int: ...
+
+    def describe(self) -> str:
+        """Return a description of the command runner implementation."""
+        return "CommandRunner protocol"
 
 
 _COMMAND_RUNNER_STACK: list[CommandRunner] = []

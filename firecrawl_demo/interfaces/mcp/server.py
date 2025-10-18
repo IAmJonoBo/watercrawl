@@ -51,7 +51,7 @@ class CopilotMCPServer:
                     "id": request_id,
                     "error": {"code": -32601, "message": f"Unknown task '{task}'"},
                 }
-            except Exception as exc:  # pragma: no cover - defensive
+            except (ValueError, RuntimeError) as exc:
                 return {
                     "jsonrpc": _JSONRPC,
                     "id": request_id,
