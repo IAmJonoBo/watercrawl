@@ -6,7 +6,8 @@ USER appuser
 
 WORKDIR /app
 COPY . /app
-RUN pip install poetry && poetry install --no-root
+RUN python -m pip install --no-cache-dir "poetry==1.8.4" \
+  && poetry install --no-root --sync
 
 # Add a basic healthcheck (checks if python responds)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

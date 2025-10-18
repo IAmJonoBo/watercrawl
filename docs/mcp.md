@@ -20,6 +20,7 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
 ### Payload Shapes
 
 - `validate_dataset`
+
   ```json
   {
     "task": "validate_dataset",
@@ -28,7 +29,9 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
     }
   }
   ```
+
 - `enrich_dataset`
+
   ```json
   {
     "task": "enrich_dataset",
@@ -37,12 +40,17 @@ The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automati
     }
   }
   ```
+
   or `{ "path": "data/input.xlsx" }`.
+
 - `summarize_last_run`
+
   ```json
   { "task": "summarize_last_run", "payload": {} }
   ```
+
 - `list_sanity_issues`
+
   ```json
   { "task": "list_sanity_issues", "payload": {} }
   ```
