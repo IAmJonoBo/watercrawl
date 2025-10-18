@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,6 +35,7 @@ class CleanupResult:
 
     removed: tuple[Path, ...]
     skipped: tuple[Path, ...]
+    tracked: tuple[Path, ...]
     dry_run: bool
 
 
@@ -48,6 +50,40 @@ def _normalise_target(root: Path, target: str) -> Path:
             f"Cleanup target {candidate} is outside project root {root}"  # noqa: EM102
         ) from exc
     return candidate
+
+
+def _is_git_repository(root: Path) -> bool:
+    try:
+        subprocess.run(
+            ("git", "-C", str(root), "rev-parse", "--is-inside-work-tree"),
+            check=True,
+            capture_output=True,
+        )
+    except (
+        FileNotFoundError,
+        subprocess.CalledProcessError,
+    ):  # pragma: no cover - git absent
+        return False
+    return True
+
+
+def _list_tracked_files(root: Path, path: Path) -> tuple[Path, ...]:
+    relative = path.relative_to(root)
+    try:
+        completed = subprocess.run(
+            ("git", "-C", str(root), "ls-files", "--", str(relative)),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:  # pragma: no cover - non-git paths
+        return ()
+    files = tuple(
+        (root / line.strip()).resolve()
+        for line in completed.stdout.splitlines()
+        if line.strip()
+    )
+    return files
 
 
 def cleanup(
@@ -75,12 +111,21 @@ def cleanup(
 
     removed: list[Path] = []
     skipped: list[Path] = []
+    tracked: list[Path] = []
+
+    is_git_repo = _is_git_repository(root)
 
     for target in dict.fromkeys(targets):
         path = _normalise_target(root, target)
         if not path.exists():
             skipped.append(path)
             continue
+        if is_git_repo:
+            tracked_files = _list_tracked_files(root, path)
+            if tracked_files:
+                tracked.extend(tracked_files)
+                skipped.append(path)
+                continue
         removed.append(path)
         if dry_run:
             continue
@@ -89,7 +134,8 @@ def cleanup(
         else:
             path.unlink()
 
-    return CleanupResult(tuple(removed), tuple(skipped), dry_run)
+    unique_tracked = tuple(dict.fromkeys(tracked))
+    return CleanupResult(tuple(removed), tuple(skipped), unique_tracked, dry_run)
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -117,6 +163,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"{action}: {path.relative_to(config.PROJECT_ROOT)}")
     for path in result.skipped:
         print(f"skipped (missing): {path.relative_to(config.PROJECT_ROOT)}")
+    for path in result.tracked:
+        try:
+            relative = path.relative_to(config.PROJECT_ROOT)
+        except ValueError:  # pragma: no cover - defensive for unexpected paths
+            relative = path
+        print(f"tracked (skipped): {relative}")
     return 0
 
 

@@ -5,9 +5,10 @@ from __future__ import annotations
 import shlex
 import subprocess
 import time
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Iterable, Sequence
-from collections.abc import Mapping
+from typing import Protocol
 
 import click
 from rich.console import Console
@@ -27,7 +28,7 @@ class CommandSpec:
 
 
 def _format_args(args: Sequence[str]) -> str:
-    return " ".join(shlex.quote(arg) for arg in args)
+    return shlex.join(args)
 
 
 _QA_GROUPS: dict[str, list[CommandSpec]] = {
@@ -146,7 +147,40 @@ _QA_DEFAULT_SEQUENCE = (
 )
 
 
-def _collect_specs(group_names: Iterable[str], *, include_dbt: bool = True) -> list[CommandSpec]:
+class CommandRunner(Protocol):
+    def __call__(
+        self,
+        specs: Sequence[CommandSpec],
+        *,
+        dry_run: bool,
+        fail_fast: bool = False,
+        console: Console | None = None,
+    ) -> int: ...
+
+
+_COMMAND_RUNNER_STACK: list[CommandRunner] = []
+
+
+def _get_command_runner() -> CommandRunner:
+    if _COMMAND_RUNNER_STACK:
+        return _COMMAND_RUNNER_STACK[-1]
+    return _run_command_specs
+
+
+@contextmanager
+def override_command_runner(runner: CommandRunner) -> Iterator[None]:
+    """Temporarily override the QA command runner."""
+
+    _COMMAND_RUNNER_STACK.append(runner)
+    try:
+        yield
+    finally:
+        _COMMAND_RUNNER_STACK.pop()
+
+
+def _collect_specs(
+    group_names: Iterable[str], *, include_dbt: bool = True
+) -> list[CommandSpec]:
     specs: list[CommandSpec] = []
     for group_name in group_names:
         group = _QA_GROUPS.get(group_name, [])
@@ -155,6 +189,13 @@ def _collect_specs(group_names: Iterable[str], *, include_dbt: bool = True) -> l
                 continue
             specs.append(spec)
     return specs
+
+
+def _invoke_specs(
+    specs: Sequence[CommandSpec], *, dry_run: bool, fail_fast: bool = False
+) -> int:
+    runner = _get_command_runner()
+    return runner(specs, dry_run=dry_run, fail_fast=fail_fast)
 
 
 def _render_plan_table(specs: Sequence[CommandSpec]) -> Table:
@@ -186,8 +227,12 @@ def _run_command_specs(
     for spec in specs:
         command_str = _format_args(spec.args)
         if dry_run:
-            console.print(Text.assemble(("DRY-RUN", "yellow"), " ", spec.name, ": ", command_str))
-            summary_table.add_row(spec.name, command_str, Text("skipped", style="yellow"), "-")
+            console.print(
+                Text.assemble(("DRY-RUN", "yellow"), " ", spec.name, ": ", command_str)
+            )
+            summary_table.add_row(
+                spec.name, command_str, Text("skipped", style="yellow"), "-"
+            )
             continue
         console.print(Text.assemble(("→", "cyan"), " ", spec.name, ": ", command_str))
         start = time.perf_counter()
@@ -219,7 +264,9 @@ def qa() -> None:
 
 
 @qa.command("plan")
-@click.option("--skip-dbt", is_flag=True, help="Omit dbt contract execution from the plan.")
+@click.option(
+    "--skip-dbt", is_flag=True, help="Omit dbt contract execution from the plan."
+)
 def qa_plan(skip_dbt: bool) -> None:
     """Display the QA plan without executing any commands."""
 
@@ -229,14 +276,16 @@ def qa_plan(skip_dbt: bool) -> None:
 
 
 @qa.command("all")
-@click.option("--dry-run", is_flag=True, help="Preview the commands without executing them.")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview the commands without executing them."
+)
 @click.option("--fail-fast", is_flag=True, help="Stop after the first failure.")
 @click.option("--skip-dbt", is_flag=True, help="Skip dbt contract execution.")
 def qa_all(dry_run: bool, fail_fast: bool, skip_dbt: bool) -> None:
     """Run the full QA suite that mirrors CI."""
 
     specs = _collect_specs(_QA_DEFAULT_SEQUENCE, include_dbt=not skip_dbt)
-    exit_code = _run_command_specs(
+    exit_code = _invoke_specs(
         specs,
         dry_run=dry_run,
         fail_fast=fail_fast,
@@ -245,37 +294,45 @@ def qa_all(dry_run: bool, fail_fast: bool, skip_dbt: bool) -> None:
 
 
 @qa.command("tests")
-@click.option("--dry-run", is_flag=True, help="Preview the pytest command without executing it.")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview the pytest command without executing it."
+)
 def qa_tests(dry_run: bool) -> None:
     """Run the pytest suite with coverage enabled."""
 
     specs = _collect_specs(["tests"])
-    exit_code = _run_command_specs(specs, dry_run=dry_run)
+    exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
 
 
 @qa.command("lint")
-@click.option("--dry-run", is_flag=True, help="Preview lint commands without executing them.")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview lint commands without executing them."
+)
 def qa_lint(dry_run: bool) -> None:
     """Run Ruff, isort, and Black in check mode."""
 
     specs = _collect_specs(["lint"])
-    exit_code = _run_command_specs(specs, dry_run=dry_run)
+    exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
 
 
 @qa.command("typecheck")
-@click.option("--dry-run", is_flag=True, help="Preview the mypy command without executing it.")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview the mypy command without executing it."
+)
 def qa_typecheck(dry_run: bool) -> None:
     """Execute the mypy static type checker."""
 
     specs = _collect_specs(["typecheck"])
-    exit_code = _run_command_specs(specs, dry_run=dry_run)
+    exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
 
 
 @qa.command("security")
-@click.option("--dry-run", is_flag=True, help="Preview security checks without executing them.")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview security checks without executing them."
+)
 @click.option("--skip-secrets", is_flag=True, help="Skip the dotenv linter check.")
 def qa_security(dry_run: bool, skip_secrets: bool) -> None:
     """Run security and secret-hygiene checks."""
@@ -283,27 +340,31 @@ def qa_security(dry_run: bool, skip_secrets: bool) -> None:
     specs = _collect_specs(["security"])
     if skip_secrets:
         specs = [spec for spec in specs if "secrets" not in spec.tags]
-    exit_code = _run_command_specs(specs, dry_run=dry_run)
+    exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
 
 
 @qa.command("build")
-@click.option("--dry-run", is_flag=True, help="Preview the build command without executing it.")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview the build command without executing it."
+)
 def qa_build(dry_run: bool) -> None:
     """Build wheel and sdist artefacts."""
 
     specs = _collect_specs(["build"])
-    exit_code = _run_command_specs(specs, dry_run=dry_run)
+    exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
 
 
 @qa.command("contracts")
-@click.option("--dry-run", is_flag=True, help="Preview dbt contract execution without running it.")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview dbt contract execution without running it."
+)
 def qa_contracts(dry_run: bool) -> None:
     """Execute dbt contracts for curated datasets."""
 
     specs = _collect_specs(["contracts"])
-    exit_code = _run_command_specs(specs, dry_run=dry_run)
+    exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
 
 

@@ -17,7 +17,7 @@ def test_qa_plan_outputs_table() -> None:
     assert "Pytest" in result.output
 
 
-def test_qa_all_dry_run_skips_dbt(monkeypatch) -> None:
+def test_qa_all_dry_run_skips_dbt() -> None:
     captured: dict[str, Any] = {}
 
     def fake_run(specs, *, dry_run: bool, fail_fast: bool = False, console=None):  # type: ignore[override]
@@ -26,9 +26,9 @@ def test_qa_all_dry_run_skips_dbt(monkeypatch) -> None:
         captured["fail_fast"] = fail_fast
         return 0
 
-    monkeypatch.setattr(dev_cli, "_run_command_specs", fake_run)
-    runner = CliRunner()
-    result = runner.invoke(dev_cli.cli, ["qa", "all", "--dry-run", "--skip-dbt"])
+    with dev_cli.override_command_runner(fake_run):
+        runner = CliRunner()
+        result = runner.invoke(dev_cli.cli, ["qa", "all", "--dry-run", "--skip-dbt"])
     assert result.exit_code == 0
     assert captured["dry_run"] is True
     assert captured["fail_fast"] is False
@@ -37,7 +37,7 @@ def test_qa_all_dry_run_skips_dbt(monkeypatch) -> None:
     assert all("dbt" not in spec.tags for spec in specs)
 
 
-def test_qa_security_skip_secrets(monkeypatch) -> None:
+def test_qa_security_skip_secrets() -> None:
     captured: dict[str, Any] = {}
 
     def fake_run(specs, *, dry_run: bool, fail_fast: bool = False, console=None):  # type: ignore[override]
@@ -45,12 +45,12 @@ def test_qa_security_skip_secrets(monkeypatch) -> None:
         captured["dry_run"] = dry_run
         return 0
 
-    monkeypatch.setattr(dev_cli, "_run_command_specs", fake_run)
-    runner = CliRunner()
-    result = runner.invoke(
-        dev_cli.cli,
-        ["qa", "security", "--dry-run", "--skip-secrets"],
-    )
+    with dev_cli.override_command_runner(fake_run):
+        runner = CliRunner()
+        result = runner.invoke(
+            dev_cli.cli,
+            ["qa", "security", "--dry-run", "--skip-secrets"],
+        )
     assert result.exit_code == 0
     specs = cast(list[dev_cli.CommandSpec], captured["specs"])
     assert all("secrets" not in spec.tags for spec in specs)

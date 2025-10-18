@@ -37,6 +37,7 @@
 - [x] 2025-10-18 — Phase 2 progress: OpenLineage transport toggles (HTTP/Kafka/logging) wired via config, CLI now emits lineage/lakehouse/version manifest paths, and lineage events capture version metadata for downstream reproducibility.
 - [x] 2025-10-18 — Phase 2 provenance uplift: PROV graphs now record the enrichment agent, evidence counts, quality metrics, and generated manifests; DCAT entries surface quality measurements, reproducibility commands, contact metadata, and distribution links for evidence, manifests, and lineage bundles with regression coverage in `tests/test_lineage.py`.
 - [x] 2025-10-18 — DX/UX uplift: split analyst vs. developer CLIs (`app.cli`, `dev.cli`), added QA automation helpers, refreshed CLI docs, and extended test coverage for both entry points.
+- [x] 2025-10-18 — Replaced CLI monkeypatch scaffolding with explicit dependency overrides and taught cleanup automation to detect/skip tracked artefacts with reporting hooks for post-build hygiene reviews.
 
 ---
 

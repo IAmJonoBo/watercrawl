@@ -9,7 +9,9 @@ from app import cli as app_cli
 
 def test_app_cli_exposes_expected_commands() -> None:
     command_names = set(app_cli.cli.commands)
-    assert {"validate", "enrich", "contracts", "mcp-server", "overview"}.issubset(command_names)
+    assert {"validate", "enrich", "contracts", "mcp-server", "overview"}.issubset(
+        command_names
+    )
 
 
 def test_overview_renders_table() -> None:
