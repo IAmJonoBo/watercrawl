@@ -1,11 +1,21 @@
 """Watercrawl enrichment stack exposing layered application surfaces."""
 
-from . import core, governance, infrastructure, integrations, interfaces
+import warnings
+from importlib import import_module
 
-__all__ = [
+from marshmallow.warnings import ChangedInMarshmallow4Warning
+
+warnings.filterwarnings("ignore", category=ChangedInMarshmallow4Warning)
+
+_SUBMODULES = (
     "core",
     "governance",
     "infrastructure",
     "integrations",
     "interfaces",
-]
+)
+
+for _module_name in _SUBMODULES:
+    globals()[_module_name] = import_module(f"{__name__}.{_module_name}")
+
+__all__ = list(_SUBMODULES)
