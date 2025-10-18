@@ -4,7 +4,7 @@ rules:
     max: 120
     allow-non-breakable-words: true
   truthy:
-    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+    allowed-values: ["true", "false", "on", "off", "yes", "no"]
   document-start:
     present: false
 ignore: |
