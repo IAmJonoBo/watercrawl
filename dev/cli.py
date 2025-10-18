@@ -8,7 +8,7 @@ import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, cast
 
 import click
 from rich.console import Console
@@ -240,10 +240,14 @@ class CommandRunner(Protocol):
 _COMMAND_RUNNER_STACK: list[CommandRunner] = []
 
 
+def _default_runner_description() -> str:
+    return "subprocess command runner"
+
+
 def _get_command_runner() -> CommandRunner:
     if _COMMAND_RUNNER_STACK:
         return _COMMAND_RUNNER_STACK[-1]
-    return _run_command_specs
+    return _DEFAULT_COMMAND_RUNNER
 
 
 @contextmanager
@@ -330,6 +334,10 @@ def _run_command_specs(
     console.print()
     console.print(summary_table)
     return exit_code
+
+
+_run_command_specs.describe = _default_runner_description  # type: ignore[attr-defined]
+_DEFAULT_COMMAND_RUNNER: CommandRunner = cast(CommandRunner, _run_command_specs)
 
 
 @click.group(help="Developer tooling for local QA and release preparation.")
