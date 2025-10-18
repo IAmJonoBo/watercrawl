@@ -5,7 +5,7 @@ description = "Modular, async-ready, compliance-driven enrichment pipeline for F
 authors = ["ACES Aerodynamics Analyst <info@acesaero.co.za>"]
 packages = [{ include = "firecrawl_demo" }]
 exclude = [
-  "analytics",
+  "data_contracts",
   "codex",
   "dev",
   "docs",
@@ -79,12 +79,12 @@ include = "\\.pyi?$"
 [tool.isort]
 profile = "black"
 line_length = 88
-known_first_party = ["firecrawl_demo", "analytics", "scripts"]
+known_first_party = ["firecrawl_demo", "scripts"]
 
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-src = ["firecrawl_demo", "app", "analytics", "dev", "scripts", "tests"]
+src = ["firecrawl_demo", "app", "dev", "scripts", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W"]

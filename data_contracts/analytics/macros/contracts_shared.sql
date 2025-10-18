@@ -1,0 +1,34 @@
+{% macro _contracts_canonical_payload() %}
+    {% set raw = env_var('CONTRACTS_CANONICAL_JSON', '') %}
+    {% if not raw %}
+        {% do exceptions.raise_compiler_error('CONTRACTS_CANONICAL_JSON must be set before running contracts macros.') %}
+    {% endif %}
+    {% set json = modules.import('json') %}
+    {% do return(json.loads(raw)) %}
+{% endmacro %}
+
+
+{% macro contracts_province_values() %}
+    {% set payload = _contracts_canonical_payload() %}
+    {% do return(payload.get('provinces', [])) %}
+{% endmacro %}
+
+
+{% macro contracts_status_values() %}
+    {% set payload = _contracts_canonical_payload() %}
+    {% do return(payload.get('statuses', [])) %}
+{% endmacro %}
+
+
+{% macro contracts_evidence_min_confidence() %}
+    {% set payload = _contracts_canonical_payload() %}
+    {% set evidence = payload.get('evidence', {}) %}
+    {% do return(evidence.get('minimum_confidence', 0)) %}
+{% endmacro %}
+
+
+{% test contracts_min_confidence(model, column_name) %}
+    select *
+    from {{ model }}
+    where {{ column_name }} < {{ contracts_evidence_min_confidence() }}
+{% endtest %}

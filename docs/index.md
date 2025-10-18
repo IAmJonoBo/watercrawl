@@ -29,8 +29,8 @@ The stack follows a layered architecture with core business logic, integrations,
 
 - `firecrawl_demo/core/`: Validation, pipeline orchestration, and models
 - `firecrawl_demo/integrations/`: Research adapters, lineage, and lakehouse
-- `analytics/`: dbt project for data contracts
-- `great_expectations/`: Data quality suites
+- `data_contracts/analytics/`: dbt project for data contracts
+- `data_contracts/great_expectations/`: Data quality suites
 
 For detailed architecture, see [Architecture](architecture.md).
 

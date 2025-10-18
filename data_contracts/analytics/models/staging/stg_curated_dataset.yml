@@ -17,28 +17,14 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values:
-                  - Eastern Cape
-                  - Free State
-                  - Gauteng
-                  - KwaZulu-Natal
-                  - Limpopo
-                  - Mpumalanga
-                  - Northern Cape
-                  - North West
-                  - Western Cape
+                values: {{ contracts_province_values() }}
       - name: status
         description: Curated lifecycle status aligned with ACES taxonomy.
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values:
-                  - Verified
-                  - Candidate
-                  - Needs Review
-                  - Duplicate
-                  - Do Not Contact (Compliance)
+                values: {{ contracts_status_values() }}
       - name: website_url
         description: Primary organisation website, expected to use HTTPS.
         tests:
@@ -59,3 +45,8 @@ models:
           - not_null
           - email_domain_matches_website:
               website_column: website_url
+      - name: confidence
+        description: Confidence score derived from evidence coverage.
+        tests:
+          - not_null
+          - contracts_min_confidence

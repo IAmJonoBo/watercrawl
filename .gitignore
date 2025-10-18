@@ -43,8 +43,8 @@ ci-dashboard.json
 site/
 
 # Analytics / dbt generated targets
-analytics/target/
-analytics/dbt_packages/
+data_contracts/analytics/target/
+data_contracts/analytics/dbt_packages/
 dbt_packages/
 dbt_modules/
 

@@ -98,7 +98,7 @@ def test_collect_aggregates_and_truncates_outputs(
     sqlfluff_output = json.dumps(
         [
             {
-                "filepath": "analytics/models/example.sql",
+                "filepath": "data_contracts/analytics/models/example.sql",
                 "violations": [
                     {
                         "start_line_no": 4,
@@ -166,7 +166,7 @@ def test_sqlfluff_command_sets_duckdb_env(
     expected = tmp_path / "contracts.duckdb"
 
     def fake_ensure(project_dir: Path, duckdb_path: Path) -> Path:
-        assert project_dir == Path("analytics")
+        assert project_dir == Path("data_contracts/analytics")
         assert duckdb_path == Path("target/contracts.duckdb")
         return expected
 
@@ -174,6 +174,6 @@ def test_sqlfluff_command_sets_duckdb_env(
 
     cmd, env, cwd = collect_problems.SQLFLUFF_TOOL.command()
 
-    assert cmd[:3] == ["sqlfluff", "lint", "analytics"]
+    assert cmd[:3] == ["sqlfluff", "lint", "data_contracts/analytics"]
     assert env is not None and env["DBT_DUCKDB_PATH"] == expected.as_posix()
     assert cwd is None

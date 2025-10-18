@@ -95,7 +95,7 @@ poetry run mypy .
 poetry run bandit -r firecrawl_demo
 poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
-poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
+poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
 > Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.

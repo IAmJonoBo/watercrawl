@@ -59,6 +59,7 @@ def test_builtin_contracts_plugin_discovered() -> None:
     assert "contracts" in contracts
     plugin = contracts["contracts"]
     assert "CONTRACTS_ARTIFACT_DIR" in plugin.config_schema.environment_variables
+    assert "CONTRACTS_CANONICAL_JSON" in plugin.config_schema.environment_variables
     assert "great_expectations" in plugin.config_schema.optional_dependencies
 
 

@@ -81,6 +81,7 @@ def record_contracts_evidence(
     sources = [
         str(
             config.PROJECT_ROOT
+            / "data_contracts"
             / "great_expectations"
             / "expectations"
             / "curated_dataset.json"

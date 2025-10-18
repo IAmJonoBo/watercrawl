@@ -45,7 +45,7 @@ poetry run python -m app.cli enrich data/input.csv --output data/output.csv --fo
 poetry run python -m app.cli contracts data/output.csv --format json
 ```
 
-- Executes the curated Great Expectations suite stored under `great_expectations/`.
+- Executes the curated Great Expectations suite stored under `data_contracts/great_expectations/`.
 - Reports failing expectations and their affected columns for triage.
 - Exits non-zero when any contract fails so CI and analysts can gate publishes.
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 from pathlib import Path
 
@@ -27,6 +28,7 @@ def _valid_row() -> dict[str, str]:
         "Contact Person": "Amina Dlamini",
         "Contact Number": "+27123456789",
         "Contact Email Address": "amina@testflightschool.co.za",
+        "Confidence": "85",
     }
 
 
@@ -46,6 +48,15 @@ def test_validate_curated_dataframe_flags_invalid_province() -> None:
     assert result.unsuccessful_expectations >= 1
 
 
+def test_validate_curated_dataframe_enforces_confidence_threshold() -> None:
+    low_confidence = _valid_row()
+    low_confidence["Confidence"] = "40"
+    frame = pd.DataFrame([low_confidence])
+    result = validate_curated_dataframe(frame)
+    assert not result.success
+    assert result.unsuccessful_expectations >= 1
+
+
 @pytest.fixture()
 def contracts_runtime(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -57,7 +68,10 @@ def contracts_runtime(
     monkeypatch.setenv("DBT_TARGET_PATH", str(tmp_path / "target"))
     monkeypatch.setenv("DBT_LOG_PATH", str(tmp_path / "logs"))
     monkeypatch.setenv("DBT_DUCKDB_PATH", str(tmp_path / "contracts.duckdb"))
-    monkeypatch.setenv("DBT_PROFILES_DIR", str(config.PROJECT_ROOT / "analytics"))
+    monkeypatch.setenv(
+        "DBT_PROFILES_DIR",
+        str(config.PROJECT_ROOT / "data_contracts" / "analytics"),
+    )
     return {"evidence_log": evidence_log, "contracts_dir": contracts_dir}
 
 
@@ -67,10 +81,12 @@ def test_dbt_contract_runner_passes(
     dataset_path = tmp_path / "valid.csv"
     pd.DataFrame([_valid_row()]).to_csv(dataset_path, index=False)
 
+    previous_canonical = os.environ.get("CONTRACTS_CANONICAL_JSON")
+
     result = run_dbt_contract_tests(
         dataset_path,
-        project_dir=config.PROJECT_ROOT / "analytics",
-        profiles_dir=config.PROJECT_ROOT / "analytics",
+        project_dir=config.PROJECT_ROOT / "data_contracts" / "analytics",
+        profiles_dir=config.PROJECT_ROOT / "data_contracts" / "analytics",
         target_path=contracts_runtime["contracts_dir"] / "target",
         log_path=contracts_runtime["contracts_dir"] / "logs",
     )
@@ -81,6 +97,9 @@ def test_dbt_contract_runner_passes(
     assert result.total >= 1
     assert result.run_results_path is not None
     assert result.run_results_path.exists()
+    assert result.project_dir == config.PROJECT_ROOT / "data_contracts" / "analytics"
+    assert result.profiles_dir == config.PROJECT_ROOT / "data_contracts" / "analytics"
+    assert os.environ.get("CONTRACTS_CANONICAL_JSON") == previous_canonical
 
 
 def test_contracts_cli_reports_failures(
