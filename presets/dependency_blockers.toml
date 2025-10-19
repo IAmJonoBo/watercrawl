@@ -1,41 +1,139 @@
 [[blockers]]
-package = "argon2-cffi-bindings"
-targets = ["3.13"]
-owner = "Platform/Supply Chain"
-issue = "Missing cp313 wheels"
-notes = "Monitor upstream release before cutting Python 3.13 images."
-
-[[blockers]]
-package = "cryptography"
-targets = ["3.13"]
-owner = "Security"
-issue = "Missing cp313 wheels"
-notes = "Coordinate with upstream release cadence; refresh hashed requirements when wheels land."
-
-[[blockers]]
 package = "dbt-extractor"
-targets = ["3.13", "3.14"]
+targets = ["3.14", "3.15"]
 owner = "Data Engineering"
-issue = "Missing cp313/cp314 wheels"
-notes = "Blocks dbt contract execution on new interpreters; pin upgrade until resolved."
+issue = "Missing wheels for Python 3.14+"
+notes = "Blocks dbt contract execution until upstream ships cp314/cp315 wheels."
 
 [[blockers]]
 package = "duckdb"
-targets = ["3.14"]
+targets = ["3.14", "3.15"]
 owner = "Data Engineering"
-issue = "Missing cp314 wheels"
-notes = "Required for SQLFluff/dbt smoke tests; track upstream roadmap."
+issue = "Missing wheels for Python 3.14+"
+notes = "Required for SQLFluff/dbt smoke tests; coordinate with upstream release schedule."
 
 [[blockers]]
 package = "psutil"
-targets = ["3.13", "3.14"]
+targets = ["3.14", "3.15"]
 owner = "Platform"
-issue = "Missing cp313/cp314 wheels"
-notes = "Impacts observability and cleanup tooling; monitor upstream 7.x releases."
+issue = "Missing wheels for Python 3.14+"
+notes = "Impacts observability and cleanup tooling; monitor psutil 7.x release milestones."
+
+[[blockers]]
+package = "pyarrow"
+targets = ["3.14", "3.15"]
+owner = "Data Engineering"
+issue = "Missing wheels for Python 3.14+"
+notes = "Lakehouse pipelines and dbt adapters require official cp314/cp315 wheels."
 
 [[blockers]]
 package = "tornado"
-targets = ["3.13", "3.14"]
+targets = ["3.14", "3.15"]
 owner = "Platform"
-issue = "Missing cp313/cp314 wheels"
-notes = "Needed for Jupyter/Streamlit dev surfaces; ensure Renovate PRs include blocker context."
+issue = "Missing wheels for Python 3.14+"
+notes = "Needed for Streamlit/Jupyter developer surfaces; ensure Renovate PRs capture blocker context."
+
+[[blockers]]
+package = "aiohttp"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Networking stacks remain blocked on cp315 wheels; align with upstream 3.14+ rollout."
+
+[[blockers]]
+package = "argon2-cffi-bindings"
+targets = ["3.15"]
+owner = "Security"
+issue = "Missing wheels for Python 3.15"
+notes = "Password hashing dependencies require cp315 wheels before enabling Python 3.15."
+
+[[blockers]]
+package = "cffi"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Core dependency for cryptography stack; track upstream release cadence."
+
+[[blockers]]
+package = "cryptography"
+targets = ["3.15"]
+owner = "Security"
+issue = "Missing wheels for Python 3.15"
+notes = "TLS and secrets tooling must stay pinned until cp315 wheels ship."
+
+[[blockers]]
+package = "markupsafe"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Jinja-based tooling depends on cp315 wheels; update once upstream packages builds."
+
+[[blockers]]
+package = "msgpack"
+targets = ["3.15"]
+owner = "Data Engineering"
+issue = "Missing wheels for Python 3.15"
+notes = "Telemetry ingestion relies on msgpack wheels; coordinate with maintainers."
+
+[[blockers]]
+package = "numpy"
+targets = ["3.15"]
+owner = "Data Engineering"
+issue = "Missing wheels for Python 3.15"
+notes = "Scientific stack must wait for official cp315 wheels to avoid source builds."
+
+[[blockers]]
+package = "pandas"
+targets = ["3.15"]
+owner = "Data Engineering"
+issue = "Missing wheels for Python 3.15"
+notes = "Dataframe tooling depends on cp315 wheels; align with upstream release notes."
+
+[[blockers]]
+package = "pillow"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Image pipelines require cp315 wheels; monitor upstream builds."
+
+[[blockers]]
+package = "pydantic-core"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Pydantic 2.x runtime needs cp315 wheels before bumping interpreters."
+
+[[blockers]]
+package = "pywinpty"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Windows developer tooling depends on cp315 wheels; gate interpreter bumps."
+
+[[blockers]]
+package = "pyyaml"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Configuration parsing relies on cp315 wheels; refresh once manylinux builds land."
+
+[[blockers]]
+package = "pyzmq"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Notebook infrastructure depends on cp315 wheels; track upstream packaging."
+
+[[blockers]]
+package = "regex"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Text processing modules require cp315 wheels prior to interpreter bumps."
+
+[[blockers]]
+package = "rpds-py"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Pydantic core dependency; ensure cp315 wheels exist before enabling Python 3.15."

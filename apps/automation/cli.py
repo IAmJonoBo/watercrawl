@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shlex
 import subprocess
+import sys
 import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -31,6 +32,43 @@ class CommandSpec:
 
 def _format_args(args: Sequence[str]) -> str:
     return shlex.join(args)
+
+
+_MINIMUM_PYTHON_VERSION = (3, 14)
+
+
+def _python_meets_minimum() -> bool:
+    version = sys.version_info
+    return (version.major, version.minor) >= _MINIMUM_PYTHON_VERSION
+
+
+def _maybe_bootstrap_python(*, auto_bootstrap: bool, console: Console | None = None) -> None:
+    """Provision the minimum Python interpreter when required."""
+
+    if not auto_bootstrap or _python_meets_minimum():
+        return
+    bootstrap_args = ["--version", bootstrap_python.DEFAULT_VERSION, "--install-uv", "--poetry"]
+    console = console or Console()
+    console.print(
+        Text.assemble(
+            ("Provisioning", "cyan"),
+            " Python ",
+            bootstrap_python.DEFAULT_VERSION,
+            " with uv for QA tasks…",
+        )
+    )
+    result = bootstrap_python.main(bootstrap_args)
+    if result != 0:
+        raise click.ClickException(
+            "Failed to provision Python "
+            f"{bootstrap_python.DEFAULT_VERSION} via uv."
+        )
+    console.print(
+        Text.assemble(
+            ("Pinned", "green"),
+            " Poetry to the uv-provisioned interpreter.",
+        )
+    )
 
 
 _QA_GROUPS: dict[str, list[CommandSpec]] = {
@@ -172,6 +210,12 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
         ),
     ],
     "dependencies": [
+        CommandSpec(
+            name="Sync dependencies",
+            args=("poetry", "install", "--no-root"),
+            description="Install all Poetry-managed dependencies for QA runs.",
+            tags=("python", "poetry"),
+        ),
         CommandSpec(
             name="Dependency survey",
             args=(
@@ -442,9 +486,22 @@ def qa_plan(skip_dbt: bool) -> None:
 )
 @click.option("--fail-fast", is_flag=True, help="Stop after the first failure.")
 @click.option("--skip-dbt", is_flag=True, help="Skip dbt contract execution.")
-def qa_all(dry_run: bool, fail_fast: bool, skip_dbt: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_all(
+    dry_run: bool,
+    fail_fast: bool,
+    skip_dbt: bool,
+    auto_bootstrap: bool,
+) -> None:
     """Run the full QA suite that mirrors CI."""
 
+    console = Console()
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap, console=console)
     specs = _collect_specs(_QA_DEFAULT_SEQUENCE, include_dbt=not skip_dbt)
     exit_code = _invoke_specs(
         specs,
@@ -458,9 +515,16 @@ def qa_all(dry_run: bool, fail_fast: bool, skip_dbt: bool) -> None:
 @click.option(
     "--dry-run", is_flag=True, help="Preview dependency checks without executing them."
 )
-def qa_dependencies(dry_run: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_dependencies(dry_run: bool, auto_bootstrap: bool) -> None:
     """Run dependency survey and guard checks."""
 
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["dependencies"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
@@ -470,9 +534,16 @@ def qa_dependencies(dry_run: bool) -> None:
 @click.option(
     "--dry-run", is_flag=True, help="Preview the pytest command without executing it."
 )
-def qa_tests(dry_run: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_tests(dry_run: bool, auto_bootstrap: bool) -> None:
     """Run the pytest suite with coverage enabled."""
 
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["tests"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
@@ -482,9 +553,16 @@ def qa_tests(dry_run: bool) -> None:
 @click.option(
     "--dry-run", is_flag=True, help="Preview lint commands without executing them."
 )
-def qa_lint(dry_run: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_lint(dry_run: bool, auto_bootstrap: bool) -> None:
     """Run Ruff, isort, and Black in check mode."""
 
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["lint"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
@@ -494,9 +572,16 @@ def qa_lint(dry_run: bool) -> None:
 @click.option(
     "--dry-run", is_flag=True, help="Preview the mypy command without executing it."
 )
-def qa_typecheck(dry_run: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_typecheck(dry_run: bool, auto_bootstrap: bool) -> None:
     """Execute the mypy static type checker."""
 
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["typecheck"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
@@ -507,9 +592,16 @@ def qa_typecheck(dry_run: bool) -> None:
     "--dry-run", is_flag=True, help="Preview security checks without executing them."
 )
 @click.option("--skip-secrets", is_flag=True, help="Skip the dotenv linter check.")
-def qa_security(dry_run: bool, skip_secrets: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_security(dry_run: bool, skip_secrets: bool, auto_bootstrap: bool) -> None:
     """Run security and secret-hygiene checks."""
 
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["security"])
     if skip_secrets:
         specs = [spec for spec in specs if "secrets" not in spec.tags]
@@ -521,9 +613,16 @@ def qa_security(dry_run: bool, skip_secrets: bool) -> None:
 @click.option(
     "--dry-run", is_flag=True, help="Preview the build command without executing it."
 )
-def qa_build(dry_run: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_build(dry_run: bool, auto_bootstrap: bool) -> None:
     """Build wheel and sdist artefacts."""
 
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["build"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
@@ -533,9 +632,16 @@ def qa_build(dry_run: bool) -> None:
 @click.option(
     "--dry-run", is_flag=True, help="Preview dbt contract execution without running it."
 )
-def qa_contracts(dry_run: bool) -> None:
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+def qa_contracts(dry_run: bool, auto_bootstrap: bool) -> None:
     """Execute dbt contracts for curated datasets."""
 
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["contracts"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)

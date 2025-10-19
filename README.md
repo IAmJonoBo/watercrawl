@@ -32,6 +32,7 @@ poetry run python -m apps.analyst.cli contracts data/sample_enriched.csv --forma
 # Developer DX helpers mirroring CI
 poetry run python -m apps.automation.cli qa plan
 poetry run python -m apps.automation.cli qa all --dry-run
+poetry run python -m apps.automation.cli qa all  # auto-installs Python 3.14 via uv when needed
 ```
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
@@ -42,6 +43,8 @@ The repository now ships a ready-to-run sample dataset at `data/sample.csv` so a
 - The CLI and pipeline default to deterministic research adapters so offline QA remains stable.
 - Set `FEATURE_ENABLE_FIRECRAWL_SDK=1`, `ALLOW_NETWORK_RESEARCH=1`, and your `FIRECRAWL_API_KEY` (via `.env` or the environment)
   when you are ready to exercise the live SDK.
+
+**Automation CLI auto-bootstrap:** `apps.automation.cli` now provisions Python 3.14 with uv whenever the active interpreter is older. This keeps ephemeral runners and fresh shells aligned with the minimum supported version while installing project dependencies before QA commands run.
 
 **No requirements.txt needed:** Poetry is the single source of dependency management. Use `pyproject.toml` for all dependencies.
 

@@ -3,9 +3,11 @@
 ## Baseline Checks
 
 Run these before changes (already automated in CI). Start by clearing local
-artefacts so the suite mirrors CI output:
+artefacts so the suite mirrors CI output and ensure the minimum interpreter is
+available:
 
 ```bash
+python -m scripts.bootstrap_python --install-uv --poetry
 poetry run python -m scripts.cleanup --dry-run
 poetry run python -m scripts.cleanup
 ```
@@ -13,7 +15,8 @@ poetry run python -m scripts.cleanup
 > The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
 
 Before executing the rest of the suite, confirm the pinned dependencies ship
-compatible wheels for every Python target tracked in `presets/dependency_targets.toml`.
+compatible wheels for every Python target tracked in `presets/dependency_targets.toml`
+(Python 3.14 as the stable baseline, Python 3.15 as the next candidate).
 The guard command enforces that only the curated allow-list of wheel gaps remains
 and fails fast if new blockers appear or previously known issues clear without
 updating the configuration:
@@ -28,6 +31,10 @@ issues in `tools/dependency_matrix/report.json` so platform engineers can
 triage Python upgrade blockers before QA time is spent. The guard emits
 `tools/dependency_matrix/status.json` with machine-readable metadata for
 Renovate, CI summaries, and release checklists.
+
+> Tip: `poetry run python -m apps.automation.cli qa dependencies --dry-run`
+> invokes the same survey/guard pipeline but automatically installs the Poetry
+> environment and provisions Python 3.14 via uv when required.
 
 Then execute the quality gates:
 

@@ -1,56 +1,28 @@
 {
   "blockers": [
     {
-      "issue": "Missing cp313 wheels",
-      "notes": "Monitor upstream release before cutting Python 3.13 images.",
-      "owner": "Platform/Supply Chain",
-      "package": "argon2-cffi-bindings",
-      "targets": [
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "python": "3.13",
-          "reason": "missing-wheel",
-          "status": "present"
-        }
-      ]
-    },
-    {
-      "issue": "Missing cp313 wheels",
-      "notes": "Coordinate with upstream release cadence; refresh hashed requirements when wheels land.",
-      "owner": "Security",
-      "package": "cryptography",
-      "targets": [
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "python": "3.13",
-          "reason": "missing-wheel",
-          "status": "present"
-        }
-      ]
-    },
-    {
-      "issue": "Missing cp313/cp314 wheels",
-      "notes": "Blocks dbt contract execution on new interpreters; pin upgrade until resolved.",
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Blocks dbt contract execution until upstream ships cp314/cp315 wheels.",
       "owner": "Data Engineering",
       "package": "dbt-extractor",
       "targets": [
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "python": "3.13",
-          "reason": "missing-wheel",
-          "status": "present"
-        },
         {
           "details": "No wheel compatible with Python 3.14",
           "python": "3.14",
           "reason": "missing-wheel",
           "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
         }
       ]
     },
     {
-      "issue": "Missing cp314 wheels",
-      "notes": "Required for SQLFluff/dbt smoke tests; track upstream roadmap.",
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Required for SQLFluff/dbt smoke tests; coordinate with upstream release schedule.",
       "owner": "Data Engineering",
       "package": "duckdb",
       "targets": [
@@ -59,44 +31,280 @@
           "python": "3.14",
           "reason": "missing-wheel",
           "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
         }
       ]
     },
     {
-      "issue": "Missing cp313/cp314 wheels",
-      "notes": "Impacts observability and cleanup tooling; monitor upstream 7.x releases.",
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Impacts observability and cleanup tooling; monitor psutil 7.x release milestones.",
       "owner": "Platform",
       "package": "psutil",
       "targets": [
         {
-          "details": "No wheel compatible with Python 3.13",
-          "python": "3.13",
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
           "reason": "missing-wheel",
           "status": "present"
         },
         {
-          "details": "No wheel compatible with Python 3.14",
-          "python": "3.14",
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
           "reason": "missing-wheel",
           "status": "present"
         }
       ]
     },
     {
-      "issue": "Missing cp313/cp314 wheels",
-      "notes": "Needed for Jupyter/Streamlit dev surfaces; ensure Renovate PRs include blocker context.",
-      "owner": "Platform",
-      "package": "tornado",
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Lakehouse pipelines and dbt adapters require official cp314/cp315 wheels.",
+      "owner": "Data Engineering",
+      "package": "pyarrow",
       "targets": [
         {
-          "details": "No wheel compatible with Python 3.13",
-          "python": "3.13",
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
           "reason": "missing-wheel",
           "status": "present"
         },
         {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Needed for Streamlit/Jupyter developer surfaces; ensure Renovate PRs capture blocker context.",
+      "owner": "Platform",
+      "package": "tornado",
+      "targets": [
+        {
           "details": "No wheel compatible with Python 3.14",
           "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Networking stacks remain blocked on cp315 wheels; align with upstream 3.14+ rollout.",
+      "owner": "Platform",
+      "package": "aiohttp",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Password hashing dependencies require cp315 wheels before enabling Python 3.15.",
+      "owner": "Security",
+      "package": "argon2-cffi-bindings",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Core dependency for cryptography stack; track upstream release cadence.",
+      "owner": "Platform",
+      "package": "cffi",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "TLS and secrets tooling must stay pinned until cp315 wheels ship.",
+      "owner": "Security",
+      "package": "cryptography",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Jinja-based tooling depends on cp315 wheels; update once upstream packages builds.",
+      "owner": "Platform",
+      "package": "markupsafe",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Telemetry ingestion relies on msgpack wheels; coordinate with maintainers.",
+      "owner": "Data Engineering",
+      "package": "msgpack",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Scientific stack must wait for official cp315 wheels to avoid source builds.",
+      "owner": "Data Engineering",
+      "package": "numpy",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Dataframe tooling depends on cp315 wheels; align with upstream release notes.",
+      "owner": "Data Engineering",
+      "package": "pandas",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Image pipelines require cp315 wheels; monitor upstream builds.",
+      "owner": "Platform",
+      "package": "pillow",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Pydantic 2.x runtime needs cp315 wheels before bumping interpreters.",
+      "owner": "Platform",
+      "package": "pydantic-core",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Windows developer tooling depends on cp315 wheels; gate interpreter bumps.",
+      "owner": "Platform",
+      "package": "pywinpty",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Configuration parsing relies on cp315 wheels; refresh once manylinux builds land.",
+      "owner": "Platform",
+      "package": "pyyaml",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Notebook infrastructure depends on cp315 wheels; track upstream packaging.",
+      "owner": "Platform",
+      "package": "pyzmq",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Text processing modules require cp315 wheels prior to interpreter bumps.",
+      "owner": "Platform",
+      "package": "regex",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Pydantic core dependency; ensure cp315 wheels exist before enabling Python 3.15.",
+      "owner": "Platform",
+      "package": "rpds-py",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
           "reason": "missing-wheel",
           "status": "present"
         }
@@ -104,6 +312,6 @@
     }
   ],
   "cleared": [],
-  "generated_at": "2025-10-19T11:24:44.697636+00:00",
+  "generated_at": "2025-10-19T11:43:11.803241+00:00",
   "unexpected": []
 }
