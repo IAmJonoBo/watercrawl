@@ -1,0 +1,10 @@
+# Prevent runaway ripgrep output in development shells and tooling.
+# Keep this list in sync with heavy directories that can emit megabyte-scale lines.
+node_modules/
+.docs/
+.docs-starlight/
+build/
+.idea/
+*.log
+*.sqlite
+*.db

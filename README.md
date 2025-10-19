@@ -4,16 +4,16 @@ Modular toolkit for validating and enriching South African flight-school dataset
 
 ## Getting Started
 
-**Python version required:** `>=3.13,<3.14` (recommended: 3.13.x)
+**Python version required:** `>=3.14,<3.15` (recommended: 3.14.0)
 
 **Environment setup:**
 
 ```bash
+# Provision the required Python toolchain and pin Poetry to it
+python -m scripts.bootstrap_python --install-uv --poetry
+
 # Install Poetry if not already installed
 pip install poetry
-
-# Set Python version for the project (recommended: 3.13)
-poetry env use 3.13
 
 # Install all dependencies (including Firecrawl SDK)
 poetry install --no-root
@@ -43,11 +43,12 @@ The repository now ships a ready-to-run sample dataset at `data/sample.csv` so a
 **Offline installation (for air-gapped environments):**
 
 ```bash
-# For development environments (includes testing, linting, type checking tools)
-pip install -r requirements-dev.txt
+# Provision the 3.14 interpreter and sync dependencies with uv
+python -m scripts.bootstrap_python --install-uv --poetry
+uv pip sync requirements-dev.txt
 
 # For production environments (runtime dependencies only)
-pip install -r requirements.txt
+uv pip sync requirements.txt
 ```
 
 The exported requirements files include pinned versions with SHA256 hashes for reproducible, secure installations.
