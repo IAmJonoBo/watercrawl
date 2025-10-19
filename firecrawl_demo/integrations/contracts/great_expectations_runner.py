@@ -15,27 +15,25 @@ from firecrawl_demo.core.excel import read_dataset
 from .shared_config import canonical_contracts_config
 
 # Try to import Great Expectations modules
-try:
-    from great_expectations.core.batch import (  # type: ignore[import-untyped]  # noqa: E402
-        Batch,
+try:  # noqa: E402
+    from great_expectations.core.batch import Batch  # type: ignore[import-untyped]
+    from great_expectations.core.batch_spec import (
+        RuntimeDataBatchSpec,  # type: ignore[import-untyped]
     )
-    from great_expectations.core.batch_spec import (  # type: ignore[import-untyped]  # noqa: E402
-        RuntimeDataBatchSpec,
+    from great_expectations.core.expectation_suite import (
+        ExpectationSuite,  # type: ignore[import-untyped]
     )
-    from great_expectations.core.expectation_suite import (  # type: ignore[import-untyped]  # noqa: E402
-        ExpectationSuite,
+    from great_expectations.data_context.data_context.context_factory import (
+        project_manager,  # type: ignore[import-untyped]
     )
-    from great_expectations.data_context.data_context.context_factory import (  # type: ignore[import-untyped]  # noqa: E402
-        project_manager,
-    )
-    from great_expectations.execution_engine.pandas_execution_engine import (  # type: ignore[import-untyped]  # noqa: E402
+    from great_expectations.execution_engine.pandas_execution_engine import (  # type: ignore[import-untyped]
         PandasExecutionEngine,
     )
-    from great_expectations.expectations.expectation_configuration import (  # type: ignore[import-untyped]  # noqa: E402
+    from great_expectations.expectations.expectation_configuration import (  # type: ignore[import-untyped]
         ExpectationConfiguration,
     )
-    from great_expectations.validator.validator import (  # type: ignore[import-untyped]  # noqa: E402
-        Validator,
+    from great_expectations.validator.validator import (
+        Validator,  # type: ignore[import-untyped]
     )
 
     project_manager.is_using_cloud = lambda: False  # type: ignore[assignment]
