@@ -171,6 +171,22 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
             tags=("supply-chain",),
         ),
     ],
+    "dependencies": [
+        CommandSpec(
+            name="Dependency survey",
+            args=(
+                "poetry",
+                "run",
+                "python",
+                "-m",
+                "scripts.dependency_matrix",
+                "survey",
+                "--fail-on-blockers",
+            ),
+            description="Assess Python target compatibility for pinned dependencies and surface missing wheels before QA runs.",
+            tags=("supply-chain", "python"),
+        ),
+    ],
     "precommit": [
         CommandSpec(
             name="Pre-commit",

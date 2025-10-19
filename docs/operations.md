@@ -12,6 +12,17 @@ poetry run python -m scripts.cleanup
 
 > The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
 
+Before executing the rest of the suite, confirm the pinned dependencies ship
+compatible wheels for every Python target tracked in `presets/dependency_targets.toml`:
+
+```bash
+python -m scripts.dependency_matrix survey --fail-on-blockers
+```
+
+This survey parses `poetry.lock`, checks each wheel artefact, and captures
+issues in `tools/dependency_matrix/report.json` so platform engineers can
+triage Python upgrade blockers before QA time is spent.
+
 Then execute the quality gates:
 
 ```bash

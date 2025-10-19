@@ -1,0 +1,9 @@
+[[targets]]
+python = "3.13"
+label = "stable"
+require_wheels = true
+
+[[targets]]
+python = "3.14"
+label = "candidate"
+require_wheels = true

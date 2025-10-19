@@ -1,0 +1,82 @@
+{
+  "generated_at": "2025-10-19T11:10:03.064797+00:00",
+  "targets": [
+    {
+      "issues": [
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "groups": "dev",
+          "package": "argon2-cffi-bindings",
+          "reason": "missing-wheel",
+          "version": "25.1.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "groups": "main,dev",
+          "package": "cryptography",
+          "reason": "missing-wheel",
+          "version": "46.0.3"
+        },
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "groups": "dev",
+          "package": "dbt-extractor",
+          "reason": "missing-wheel",
+          "version": "0.6.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "groups": "dev",
+          "package": "psutil",
+          "reason": "missing-wheel",
+          "version": "7.1.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "groups": "dev",
+          "package": "tornado",
+          "reason": "missing-wheel",
+          "version": "6.5.2"
+        }
+      ],
+      "label": "stable",
+      "python": "3.13",
+      "require_wheels": true
+    },
+    {
+      "issues": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "groups": "dev",
+          "package": "dbt-extractor",
+          "reason": "missing-wheel",
+          "version": "0.6.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "groups": "dev",
+          "package": "duckdb",
+          "reason": "missing-wheel",
+          "version": "1.4.1"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "groups": "dev",
+          "package": "psutil",
+          "reason": "missing-wheel",
+          "version": "7.1.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "groups": "dev",
+          "package": "tornado",
+          "reason": "missing-wheel",
+          "version": "6.5.2"
+        }
+      ],
+      "label": "candidate",
+      "python": "3.14",
+      "require_wheels": true
+    }
+  ]
+}
