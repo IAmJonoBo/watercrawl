@@ -33,6 +33,7 @@
 
 ## Steps (iteration log)
 
+- [ ] 2025-10-19 — Baseline QA attempt on fresh environment blocked: `poetry install` fails under Python 3.14 because `pyarrow==21.0.0` only ships source dists (no cp314 wheels) and the build backend requires an Arrow SDK. Documented blocker before proceeding with dependency upgrades.
 - [x] 2025-10-19 — Expanded Python support to include 3.13 and 3.14, updated optional dependencies (Great Expectations and dbt-core) to work with both versions, refreshed all documentation, and ensured backward compatibility.
 - [x] 2025-10-21 — Added dependency blocker allow-list + status artefacts, wired guard checks into automation/CI, labelled Renovate PRs for wheel gaps, refreshed docs/README, and logged remediation tasks for Python 3.13/3.14 upgrades.
 - [x] 2025-10-21 — Raised the minimum supported interpreter to Python 3.14, taught the automation CLI to auto-bootstrap uv/Poetry environments on ephemeral runners, refreshed dependency blocker targets for Python 3.14/3.15, and documented the workflow in README + docs.
