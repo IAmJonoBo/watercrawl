@@ -15,7 +15,7 @@ from firecrawl_demo.core.excel import read_dataset
 from .shared_config import canonical_contracts_config
 
 # Try to import Great Expectations modules
-try:  # noqa: E402
+try:
     from great_expectations.core.batch import Batch  # type: ignore[import-untyped]
     from great_expectations.core.batch_spec import (
         RuntimeDataBatchSpec,  # type: ignore[import-untyped]
@@ -23,8 +23,8 @@ try:  # noqa: E402
     from great_expectations.core.expectation_suite import (
         ExpectationSuite,  # type: ignore[import-untyped]
     )
-    from great_expectations.data_context.data_context.context_factory import (
-        project_manager,  # type: ignore[import-untyped]
+    from great_expectations.data_context.data_context.context_factory import (  # type: ignore[attr-defined]
+        project_manager,  # type: ignore[attr-defined]
     )
     from great_expectations.execution_engine.pandas_execution_engine import (  # type: ignore[import-untyped]
         PandasExecutionEngine,
@@ -36,14 +36,14 @@ try:  # noqa: E402
         Validator,  # type: ignore[import-untyped]
     )
 
-    project_manager.is_using_cloud = lambda: False  # type: ignore[assignment]
+    project_manager.is_using_cloud = lambda: False  # type: ignore[assignment,attr-defined]
     GREAT_EXPECTATIONS_AVAILABLE = True
 except (ImportError, TypeError, AttributeError):
     GREAT_EXPECTATIONS_AVAILABLE = False
 
     # Fallback classes when Great Expectations is not available
     @dataclass
-    class ExpectationSuite:
+    class ExpectationSuite:  # type: ignore[no-redef]
         name: str
         expectations: list[Any]
         meta: dict[str, Any]
@@ -54,7 +54,7 @@ except (ImportError, TypeError, AttributeError):
             self.meta = {}
 
     @dataclass
-    class ExpectationConfiguration:
+    class ExpectationConfiguration:  # type: ignore[no-redef]
         expectation_type: str
         kwargs: dict[str, Any]
         meta: dict[str, Any] | None
@@ -75,11 +75,11 @@ except (ImportError, TypeError, AttributeError):
             return self
 
     @dataclass
-    class RuntimeDataBatchSpec:
+    class RuntimeDataBatchSpec:  # type: ignore[no-redef]
         batch_data: Any
 
     @dataclass
-    class Batch:
+    class Batch:  # type: ignore[no-redef]
         data: Any
         batch_spec: RuntimeDataBatchSpec
 
@@ -87,11 +87,11 @@ except (ImportError, TypeError, AttributeError):
             self.data = data
             self.batch_spec = batch_spec
 
-    class PandasExecutionEngine:
+    class PandasExecutionEngine:  # type: ignore[no-redef]
         pass
 
     @dataclass
-    class Validator:
+    class Validator:  # type: ignore[no-redef]
         execution_engine: PandasExecutionEngine
         expectation_suite: ExpectationSuite
         batches: list[Batch]

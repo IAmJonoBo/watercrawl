@@ -199,7 +199,7 @@ def test_rich_pipeline_progress_handles_duplicate_start() -> None:
     listener.on_row_processed(0, False, _make_record())
     listener.on_complete({"adapter_failures": 0})
 
-    dummy_progress: DummyProgress = listener._progress  # type: ignore[attr-defined]
+    dummy_progress: DummyProgress = listener._progress  # type: ignore[assignment,attr-defined]
     assert dummy_progress.start_calls == 1
     assert dummy_progress.added == [("Validating dataset", 3)]
 
@@ -231,7 +231,7 @@ def test_rich_pipeline_progress_logs_adapter_failures() -> None:
         listener = cli.RichPipelineProgress("Enriching dataset")
         listener.on_start(1)
         listener.on_complete({"adapter_failures": 2})
-        dummy_progress: DummyProgress = listener._progress  # type: ignore[attr-defined]
+        dummy_progress: DummyProgress = listener._progress  # type: ignore[assignment,attr-defined]
     assert any("adapter failures" in log for log in dummy_progress.logs)
 
 
