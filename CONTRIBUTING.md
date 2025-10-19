@@ -9,6 +9,7 @@ This guide outlines our conventions and standards. By contributing, you agree to
 ### Prerequisites
 
 - Python >=3.14,<3.15 (required for compatibility with our async and typing standards)
+- The [`uv`](https://github.com/astral-sh/uv) toolchain manager
 - Poetry for dependency management
 - Git for version control
 
@@ -21,9 +22,10 @@ This guide outlines our conventions and standards. By contributing, you agree to
    cd watercrawl
    ```
 
-2. Install dependencies:
+2. Provision the toolchain and install dependencies:
 
    ```bash
+   python -m scripts.bootstrap_python --install-uv --poetry
    poetry install --no-root
    ```
 

@@ -15,6 +15,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from scripts import bootstrap_python
+
 
 @dataclass(frozen=True)
 class CommandSpec:
@@ -343,6 +345,39 @@ _DEFAULT_COMMAND_RUNNER: CommandRunner = cast(CommandRunner, _run_command_specs)
 @click.group(help="Developer tooling for local QA and release preparation.")
 def cli() -> None:
     """Expose DX helpers that mirror the CI quality gates."""
+
+
+@cli.group(help="Provision and manage developer toolchains.")
+def toolchain() -> None:
+    """Namespace for provisioning helper commands."""
+
+
+@toolchain.command("python")
+@click.option(
+    "--version",
+    default=bootstrap_python.DEFAULT_VERSION,
+    show_default=True,
+    help="Python version to install via the uv toolchain manager.",
+)
+@click.option(
+    "--install-uv/--no-install-uv",
+    default=False,
+    help="Automatically install the uv CLI before provisioning the interpreter.",
+)
+@click.option(
+    "--poetry/--no-poetry",
+    default=True,
+    help="Pin the Poetry virtualenv to the provisioned interpreter.",
+)
+def toolchain_python(version: str, install_uv: bool, poetry: bool) -> None:
+    """Install a Python interpreter and optionally pin Poetry to it."""
+
+    argv: list[str] = ["--version", version]
+    if install_uv:
+        argv.append("--install-uv")
+    if poetry:
+        argv.append("--poetry")
+    raise SystemExit(bootstrap_python.main(argv))
 
 
 @cli.group(help="Run the quality-assurance commands used in CI.")
