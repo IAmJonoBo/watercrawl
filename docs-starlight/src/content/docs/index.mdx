@@ -30,7 +30,7 @@ The ACES Enrichment Stack is a modular, compliance-driven pipeline for B2B data 
 pip install -r requirements.txt
 
 # Run enrichment pipeline
-python -m app.cli enrich --input data/sample.csv --output results/
+python -m apps.analyst.cli enrich --input data/sample.csv --output results/
 
 # Start MCP server for AI integration
 python -m firecrawl_demo.interfaces.mcp.server

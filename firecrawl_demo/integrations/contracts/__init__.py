@@ -96,10 +96,10 @@ def _build_contracts_toolkit(context: PluginContext) -> ContractsToolkit:
         # Provide dummy functions when Great Expectations is not available
         def dummy_validate_dataframe(df):  # type: ignore
             raise NotImplementedError("Great Expectations not available (requires Python < 3.14)")
-        
+
         def dummy_validate_file(path):  # type: ignore
             raise NotImplementedError("Great Expectations not available (requires Python < 3.14)")
-        
+
         return ContractsToolkit(
             validate_dataframe=dummy_validate_dataframe,
             validate_file=dummy_validate_file,

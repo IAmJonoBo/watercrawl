@@ -11,6 +11,7 @@ nav:
       - Segmented Package Boundaries: adr/0001-architecture-boundaries.md
   - Data Quality & Research: data-quality.md
   - CLI Guide: cli.md
+  - Surface Taxonomy: surface-taxonomy.md
   - MCP Integration: mcp.md
   - Operations: operations.md
 theme:

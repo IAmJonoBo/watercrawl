@@ -36,6 +36,8 @@ jobs:
         run: >-
           poetry run pytest --maxfail=5 --disable-warnings --cov=firecrawl_demo
           --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=pytest-results.xml
+      - name: Validate wheel contents
+        run: poetry run python -m scripts.validate_wheel
       - name: Aggregate Problems Report
         run: poetry run python scripts/collect_problems.py
       - name: Generate CI summary

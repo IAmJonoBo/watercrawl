@@ -2,21 +2,21 @@
 
 Two complementary CLIs ship with the repository:
 
-- `app.cli` — the analyst- and end-user-focused surface that wraps the enrichment tooling.
-- `dev.cli` — a developer experience helper that mirrors the CI quality gates.
+- `apps.analyst.cli` — the analyst- and end-user-focused surface that wraps the enrichment tooling.
+- `apps.automation.cli` — a developer experience helper that mirrors the CI quality gates.
 
-Both entry points run through Poetry: `poetry run python -m app.cli ...` and `poetry run python -m dev.cli ...`.
+Both entry points run through Poetry: `poetry run python -m apps.analyst.cli ...` and `poetry run python -m apps.automation.cli ...`.
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
 > **Compatibility note:** `firecrawl_demo.interfaces.cli` remains available for backwards compatibility and simply re-exports the analyst CLI.
 
-## Analyst commands (`app.cli`)
+## Analyst commands (`apps.analyst.cli`)
 
 ### `validate`
 
 ```bash
-poetry run python -m app.cli validate data/input.csv --format json
+poetry run python -m apps.analyst.cli validate data/input.csv --format json
 ```
 
 - Loads CSV/XLSX data.
@@ -28,7 +28,7 @@ poetry run python -m app.cli validate data/input.csv --format json
 ### `enrich`
 
 ```bash
-poetry run python -m app.cli enrich data/input.csv --output data/output.csv --format text
+poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output.csv --format text
 ```
 
 - Validates, enriches, and writes the dataset.
@@ -40,7 +40,7 @@ poetry run python -m app.cli enrich data/input.csv --output data/output.csv --fo
 ### `contracts`
 
 ```bash
-poetry run python -m app.cli contracts data/output.csv --format json
+poetry run python -m apps.analyst.cli contracts data/output.csv --format json
 ```
 
 - Executes the curated Great Expectations suite stored under `data_contracts/great_expectations/`.
@@ -50,7 +50,7 @@ poetry run python -m app.cli contracts data/output.csv --format json
 ### `mcp-server`
 
 ```bash
-poetry run python -m app.cli mcp-server
+poetry run python -m apps.analyst.cli mcp-server
 ```
 
 - Runs the MCP JSON-RPC bridge over stdio.
@@ -70,14 +70,14 @@ poetry run python -m app.cli mcp-server
 - `FIRECRAWL_API_KEY`: Loaded via `config.Settings` for future Firecrawl integrations.
 - `FIRECRAWL_API_URL`: Override default API endpoint.
 
-## Developer QA helpers (`dev.cli`)
+## Developer QA helpers (`apps.automation.cli`)
 
 The developer CLI mirrors the GitHub Actions workflow locally and adds DX-focused conveniences.
 
 ### `qa plan`
 
 ```bash
-poetry run python -m dev.cli qa plan
+poetry run python -m apps.automation.cli qa plan
 ```
 
 - Prints the full QA execution plan as a Rich table.
@@ -86,7 +86,7 @@ poetry run python -m dev.cli qa plan
 ### `qa all`
 
 ```bash
-poetry run python -m dev.cli qa all --dry-run
+poetry run python -m apps.automation.cli qa all --dry-run
 ```
 
 - Executes (or previews with `--dry-run`) the cleanup, test, lint, type-check, security, pre-commit, build, and dbt stages.
@@ -96,12 +96,12 @@ poetry run python -m dev.cli qa all --dry-run
 
 Each QA stage is also exposed individually:
 
-- `poetry run python -m dev.cli qa tests`
-- `poetry run python -m dev.cli qa lint`
-- `poetry run python -m dev.cli qa typecheck`
-- `poetry run python -m dev.cli qa security --skip-secrets`
-- `poetry run python -m dev.cli qa build`
-- `poetry run python -m dev.cli qa contracts --dry-run`
+- `poetry run python -m apps.automation.cli qa tests`
+- `poetry run python -m apps.automation.cli qa lint`
+- `poetry run python -m apps.automation.cli qa typecheck`
+- `poetry run python -m apps.automation.cli qa security --skip-secrets`
+- `poetry run python -m apps.automation.cli qa build`
+- `poetry run python -m apps.automation.cli qa contracts --dry-run`
 
 ## Analyst UI
 

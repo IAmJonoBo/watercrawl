@@ -55,7 +55,7 @@ records the input fingerprint, output fingerprint, row count, and the command re
 release reviews so operators can replay or roll back snapshots deterministically.
 
 > **Codex guardrail:** run `promptfoo eval codex/evals/promptfooconfig.yaml` before enabling any Codex or MCP-assisted sessions.
-> Production (`dist/`) deployments must leave Codex disabled; only the `dev/` workspace may opt in after the smoke tests pass.
+> Production platform deployments must leave Codex disabled; only the `apps/automation/` workspace may opt in after the smoke tests pass.
 
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command

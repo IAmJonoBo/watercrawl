@@ -8,7 +8,7 @@ title: Phase 2 — Lineage & Lakehouse Implementation Plan
 - Promote reproducible, versioned storage for enriched tables via Delta Lake or Apache Iceberg.
 - Attach each published dataset to an immutable run artefact (DVC or lakeFS) with rollback and reproduce playbooks.
 - Update analyst and automation workflows so lineage and lakehouse controls are observable, auditable, and enforced in CI/CD.
-- Maintain clear separation between `dev/`, `tools/`, `app/`, and `dist/` so development experiments never bypass hardened
+- Maintain clear separation between `apps/`, `tools/`, and `platform/` guardrails so development experiments never bypass hardened
   distribution policies.
 
 ## Delivery timeline
@@ -68,7 +68,7 @@ title: Phase 2 — Lineage & Lakehouse Implementation Plan
 - Record decision trade-offs (Delta vs Iceberg, DVC vs lakeFS) in future ADRs.
 - Align security reviews with POPIA compliance, ensuring provenance artefacts do not leak personal data.
 - ✅ **2025-10-17 update**: CLI enrichment output now surfaces lineage artefact directories, enabling operators to verify provenance bundles during runbooks.
-- ✅ **2025-10-17 update**: Created top-level `dev/`, `tools/`, `app/`, and `dist/` directories with role-specific README files
+- ✅ **2025-10-17 update**: Created top-level application and platform guardrail directories with role-specific README files
   to guide analysts, developers, and operators through the appropriate workflows and QA gates.
 
 ## Risks & mitigations
