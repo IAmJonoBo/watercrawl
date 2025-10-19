@@ -55,6 +55,7 @@
 - [x] 2025-10-19 — Parsed Poetry excludes into wheel validation, added positive wheel payload assertions, and refreshed tooling docs to point at `apps/automation/` + `platform/scripts/` guardrails.
 - [x] 2025-10-19 — Chunked `stderr`/`raw` previews in `collect_problems.py` to avoid >4 KiB shell lines, documented the new preview shape, added regression coverage, and captured the `python -m pytest tests/test_collect_problems.py` run (failsafe skip when DuckDB is absent; broader baseline blocked on Python ≥3.14 and hashed narwhals wheel).
 - [x] 2025-10-20 — Added a uv-powered Python bootstrapper, wired it into the automation CLI, refreshed contributor docs, regenerated hashed requirements, and added a ripgrep ignore manifest to stop >4 KiB shell output regressions.
+- [x] 2025-10-20 — Introduced `scripts.dependency_matrix` with pytest coverage, surfaced wheel gaps for Python 3.13/3.14 in `tools/dependency_matrix/report.json`, and wired the survey into the automation CLI/operations runbook to gate plan→upgrade flows.
 
 ---
 
@@ -139,3 +140,4 @@ Execute in this order; each item must meet its gate before promotion.
 - Kafka lineage transport requires the optional `kafka-python` dependency; platform team to confirm packaging before enabling Kafka emission in CI/staging.
 - Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments.
 - Regenerate `requirements-dev.txt` hashes so transitive dependencies like `narwhals` resolve under `--require-hashes` installs.
+- Python 3.13+ compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, and `tornado`; dependency survey report lives at `tools/dependency_matrix/report.json` for ongoing remediation.
