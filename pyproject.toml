@@ -23,9 +23,9 @@ exclude = [
 
 [tool.poetry.dependencies]
 python = ">=3.14,<3.15"
-pandas = { version = "*", python = "<3.14" }
+pandas = "*"
 openpyxl = "*"
-streamlit = { version = "^1.50.0", python = ">=3.9,<3.9.7 || >3.9.7,<3.14" }
+streamlit = "^1.50.0"
 requests = "*"
 httpx = "*"
 tenacity = "*"
@@ -78,7 +78,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = ["py311"]
+target-version = ["py314"]
 include = "\\.pyi?$"
 
 [tool.isort]
@@ -88,7 +88,7 @@ known_first_party = ["apps", "firecrawl_demo", "scripts"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py314"
 src = ["apps", "firecrawl_demo", "scripts", "tests"]
 
 [tool.ruff.lint]

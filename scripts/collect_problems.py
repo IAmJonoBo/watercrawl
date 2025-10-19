@@ -253,9 +253,9 @@ def parse_pylint_output(result: CompletedProcess) -> dict[str, Any]:
     try:
         parsed = json.loads(payload)
     except json.JSONDecodeError:
-        result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
-        _attach_preview(result, "raw_preview", payload)
-        return result
+        fallback_result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(fallback_result, "raw_preview", payload)
+        return fallback_result
     messages: Iterable[dict[str, Any]]
     score: Any = None
     if isinstance(parsed, dict):
@@ -289,9 +289,9 @@ def parse_bandit_output(result: CompletedProcess) -> dict[str, Any]:
     try:
         parsed = json.loads(payload) if payload else {}
     except json.JSONDecodeError:
-        result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
-        _attach_preview(result, "raw_preview", payload)
-        return result
+        fallback_result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(fallback_result, "raw_preview", payload)
+        return fallback_result
     results = parsed.get("results", []) or []
     issues: list[dict[str, Any]] = []
     severity_counts: Counter[str] = Counter()
@@ -362,9 +362,9 @@ def parse_sqlfluff_output(result: CompletedProcess) -> dict[str, Any]:
     try:
         parsed = json.loads(payload) if payload else []
     except json.JSONDecodeError:
-        result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
-        _attach_preview(result, "raw_preview", payload)
-        return result
+        fallback_result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(fallback_result, "raw_preview", payload)
+        return fallback_result
     issues: list[dict[str, Any]] = []
     files_with_issues = 0
     for entry in parsed:

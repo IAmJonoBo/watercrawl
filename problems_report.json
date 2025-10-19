@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-18T12:37:05.925602+00:00",
+  "generated_at": "2025-10-19T11:25:07.658450+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -13,24 +13,53 @@
     },
     {
       "tool": "mypy",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "issues": [
+        {
+          "path": "firecrawl_demo/domain/models.py",
+          "line": 26,
+          "message": "Cannot assign multiple types to name \"PandasSeries\" without an explicit \"type[...]\" annotation ",
+          "severity": "error",
+          "code": "misc"
+        },
+        {
+          "path": "firecrawl_demo/domain/models.py",
+          "line": 27,
+          "message": "Cannot assign multiple types to name \"PandasDataFrame\" without an explicit \"type[...]\" annotation ",
+          "severity": "error",
+          "code": "misc"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 93,
+          "message": "\"Expectation\" has no attribute \"kwargs\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 95,
+          "message": "\"Expectation\" has no attribute \"kwargs\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 97,
+          "message": "\"Expectation\" has no attribute \"kwargs\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 98,
+          "message": "\"Expectation\" has no attribute \"kwargs\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        }
+      ],
       "notes": [
-        {
-          "path": "tests/test_compliance.py",
-          "line": 160,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 182,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -62,6 +91,20 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 160,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 182,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -143,14 +186,820 @@
         }
       ],
       "summary": {
-        "issue_count": 0,
+        "issue_count": 6,
         "note_count": 18
       }
     },
     {
       "tool": "pylint",
-      "status": "not_installed",
-      "error": "[Errno 2] No such file or directory: 'pylint'"
+      "status": "completed_with_exit_code",
+      "returncode": 30,
+      "issues": [
+        {
+          "path": "firecrawl_demo/__init__.py",
+          "line": 6,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'marshmallow.warnings'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 353,
+          "column": 0,
+          "code": "line-too-long",
+          "message": "Line too long (105/100)",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 685,
+          "column": 0,
+          "code": "line-too-long",
+          "message": "Line too long (118/100)",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 96,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 105,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 113,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 119,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 130,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 139,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 148,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 148,
+          "column": 0,
+          "code": "too-many-instance-attributes",
+          "message": "Too many instance attributes (8/7)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 160,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 168,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 175,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 182,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 190,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 198,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 198,
+          "column": 0,
+          "code": "too-many-instance-attributes",
+          "message": "Too many instance attributes (10/7)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 212,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 220,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 227,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 363,
+          "column": 0,
+          "code": "missing-class-docstring",
+          "message": "Missing class docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 365,
+          "column": 4,
+          "code": "invalid-name",
+          "message": "Attribute name \"FIRECRAWL_API_KEY\" doesn't conform to snake_case naming style",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 366,
+          "column": 4,
+          "code": "invalid-name",
+          "message": "Attribute name \"FIRECRAWL_API_URL\" doesn't conform to snake_case naming style",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 371,
+          "column": 4,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 451,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 452,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 453,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 454,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 455,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 456,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 457,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 458,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 459,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 460,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 461,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 462,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 463,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 464,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 465,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 466,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 467,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 468,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 469,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 470,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 471,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 472,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 473,
+          "column": 4,
+          "code": "global-statement",
+          "message": "Using the global statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 448,
+          "column": 0,
+          "code": "too-many-statements",
+          "message": "Too many statements (61/50)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/presets.py",
+          "line": 1,
+          "column": 0,
+          "code": "missing-module-docstring",
+          "message": "Missing module docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/presets.py",
+          "line": 34,
+          "column": 0,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/presets.py",
+          "line": 42,
+          "column": 0,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/presets.py",
+          "line": 48,
+          "column": 0,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/cache.py",
+          "line": 1,
+          "column": 0,
+          "code": "missing-module-docstring",
+          "message": "Missing module docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 11,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'pandas'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 12,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'pint'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 13,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'pint.errors'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 57,
+          "column": 0,
+          "code": "too-few-public-methods",
+          "message": "Too few public methods (1/2)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 197,
+          "column": 0,
+          "code": "too-many-return-statements",
+          "message": "Too many return statements (7/6)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 175,
+          "column": 0,
+          "code": "line-too-long",
+          "message": "Line too long (122/100)",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 1,
+          "column": 0,
+          "code": "missing-module-docstring",
+          "message": "Missing module docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 7,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'requests'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 12,
+          "column": 0,
+          "code": "wrong-import-position",
+          "message": "Import \"from firecrawl_demo.domain.compliance import canonical_domain, normalize_phone\" should be placed at the top of the module",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 14,
+          "column": 0,
+          "code": "wrong-import-position",
+          "message": "Import \"from . import config\" should be placed at the top of the module",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 21,
+          "column": 0,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 33,
+          "column": 0,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 45,
+          "column": 0,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 57,
+          "column": 0,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 57,
+          "column": 0,
+          "code": "too-many-arguments",
+          "message": "Too many arguments (6/5)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 57,
+          "column": 0,
+          "code": "too-many-locals",
+          "message": "Too many local variables (35/15)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 66,
+          "column": 4,
+          "code": "import-outside-toplevel",
+          "message": "Import outside toplevel (firecrawl_demo.integrations.adapters.research.ResearchFinding)",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 57,
+          "column": 0,
+          "code": "too-many-branches",
+          "message": "Too many branches (28/12)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 57,
+          "column": 0,
+          "code": "too-many-statements",
+          "message": "Too many statements (82/50)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 59,
+          "column": 4,
+          "code": "unused-argument",
+          "message": "Unused argument 'province'",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 261,
+          "column": 4,
+          "code": "unnecessary-pass",
+          "message": "Unnecessary pass statement",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 258,
+          "column": 0,
+          "code": "too-few-public-methods",
+          "message": "Too few public methods (0/2)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/integrations/integration_plugins.py",
+          "line": 46,
+          "column": 4,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/integration_plugins.py",
+          "line": 47,
+          "column": 8,
+          "code": "import-outside-toplevel",
+          "message": "Import outside toplevel (firecrawl_demo.core.config)",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/integration_plugins.py",
+          "line": 67,
+          "column": 4,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/integration_plugins.py",
+          "line": 72,
+          "column": 4,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/integration_plugins.py",
+          "line": 78,
+          "column": 15,
+          "code": "broad-exception-caught",
+          "message": "Catching too general exception Exception",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/integration_plugins.py",
+          "line": 133,
+          "column": 11,
+          "code": "broad-exception-caught",
+          "message": "Catching too general exception Exception",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/shared_config.py",
+          "line": 69,
+          "column": 13,
+          "code": "unused-variable",
+          "message": "Unused variable 'value'",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 59,
+          "column": 28,
+          "code": "unused-argument",
+          "message": "Unused argument 'context'",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 87,
+          "column": 4,
+          "code": "no-else-return",
+          "message": "Unnecessary \"else\" after \"return\", remove the \"else\" and de-indent the code inside it",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 86,
+          "column": 29,
+          "code": "unused-argument",
+          "message": "Unused argument 'context'",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/operations.py",
+          "line": 19,
+          "column": 4,
+          "code": "unused-import",
+          "message": "Unused CuratedDatasetContractResult imported from great_expectations_runner",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 10,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'pandas'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 11,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'great_expectations.core.batch'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 12,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'great_expectations.core.batch_spec'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 13,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'great_expectations.core.expectation_suite'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 14,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'great_expectations.data_context.data_context.context_factory'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 15,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'great_expectations.execution_engine.pandas_execution_engine'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 18,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'great_expectations.expectations.expectation_configuration'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 21,
+          "column": 0,
+          "code": "import-error",
+          "message": "Unable to import 'great_expectations.validator.validator'",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 119,
+          "column": 0,
+          "code": "too-many-locals",
+          "message": "Too many local variables (16/15)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
+          "line": 22,
+          "column": 0,
+          "code": "too-many-instance-attributes",
+          "message": "Too many instance attributes (10/7)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
+          "line": 37,
+          "column": 4,
+          "code": "missing-function-docstring",
+          "message": "Missing function or method docstring",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
+          "line": 56,
+          "column": 21,
+          "code": "no-member",
+          "message": "Instance of 'RootLogger' has no 'loggerDict' member",
+          "severity": "error"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
+          "line": 90,
+          "column": 0,
+          "code": "too-many-arguments",
+          "message": "Too many arguments (6/5)",
+          "severity": "refactor"
+        }
+      ],
+      "summary": {
+        "issue_count": 886,
+        "omitted_issues": 786
+      }
     },
     {
       "tool": "bandit",
@@ -162,7 +1011,7 @@
         "severity_counts": {},
         "confidence_counts": {},
         "metrics": {
-          "loc": 6555,
+          "loc": 6795,
           "nosec": 0,
           "skipped_tests": 0
         }
@@ -179,17 +1028,193 @@
     },
     {
       "tool": "yamllint",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "issues": [
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 5,
+          "column": 3,
+          "severity": "error",
+          "message": "wrong indentation: expected 1 but found 2 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 19,
+          "column": 3,
+          "severity": "error",
+          "message": "wrong indentation: expected 1 but found 2 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 22,
+          "column": 3,
+          "severity": "error",
+          "message": "wrong indentation: expected 1 but found 2 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 22,
+          "column": 121,
+          "severity": "error",
+          "message": "line too long (194 > 120 characters) (line-length)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 24,
+          "column": 3,
+          "severity": "error",
+          "message": "wrong indentation: expected 1 but found 2 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 30,
+          "column": 3,
+          "severity": "error",
+          "message": "wrong indentation: expected 1 but found 2 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 32,
+          "column": 3,
+          "severity": "error",
+          "message": "wrong indentation: expected 1 but found 2 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 34,
+          "column": 5,
+          "severity": "error",
+          "message": "wrong indentation: expected 3 but found 4 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/extend/.travis.yml",
+          "line": 229,
+          "column": 5,
+          "severity": "error",
+          "message": "wrong indentation: expected 3 but found 4 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/@ungap/structured-clone/.github/workflows/node.js.yml",
+          "line": 1,
+          "column": 121,
+          "severity": "error",
+          "message": "line too long (151 > 120 characters) (line-length)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/@ungap/structured-clone/.github/workflows/node.js.yml",
+          "line": 2,
+          "column": 121,
+          "severity": "error",
+          "message": "line too long (122 > 120 characters) (line-length)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/@ungap/structured-clone/.github/workflows/node.js.yml",
+          "line": 18,
+          "column": 5,
+          "severity": "error",
+          "message": "wrong indentation: expected 6 but found 4 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/@iconify/types/pnpm-lock.yaml",
+          "line": 12,
+          "column": 121,
+          "severity": "error",
+          "message": "line too long (124 > 120 characters) (line-length)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 1,
+          "column": 121,
+          "severity": "error",
+          "message": "line too long (131 > 120 characters) (line-length)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 2,
+          "column": 121,
+          "severity": "error",
+          "message": "line too long (122 > 120 characters) (line-length)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 9,
+          "column": 16,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 14,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 18,
+          "column": 5,
+          "severity": "error",
+          "message": "wrong indentation: expected 6 but found 4 (indentation)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 27,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 29,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docs-starlight/node_modules/stream-replace-string/.github/workflows/checks.yml",
+          "line": 37,
+          "column": 5,
+          "severity": "error",
+          "message": "wrong indentation: expected 6 but found 4 (indentation)"
+        },
+        {
+          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
+          "line": 20,
+          "column": 27,
+          "severity": "error",
+          "message": "too many spaces inside braces (braces)"
+        },
+        {
+          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
+          "line": 20,
+          "column": 55,
+          "severity": "error",
+          "message": "too many spaces inside braces (braces)"
+        },
+        {
+          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
+          "line": 27,
+          "column": 27,
+          "severity": "error",
+          "message": "too many spaces inside braces (braces)"
+        },
+        {
+          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
+          "line": 27,
+          "column": 53,
+          "severity": "error",
+          "message": "too many spaces inside braces (braces)"
+        }
+      ],
       "summary": {
-        "issue_count": 0
+        "issue_count": 25
       }
     },
     {
       "tool": "sqlfluff",
-      "status": "completed",
-      "returncode": 0,
+      "status": "completed_with_exit_code",
+      "returncode": 2,
       "issues": [],
       "summary": {
         "issue_count": 0,
@@ -197,15 +1222,10 @@
       },
       "stderr_preview": {
         "chunks": [
-          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          "WARNING    File /workspace/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project ",
-          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          "WARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/email_domain_matches_website.sql because it is a macro ",
-          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          "WARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/https_prefix.sql because it is a macro ",
-          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          "WARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/south_african_phone.sql because it is a macro ",
-          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt.exceptions.DbtProjectError: Runtime Error",
+          "  No dbt_project.yml found at expected path /Users/jonathanbotha/GitHub/watercrawl/analytics/dbt_project.yml",
+          "  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml",
+          "  ",
           ""
         ]
       }
