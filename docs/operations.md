@@ -13,15 +13,21 @@ poetry run python -m scripts.cleanup
 > The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
 
 Before executing the rest of the suite, confirm the pinned dependencies ship
-compatible wheels for every Python target tracked in `presets/dependency_targets.toml`:
+compatible wheels for every Python target tracked in `presets/dependency_targets.toml`.
+The guard command enforces that only the curated allow-list of wheel gaps remains
+and fails fast if new blockers appear or previously known issues clear without
+updating the configuration:
 
 ```bash
-python -m scripts.dependency_matrix survey --fail-on-blockers
+python -m scripts.dependency_matrix survey --config presets/dependency_targets.toml --output tools/dependency_matrix/report.json
+python -m scripts.dependency_matrix guard --config presets/dependency_targets.toml --blockers presets/dependency_blockers.toml --status-output tools/dependency_matrix/status.json --strict
 ```
 
-This survey parses `poetry.lock`, checks each wheel artefact, and captures
+The survey parses `poetry.lock`, checks each wheel artefact, and captures
 issues in `tools/dependency_matrix/report.json` so platform engineers can
-triage Python upgrade blockers before QA time is spent.
+triage Python upgrade blockers before QA time is spent. The guard emits
+`tools/dependency_matrix/status.json` with machine-readable metadata for
+Renovate, CI summaries, and release checklists.
 
 Then execute the quality gates:
 

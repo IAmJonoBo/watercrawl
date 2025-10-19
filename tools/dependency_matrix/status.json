@@ -1,0 +1,109 @@
+{
+  "blockers": [
+    {
+      "issue": "Missing cp313 wheels",
+      "notes": "Monitor upstream release before cutting Python 3.13 images.",
+      "owner": "Platform/Supply Chain",
+      "package": "argon2-cffi-bindings",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "python": "3.13",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing cp313 wheels",
+      "notes": "Coordinate with upstream release cadence; refresh hashed requirements when wheels land.",
+      "owner": "Security",
+      "package": "cryptography",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "python": "3.13",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing cp313/cp314 wheels",
+      "notes": "Blocks dbt contract execution on new interpreters; pin upgrade until resolved.",
+      "owner": "Data Engineering",
+      "package": "dbt-extractor",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "python": "3.13",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing cp314 wheels",
+      "notes": "Required for SQLFluff/dbt smoke tests; track upstream roadmap.",
+      "owner": "Data Engineering",
+      "package": "duckdb",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing cp313/cp314 wheels",
+      "notes": "Impacts observability and cleanup tooling; monitor upstream 7.x releases.",
+      "owner": "Platform",
+      "package": "psutil",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "python": "3.13",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing cp313/cp314 wheels",
+      "notes": "Needed for Jupyter/Streamlit dev surfaces; ensure Renovate PRs include blocker context.",
+      "owner": "Platform",
+      "package": "tornado",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.13",
+          "python": "3.13",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    }
+  ],
+  "cleared": [],
+  "generated_at": "2025-10-19T11:24:44.697636+00:00",
+  "unexpected": []
+}

@@ -1,0 +1,41 @@
+[[blockers]]
+package = "argon2-cffi-bindings"
+targets = ["3.13"]
+owner = "Platform/Supply Chain"
+issue = "Missing cp313 wheels"
+notes = "Monitor upstream release before cutting Python 3.13 images."
+
+[[blockers]]
+package = "cryptography"
+targets = ["3.13"]
+owner = "Security"
+issue = "Missing cp313 wheels"
+notes = "Coordinate with upstream release cadence; refresh hashed requirements when wheels land."
+
+[[blockers]]
+package = "dbt-extractor"
+targets = ["3.13", "3.14"]
+owner = "Data Engineering"
+issue = "Missing cp313/cp314 wheels"
+notes = "Blocks dbt contract execution on new interpreters; pin upgrade until resolved."
+
+[[blockers]]
+package = "duckdb"
+targets = ["3.14"]
+owner = "Data Engineering"
+issue = "Missing cp314 wheels"
+notes = "Required for SQLFluff/dbt smoke tests; track upstream roadmap."
+
+[[blockers]]
+package = "psutil"
+targets = ["3.13", "3.14"]
+owner = "Platform"
+issue = "Missing cp313/cp314 wheels"
+notes = "Impacts observability and cleanup tooling; monitor upstream 7.x releases."
+
+[[blockers]]
+package = "tornado"
+targets = ["3.13", "3.14"]
+owner = "Platform"
+issue = "Missing cp313/cp314 wheels"
+notes = "Needed for Jupyter/Streamlit dev surfaces; ensure Renovate PRs include blocker context."

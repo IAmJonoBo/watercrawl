@@ -1,4 +1,37 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"]
+  "extends": [
+    "config:recommended",
+    ":separateMajorReleases",
+    ":semanticCommitTypeAll(deps)"
+  ],
+  "rangeStrategy": "replace",
+  "dependencyDashboard": true,
+  "schedule": ["before 5am on monday"],
+  "packageRules": [
+    {
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": [
+        "argon2-cffi-bindings",
+        "cryptography",
+        "dbt-extractor",
+        "duckdb",
+        "psutil",
+        "tornado"
+      ],
+      "addLabels": ["python-wheel-gap", "supply-chain"],
+      "additionalBranchPrefix": "wheel-gap-",
+      "dependencyDashboardApproval": true,
+      "prBodyNotes": [
+        "- Review tools/dependency_matrix/status.json for the latest wheel compatibility snapshot before merging.",
+        "- Coordinate remediation prior to raising Python target versions in CI or Docker images."
+      ]
+    },
+    {
+      "matchManagers": ["poetry"],
+      "semanticCommitScope": "deps",
+      "prCreation": "not-pending",
+      "automerge": false
+    }
+  ]
 }

@@ -18,6 +18,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Poetry
         run: pip install poetry
+      - name: Dependency compatibility survey
+        run: >-
+          python -m scripts.dependency_matrix survey
+          --config presets/dependency_targets.toml
+          --output tools/dependency_matrix/report.json
+      - name: Dependency blocker guard
+        run: >-
+          python -m scripts.dependency_matrix guard
+          --config presets/dependency_targets.toml
+          --blockers presets/dependency_blockers.toml
+          --status-output tools/dependency_matrix/status.json
+          --strict
       - name: Cache Poetry environments
         uses: actions/cache@v4
         with:
@@ -61,6 +73,8 @@ jobs:
             ci-summary.md
             ci-dashboard.json
             problems_report.json
+            tools/dependency_matrix/report.json
+            tools/dependency_matrix/status.json
       - name: Install Node.js and markdownlint-cli2
         uses: actions/setup-node@v6
         with:

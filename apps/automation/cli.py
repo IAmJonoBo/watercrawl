@@ -175,15 +175,37 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
         CommandSpec(
             name="Dependency survey",
             args=(
-                "poetry",
-                "run",
                 "python",
                 "-m",
                 "scripts.dependency_matrix",
                 "survey",
-                "--fail-on-blockers",
+                "--config",
+                "presets/dependency_targets.toml",
+                "--output",
+                "tools/dependency_matrix/report.json",
             ),
-            description="Assess Python target compatibility for pinned dependencies and surface missing wheels before QA runs.",
+            description=(
+                "Assess Python target compatibility for pinned dependencies and regenerate the wheel gap report."
+            ),
+            tags=("supply-chain", "python"),
+        ),
+        CommandSpec(
+            name="Dependency guard",
+            args=(
+                "python",
+                "-m",
+                "scripts.dependency_matrix",
+                "guard",
+                "--config",
+                "presets/dependency_targets.toml",
+                "--blockers",
+                "presets/dependency_blockers.toml",
+                "--status-output",
+                "tools/dependency_matrix/status.json",
+            ),
+            description=(
+                "Fail fast when new wheel blockers appear and emit status metadata for Renovate and CI dashboards."
+            ),
             tags=("supply-chain", "python"),
         ),
     ],
@@ -228,6 +250,7 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
 
 _QA_DEFAULT_SEQUENCE = (
     "cleanup",
+    "dependencies",
     "tests",
     "lint",
     "typecheck",
@@ -428,6 +451,18 @@ def qa_all(dry_run: bool, fail_fast: bool, skip_dbt: bool) -> None:
         dry_run=dry_run,
         fail_fast=fail_fast,
     )
+    raise SystemExit(exit_code)
+
+
+@qa.command("dependencies")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview dependency checks without executing them."
+)
+def qa_dependencies(dry_run: bool) -> None:
+    """Run dependency survey and guard checks."""
+
+    specs = _collect_specs(["dependencies"])
+    exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
 
 

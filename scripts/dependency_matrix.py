@@ -21,6 +21,8 @@ from packaging.version import Version
 LOCK_PATH = Path("poetry.lock")
 DEFAULT_CONFIG_PATH = Path("presets/dependency_targets.toml")
 DEFAULT_REPORT_PATH = Path("tools/dependency_matrix/report.json")
+DEFAULT_BLOCKERS_PATH = Path("presets/dependency_blockers.toml")
+DEFAULT_STATUS_PATH = Path("tools/dependency_matrix/status.json")
 
 
 @dataclass(frozen=True)
@@ -70,6 +72,15 @@ class Issue:
             "reason": self.reason,
             "details": self.details,
         }
+
+
+@dataclass(frozen=True)
+class BlockerExpectation:
+    package: str
+    targets: tuple[str, ...]
+    owner: str | None = None
+    issue: str | None = None
+    notes: str | None = None
 
 
 def load_targets(config_path: Path) -> list[Target]:
@@ -131,6 +142,34 @@ def load_packages(lock_path: Path) -> tuple[PackageInfo, ...]:
             )
         )
     return tuple(packages)
+
+
+def load_blockers(config_path: Path) -> tuple[BlockerExpectation, ...]:
+    if not config_path.exists():
+        raise FileNotFoundError(f"Dependency blocker config not found: {config_path}")
+    raw_config = tomllib.loads(config_path.read_text())
+    raw_blockers = raw_config.get("blockers")
+    if not raw_blockers:
+        raise ValueError("No dependency blockers defined in configuration.")
+    blockers: list[BlockerExpectation] = []
+    for entry in raw_blockers:
+        package = entry.get("package")
+        targets = tuple(entry.get("targets", ()))
+        if not package or not targets:
+            raise ValueError("Each dependency blocker must define a package and targets.")
+        owner = entry.get("owner")
+        issue = entry.get("issue")
+        notes = entry.get("notes")
+        blockers.append(
+            BlockerExpectation(
+                package=package,
+                targets=targets,
+                owner=owner,
+                issue=issue,
+                notes=notes,
+            )
+        )
+    return tuple(blockers)
 
 
 def python_tag_supports(python_tag: str | None, target: Target) -> bool:
@@ -202,6 +241,63 @@ def format_summary(results: dict[str, list[dict[str, str]]], targets: Iterable[T
     return "\n".join(lines)
 
 
+def evaluate_blockers(
+    results: dict[str, list[dict[str, str]]],
+    blockers: Iterable[BlockerExpectation],
+) -> tuple[list[dict[str, object]], list[dict[str, object]], list[dict[str, object]]]:
+    blocker_status: list[dict[str, object]] = []
+    cleared: list[dict[str, object]] = []
+    unexpected: list[dict[str, object]] = []
+    blockers_by_target: dict[str, set[str]] = {}
+    for blocker in blockers:
+        for target in blocker.targets:
+            blockers_by_target.setdefault(target, set()).add(blocker.package)
+
+    for blocker in blockers:
+        target_statuses: list[dict[str, object]] = []
+        present = False
+        for target in blocker.targets:
+            issues = {issue["package"]: issue for issue in results.get(target, [])}
+            issue = issues.get(blocker.package)
+            if issue:
+                present = True
+                target_statuses.append(
+                    {
+                        "python": target,
+                        "status": "present",
+                        "reason": issue.get("reason"),
+                        "details": issue.get("details"),
+                    }
+                )
+            else:
+                target_statuses.append(
+                    {
+                        "python": target,
+                        "status": "cleared",
+                        "reason": None,
+                        "details": None,
+                    }
+                )
+        payload = {
+            "package": blocker.package,
+            "owner": blocker.owner,
+            "issue": blocker.issue,
+            "notes": blocker.notes,
+            "targets": target_statuses,
+        }
+        blocker_status.append(payload)
+        if not present:
+            cleared.append(payload)
+
+    for python_version, issues in results.items():
+        allowed = blockers_by_target.get(python_version, set())
+        for issue in issues:
+            if issue["package"] not in allowed:
+                unexpected.append({"python": python_version, **issue})
+
+    return blocker_status, cleared, unexpected
+
+
 def write_report(results: dict[str, list[dict[str, str]]], path: Path, targets: Iterable[Target]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -247,6 +343,43 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Exit with status 1 if any blockers are detected.",
     )
+
+    guard_parser = subparsers.add_parser(
+        "guard",
+        help="Ensure wheel blockers match the curated allow-list and emit status metadata.",
+    )
+    guard_parser.add_argument(
+        "--lock",
+        type=Path,
+        default=LOCK_PATH,
+        help=f"Path to poetry.lock (default: {LOCK_PATH})",
+    )
+    guard_parser.add_argument(
+        "--config",
+        type=Path,
+        default=DEFAULT_CONFIG_PATH,
+        help=f"Dependency target config (default: {DEFAULT_CONFIG_PATH})",
+    )
+    guard_parser.add_argument(
+        "--blockers",
+        type=Path,
+        default=DEFAULT_BLOCKERS_PATH,
+        help=f"Dependency blocker allow-list (default: {DEFAULT_BLOCKERS_PATH})",
+    )
+    guard_parser.add_argument(
+        "--status-output",
+        type=Path,
+        default=DEFAULT_STATUS_PATH,
+        help=f"Write blocker status JSON to this path (default: {DEFAULT_STATUS_PATH})",
+    )
+    guard_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "Fail if an expected blocker clears without updating the allow-list. "
+            "When unset, only unexpected blockers trigger a failure."
+        ),
+    )
     return parser
 
 
@@ -261,11 +394,59 @@ def handle_survey(args: argparse.Namespace) -> int:
     return 0
 
 
+def handle_guard(args: argparse.Namespace) -> int:
+    targets = load_targets(args.config)
+    packages = load_packages(args.lock)
+    results = survey(packages, targets)
+    blockers = load_blockers(args.blockers)
+    blocker_status, cleared, unexpected = evaluate_blockers(results, blockers)
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "blockers": blocker_status,
+        "cleared": cleared,
+        "unexpected": unexpected,
+    }
+    status_path: Path = args.status_output
+    status_path.parent.mkdir(parents=True, exist_ok=True)
+    status_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+    if unexpected:
+        print("Unexpected wheel blockers detected:")
+        for issue in unexpected:
+            print(
+                "  - {package} ({python}): {reason} -> {details}".format(
+                    package=issue["package"],
+                    python=issue["python"],
+                    reason=issue.get("reason", "unknown"),
+                    details=issue.get("details", ""),
+                )
+            )
+        return 1
+    if args.strict and cleared:
+        print("Allow-listed blockers have cleared; update the configuration:")
+        for entry in cleared:
+            print(f"  - {entry['package']}")
+        return 1
+
+    for entry in blocker_status:
+        target_messages = []
+        for status in entry["targets"]:
+            message = f"{status['python']}: {status['status']}"
+            if status["status"] == "present" and status.get("reason"):
+                message += f" ({status['reason']})"
+            target_messages.append(message)
+        owner = f" [{entry['owner']}]" if entry.get("owner") else ""
+        print(f"{entry['package']}{owner} -> {', '.join(target_messages)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(argv)
     if args.command == "survey":
         return handle_survey(args)
+    if args.command == "guard":
+        return handle_guard(args)
     parser.print_help()
     return 1
 
