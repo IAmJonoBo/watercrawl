@@ -39,21 +39,91 @@ Renovate, CI summaries, and release checklists.
 Then execute the quality gates:
 
 ```bash
-poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 poetry run ruff check .
-poetry run python -m tools.sql.sqlfluff_runner
-poetry run yamllint --strict -c .yamllint.yaml .
-poetry run pre-commit run markdownlint-cli2 --all-files
-poetry run pre-commit run hadolint --all-files
-poetry run pre-commit run actionlint --all-files
+poetry run black --check .
+poetry run isort --check-only .
 poetry run mypy .
+```
+
+### Security & Dependencies
+
+```bash
 poetry run bandit -r firecrawl_demo
 poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
-poetry run dotenv-linter lint .env.example
-poetry run poetry build
+```
+
+### Testing
+
+```bash
+poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+```
+
+### Data Quality
+
+```bash
 poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample.csv --format json
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
+```
+
+### Infrastructure & Config
+
+```bash
+poetry run yamllint --strict -c .yamllint.yaml .
+poetry run pre-commit run hadolint --all-files
+poetry run pre-commit run actionlint --all-files
+poetry run dotenv-linter lint .env.example
+poetry run poetry build
+```
+
+## CI Mirroring
+
+Mirror CI locally before pushing:
+
+```bash
+# Full QA suite (mirrors CI)
+poetry run python -m dev.cli qa all --dry-run
+
+# Generate problems report
+poetry run python scripts/collect_problems.py
+
+# Check evidence logging
+poetry run python -m firecrawl_demo.interfaces.cli validate data/sample.csv --evidence-log data/interim/evidence_log.csv
+```
+
+## Development Workflows
+
+### E2E Pipeline Testing
+
+```bash
+# Full pipeline with sample data
+poetry run python -m app.cli validate data/sample.csv
+poetry run python -m app.cli enrich data/sample.csv --output data/processed/enriched.csv
+poetry run python -m app.cli contracts data/processed/enriched.csv
+
+# With evidence logging
+poetry run python -m app.cli enrich data/sample.csv --output data/processed/enriched.csv --evidence-log data/interim/evidence_log.csv
+```
+
+### MCP Server Testing
+
+```bash
+# Start MCP server
+poetry run python -m app.cli mcp-server
+
+# Test MCP commands
+poetry run python -m dev.cli mcp summarize-last-run
+poetry run python -m dev.cli mcp list-sanity-issues
+```
+
+### Data Lakehouse Operations
+
+```bash
+# Snapshot to lakehouse
+poetry run python -m firecrawl_demo.infrastructure.lakehouse snapshot --source data/processed/enriched.csv --destination data/lakehouse/
+
+# Lineage capture
+poetry run python -m firecrawl_demo.infrastructure.lineage capture --run-id $(date +%s) --input data/sample.csv --output data/processed/enriched.csv
 ```
 
 - Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
@@ -203,6 +273,82 @@ of silencing mypy regressions.
 Monitor `adapter_failures` and `sanity_issues` in pipeline metrics/CLI output;
 any non-zero count should trigger investigation into upstream research adapters
 or missing evidence before publishing results.
+
+## Troubleshooting
+
+### Common Issues
+
+**Poetry environment issues:**
+
+```bash
+# Clear Poetry cache and reinstall
+poetry cache clear --all .
+poetry install --no-root
+
+# Check Python version compatibility
+python --version  # Should be 3.14+
+poetry env info
+```
+
+**Test failures:**
+
+```bash
+# Run specific failing test with verbose output
+poetry run pytest tests/test_specific.py::TestClass::test_method -v -s
+
+# Check for dependency conflicts
+poetry show --tree | grep -A 5 -B 5 <problematic_package>
+```
+
+**Evidence logging not working:**
+
+```bash
+# Validate evidence log structure
+poetry run python -c "import pandas as pd; pd.read_csv('data/interim/evidence_log.csv').head()"
+
+# Check file permissions
+ls -la data/interim/evidence_log.csv
+```
+
+**MCP server connection issues:**
+
+```bash
+# Test MCP server startup
+poetry run python -m app.cli mcp-server --help
+
+# Check for port conflicts
+lsof -i :3000  # Assuming default MCP port
+```
+
+**Data quality contract failures:**
+
+```bash
+# Run contracts with verbose output
+poetry run python -m app.cli contracts data/sample.csv --verbose
+
+# Check dbt logs
+tail -f analytics/logs/dbt.log
+```
+
+### Performance Issues
+
+**Slow enrichment runs:**
+
+- Enable caching: Set `FEATURE_ENABLE_CACHE=1`
+- Use offline mode: Unset `FEATURE_ENABLE_FIRECRAWL_SDK`
+- Profile with: `poetry run python -m cProfile -s time your_script.py`
+
+**Memory usage:**
+
+- Process in batches: Use `--batch-size` parameter in CLI commands
+- Monitor with: `poetry run mprof run your_script.py`
+
+### Getting Help
+
+1. Check `problems_report.json` for automated issue detection
+2. Review CI logs for similar failures
+3. Search existing issues in the repository
+4. Run `poetry run python -m dev.cli qa all --verbose` for detailed diagnostics
 
 ## Evidence Sink Configuration
 
