@@ -167,7 +167,15 @@
           "skipped_tests": 0
         }
       },
-      "stderr": "[main]\tINFO\tprofile include tests: None\n[main]\tINFO\tprofile exclude tests: None\n[main]\tINFO\tcli include tests: None\n[main]\tINFO\tcli exclude tests: None\n"
+      "stderr_preview": {
+        "chunks": [
+          "[main]\tINFO\tprofile include tests: None",
+          "[main]\tINFO\tprofile exclude tests: None",
+          "[main]\tINFO\tcli include tests: None",
+          "[main]\tINFO\tcli exclude tests: None",
+          ""
+        ]
+      }
     },
     {
       "tool": "yamllint",
@@ -187,7 +195,20 @@
         "issue_count": 0,
         "files_with_issues": 0
       },
-      "stderr": "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    File /workspace/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/email_domain_matches_website.sql because it is a macro \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/https_prefix.sql because it is a macro \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \nWARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/south_african_phone.sql because it is a macro \nWARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. \n"
+      "stderr_preview": {
+        "chunks": [
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    File /workspace/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/email_domain_matches_website.sql because it is a macro ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/https_prefix.sql because it is a macro ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    Skipped file /workspace/watercrawl/data_contracts/analytics/tests/generic/south_african_phone.sql because it is a macro ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          ""
+        ]
+      }
     }
   ]
 }

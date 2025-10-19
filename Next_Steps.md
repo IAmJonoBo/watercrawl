@@ -53,6 +53,7 @@
 - [x] 2025-10-19 — Introduced `apps/` and `platform/` taxonomies with guardrail READMEs, reassigned CODEOWNERS ownership, validated Poetry excludes via wheel regression tests + CI guard, and documented the surface map in MkDocs and `Next_Steps.md`.
 - [x] 2025-10-19 — Consolidated dbt/GX projects under `data_contracts/`, introduced shared taxonomy/evidence config seeded via `CONTRACTS_CANONICAL_JSON`, refreshed docs/QA coverage, and added confidence-threshold enforcement to both toolchains.
 - [x] 2025-10-19 — Parsed Poetry excludes into wheel validation, added positive wheel payload assertions, and refreshed tooling docs to point at `apps/automation/` + `platform/scripts/` guardrails.
+- [x] 2025-10-19 — Chunked `stderr`/`raw` previews in `collect_problems.py` to avoid >4 KiB shell lines, documented the new preview shape, added regression coverage, and captured the `python -m pytest tests/test_collect_problems.py` run (failsafe skip when DuckDB is absent; broader baseline blocked on Python ≥3.14 and hashed narwhals wheel).
 
 ---
 

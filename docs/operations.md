@@ -111,7 +111,8 @@ The `problems_report.json` file follows this schema:
   - `returncode`: Exit code from the tool.
   - `issues`: Array of parsed issues (truncated if excessive).
   - `summary`: Tool-specific metrics (e.g., issue counts, severity breakdowns).
-  - Optional fields: `stderr`, `notes`, `raw` (for parsing failures).
+    - Optional fields: `stderr_preview`, `notes`, `raw_preview` (for parsing failures).
+      Each preview stores chunked text to keep lines below shell output limits and includes truncation metadata when applicable.
 
 ### Wiring and Integration
 
