@@ -71,8 +71,8 @@ except (ImportError, TypeError, AttributeError):
             self.kwargs = kwargs or {}
             self.meta = meta
 
-        def to_domain_obj(self) -> ExpectationConfiguration:
-            return self
+        def to_domain_obj(self) -> ExpectationConfiguration:  # type: ignore[misc]
+            return self  # type: ignore[return-value]
 
     @dataclass
     class RuntimeDataBatchSpec:  # type: ignore[no-redef]
@@ -154,7 +154,6 @@ def _load_expectation_suite() -> ExpectationSuite:
     suite = ExpectationSuite(name=payload["expectation_suite_name"], expectations=[])
     suite.meta.update(payload.get("meta", {}))
     expectations_payload = payload.get("expectations", [])
-    expectation_configs: list[ExpectationConfiguration] = []
     if isinstance(expectations_payload, list):
         for entry in expectations_payload:
             if not isinstance(entry, dict):
@@ -166,14 +165,12 @@ def _load_expectation_suite() -> ExpectationSuite:
             kwargs = dict(kwargs_raw) if isinstance(kwargs_raw, dict) else {}
             meta_raw = entry.get("meta")
             meta = dict(meta_raw) if isinstance(meta_raw, dict) else None
-            expectation_configs.append(
-                ExpectationConfiguration(
-                    expectation_type=expectation_type,
-                    kwargs=kwargs,
-                    meta=meta,
-                )
+            config = ExpectationConfiguration(  # type: ignore[call-arg]
+                type=expectation_type,
+                kwargs=kwargs,
+                meta=meta,
             )
-    suite.expectations = expectation_configs
+            suite.add_expectation_configuration(config)  # type: ignore[arg-type]
     return _apply_canonical_configuration(suite)
 
 
@@ -192,10 +189,10 @@ def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
 
     has_confidence_check = False
 
-    for expectation in suite.expectations:
+    for expectation in suite.expectation_configurations:  # type: ignore[attr-defined]
         if not isinstance(expectation, ExpectationConfiguration):
             continue
-        expectation_type = expectation.expectation_type
+        expectation_type = expectation.type
         column_raw = expectation.kwargs.get("column")
         column = column_raw if isinstance(column_raw, str) else None
 
@@ -213,19 +210,18 @@ def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
             has_confidence_check = True
 
     if not has_confidence_check:
-        suite.expectations.append(
-            ExpectationConfiguration(
-                expectation_type="expect_column_values_to_be_between",
-                kwargs={
-                    "column": "Confidence",
-                    "min_value": min_conf,
-                    "max_value": max_conf,
-                },
-                meta={
-                    "notes": "Evidence confidence must meet canonical thresholds.",
-                },
-            ).to_domain_obj()
+        config = ExpectationConfiguration(  # type: ignore[call-arg]
+            type="expect_column_values_to_be_between",
+            kwargs={
+                "column": "Confidence",
+                "min_value": min_conf,
+                "max_value": max_conf,
+            },
+            meta={
+                "notes": "Evidence confidence must meet canonical thresholds.",
+            },
         )
+        suite.add_expectation_configuration(config)  # type: ignore[arg-type]
 
     return suite
 
