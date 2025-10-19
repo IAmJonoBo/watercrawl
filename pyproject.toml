@@ -38,6 +38,7 @@ azure-identity = "^1.25.1"
 azure-keyvault-secrets = "^4.10.0"
 pint = "0.25"
 firecrawl-py = "^4.5.0"
+pyarrow = "^21.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.4.2"

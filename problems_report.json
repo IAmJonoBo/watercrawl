@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-19T21:01:58.391879+00:00",
+  "generated_at": "2025-10-19T21:03:30.033527+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -82,42 +82,42 @@
         },
         {
           "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 38,
+          "line": 39,
           "message": "Name \"ExpectationSuite\" already defined (possibly by an import) ",
           "severity": "error",
           "code": "no-redef"
         },
         {
           "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 49,
+          "line": 50,
           "message": "Name \"ExpectationConfiguration\" already defined (possibly by an import) ",
           "severity": "error",
           "code": "no-redef"
         },
         {
           "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 64,
+          "line": 71,
           "message": "Name \"RuntimeDataBatchSpec\" already defined (possibly by an import) ",
           "severity": "error",
           "code": "no-redef"
         },
         {
           "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 68,
+          "line": 75,
           "message": "Name \"Batch\" already defined (possibly by an import) ",
           "severity": "error",
           "code": "no-redef"
         },
         {
           "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 76,
+          "line": 83,
           "message": "Name \"PandasExecutionEngine\" already defined (possibly by an import) ",
           "severity": "error",
           "code": "no-redef"
         },
         {
           "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 80,
+          "line": 87,
           "message": "Name \"Validator\" already defined (possibly by an import) ",
           "severity": "error",
           "code": "no-redef"
@@ -1067,8 +1067,8 @@
         }
       ],
       "summary": {
-        "issue_count": 965,
-        "omitted_issues": 865
+        "issue_count": 964,
+        "omitted_issues": 864
       }
     },
     {
