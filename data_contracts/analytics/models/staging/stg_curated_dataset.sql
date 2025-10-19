@@ -13,5 +13,5 @@ select
     trim("Contact Person") as contact_person,
     trim("Contact Number") as contact_number,
     trim("Contact Email Address") as contact_email_address,
-    cast(coalesce(cast("Confidence" as varchar), '0') as integer) as confidence
+    cast(trim(coalesce(cast("Confidence" as varchar), '0')) as integer) as confidence
 from source
