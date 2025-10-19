@@ -638,9 +638,9 @@ dbt-extractor==0.6.0 ; python_version == "3.14" \
 dbt-protos==1.0.382 ; python_version == "3.14" \
     --hash=sha256:3ad6a7f5ac626757265ecbf37904742a56c36868d881cc8717ac951b66617348 \
     --hash=sha256:f2345522f9f6ee9c14e576ab2aac010d7fa777c82919134fd7ef347a886331bb
-dbt-semantic-interfaces==0.9.0 ; python_version == "3.14" \
-    --hash=sha256:1b54c06ba89190a47a7f0563360930a0cce869e55b484ca09d261ade0e319155 \
-    --hash=sha256:5c921257dce8bb51c9ffb5479f2bdd959e16ebfb98ee833de6daa70788c47271
+dbt-semantic-interfaces==0.10.0; python_version == "3.14" \
+    --hash=sha256:6d6e890abad147e46ebbf4a1c505607c855010dd4e5701111beeb5ca3b3b5df4 \
+    --hash=sha256:88d56c4538fa1add9a7dd168f25fc1ee2aab850f4206fb76d77fc7e41ba2923e
 debugpy==1.8.17 ; python_version == "3.14" \
     --hash=sha256:045290c010bcd2d82bc97aa2daf6837443cd52f6328592698809b4549babcee1 \
     --hash=sha256:1440fd514e1b815edd5861ca394786f90eb24960eb26d6f7200994333b1d79e3 \
