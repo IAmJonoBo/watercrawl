@@ -8,12 +8,9 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable, Mapping, Sequence
 
-try:  # pragma: no cover - import fallback for Python <3.11
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover
-    import tomli as tomllib  # type: ignore[assignment]
+import tomllib
 
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
@@ -87,25 +84,36 @@ def load_targets(config_path: Path) -> list[Target]:
     if not config_path.exists():
         raise FileNotFoundError(f"Dependency target config not found: {config_path}")
     data = tomllib.loads(config_path.read_text())
+    if not isinstance(data, dict):
+        raise ValueError("Dependency target configuration must be a TOML table.")
     raw_targets = data.get("targets")
-    if not raw_targets:
+    if not isinstance(raw_targets, Sequence) or not raw_targets:
         raise ValueError("No dependency targets defined in configuration.")
     targets: list[Target] = []
     for entry in raw_targets:
+        if not isinstance(entry, Mapping):
+            raise ValueError("Dependency target entries must be tables.")
         python_version = entry.get("python")
-        label = entry.get("label", python_version)
-        require_wheels = bool(entry.get("require_wheels", True))
-        if not python_version:
+        if not isinstance(python_version, str) or not python_version.strip():
             raise ValueError("Each dependency target must specify a python version.")
-        targets.append(Target(python_version=python_version, label=label, require_wheels=require_wheels))
+        label_raw = entry.get("label", python_version)
+        label = str(label_raw) if label_raw is not None else python_version
+        require_wheels = bool(entry.get("require_wheels", True))
+        targets.append(
+            Target(
+                python_version=python_version,
+                label=label,
+                require_wheels=require_wheels,
+            )
+        )
     return targets
 
 
-def parse_package_files(raw_files: Iterable[dict[str, str]]) -> tuple[PackageFile, ...]:
+def parse_package_files(raw_files: Iterable[Mapping[str, Any]]) -> tuple[PackageFile, ...]:
     files: list[PackageFile] = []
     for entry in raw_files:
         filename = entry.get("file")
-        if not filename:
+        if not isinstance(filename, str):
             continue
         is_wheel = filename.endswith(".whl")
         python_tag: str | None = None
@@ -121,17 +129,34 @@ def load_packages(lock_path: Path) -> tuple[PackageInfo, ...]:
     if not lock_path.exists():
         raise FileNotFoundError(f"Poetry lock file not found: {lock_path}")
     lock_data = tomllib.loads(lock_path.read_text())
+    if not isinstance(lock_data, dict):
+        raise ValueError("Poetry lock file is malformed.")
     package_entries = lock_data.get("package", [])
+    if not isinstance(package_entries, Sequence):
+        raise ValueError("Poetry lock file is missing package entries.")
     packages: list[PackageInfo] = []
     for entry in package_entries:
+        if not isinstance(entry, Mapping):
+            continue
         name = entry.get("name")
         version = entry.get("version")
-        groups = tuple(entry.get("groups", ()))
-        python_spec = entry.get("python-versions")
-        raw_files = entry.get("files", [])
-        package_files = parse_package_files(raw_files)
-        if not name or not version:
+        if not isinstance(name, str) or not isinstance(version, str):
             continue
+        groups_raw = entry.get("groups", ())
+        if isinstance(groups_raw, Sequence):
+            groups = tuple(str(value) for value in groups_raw if isinstance(value, str))
+        else:
+            groups = ()
+        python_spec_raw = entry.get("python-versions")
+        python_spec = str(python_spec_raw) if isinstance(python_spec_raw, str) else None
+        raw_files = entry.get("files", [])
+        if isinstance(raw_files, Sequence):
+            files_iter: tuple[Mapping[str, Any], ...] = tuple(
+                item for item in raw_files if isinstance(item, Mapping)
+            )
+        else:
+            files_iter = ()
+        package_files = parse_package_files(files_iter)
         packages.append(
             PackageInfo(
                 name=name,
@@ -148,14 +173,22 @@ def load_blockers(config_path: Path) -> tuple[BlockerExpectation, ...]:
     if not config_path.exists():
         raise FileNotFoundError(f"Dependency blocker config not found: {config_path}")
     raw_config = tomllib.loads(config_path.read_text())
+    if not isinstance(raw_config, dict):
+        raise ValueError("Dependency blocker configuration must be a TOML table.")
     raw_blockers = raw_config.get("blockers")
-    if not raw_blockers:
+    if not isinstance(raw_blockers, Sequence) or not raw_blockers:
         raise ValueError("No dependency blockers defined in configuration.")
     blockers: list[BlockerExpectation] = []
     for entry in raw_blockers:
+        if not isinstance(entry, Mapping):
+            raise ValueError("Dependency blocker entries must be tables.")
         package = entry.get("package")
-        targets = tuple(entry.get("targets", ()))
-        if not package or not targets:
+        targets_raw = entry.get("targets", ())
+        if isinstance(targets_raw, Sequence):
+            targets = tuple(str(value) for value in targets_raw if isinstance(value, str))
+        else:
+            targets = ()
+        if not isinstance(package, str) or not targets:
             raise ValueError("Each dependency blocker must define a package and targets.")
         owner = entry.get("owner")
         issue = entry.get("issue")
@@ -164,9 +197,9 @@ def load_blockers(config_path: Path) -> tuple[BlockerExpectation, ...]:
             BlockerExpectation(
                 package=package,
                 targets=targets,
-                owner=owner,
-                issue=issue,
-                notes=notes,
+                owner=str(owner) if isinstance(owner, str) else None,
+                issue=str(issue) if isinstance(issue, str) else None,
+                notes=str(notes) if isinstance(notes, str) else None,
             )
         )
     return tuple(blockers)
@@ -244,21 +277,23 @@ def format_summary(results: dict[str, list[dict[str, str]]], targets: Iterable[T
 def evaluate_blockers(
     results: dict[str, list[dict[str, str]]],
     blockers: Iterable[BlockerExpectation],
-) -> tuple[list[dict[str, object]], list[dict[str, object]], list[dict[str, object]]]:
-    blocker_status: list[dict[str, object]] = []
-    cleared: list[dict[str, object]] = []
-    unexpected: list[dict[str, object]] = []
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, str]]]:
+    blocker_status: list[dict[str, Any]] = []
+    cleared: list[dict[str, Any]] = []
+    unexpected: list[dict[str, str]] = []
     blockers_by_target: dict[str, set[str]] = {}
     for blocker in blockers:
         for target in blocker.targets:
             blockers_by_target.setdefault(target, set()).add(blocker.package)
 
     for blocker in blockers:
-        target_statuses: list[dict[str, object]] = []
+        target_statuses: list[dict[str, Any]] = []
         present = False
         for target in blocker.targets:
-            issues = {issue["package"]: issue for issue in results.get(target, [])}
-            issue = issues.get(blocker.package)
+            issue_lookup = {
+                entry["package"]: entry for entry in results.get(target, [])
+            }
+            issue = issue_lookup.get(blocker.package)
             if issue:
                 present = True
                 target_statuses.append(
@@ -278,7 +313,7 @@ def evaluate_blockers(
                         "details": None,
                     }
                 )
-        payload = {
+        payload: dict[str, Any] = {
             "package": blocker.package,
             "owner": blocker.owner,
             "issue": blocker.issue,

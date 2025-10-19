@@ -47,7 +47,7 @@ repos:
         pass_filenames: false
       - id: markdownlint-cli2
         name: markdownlint-cli2
-        entry: npx --yes --package markdownlint-cli2@0.18.0 markdownlint-cli2
+        entry: node_modules/.bin/markdownlint-cli2
         args: [--config, .markdownlint-cli2.yaml]
         language: system
         types_or: [markdown]

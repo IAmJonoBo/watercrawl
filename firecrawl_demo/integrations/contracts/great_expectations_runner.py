@@ -59,16 +59,27 @@ def _load_expectation_suite() -> ExpectationSuite:
     payload = json.loads(_expectation_suite_path().read_text())
     suite = ExpectationSuite(name=payload["expectation_suite_name"], expectations=[])
     suite.meta.update(payload.get("meta", {}))
-    suite.expectations.extend(
-        [
-            ExpectationConfiguration(
-                type=entry["expectation_type"],
-                kwargs=entry.get("kwargs", {}),
-                meta=entry.get("meta"),
-            ).to_domain_obj()
-            for entry in payload.get("expectations", [])
-        ]
-    )
+    expectations_payload = payload.get("expectations", [])
+    expectation_configs: list[ExpectationConfiguration] = []
+    if isinstance(expectations_payload, list):
+        for entry in expectations_payload:
+            if not isinstance(entry, dict):
+                continue
+            expectation_type = entry.get("expectation_type")
+            if not isinstance(expectation_type, str):
+                continue
+            kwargs_raw = entry.get("kwargs", {})
+            kwargs = dict(kwargs_raw) if isinstance(kwargs_raw, dict) else {}
+            meta_raw = entry.get("meta")
+            meta = dict(meta_raw) if isinstance(meta_raw, dict) else None
+            expectation_configs.append(
+                ExpectationConfiguration(
+                    type=expectation_type,
+                    kwargs=kwargs,
+                    meta=meta,
+                )
+            )
+    suite.expectations = expectation_configs
     return _apply_canonical_configuration(suite)
 
 
@@ -85,8 +96,11 @@ def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
     has_confidence_check = False
 
     for expectation in suite.expectations:
-        expectation_type = getattr(expectation, "expectation_type", "")
-        column = expectation.kwargs.get("column") if hasattr(expectation, "kwargs") else None
+        if not isinstance(expectation, ExpectationConfiguration):
+            continue
+        expectation_type = expectation.expectation_type
+        column_raw = expectation.kwargs.get("column")
+        column = column_raw if isinstance(column_raw, str) else None
 
         if expectation_type == "expect_column_values_to_be_in_set":
             if column == "Province":

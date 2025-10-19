@@ -62,6 +62,7 @@
 - [x] 2025-10-20 — Added a uv-powered Python bootstrapper, wired it into the automation CLI, refreshed contributor docs, regenerated hashed requirements, and added a ripgrep ignore manifest to stop >4 KiB shell output regressions.
 - [x] 2025-10-20 — Introduced `scripts.dependency_matrix` with pytest coverage, surfaced wheel gaps for Python 3.13/3.14 in `tools/dependency_matrix/report.json`, and wired the survey into the automation CLI/operations runbook to gate plan→upgrade flows.
 - [x] 2025-10-22 — Codified session protocol in `AGENTS.md` to require context sweep, baseline QA attempt, and problems_report triage before enrichment work; emphasised ownership/quality gates for remediation loop.
+- [x] 2025-10-22 — Restored markdownlint pre-commit parity with vendored binaries, refreshed curated dataset staging model for DuckDB compatibility, hardened dependency matrix typing, modernised contracts tests to use availability gates, and documented targeted lint/type checks.
 
 ---
 
