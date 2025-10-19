@@ -13,6 +13,15 @@ Name of Organisation | Province | Status | Website URL | Contact Person | Contac
 
 ## Workflow
 
+### Session Protocol (agents + analysts)
+
+1. **Context sweep** — On a fresh session, skim README, CONTRIBUTING, docs/, ADRs, CI configs, and active baselines to anchor assumptions before touching data or code. Capture unknowns.
+2. **Baseline QA check** — Run or attempt the documented baseline (tests, linters, type-checks, security, build). If tooling is missing (e.g., Python 3.14 wheels), document the blocker, raise to Platform, and avoid irreversible edits until the blocker is recorded.
+3. **Problems report triage** — Open `problems_report.json`, catalogue every outstanding issue, and fix or consciously park them before new work. Re-run `scripts/collect_problems.sh` after changes to confirm green.
+4. **Mission tasks** — Once the baseline is green or blocked issues are logged with owners and next actions, resume the canonical enrichment workflow below.
+
+### Enrichment workflow
+
 1. **Canonicalise Organisation**
    - Confirm legal/canonical name.
    - Identify official HTTPS website (prefer org site over directories).
@@ -59,6 +68,7 @@ Name of Organisation | Province | Status | Website URL | Contact Person | Contac
 - Copilot agents and analysts must:
   - Check `problems_report.json` for outstanding issues before remediation or enrichment.
   - Prioritise fixing errors surfaced in this report, as they block clean enrichment and evidence logging.
+  - Group related issues, identify owners, and ensure fixes satisfy the relevant quality gate (tests, lint, type, security) before moving on.
   - Use the shell script `scripts/collect_problems.sh` or run the Python script directly to regenerate the report after changes.
 - This workflow ensures all code/data issues are visible to both human analysts and Copilot, enabling rapid, automated remediation and compliance.
 
