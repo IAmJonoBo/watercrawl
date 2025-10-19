@@ -8,7 +8,7 @@ This guide outlines our conventions and standards. By contributing, you agree to
 
 ### Prerequisites
 
-- Python >=3.14,<3.15 (required for compatibility with our async and typing standards)
+- Python >=3.13,<3.15 (required for compatibility with our async and typing standards)
 - The [`uv`](https://github.com/astral-sh/uv) toolchain manager
 - Poetry for dependency management
 - Git for version control
@@ -78,7 +78,7 @@ We adhere to a layered, hexagonal architecture that separates concerns and enabl
 
 ### Coding Conventions
 
-- **Python Version**: >=3.14,<3.15
+- **Python Version**: >=3.13,<3.15
 - **Imports**: Use absolute imports; group by standard library, third-party, local
 - **Naming**: snake_case for variables/functions, PascalCase for classes, UPPER_CASE for constants
 - **Docstrings**: Use Google-style docstrings for all public APIs

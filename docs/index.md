@@ -4,7 +4,7 @@ Welcome to the consolidated intelligence and enrichment toolkit for ACES Aerodyn
 
 ## Overview
 
-The ACES Enrichment Stack is a modular, compliance-driven pipeline for B2B data enrichment and OSINT research focused on South African flight schools. Built with Python 3.14, it leverages modern tools like Poetry for dependency management, dbt for data transformation, Great Expectations for data quality, and MCP for AI-assisted workflows.
+The ACES Enrichment Stack is a modular, compliance-driven pipeline for B2B data enrichment and OSINT research focused on South African flight schools. Built with Python 3.13+, it leverages modern tools like Poetry for dependency management, dbt for data transformation, Great Expectations for data quality, and MCP for AI-assisted workflows.
 
 ## Key Features
 
@@ -17,7 +17,7 @@ The ACES Enrichment Stack is a modular, compliance-driven pipeline for B2B data 
 
 ## Quick Start
 
-1. **Prerequisites**: Python >=3.14,<3.15
+1. **Prerequisites**: Python >=3.13,<3.15
 2. **Install**: `pip install poetry` then `poetry install`
 3. **Run**: `poetry run python -m apps.analyst.cli overview`
 

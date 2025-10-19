@@ -16,7 +16,7 @@ poetry run python -m scripts.cleanup
 
 Before executing the rest of the suite, confirm the pinned dependencies ship
 compatible wheels for every Python target tracked in `presets/dependency_targets.toml`
-(Python 3.14 as the stable baseline, Python 3.15 as the next candidate).
+(Python 3.13 as the stable baseline, Python 3.14 as the current, Python 3.15 as the next candidate).
 The guard command enforces that only the curated allow-list of wheel gaps remains
 and fails fast if new blockers appear or previously known issues clear without
 updating the configuration:
@@ -34,7 +34,7 @@ Renovate, CI summaries, and release checklists.
 
 > Tip: `poetry run python -m apps.automation.cli qa dependencies --dry-run`
 > invokes the same survey/guard pipeline but automatically installs the Poetry
-> environment and provisions Python 3.14 via uv when required.
+> environment and provisions Python 3.14 via uv when the active interpreter is older than 3.13.
 
 Then execute the quality gates:
 
@@ -286,7 +286,7 @@ poetry cache clear --all .
 poetry install --no-root
 
 # Check Python version compatibility
-python --version  # Should be 3.14+
+python --version  # Should be 3.13+
 poetry env info
 ```
 

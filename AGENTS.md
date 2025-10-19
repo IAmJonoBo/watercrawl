@@ -16,7 +16,7 @@ Name of Organisation | Province | Status | Website URL | Contact Person | Contac
 ### Session Protocol (agents + analysts)
 
 1. **Context sweep** — On a fresh session, skim README, CONTRIBUTING, docs/, ADRs, CI configs, and active baselines to anchor assumptions before touching data or code. Capture unknowns.
-2. **Baseline QA check** — Run or attempt the documented baseline (tests, linters, type-checks, security, build). If tooling is missing (e.g., Python 3.14 wheels), document the blocker, raise to Platform, and avoid irreversible edits until the blocker is recorded.
+2. **Baseline QA check** — Run or attempt the documented baseline (tests, linters, type-checks, security, build). If tooling is missing (e.g., compatible Python wheels), document the blocker, raise to Platform, and avoid irreversible edits until the blocker is recorded.
 3. **Problems report triage** — Open `problems_report.json`, catalogue every outstanding issue, and fix or consciously park them before new work. Re-run `scripts/collect_problems.sh` after changes to confirm green.
 4. **Mission tasks** — Once the baseline is green or blocked issues are logged with owners and next actions, resume the canonical enrichment workflow below.
 

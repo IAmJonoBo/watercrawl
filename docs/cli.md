@@ -91,7 +91,7 @@ poetry run python -m apps.automation.cli qa all --dry-run
 
 - Executes (or previews with `--dry-run`) the cleanup, dependency sync, test, lint, type-check, security, pre-commit, build, and dbt stages.
 - Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
-- Automatically provisions Python 3.14 with uv when the active interpreter is older (disable with `--no-auto-bootstrap`).
+- Automatically provisions Python 3.14 with uv when the active interpreter is older than 3.13 (disable with `--no-auto-bootstrap`).
 
 ### Targeted QA commands
 
