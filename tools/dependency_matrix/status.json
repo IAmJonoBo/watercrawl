@@ -312,6 +312,31 @@
     }
   ],
   "cleared": [],
-  "generated_at": "2025-10-19T11:43:11.803241+00:00",
-  "unexpected": []
+  "generated_at": "2025-10-19T20:46:00.612600+00:00",
+  "unexpected": [
+    {
+      "details": "Requires python '<3.14,>=3.9'",
+      "groups": "dev",
+      "package": "great-expectations",
+      "python": "3.14",
+      "reason": "python-spec",
+      "version": "1.7.1"
+    },
+    {
+      "details": "Requires python '<3.14,>=3.9'",
+      "groups": "dev",
+      "package": "great-expectations",
+      "python": "3.15",
+      "reason": "python-spec",
+      "version": "1.7.1"
+    },
+    {
+      "details": "No wheel compatible with Python 3.15",
+      "groups": "dev",
+      "package": "scipy",
+      "python": "3.15",
+      "reason": "missing-wheel",
+      "version": "1.16.2"
+    }
+  ]
 }

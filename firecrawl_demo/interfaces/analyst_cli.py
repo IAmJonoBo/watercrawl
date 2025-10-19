@@ -322,7 +322,7 @@ def contracts(input_path: Path, output_format: str) -> None:
 
     # Handle Great Expectations availability
     if validate_curated_file is not None:
-        ge_result: CuratedDatasetContractResult = validate_curated_file(input_path)
+        ge_result: CuratedDatasetContractResult = validate_curated_file(input_path)  # type: ignore
     else:
         # Fallback when Great Expectations is not available (e.g., Python 3.14+)
         ge_result = CuratedDatasetContractResult(
@@ -333,7 +333,7 @@ def contracts(input_path: Path, output_format: str) -> None:
             meta={"note": "Great Expectations not available in this Python version"},
         )
 
-    dbt_result: DbtContractResult = run_dbt_contract_tests(input_path)
+    dbt_result: DbtContractResult = run_dbt_contract_tests(input_path)  # type: ignore
 
     ge_payload: dict[str, Any] = {
         "success": ge_result.success,
@@ -365,9 +365,9 @@ def contracts(input_path: Path, output_format: str) -> None:
         "results": dbt_result.results,
     }
 
-    artifact_dir = persist_contract_artifacts(input_path, ge_payload, dbt_result)
+    artifact_dir = persist_contract_artifacts(input_path, ge_payload, dbt_result)  # type: ignore
     record_contracts_evidence(
-        input_path, ge_result, dbt_result, artifact_dir, evidence_sink
+        input_path, ge_result, dbt_result, artifact_dir, evidence_sink  # type: ignore
     )
 
     payload: dict[str, Any] = {

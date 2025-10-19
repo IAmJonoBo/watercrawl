@@ -5,7 +5,7 @@ import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -184,6 +184,9 @@ def test_sqlfluff_command_sets_duckdb_env(
     if collect_problems.SQLFLUFF_TOOL is None:
         pytest.skip("sqlfluff support not available")
 
+    # After the None check, mypy knows SQLFLUFF_TOOL is not None
+    tool = cast(collect_problems.ToolSpec, collect_problems.SQLFLUFF_TOOL)
+
     expected = tmp_path / "contracts.duckdb"
 
     def fake_ensure(project_dir: Path, duckdb_path: Path) -> Path:
@@ -193,7 +196,7 @@ def test_sqlfluff_command_sets_duckdb_env(
 
     monkeypatch.setattr(collect_problems, "ensure_duckdb", fake_ensure)
 
-    cmd, env, cwd = collect_problems.SQLFLUFF_TOOL.command()
+    cmd, env, cwd = tool.command()
 
     assert cmd[:3] == ["sqlfluff", "lint", "data_contracts/analytics"]
     assert env is not None and env["DBT_DUCKDB_PATH"] == expected.as_posix()

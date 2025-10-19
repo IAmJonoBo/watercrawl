@@ -188,11 +188,6 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
     ],
     "security": [
         CommandSpec(
-            name="Bandit",
-            args=("poetry", "run", "bandit", "-r", "firecrawl_demo"),
-            description="Security lint the core package with Bandit.",
-        ),
-        CommandSpec(
             name="Dotenv lint",
             args=("poetry", "run", "dotenv-linter", "lint", ".env", ".env.example"),
             description="Check environment files for malformed entries.",
@@ -297,6 +292,18 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
         ),
     ],
 }
+
+# Conditionally add Bandit if Python version supports it (Bandit doesn't support Python 3.14+)
+if sys.version_info < (3, 14):
+    _QA_GROUPS["security"].insert(
+        0,
+        CommandSpec(
+            name="Bandit",
+            args=("poetry", "run", "bandit", "-r", "firecrawl_demo"),
+            description="Security lint the core package with Bandit.",
+        ),
+    )
+
 
 _QA_DEFAULT_SEQUENCE = (
     "cleanup",

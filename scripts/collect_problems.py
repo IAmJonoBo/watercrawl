@@ -40,6 +40,9 @@ except ModuleNotFoundError as exc:  # pragma: no cover - defensive path fix
             else:
                 raise
 
+# Bandit doesn't support Python 3.14 yet (ast.Num removed)
+BANDIT_AVAILABLE = sys.version_info < (3, 14)
+
 REPORT_PATH = Path("problems_report.json")
 MAX_TEXT = 2000
 MAX_ISSUES = 100
@@ -430,16 +433,20 @@ TOOL_SPECS: list[ToolSpec] = [
         optional=True,
     ),
     ToolSpec(
-        name="bandit",
-        command=_static_command("bandit", "-r", "firecrawl_demo", "-f", "json"),
-        parser=parse_bandit_output,
-    ),
-    ToolSpec(
         name="yamllint",
         command=_static_command("yamllint", "--format", "parsable", "."),
         parser=parse_yamllint_output,
     ),
 ]
+
+BANDIT_TOOL: ToolSpec | None = None
+if BANDIT_AVAILABLE:
+    BANDIT_TOOL = ToolSpec(
+        name="bandit",
+        command=_static_command("bandit", "-r", "firecrawl_demo", "-f", "json"),
+        parser=parse_bandit_output,
+    )
+    TOOL_SPECS.append(BANDIT_TOOL)
 
 SQLFLUFF_TOOL: ToolSpec | None = None
 if SQLFLUFF_AVAILABLE:

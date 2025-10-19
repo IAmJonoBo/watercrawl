@@ -12,4 +12,4 @@ ignore: |
   analytics/target/**
   .mypy_cache/**
   .pytest_cache/**
-  node_modules/**
+  **/node_modules/**

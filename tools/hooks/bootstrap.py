@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 import ssl
 import stat
@@ -75,11 +76,28 @@ def ensure_hadolint(version: str = "v2.14.0") -> Path:
     if override:
         return Path(override)
 
-    target = CACHE_ROOT / f"hadolint-{version}"
+    # Detect platform and architecture
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == "darwin":
+        if machine == "arm64":
+            binary_name = "hadolint-macos-arm64"
+        else:
+            binary_name = "hadolint-macos-x86_64"
+    elif system == "linux":
+        if machine == "aarch64":
+            binary_name = "hadolint-linux-arm64"
+        else:
+            binary_name = "hadolint-linux-x86_64"
+    else:
+        raise BootstrapError(f"Unsupported platform: {system} {machine}")
+
+    target = CACHE_ROOT / f"hadolint-{version}-{system}-{machine}"
     if not target.exists():
         url = (
             "https://github.com/hadolint/hadolint/releases/download/"
-            f"{version}/hadolint-Linux-x86_64"
+            f"{version}/{binary_name}"
         )
         try:
             _download(url, target)
@@ -96,12 +114,28 @@ def ensure_actionlint(version: str = "v1.7.1") -> Path:
     if override:
         return Path(override)
 
-    tag = version.lstrip("v")
+    # Detect platform and architecture
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == "darwin":
+        if machine == "arm64":
+            archive_name = f"actionlint_{version.lstrip('v')}_darwin_arm64.tar.gz"
+        else:
+            archive_name = f"actionlint_{version.lstrip('v')}_darwin_amd64.tar.gz"
+    elif system == "linux":
+        if machine == "aarch64":
+            archive_name = f"actionlint_{version.lstrip('v')}_linux_arm64.tar.gz"
+        else:
+            archive_name = f"actionlint_{version.lstrip('v')}_linux_amd64.tar.gz"
+    else:
+        raise BootstrapError(f"Unsupported platform: {system} {machine}")
+
     archive_url = (
         "https://github.com/rhysd/actionlint/releases/download/"
-        f"{version}/actionlint_{tag}_linux_amd64.tar.gz"
+        f"{version}/{archive_name}"
     )
-    extract_dir = CACHE_ROOT / f"actionlint-{version}"
+    extract_dir = CACHE_ROOT / f"actionlint-{version}-{system}-{machine}"
     binary_path = extract_dir / "actionlint"
     if binary_path.exists():
         return binary_path

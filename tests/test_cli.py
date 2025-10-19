@@ -157,7 +157,7 @@ def test_rich_pipeline_progress_tracks_updates():
     assert any("Adapter failure processing row 2" in log for log in events["logs"])
 
 
-def test_rich_pipeline_progress_handles_duplicate_start():
+def test_rich_pipeline_progress_handles_duplicate_start() -> None:
     class DummyProgress:
         def __init__(self, *args, **kwargs):
             self.start_calls = 0
@@ -204,7 +204,7 @@ def test_rich_pipeline_progress_handles_duplicate_start():
     assert dummy_progress.added == [("Validating dataset", 3)]
 
 
-def test_rich_pipeline_progress_logs_adapter_failures():
+def test_rich_pipeline_progress_logs_adapter_failures() -> None:
     class DummyProgress:
         def __init__(self, *args, **kwargs):
             self.logs: list[str] = []
