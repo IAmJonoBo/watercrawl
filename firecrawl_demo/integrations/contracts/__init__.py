@@ -20,18 +20,29 @@ from .dbt_runner import DbtContractResult, run_dbt_contract_tests
 # Conditionally import Great Expectations components if available
 try:
     import great_expectations  # noqa: F401
+
     from .great_expectations_runner import (
         CuratedDatasetContractResult,
         validate_curated_dataframe,
         validate_curated_file,
     )
+
     GREAT_EXPECTATIONS_AVAILABLE = True
-except ImportError:
+except (ImportError, TypeError):
     # Define dummy types/functions when Great Expectations is not available
+    # or incompatible with the Python version
     CuratedDatasetContractResult = None  # type: ignore
     validate_curated_dataframe = None  # type: ignore
     validate_curated_file = None  # type: ignore
     GREAT_EXPECTATIONS_AVAILABLE = False
+
+# Conditionally import dbt components if available
+try:
+    from dbt.cli.main import dbtRunner  # noqa: F401
+
+    DBT_AVAILABLE = True
+except (ImportError, TypeError):
+    DBT_AVAILABLE = False
 
 from .operations import persist_contract_artifacts, record_contracts_evidence
 from .shared_config import (
@@ -95,10 +106,14 @@ def _build_contracts_toolkit(context: PluginContext) -> ContractsToolkit:
     else:
         # Provide dummy functions when Great Expectations is not available
         def dummy_validate_dataframe(df):  # type: ignore
-            raise NotImplementedError("Great Expectations not available (requires Python < 3.14)")
+            raise NotImplementedError(
+                "Great Expectations not available (requires Python < 3.14)"
+            )
 
         def dummy_validate_file(path):  # type: ignore
-            raise NotImplementedError("Great Expectations not available (requires Python < 3.14)")
+            raise NotImplementedError(
+                "Great Expectations not available (requires Python < 3.14)"
+            )
 
         return ContractsToolkit(
             validate_dataframe=dummy_validate_dataframe,
@@ -120,6 +135,7 @@ register_plugin(
                 "DBT_PROFILES_DIR",
                 "DBT_TARGET_PATH",
                 "DBT_LOG_PATH",
+                "CONTRACTS_CANONICAL_JSON",
             ),
             optional_dependencies=("great_expectations", "dbt"),
             description="Execute Great Expectations and dbt contracts for curated datasets.",

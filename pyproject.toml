@@ -24,12 +24,12 @@ exclude = [
 [tool.poetry.dependencies]
 python = ">=3.14,<3.15"
 pandas = "2.3.3"
-openpyxl = "3.1.5"
+openpyxl = "^3.1.0"
 streamlit = "^1.50.0"
 requests = "2.32.5"
 httpx = "0.28.1"
-tenacity = "9.1.2"
-pydantic = "2.12.3"
+tenacity = "^9.1.2"
+pydantic = "^2.12.3"
 structlog = "25.4.0"
 prometheus-client = "0.23.1"
 pydantic-settings = "^2.11.0"
@@ -50,11 +50,11 @@ mypy = "1.18.2"
 bandit = "1.8.6"
 dotenv-linter = "0.7.0"
 pre-commit = "4.3.0"
-pandas-stubs = "2.3.2.250926"
-types-requests = "2.32.4.20250913"
+pandas-stubs = "*"
+types-requests = "*"
 jupyter = "1.1.1"
-great-expectations = { version = "^1.7.1", python = "<3.14" }
-dbt-core = "^1.10.13"
+great-expectations = { version = "1.7.1", python = "<3.14" }
+dbt-core = { version = "^1.10.0", python = "<3.14" }
 dbt-duckdb = "^1.9.6"
 hypothesis = "6.142.1"
 pydocstyle = "^6.3.0"
@@ -65,11 +65,11 @@ yamllint = "^1.37.1"
 safety-db = "^2021.7.17"
 types-boto3 = "1.40.55"
 types-botocore = "1.0.2"
-types-pillow = "10.2.0.20240822"
-types-pyyaml = "6.0.12.20250915"
-types-setuptools = "80.9.0.20250822"
-types-urllib3 = "1.26.25.14"
-types-python-dateutil = "2.9.0.20251008"
+types-pillow = "*"
+types-pyyaml = "6.0.12"
+types-setuptools = "*"
+types-urllib3 = "1.26.25"
+types-python-dateutil = "2.8.19"
 narwhals = "2.8.0"
 
 [build-system]
@@ -101,3 +101,10 @@ ignore = ["E203", "E501"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+  # Suppress Great Expectations Pydantic V1 warning since GE is pinned to 1.7.1 for Python < 3.14
+  "ignore:Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater:UserWarning",
+  # Allow other warnings to show
+]
