@@ -7,12 +7,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.14", "3.15"]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: ${{ matrix.python-version }}
       - name: Install Poetry
         run: pip install poetry
       - name: Cache Poetry environments
@@ -21,9 +24,9 @@ jobs:
           path: |
             ~/.cache/pypoetry/virtualenvs
             ~/.cache/pip
-          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-${{ matrix.python-version }}-
       - name: Install dependencies
         run: poetry install --no-root
       - name: Run isort check
