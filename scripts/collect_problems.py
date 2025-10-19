@@ -14,25 +14,37 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+SQLFLUFF_AVAILABLE = True
 try:  # pragma: no branch - import guard for script execution
     from tools.sql.sqlfluff_runner import (
         DEFAULT_DBT_PROJECT,
         DEFAULT_DUCKDB,
         ensure_duckdb,
     )
-except ModuleNotFoundError:  # pragma: no cover - defensive path fix
-    PROJECT_ROOT = Path(__file__).resolve().parents[1]
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
-    from tools.sql.sqlfluff_runner import (  # type: ignore[import-not-found]
-        DEFAULT_DBT_PROJECT,
-        DEFAULT_DUCKDB,
-        ensure_duckdb,
-    )
+except ModuleNotFoundError as exc:  # pragma: no cover - defensive path fix
+    if exc.name == "duckdb":
+        SQLFLUFF_AVAILABLE = False
+    else:
+        PROJECT_ROOT = Path(__file__).resolve().parents[1]
+        if str(PROJECT_ROOT) not in sys.path:
+            sys.path.insert(0, str(PROJECT_ROOT))
+        try:
+            from tools.sql.sqlfluff_runner import (  # type: ignore[import-not-found]
+                DEFAULT_DBT_PROJECT,
+                DEFAULT_DUCKDB,
+                ensure_duckdb,
+            )
+        except ModuleNotFoundError as inner_exc:  # pragma: no cover - fallback
+            if inner_exc.name == "duckdb":
+                SQLFLUFF_AVAILABLE = False
+            else:
+                raise
 
 REPORT_PATH = Path("problems_report.json")
 MAX_TEXT = 2000
 MAX_ISSUES = 100
+PREVIEW_CHUNK = 200
+MAX_PREVIEW_CHUNKS = 40
 
 CompletedProcess = subprocess.CompletedProcess[str]
 
@@ -42,6 +54,55 @@ def _truncate(value: str, *, limit: int = MAX_TEXT) -> str:
         return value
     remaining = len(value) - limit
     return f"{value[:limit]}… (truncated {remaining} characters)"
+
+
+def _normalise_newlines(value: str) -> str:
+    return value.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def build_preview(
+    value: str,
+    *,
+    limit: int = MAX_TEXT,
+    chunk_size: int = PREVIEW_CHUNK,
+    max_chunks: int = MAX_PREVIEW_CHUNKS,
+) -> dict[str, Any]:
+    normalised = _normalise_newlines(value)
+    truncated_chars = max(len(normalised) - limit, 0)
+    limited = normalised[:limit]
+    chunks: list[str] = []
+    for raw_line in limited.split("\n"):
+        if not raw_line:
+            if chunks:
+                chunks.append("")
+            continue
+        for start in range(0, len(raw_line), chunk_size):
+            chunks.append(raw_line[start : start + chunk_size])
+    omitted_chunks = 0
+    truncated = truncated_chars > 0
+    if len(chunks) > max_chunks:
+        omitted_chunks = len(chunks) - max_chunks
+        chunks = chunks[:max_chunks]
+        truncated = True
+    if truncated:
+        if chunks:
+            chunks[-1] = f"{chunks[-1]}…"
+        else:
+            chunks.append("…")
+    payload: dict[str, Any] = {"chunks": chunks}
+    if truncated:
+        payload["truncated"] = True
+    if truncated_chars:
+        payload["omitted_characters"] = truncated_chars
+    if omitted_chunks:
+        payload["omitted_chunks"] = omitted_chunks
+    return payload
+
+
+def _attach_preview(entry: dict[str, Any], key: str, value: str | None) -> None:
+    if not value:
+        return
+    entry[key] = build_preview(value)
 
 
 def _truncate_message(entry: dict[str, Any]) -> None:
@@ -108,11 +169,9 @@ def parse_ruff_output(result: CompletedProcess) -> dict[str, Any]:
     try:
         findings = json.loads(result.stdout or "[]")
     except json.JSONDecodeError:
-        return {
-            "issues": [],
-            "summary": {"issue_count": 0},
-            "raw": _truncate(result.stdout or ""),
-        }
+        payload = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(payload, "raw_preview", result.stdout or "")
+        return payload
 
     issues: list[dict[str, Any]] = []
     fixable = sum(1 for item in findings if item.get("fix"))
@@ -194,11 +253,9 @@ def parse_pylint_output(result: CompletedProcess) -> dict[str, Any]:
     try:
         parsed = json.loads(payload)
     except json.JSONDecodeError:
-        return {
-            "issues": [],
-            "summary": {"issue_count": 0},
-            "raw": _truncate(payload),
-        }
+        result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(result, "raw_preview", payload)
+        return result
     messages: Iterable[dict[str, Any]]
     score: Any = None
     if isinstance(parsed, dict):
@@ -232,11 +289,9 @@ def parse_bandit_output(result: CompletedProcess) -> dict[str, Any]:
     try:
         parsed = json.loads(payload) if payload else {}
     except json.JSONDecodeError:
-        return {
-            "issues": [],
-            "summary": {"issue_count": 0},
-            "raw": _truncate(payload),
-        }
+        result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(result, "raw_preview", payload)
+        return result
     results = parsed.get("results", []) or []
     issues: list[dict[str, Any]] = []
     severity_counts: Counter[str] = Counter()
@@ -307,11 +362,9 @@ def parse_sqlfluff_output(result: CompletedProcess) -> dict[str, Any]:
     try:
         parsed = json.loads(payload) if payload else []
     except json.JSONDecodeError:
-        return {
-            "issues": [],
-            "summary": {"issue_count": 0},
-            "raw": _truncate(payload),
-        }
+        result: dict[str, Any] = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(result, "raw_preview", payload)
+        return result
     issues: list[dict[str, Any]] = []
     files_with_issues = 0
     for entry in parsed:
@@ -388,13 +441,14 @@ TOOL_SPECS: list[ToolSpec] = [
     ),
 ]
 
-SQLFLUFF_TOOL = ToolSpec(
-    name="sqlfluff",
-    command=_sqlfluff_command,
-    parser=parse_sqlfluff_output,
-)
-
-TOOL_SPECS.append(SQLFLUFF_TOOL)
+SQLFLUFF_TOOL: ToolSpec | None = None
+if SQLFLUFF_AVAILABLE:
+    SQLFLUFF_TOOL = ToolSpec(
+        name="sqlfluff",
+        command=_sqlfluff_command,
+        parser=parse_sqlfluff_output,
+    )
+    TOOL_SPECS.append(SQLFLUFF_TOOL)
 
 
 def collect(
@@ -454,7 +508,7 @@ def collect(
         entry.update(parsed)
         entry.setdefault("issues", [])
         if completed.stderr:
-            entry["stderr"] = _truncate(completed.stderr)
+            _attach_preview(entry, "stderr_preview", completed.stderr)
         aggregated.append(entry)
     return aggregated
 

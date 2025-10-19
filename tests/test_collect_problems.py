@@ -150,7 +150,10 @@ def test_collect_aggregates_and_truncates_outputs(
 
     bandit_entry = by_tool["bandit"]
     assert bandit_entry["summary"]["severity_counts"]["HIGH"] == 1
-    assert bandit_entry["stderr"].endswith("characters)")
+    stderr_preview = bandit_entry["stderr_preview"]
+    assert stderr_preview["chunks"][0] == "x" * 200
+    assert stderr_preview["truncated"] is True
+    assert stderr_preview["omitted_characters"] == 4000
 
     sqlfluff_entry = by_tool["sqlfluff"]
     assert sqlfluff_entry["issues"][0]["code"] == "L001"
@@ -160,9 +163,25 @@ def test_collect_aggregates_and_truncates_outputs(
     assert yamllint_entry["issues"][0]["severity"] == "warning"
 
 
+def test_preview_handles_multiline_chunks() -> None:
+    payload = "line-" + "a" * 210 + "\nsecond-line"
+    preview = collect_problems.build_preview(payload, limit=170, chunk_size=50, max_chunks=10)
+
+    assert preview["chunks"][0] == "line-" + "a" * 45
+    assert preview["chunks"][1] == "a" * 50
+    assert preview["chunks"][2] == "a" * 50
+    assert preview["chunks"][3].startswith("a" * 20)
+    assert preview["chunks"][3].endswith("…")
+    assert preview["truncated"] is True
+    assert preview["omitted_characters"] == 57
+
+
 def test_sqlfluff_command_sets_duckdb_env(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    if collect_problems.SQLFLUFF_TOOL is None:
+        pytest.skip("sqlfluff support not available")
+
     expected = tmp_path / "contracts.duckdb"
 
     def fake_ensure(project_dir: Path, duckdb_path: Path) -> Path:
