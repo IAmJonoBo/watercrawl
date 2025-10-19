@@ -89,8 +89,9 @@ poetry run python -m apps.automation.cli qa plan
 poetry run python -m apps.automation.cli qa all --dry-run
 ```
 
-- Executes (or previews with `--dry-run`) the cleanup, test, lint, type-check, security, pre-commit, build, and dbt stages.
+- Executes (or previews with `--dry-run`) the cleanup, dependency sync, test, lint, type-check, security, pre-commit, build, and dbt stages.
 - Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
+- Automatically provisions Python 3.14 with uv when the active interpreter is older (disable with `--no-auto-bootstrap`).
 
 ### Targeted QA commands
 
@@ -102,6 +103,8 @@ Each QA stage is also exposed individually:
 - `poetry run python -m apps.automation.cli qa security --skip-secrets`
 - `poetry run python -m apps.automation.cli qa build`
 - `poetry run python -m apps.automation.cli qa contracts --dry-run`
+
+Pass `--auto-bootstrap/--no-auto-bootstrap` to any targeted command to control whether uv is invoked automatically. The `qa dependencies` command now installs the Poetry environment before running the compatibility survey and guard checks, ensuring ephemeral runners start from a consistent toolchain.
 
 ## Analyst UI
 

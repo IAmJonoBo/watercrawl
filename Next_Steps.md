@@ -15,8 +15,8 @@
 - [ ] **Phase 4 — LLM safety, evaluation, and MCP plan→commit** (AT‑31, AT‑32, AT‑33) — _Owner: Platform/Security · Due: 2026‑01‑31_
   - Gates: Ragas thresholds green; OWASP LLM Top‑10 red‑team passes; MCP audit logs show `If‑Match` and diff review.
 - [x] **Validate Poetry exclude list in release pipeline** — _Owner: Platform · Due: 2025‑10‑31_
-- [ ] **Wheel remediation — Python 3.13/3.14 blockers** — _Owner: Platform/Data/Security · Due: 2025‑11‑08_
-  - Gates: cp313/cp314 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, and tornado; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
+- [ ] **Wheel remediation — Python 3.14/3.15 blockers** — _Owner: Platform/Data/Security · Due: 2025‑11‑08_
+  - Gates: cp314/cp315 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, and other tracked packages; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
 - [ ] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
 - [ ] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
 - [ ] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
@@ -34,6 +34,7 @@
 ## Steps (iteration log)
 
 - [x] 2025-10-21 — Added dependency blocker allow-list + status artefacts, wired guard checks into automation/CI, labelled Renovate PRs for wheel gaps, refreshed docs/README, and logged remediation tasks for Python 3.13/3.14 upgrades.
+- [x] 2025-10-21 — Raised the minimum supported interpreter to Python 3.14, taught the automation CLI to auto-bootstrap uv/Poetry environments on ephemeral runners, refreshed dependency blocker targets for Python 3.14/3.15, and documented the workflow in README + docs.
 - [x] 2025-10-18 — Carved out `firecrawl_demo.domain` and `firecrawl_demo.application`, added application interfaces, migrated evidence sinks to infrastructure, refreshed docs, and recorded ADR 0002.
 - [x] 2025-10-18 — Reviewed domain/application refactor commit, reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build) to confirm clean slate and capture coverage hotspots.
 - [x] 2025-10-18 — Hardened problems_report pipeline with structured truncation, added actionlint/hadolint bootstrappers, and re-ran full QA suite (pytest, ruff, mypy, bandit, safety, pre-commit, build, CLI contracts, dbt, problems collector).
@@ -138,10 +139,10 @@ Execute in this order; each item must meet its gate before promotion.
 - Running Great Expectations locally regenerates `data_contracts/great_expectations/uncommitted/config_variables.yml`; keep it ignored and document analyst‑specific overrides per run.
 - Confirm repository‑root anchored paths in `firecrawl_demo.core.config` propagate to packaging/release workflows; adjust docs if downstream tools expect package‑root paths.
 - Keep Firecrawl SDK behind a feature flag until credentials and ALLOW_NETWORK_RESEARCH policy are finalised.
-- Enforce Python ≥3.11; monitor GE compatibility before removing `<3.14` pin.
+- Enforce Python ≥3.14; monitor GE compatibility before promoting Python 3.15 and verifying Great Expectations/dbt compatibility.
 - Decide owner + storage for MCP audit logs (plan→diff→commit) and retention policy.
 - Block MCP/agent sessions in hardened platform distributions unless `promptfoo eval` has passed in the active branch.
 - Kafka lineage transport requires the optional `kafka-python` dependency; platform team to confirm packaging before enabling Kafka emission in CI/staging.
 - Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments.
 - Regenerate `requirements-dev.txt` hashes so transitive dependencies like `narwhals` resolve under `--require-hashes` installs.
-- Python 3.13+ compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, and `tornado`; track expectations via `presets/dependency_blockers.toml`, ongoing findings in `tools/dependency_matrix/report.json`, and guard outputs in `tools/dependency_matrix/status.json`.
+- Python 3.15 compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, `tornado`, and other tracked packages; track expectations via `presets/dependency_blockers.toml`, ongoing findings in `tools/dependency_matrix/report.json`, and guard outputs in `tools/dependency_matrix/status.json`.

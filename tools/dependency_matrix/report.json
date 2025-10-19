@@ -1,48 +1,6 @@
 {
-  "generated_at": "2025-10-19T11:24:29.211335+00:00",
+  "generated_at": "2025-10-19T11:42:42.991216+00:00",
   "targets": [
-    {
-      "issues": [
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "groups": "dev",
-          "package": "argon2-cffi-bindings",
-          "reason": "missing-wheel",
-          "version": "25.1.0"
-        },
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "groups": "main,dev",
-          "package": "cryptography",
-          "reason": "missing-wheel",
-          "version": "46.0.3"
-        },
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "groups": "dev",
-          "package": "dbt-extractor",
-          "reason": "missing-wheel",
-          "version": "0.6.0"
-        },
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "groups": "dev",
-          "package": "psutil",
-          "reason": "missing-wheel",
-          "version": "7.1.0"
-        },
-        {
-          "details": "No wheel compatible with Python 3.13",
-          "groups": "dev",
-          "package": "tornado",
-          "reason": "missing-wheel",
-          "version": "6.5.2"
-        }
-      ],
-      "label": "stable",
-      "python": "3.13",
-      "require_wheels": true
-    },
     {
       "issues": [
         {
@@ -68,14 +26,168 @@
         },
         {
           "details": "No wheel compatible with Python 3.14",
-          "groups": "dev",
+          "groups": "main",
+          "package": "pyarrow",
+          "reason": "missing-wheel",
+          "version": "21.0.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "groups": "main,dev",
           "package": "tornado",
           "reason": "missing-wheel",
           "version": "6.5.2"
         }
       ],
-      "label": "candidate",
+      "label": "stable",
       "python": "3.14",
+      "require_wheels": true
+    },
+    {
+      "issues": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main",
+          "package": "aiohttp",
+          "reason": "missing-wheel",
+          "version": "3.13.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "argon2-cffi-bindings",
+          "reason": "missing-wheel",
+          "version": "25.1.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main,dev",
+          "package": "cffi",
+          "reason": "missing-wheel",
+          "version": "2.0.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main,dev",
+          "package": "cryptography",
+          "reason": "missing-wheel",
+          "version": "46.0.3"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "dbt-extractor",
+          "reason": "missing-wheel",
+          "version": "0.6.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "duckdb",
+          "reason": "missing-wheel",
+          "version": "1.4.1"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main,dev",
+          "package": "markupsafe",
+          "reason": "missing-wheel",
+          "version": "3.0.3"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "msgpack",
+          "reason": "missing-wheel",
+          "version": "1.1.2"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main,dev",
+          "package": "numpy",
+          "reason": "missing-wheel",
+          "version": "2.3.4"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main",
+          "package": "pandas",
+          "reason": "missing-wheel",
+          "version": "2.3.3"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main",
+          "package": "pillow",
+          "reason": "missing-wheel",
+          "version": "11.3.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "psutil",
+          "reason": "missing-wheel",
+          "version": "7.1.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main",
+          "package": "pyarrow",
+          "reason": "missing-wheel",
+          "version": "21.0.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main,dev",
+          "package": "pydantic-core",
+          "reason": "missing-wheel",
+          "version": "2.41.4"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "pywinpty",
+          "reason": "missing-wheel",
+          "version": "3.0.2"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "pyyaml",
+          "reason": "missing-wheel",
+          "version": "6.0.3"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "pyzmq",
+          "reason": "missing-wheel",
+          "version": "27.1.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "regex",
+          "reason": "missing-wheel",
+          "version": "2025.9.18"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main,dev",
+          "package": "rpds-py",
+          "reason": "missing-wheel",
+          "version": "0.27.1"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "main,dev",
+          "package": "tornado",
+          "reason": "missing-wheel",
+          "version": "6.5.2"
+        }
+      ],
+      "label": "next",
+      "python": "3.15",
       "require_wheels": true
     }
   ]
