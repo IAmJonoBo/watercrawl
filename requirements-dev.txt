@@ -2361,9 +2361,9 @@ soupsieve==2.8 ; python_version == "3.14" \
 sqlfluff-templater-dbt==3.5.0; python_version == "3.14" \
     --hash=sha256:5cc9ed594d898f3d8dbdb60039567da40b8769f7259e7b0995c7fe98f6f845b3 \
     --hash=sha256:9eb5346cb1b16166689c33d83e36a5e5412a8dbdcd7678ac45880bb9d42fb2ac
-sqlfluff==3.4.2 ; python_version == "3.14" \
-    --hash=sha256:14109d858da448a4bd0be5a107f4e48de33b1749e6cfc8cc03ec6c045bc9b8ad \
-    --hash=sha256:1777272e4fdac5adef1b89ec25675426e77285d4dc95a055b12bd24181e33f40
+sqlfluff==3.5.0; python_version == "3.14" \
+    --hash=sha256:2d0a546078ffb021de7021b9a6c2a50e5eef590daa820d5f1b082d24a1d5e1d4 \
+    --hash=sha256:6e5fb7a0c491676ded68912245fc0627e88f8b0e6290bd4b54a65ce735f69716
 sqlparse==0.5.3 ; python_version == "3.14" \
     --hash=sha256:09f67787f56a0b16ecdbde1bfc7f5d9c3371ca683cfeaa8e6ff60b4807ec9272 \
     --hash=sha256:cf2196ed3418f3ba5de6af7e82c694a9fbdbfecccdfc72e281548517081f16ca
