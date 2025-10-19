@@ -17,6 +17,7 @@ from .dbt_runner import DbtContractResult
 
 try:
     from .great_expectations_runner import CuratedDatasetContractResult
+
     GREAT_EXPECTATIONS_AVAILABLE = True
 except ImportError:
     CuratedDatasetContractResult = Any  # type: ignore
@@ -75,7 +76,9 @@ def record_contracts_evidence(
     ge_stats = ge_result.statistics
     evaluated = int(ge_stats.get("evaluated_expectations", 0))
     successful = int(ge_stats.get("successful_expectations", 0))
-    dbt_summary = f"dbt tests {dbt_result.passed}/{dbt_result.total}"
+    dbt_summary = (
+        f"dbt tests {dbt_result.total - dbt_result.failures}/{dbt_result.total}"
+    )
     ge_summary = f"Great Expectations {successful}/{evaluated}"
 
     sources = [

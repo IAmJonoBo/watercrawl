@@ -11,6 +11,7 @@ from typing import Any
 
 try:
     import pandas as pd
+
     _PANDAS_AVAILABLE = True
 except ImportError:
     pd = None  # type: ignore
@@ -163,7 +164,9 @@ def _versioning_health_probe(context: PluginContext) -> PluginHealthStatus:
     }
 
     if not settings.enabled:
-        return PluginHealthStatus(healthy=True, reason="Versioning disabled", details=details)
+        return PluginHealthStatus(
+            healthy=True, reason="Versioning disabled", details=details
+        )
 
     if not settings.metadata_root.exists():
         return PluginHealthStatus(

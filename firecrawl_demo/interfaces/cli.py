@@ -2,7 +2,9 @@
 
 try:
     import pandas as pd  # noqa: F401
+
     from firecrawl_demo.interfaces import analyst_cli as _analyst_cli
+
     cli = _analyst_cli.cli
     RichPipelineProgress = _analyst_cli.RichPipelineProgress
     LineageManager = _analyst_cli.LineageManager

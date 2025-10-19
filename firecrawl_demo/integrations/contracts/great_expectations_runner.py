@@ -107,7 +107,10 @@ def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
                 expectation.kwargs["value_set"] = provinces
             elif column == "Status":
                 expectation.kwargs["value_set"] = statuses
-        elif expectation_type == "expect_column_values_to_be_between" and column == "Confidence":
+        elif (
+            expectation_type == "expect_column_values_to_be_between"
+            and column == "Confidence"
+        ):
             expectation.kwargs["min_value"] = min_conf
             expectation.kwargs.setdefault("max_value", max_conf)
             has_confidence_check = True

@@ -9,6 +9,7 @@ from typing import Any, Protocol
 
 try:
     import pandas as pd
+
     _PANDAS_AVAILABLE = True
 except ImportError:
     pd = None  # type: ignore

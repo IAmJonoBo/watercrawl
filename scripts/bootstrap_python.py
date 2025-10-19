@@ -6,8 +6,8 @@ import argparse
 import shutil
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 DEFAULT_VERSION = "3.14.0"
 
@@ -16,7 +16,9 @@ class BootstrapError(RuntimeError):
     """Raised when provisioning the requested interpreter fails."""
 
 
-def _run(command: Sequence[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+def _run(
+    command: Sequence[str], *, check: bool = True
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, check=check, capture_output=True, text=True)
 
 
@@ -67,7 +69,9 @@ def _install_python(uv_path: Path, version: str) -> Path:
 def _pin_poetry(interpreter: Path) -> None:
     poetry_cmd = shutil.which("poetry")
     if not poetry_cmd:
-        raise BootstrapError("Poetry is required to pin the interpreter but was not found in PATH.")
+        raise BootstrapError(
+            "Poetry is required to pin the interpreter but was not found in PATH."
+        )
     result = _run([poetry_cmd, "env", "use", interpreter.as_posix()], check=False)
     if result.returncode != 0:
         raise BootstrapError(

@@ -6,12 +6,11 @@ import argparse
 import subprocess
 import sys
 import tempfile
+import tomllib
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 from zipfile import ZipFile
-
-import tomllib
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -55,7 +54,9 @@ def _extract_project_metadata(data: dict[str, object]) -> ProjectMetadata:
         if "include" in entry
     )
     if not packages:
-        raise SystemExit("pyproject.toml must declare at least one Poetry package include")
+        raise SystemExit(
+            "pyproject.toml must declare at least one Poetry package include"
+        )
     return ProjectMetadata(
         name=str(poetry["name"]),
         version=str(poetry["version"]),
@@ -98,7 +99,10 @@ PROJECT_DATA = _load_pyproject()
 PROJECT_METADATA = _extract_project_metadata(PROJECT_DATA)
 PACKAGING_RULES = _extract_packaging_rules(PROJECT_DATA)
 
-ALLOWED_ROOT_NAMES: tuple[str, ...] = (*PROJECT_METADATA.package_dirs, PROJECT_METADATA.dist_info_directory)
+ALLOWED_ROOT_NAMES: tuple[str, ...] = (
+    *PROJECT_METADATA.package_dirs,
+    PROJECT_METADATA.dist_info_directory,
+)
 
 
 def _build_wheel(destination: Path) -> Path:
@@ -118,7 +122,9 @@ def _build_wheel(destination: Path) -> Path:
             capture_output=True,
             text=True,
         )
-    except subprocess.CalledProcessError as error:  # pragma: no cover - depends on toolchain
+    except (
+        subprocess.CalledProcessError
+    ) as error:  # pragma: no cover - depends on toolchain
         message = error.stderr or error.stdout or "unknown build failure"
         raise SystemExit(f"Wheel build failed: {message.strip()}") from error
     wheels = list(destination.glob("*.whl"))
@@ -147,7 +153,9 @@ def find_offending_entries(
         for name in members
         if any(name.startswith(prefix) for prefix in selected_rules.disallowed_prefixes)
     }
-    offending.update(name for name in members if name in selected_rules.disallowed_files)
+    offending.update(
+        name for name in members if name in selected_rules.disallowed_files
+    )
     return offending
 
 

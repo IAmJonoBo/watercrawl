@@ -11,23 +11,23 @@ import pytest
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.application.quality import QualityGate
 from firecrawl_demo.domain.models import EvidenceRecord, SchoolRecord
+from firecrawl_demo.integrations.adapters.research import (
+    ResearchFinding,
+    StaticResearchAdapter,
+)
 from firecrawl_demo.integrations.storage.lakehouse import (
     LakehouseConfig,
     LakehouseManifest,
     LocalLakehouseWriter,
 )
+from firecrawl_demo.integrations.storage.versioning import (
+    VersionInfo,
+    VersioningManager,
+)
 from firecrawl_demo.integrations.telemetry.lineage import (
     LineageArtifacts,
     LineageContext,
     LineageManager,
-)
-from firecrawl_demo.integrations.adapters.research import (
-    ResearchFinding,
-    StaticResearchAdapter,
-)
-from firecrawl_demo.integrations.storage.versioning import (
-    VersionInfo,
-    VersioningManager,
 )
 
 

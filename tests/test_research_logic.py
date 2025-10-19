@@ -19,9 +19,7 @@ from firecrawl_demo.integrations.adapters.research import (
     merge_findings,
     register_adapter,
 )
-from firecrawl_demo.integrations.adapters.research import (
-    registry as research_registry,
-)
+from firecrawl_demo.integrations.adapters.research import registry as research_registry
 
 
 class DummyAdapter(ResearchAdapter):

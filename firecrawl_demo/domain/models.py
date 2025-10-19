@@ -8,8 +8,8 @@ from firecrawl_demo.core import config
 
 if TYPE_CHECKING:
     from firecrawl_demo.integrations.storage.lakehouse import LakehouseManifest
-    from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
     from firecrawl_demo.integrations.storage.versioning import VersionInfo
+    from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
 
 EXPECTED_COLUMNS = [
     "Name of Organisation",

@@ -62,7 +62,9 @@ def seed_environment(env: dict[str, str] | None = None) -> dict[str, str | None]
     return previous
 
 
-def restore_environment(previous: dict[str, str | None], env: dict[str, str] | None = None) -> None:
+def restore_environment(
+    previous: dict[str, str | None], env: dict[str, str] | None = None
+) -> None:
     """Restore *env* to a state recorded by :func:`seed_environment`."""
 
     target = env if env is not None else os.environ

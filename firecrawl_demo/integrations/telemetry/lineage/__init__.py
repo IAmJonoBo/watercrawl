@@ -706,7 +706,9 @@ def _lineage_health_probe(context: PluginContext) -> PluginHealthStatus:
     }
 
     if not settings.enabled:
-        return PluginHealthStatus(healthy=True, reason="Lineage disabled", details=details)
+        return PluginHealthStatus(
+            healthy=True, reason="Lineage disabled", details=details
+        )
 
     transport = (settings.transport or "").lower()
     if transport == "http" and not settings.endpoint:

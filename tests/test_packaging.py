@@ -24,17 +24,15 @@ def test_wheel_excludes_workspace_directories(wheel_members: tuple[str, ...]) ->
 
     offending = validate_wheel.find_offending_entries(wheel_members)
 
-    assert offending == set(), f"unexpected files leaked into wheel: {sorted(offending)}"
+    assert (
+        offending == set()
+    ), f"unexpected files leaked into wheel: {sorted(offending)}"
 
 
 def test_wheel_contains_expected_payload(wheel_members: tuple[str, ...]) -> None:
     """Assert the built wheel ships the intended package contents."""
 
-    roots = {
-        name.split("/", 1)[0]
-        for name in wheel_members
-        if "/" in name
-    }
+    roots = {name.split("/", 1)[0] for name in wheel_members if "/" in name}
     allowed_roots = set(validate_wheel.ALLOWED_ROOT_NAMES)
 
     assert roots == allowed_roots, f"unexpected root entries detected: {sorted(roots)}"

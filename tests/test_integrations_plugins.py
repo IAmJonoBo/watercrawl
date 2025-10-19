@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import importlib
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import pytest
 
@@ -25,6 +26,7 @@ class _ExplodingError(RuntimeError):
 
 class _ExplodingProbeError(RuntimeError):
     """Sentinel exception raised by health probes in tests."""
+
 
 @pytest.fixture()
 def plugin_registry_snapshot() -> Iterator[list[str]]:
@@ -69,7 +71,9 @@ def test_instantiate_missing_plugin_returns_none_when_allowed() -> None:
         instantiate_plugin("storage", "unknown", allow_missing=False)
 
 
-def test_custom_plugin_registration_and_health_probe(plugin_registry_snapshot: list[Any]) -> None:
+def test_custom_plugin_registration_and_health_probe(
+    plugin_registry_snapshot: list[Any],
+) -> None:
     reset_registry()
 
     def _factory(context: PluginContext) -> str:
@@ -103,7 +107,9 @@ def test_custom_plugin_registration_and_health_probe(plugin_registry_snapshot: l
     assert status.reason == "ok"
 
 
-def test_plugin_factory_exception_does_not_poison_registry(plugin_registry_snapshot: list[Any]) -> None:
+def test_plugin_factory_exception_does_not_poison_registry(
+    plugin_registry_snapshot: list[Any],
+) -> None:
     reset_registry()
 
     def _factory(context: PluginContext) -> str:
@@ -134,7 +140,9 @@ def test_plugin_factory_exception_does_not_poison_registry(plugin_registry_snaps
     assert "stable" in available_plugin_names("telemetry")
 
 
-def test_plugin_health_probe_failure_isolated(plugin_registry_snapshot: list[Any]) -> None:
+def test_plugin_health_probe_failure_isolated(
+    plugin_registry_snapshot: list[Any],
+) -> None:
     reset_registry()
 
     def _probe(context: PluginContext) -> PluginHealthStatus:

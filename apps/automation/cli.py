@@ -42,12 +42,19 @@ def _python_meets_minimum() -> bool:
     return (version.major, version.minor) >= _MINIMUM_PYTHON_VERSION
 
 
-def _maybe_bootstrap_python(*, auto_bootstrap: bool, console: Console | None = None) -> None:
+def _maybe_bootstrap_python(
+    *, auto_bootstrap: bool, console: Console | None = None
+) -> None:
     """Provision the minimum Python interpreter when required."""
 
     if not auto_bootstrap or _python_meets_minimum():
         return
-    bootstrap_args = ["--version", bootstrap_python.DEFAULT_VERSION, "--install-uv", "--poetry"]
+    bootstrap_args = [
+        "--version",
+        bootstrap_python.DEFAULT_VERSION,
+        "--install-uv",
+        "--poetry",
+    ]
     console = console or Console()
     console.print(
         Text.assemble(
@@ -60,8 +67,7 @@ def _maybe_bootstrap_python(*, auto_bootstrap: bool, console: Console | None = N
     result = bootstrap_python.main(bootstrap_args)
     if result != 0:
         raise click.ClickException(
-            "Failed to provision Python "
-            f"{bootstrap_python.DEFAULT_VERSION} via uv."
+            "Failed to provision Python " f"{bootstrap_python.DEFAULT_VERSION} via uv."
         )
     console.print(
         Text.assemble(

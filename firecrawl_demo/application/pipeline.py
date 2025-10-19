@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 try:
     import pandas as pd
+
     _PANDAS_AVAILABLE = True
 except ImportError:
     pd = None  # type: ignore
@@ -33,10 +34,13 @@ if _PANDAS_AVAILABLE:
     from firecrawl_demo.core.excel import EXPECTED_COLUMNS, read_dataset, write_dataset
 else:
     EXPECTED_COLUMNS = []  # type: ignore
+
     def read_dataset(path: Any) -> Any:  # type: ignore
         raise NotImplementedError("Dataset operations require pandas (Python < 3.14)")
+
     def write_dataset(df: Any, path: Any) -> None:  # type: ignore
         raise NotImplementedError("Dataset operations require pandas (Python < 3.14)")
+
 
 from firecrawl_demo.domain.compliance import (
     canonical_domain,
@@ -82,7 +86,9 @@ def _load_research_adapter() -> ResearchAdapter:
     try:
         adapter = instantiate_plugin("adapters", "research")
     except PluginLookupError:
-        logger.warning("Research plugin not registered; falling back to NullResearchAdapter")
+        logger.warning(
+            "Research plugin not registered; falling back to NullResearchAdapter"
+        )
         return NullResearchAdapter()
     if adapter is None:
         return NullResearchAdapter()
@@ -117,7 +123,9 @@ def _load_lineage_manager() -> LineageManager | None:
 class Pipeline(PipelineService):
     """Coordinate validation, enrichment, and evidence logging."""
 
-    research_adapter: ResearchAdapter = field(default_factory=lambda: _load_research_adapter())
+    research_adapter: ResearchAdapter = field(
+        default_factory=lambda: _load_research_adapter()
+    )
     validator: DatasetValidator = field(default_factory=DatasetValidator)
     evidence_sink: EvidenceSink = field(default_factory=NullEvidenceSink)
     quality_gate: QualityGate = field(default_factory=QualityGate)
@@ -544,13 +552,13 @@ class Pipeline(PipelineService):
             if not isinstance(rows_obj, list):
                 raise ValueError("Payload 'rows' must be a list of mappings")
             if not _PANDAS_AVAILABLE:
-                raise NotImplementedError("DataFrame creation requires pandas (Python < 3.14)")
+                raise NotImplementedError(
+                    "DataFrame creation requires pandas (Python < 3.14)"
+                )
             return pd.DataFrame(list(rows_obj), columns=list(EXPECTED_COLUMNS))  # type: ignore
         raise ValueError("Payload must include 'path' or 'rows'")
 
-    def _apply_record(
-        self, frame: Any, index: Hashable, record: SchoolRecord
-    ) -> None:
+    def _apply_record(self, frame: Any, index: Hashable, record: SchoolRecord) -> None:
         frame_cast = cast(Any, frame)
         for column, value in record.as_dict().items():
             if value is not None:

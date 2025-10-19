@@ -6,6 +6,7 @@ from typing import Any
 
 try:
     import pandas as pd
+
     _PANDAS_AVAILABLE = True
 except ImportError:
     pd = None  # type: ignore

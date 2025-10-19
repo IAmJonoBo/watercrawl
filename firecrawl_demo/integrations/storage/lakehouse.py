@@ -9,6 +9,7 @@ from typing import Any
 
 try:
     import pandas as pd
+
     _PANDAS_AVAILABLE = True
 except ImportError:
     pd = None  # type: ignore
@@ -148,7 +149,9 @@ def _lakehouse_health_probe(context: PluginContext) -> PluginHealthStatus:
     }
 
     if not settings.enabled:
-        return PluginHealthStatus(healthy=True, reason="Lakehouse disabled", details=details)
+        return PluginHealthStatus(
+            healthy=True, reason="Lakehouse disabled", details=details
+        )
 
     if not settings.root_path.exists():
         return PluginHealthStatus(

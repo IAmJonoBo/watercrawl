@@ -43,10 +43,12 @@ class PluginContext:
     secrets: SecretsProvider | None = None
 
     @classmethod
-    def default(cls) -> "PluginContext":
+    def default(cls) -> PluginContext:
         from firecrawl_demo.core import config as core_config
 
-        return cls(config=core_config, secrets=getattr(core_config, "SECRETS_PROVIDER", None))
+        return cls(
+            config=core_config, secrets=getattr(core_config, "SECRETS_PROVIDER", None)
+        )
 
 
 PluginFactory = Callable[[PluginContext], Any]

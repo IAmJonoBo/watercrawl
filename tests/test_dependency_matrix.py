@@ -45,7 +45,11 @@ def test_has_compatible_wheel_detects_match() -> None:
         groups=("main",),
         python_spec=">=3.9",
         files=(
-            PackageFile(filename="example-1.0.0-cp314-cp314-manylinux.whl", is_wheel=True, python_tag="cp314"),
+            PackageFile(
+                filename="example-1.0.0-cp314-cp314-manylinux.whl",
+                is_wheel=True,
+                python_tag="cp314",
+            ),
         ),
     )
     assert has_compatible_wheel(package, target)
@@ -73,7 +77,11 @@ def test_evaluate_package_flags_missing_wheel(tmp_path: Path) -> None:
         groups=("dev",),
         python_spec=">=3.13",
         files=(
-            PackageFile(filename="native-only-2.0.0-cp313-cp313-manylinux.whl", is_wheel=True, python_tag="cp313"),
+            PackageFile(
+                filename="native-only-2.0.0-cp313-cp313-manylinux.whl",
+                is_wheel=True,
+                python_tag="cp313",
+            ),
         ),
     )
     issue = evaluate_package(package, target)

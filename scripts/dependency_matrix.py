@@ -5,12 +5,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tomllib
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
-
-import tomllib
+from typing import Any
 
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
@@ -109,7 +109,9 @@ def load_targets(config_path: Path) -> list[Target]:
     return targets
 
 
-def parse_package_files(raw_files: Iterable[Mapping[str, Any]]) -> tuple[PackageFile, ...]:
+def parse_package_files(
+    raw_files: Iterable[Mapping[str, Any]],
+) -> tuple[PackageFile, ...]:
     files: list[PackageFile] = []
     for entry in raw_files:
         filename = entry.get("file")
@@ -121,7 +123,9 @@ def parse_package_files(raw_files: Iterable[Mapping[str, Any]]) -> tuple[Package
             parts = filename[:-4].split("-")
             if len(parts) >= 3:
                 python_tag = parts[-3]
-        files.append(PackageFile(filename=filename, is_wheel=is_wheel, python_tag=python_tag))
+        files.append(
+            PackageFile(filename=filename, is_wheel=is_wheel, python_tag=python_tag)
+        )
     return tuple(files)
 
 
@@ -185,11 +189,15 @@ def load_blockers(config_path: Path) -> tuple[BlockerExpectation, ...]:
         package = entry.get("package")
         targets_raw = entry.get("targets", ())
         if isinstance(targets_raw, Sequence):
-            targets = tuple(str(value) for value in targets_raw if isinstance(value, str))
+            targets = tuple(
+                str(value) for value in targets_raw if isinstance(value, str)
+            )
         else:
             targets = ()
         if not isinstance(package, str) or not targets:
-            raise ValueError("Each dependency blocker must define a package and targets.")
+            raise ValueError(
+                "Each dependency blocker must define a package and targets."
+            )
         owner = entry.get("owner")
         issue = entry.get("issue")
         notes = entry.get("notes")
@@ -227,7 +235,11 @@ def has_compatible_wheel(package: PackageInfo, target: Target) -> bool:
             continue
         if python_tag_supports(file.python_tag, target):
             return True
-        if file.python_tag and file.python_tag.lower().startswith("py3") and target.version.major == 3:
+        if (
+            file.python_tag
+            and file.python_tag.lower().startswith("py3")
+            and target.version.major == 3
+        ):
             return True
     return False
 
@@ -249,7 +261,9 @@ def evaluate_package(package: PackageInfo, target: Target) -> Issue | None:
     return None
 
 
-def survey(packages: Iterable[PackageInfo], targets: Iterable[Target]) -> dict[str, list[dict[str, str]]]:
+def survey(
+    packages: Iterable[PackageInfo], targets: Iterable[Target]
+) -> dict[str, list[dict[str, str]]]:
     results: dict[str, list[dict[str, str]]] = {}
     for target in targets:
         issues: list[dict[str, str]] = []
@@ -261,7 +275,9 @@ def survey(packages: Iterable[PackageInfo], targets: Iterable[Target]) -> dict[s
     return results
 
 
-def format_summary(results: dict[str, list[dict[str, str]]], targets: Iterable[Target]) -> str:
+def format_summary(
+    results: dict[str, list[dict[str, str]]], targets: Iterable[Target]
+) -> str:
     lines = []
     for target in targets:
         issues = results.get(target.python_version, [])
@@ -333,7 +349,9 @@ def evaluate_blockers(
     return blocker_status, cleared, unexpected
 
 
-def write_report(results: dict[str, list[dict[str, str]]], path: Path, targets: Iterable[Target]) -> None:
+def write_report(
+    results: dict[str, list[dict[str, str]]], path: Path, targets: Iterable[Target]
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -354,7 +372,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    survey_parser = subparsers.add_parser("survey", help="Collect compatibility issues for configured Python targets.")
+    survey_parser = subparsers.add_parser(
+        "survey", help="Collect compatibility issues for configured Python targets."
+    )
     survey_parser.add_argument(
         "--lock",
         type=Path,

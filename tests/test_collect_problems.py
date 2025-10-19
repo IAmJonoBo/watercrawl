@@ -165,7 +165,9 @@ def test_collect_aggregates_and_truncates_outputs(
 
 def test_preview_handles_multiline_chunks() -> None:
     payload = "line-" + "a" * 210 + "\nsecond-line"
-    preview = collect_problems.build_preview(payload, limit=170, chunk_size=50, max_chunks=10)
+    preview = collect_problems.build_preview(
+        payload, limit=170, chunk_size=50, max_chunks=10
+    )
 
     assert preview["chunks"][0] == "line-" + "a" * 45
     assert preview["chunks"][1] == "a" * 50

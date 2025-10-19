@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-19T11:25:07.658450+00:00",
+  "generated_at": "2025-10-19T20:28:03.656862+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -17,49 +17,114 @@
       "returncode": 1,
       "issues": [
         {
-          "path": "firecrawl_demo/domain/models.py",
-          "line": 26,
-          "message": "Cannot assign multiple types to name \"PandasSeries\" without an explicit \"type[...]\" annotation ",
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 11,
+          "message": "Skipping analyzing \"great_expectations.core.batch\": module is installed, but missing library stubs or py.typed marker ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 12,
+          "message": "Skipping analyzing \"great_expectations.core.batch_spec\": module is installed, but missing library stubs or py.typed marker ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 13,
+          "message": "Skipping analyzing \"great_expectations.core.expectation_suite\": module is installed, but missing library stubs or py.typed marker ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 14,
+          "message": "Module \"great_expectations.data_context.data_context.context_factory\" has no attribute \"project_manager\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 18,
+          "message": "Skipping analyzing \"great_expectations.expectations.expectation_configuration\": module is installed, but missing library stubs or py.typed marker ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 21,
+          "message": "Skipping analyzing \"great_expectations.validator.validator\": module is installed, but missing library stubs or py.typed marker ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 30,
+          "message": "Name \"DbtContractResult\" already defined (possibly by an import) ",
+          "severity": "error",
+          "code": "no-redef"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 44,
+          "message": "All conditional function variants must have identical signatures ",
           "severity": "error",
           "code": "misc"
         },
         {
-          "path": "firecrawl_demo/domain/models.py",
-          "line": 27,
-          "message": "Cannot assign multiple types to name \"PandasDataFrame\" without an explicit \"type[...]\" annotation ",
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 75,
+          "message": "Name \"CuratedDatasetContractResult\" already defined (possibly by an import) ",
           "severity": "error",
-          "code": "misc"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 93,
-          "message": "\"Expectation\" has no attribute \"kwargs\" ",
-          "severity": "error",
-          "code": "attr-defined"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 95,
-          "message": "\"Expectation\" has no attribute \"kwargs\" ",
-          "severity": "error",
-          "code": "attr-defined"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 97,
-          "message": "\"Expectation\" has no attribute \"kwargs\" ",
-          "severity": "error",
-          "code": "attr-defined"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 98,
-          "message": "\"Expectation\" has no attribute \"kwargs\" ",
-          "severity": "error",
-          "code": "attr-defined"
+          "code": "no-redef"
         }
       ],
       "notes": [
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 11,
+          "message": "See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 44,
+          "message": "Original:",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 44,
+          "message": "    def run_dbt_contract_tests(dataset_path: Path, *, project_dir: Path | None = ..., profiles_dir: Path | None = ..., target_path: Path | None = ..., log_path: Path | None = ..., threads: int | None = ...) -> DbtContractResult",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 44,
+          "message": "Redefinition:",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 44,
+          "message": "    def run_dbt_contract_tests(*args: Any, **kwargs: Any) -> DbtContractResult",
+          "severity": "note"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 160,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 182,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -91,20 +156,6 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 160,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 182,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -186,8 +237,8 @@
         }
       ],
       "summary": {
-        "issue_count": 6,
-        "note_count": 18
+        "issue_count": 9,
+        "note_count": 23
       }
     },
     {
@@ -861,7 +912,63 @@
         },
         {
           "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 24,
+          "column": 4,
+          "code": "invalid-name",
+          "message": "Variable name \"DBT_AVAILABLE\" doesn't conform to snake_case naming style",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 30,
+          "column": 4,
+          "code": "too-many-instance-attributes",
+          "message": "Too many instance attributes (10/7)",
+          "severity": "refactor"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 44,
+          "column": 0,
+          "code": "unused-argument",
+          "message": "Unused argument 'args'",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 44,
+          "column": 0,
+          "code": "unused-argument",
+          "message": "Unused argument 'kwargs'",
+          "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
           "line": 59,
+          "column": 4,
+          "code": "invalid-name",
+          "message": "Variable name \"DBT_AVAILABLE\" doesn't conform to snake_case naming style",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 97,
+          "column": 4,
+          "code": "invalid-name",
+          "message": "Variable name \"DBT_AVAILABLE\" doesn't conform to snake_case naming style",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 99,
+          "column": 4,
+          "code": "invalid-name",
+          "message": "Variable name \"DBT_AVAILABLE\" doesn't conform to snake_case naming style",
+          "severity": "convention"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 124,
           "column": 28,
           "code": "unused-argument",
           "message": "Unused argument 'context'",
@@ -869,7 +976,7 @@
         },
         {
           "path": "firecrawl_demo/integrations/contracts/__init__.py",
-          "line": 87,
+          "line": 152,
           "column": 4,
           "code": "no-else-return",
           "message": "Unnecessary \"else\" after \"return\", remove the \"else\" and de-indent the code inside it",
@@ -877,11 +984,19 @@
         },
         {
           "path": "firecrawl_demo/integrations/contracts/__init__.py",
-          "line": 86,
+          "line": 151,
           "column": 29,
           "code": "unused-argument",
           "message": "Unused argument 'context'",
           "severity": "warning"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 95,
+          "column": 4,
+          "code": "ungrouped-imports",
+          "message": "Imports from package dbt are not grouped",
+          "severity": "convention"
         },
         {
           "path": "firecrawl_demo/integrations/contracts/operations.py",
@@ -930,75 +1045,11 @@
           "code": "import-error",
           "message": "Unable to import 'great_expectations.data_context.data_context.context_factory'",
           "severity": "error"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 15,
-          "column": 0,
-          "code": "import-error",
-          "message": "Unable to import 'great_expectations.execution_engine.pandas_execution_engine'",
-          "severity": "error"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 18,
-          "column": 0,
-          "code": "import-error",
-          "message": "Unable to import 'great_expectations.expectations.expectation_configuration'",
-          "severity": "error"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 21,
-          "column": 0,
-          "code": "import-error",
-          "message": "Unable to import 'great_expectations.validator.validator'",
-          "severity": "error"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
-          "line": 119,
-          "column": 0,
-          "code": "too-many-locals",
-          "message": "Too many local variables (16/15)",
-          "severity": "refactor"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
-          "line": 22,
-          "column": 0,
-          "code": "too-many-instance-attributes",
-          "message": "Too many instance attributes (10/7)",
-          "severity": "refactor"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
-          "line": 37,
-          "column": 4,
-          "code": "missing-function-docstring",
-          "message": "Missing function or method docstring",
-          "severity": "convention"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
-          "line": 56,
-          "column": 21,
-          "code": "no-member",
-          "message": "Instance of 'RootLogger' has no 'loggerDict' member",
-          "severity": "error"
-        },
-        {
-          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
-          "line": 90,
-          "column": 0,
-          "code": "too-many-arguments",
-          "message": "Too many arguments (6/5)",
-          "severity": "refactor"
         }
       ],
       "summary": {
-        "issue_count": 886,
-        "omitted_issues": 786
+        "issue_count": 943,
+        "omitted_issues": 843
       }
     },
     {
@@ -1011,7 +1062,7 @@
         "severity_counts": {},
         "confidence_counts": {},
         "metrics": {
-          "loc": 6795,
+          "loc": 6854,
           "nosec": 0,
           "skipped_tests": 0
         }
@@ -1022,8 +1073,27 @@
           "[main]\tINFO\tprofile exclude tests: None",
           "[main]\tINFO\tcli include tests: None",
           "[main]\tINFO\tcli exclude tests: None",
-          ""
-        ]
+          "[manager]\tERROR\tException occurred when executing tests against firecrawl_demo/__init__.py.",
+          "[manager]\tERROR\tRun \"bandit --debug firecrawl_demo/__init__.py\" to see the full traceback.",
+          "[manager]\tERROR\tException occurred when executing tests against firecrawl_demo/application/__init__.py.",
+          "[manager]\tERROR\tRun \"bandit --debug firecrawl_demo/application/__init__.py\" to see the full traceback.",
+          "[manager]\tERROR\tException occurred when executing tests against firecrawl_demo/application/interfaces.py.",
+          "[manager]\tERROR\tRun \"bandit --debug firecrawl_demo/application/interfaces.py\" to see the full traceback.",
+          "[manager]\tERROR\tException occurred when executing tests against firecrawl_demo/application/pipeline.py.",
+          "[manager]\tERROR\tRun \"bandit --debug firecrawl_demo/application/pipeline.py\" to see the full traceback.",
+          "[manager]\tERROR\tException occurred when executing tests against firecrawl_demo/application/progress.py.",
+          "[manager]\tERROR\tRun \"bandit --debug firecrawl_demo/application/progress.py\" to see the full traceback.",
+          "[manager]\tERROR\tException occurred when executing tests against firecrawl_demo/application/quality.py.",
+          "[manager]\tERROR\tRun \"bandit --debug firecrawl_demo/application/quality.py\" to see the full traceback.",
+          "[manager]\tERROR\tException occurred when executing tests against firecrawl_demo/core/__init__.py.",
+          "[manager]\tERROR\tRun \"bandit --debug firecrawl_demo/core/__init__.py\" to see the full traceback.",
+          "[tester]\tERROR\tBandit internal error running: start_process_with_partial_path on file firecrawl_demo/core/cache.py at line 9: module 'ast' has no attribute 'Num'Traceback (most recent call last):",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/bandit/core/tester.py\", line 51, in run_tests",
+          "    result = test(context, test._config)",
+          "  File \"/Users/jonathanboth\u2026"
+        ],
+        "truncated": true,
+        "omitted_characters": 51314
       }
     },
     {
@@ -1177,44 +1247,16 @@
           "column": 5,
           "severity": "error",
           "message": "wrong indentation: expected 6 but found 4 (indentation)"
-        },
-        {
-          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
-          "line": 20,
-          "column": 27,
-          "severity": "error",
-          "message": "too many spaces inside braces (braces)"
-        },
-        {
-          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
-          "line": 20,
-          "column": 55,
-          "severity": "error",
-          "message": "too many spaces inside braces (braces)"
-        },
-        {
-          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
-          "line": 27,
-          "column": 27,
-          "severity": "error",
-          "message": "too many spaces inside braces (braces)"
-        },
-        {
-          "path": "./data_contracts/analytics/models/staging/stg_curated_dataset.yml",
-          "line": 27,
-          "column": 53,
-          "severity": "error",
-          "message": "too many spaces inside braces (braces)"
         }
       ],
       "summary": {
-        "issue_count": 25
+        "issue_count": 21
       }
     },
     {
       "tool": "sqlfluff",
       "status": "completed_with_exit_code",
-      "returncode": 2,
+      "returncode": 1,
       "issues": [],
       "summary": {
         "issue_count": 0,
@@ -1222,12 +1264,36 @@
       },
       "stderr_preview": {
         "chunks": [
-          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt.exceptions.DbtProjectError: Runtime Error",
-          "  No dbt_project.yml found at expected path /Users/jonathanbotha/GitHub/watercrawl/analytics/dbt_project.yml",
-          "  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml",
-          "  ",
-          ""
-        ]
+          "Traceback (most recent call last):",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/bin/sqlfluff\", line 8, in <module>",
+          "    sys.exit(cli())",
+          "             ~~~^^",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/click/core.py\", line 1462, in __call__",
+          "    return self.main(*args, **kwargs)",
+          "           ~~~~~~~~~^^^^^^^^^^^^^^^^^",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/click/core.py\", line 1383, in main",
+          "    rv = self.invoke(ctx)",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/click/core.py\", line 1850, in invoke",
+          "    return _process_result(sub_ctx.command.invoke(sub_ctx))",
+          "                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/click/core.py\", line 1246, in invoke",
+          "    return ctx.invoke(self.callback, **ctx.params)",
+          "           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/click/core.py\", line 814, in invoke",
+          "    return callback(*args, **kwargs)",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/sqlfluff/cli/commands.py\", line 652, in lint",
+          "    result = lnt.lint_paths(",
+          "        paths,",
+          "    ...<5 lines>...",
+          "        retain_files=False,",
+          "    )",
+          "  File \"/Users/jonathanbotha/Library/Caches/pypoetry/virtualenvs/firecrawl-demo-cpCgwwPZ-py3.14/lib/python3.14/site-packages/sqlfluff/core/linter/linter.py\", line 1111, in lint_paths",
+          "    for i, linted_file in enumerate(runner.run(expanded_paths, fix), start=1):",
+          "                          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+          "  File \"/Users/jon\u2026"
+        ],
+        "truncated": true,
+        "omitted_characters": 7169
       }
     }
   ]

@@ -1,3 +1,5 @@
+import pandas as pd
+
 from firecrawl_demo.domain import models
 
 
@@ -56,7 +58,7 @@ def test_rollback_plan_serialisation():
 
 def test_pipeline_report_includes_quality_metadata():
     report = models.PipelineReport(
-        refined_dataframe=models.pd.DataFrame(),
+        refined_dataframe=pd.DataFrame(),
         validation_report=models.ValidationReport(issues=[], rows=0),
         evidence_log=[],
         metrics={},

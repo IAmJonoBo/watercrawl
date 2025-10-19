@@ -87,14 +87,14 @@ jobs:
         run: npx markdownlint-cli2 '**/*.md' '#node_modules' || true
       - name: Install Hadolint
         run: |
-          HADOLINT_URL="https://github.com/hadolint/hadolint/releases/latest/download/hadolint-$(uname -s)-$(uname -m)"
+          HADOLINT_URL="https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-$(uname -s)-$(uname -m)"
           wget -O /usr/local/bin/hadolint "$HADOLINT_URL"
           chmod +x /usr/local/bin/hadolint
       - name: Lint Dockerfiles with Hadolint
         run: hadolint Dockerfile || true
       - name: Install ActionLint
         run: |
-          BASE_URL="https://github.com/rhysd/actionlint/releases/latest/download"
+          BASE_URL="https://github.com/rhysd/actionlint/releases/download/v1.7.8"
           FILE_NAME="actionlint_$(uname -s)_$(uname -m).tar.gz"
           ACTIONLINT_URL="$BASE_URL/$FILE_NAME"
           curl -sSL "$ACTIONLINT_URL" | tar xz -C /usr/local/bin
