@@ -18,9 +18,10 @@ pip install poetry
 # Install all dependencies (including Firecrawl SDK)
 poetry install --no-root
 
-# Run the dependency compatibility survey to confirm pinned packages support
-# the configured Python targets before kicking off QA
-python -m scripts.dependency_matrix survey
+# Refresh the dependency compatibility report and confirm only allow-listed
+# wheel blockers remain before kicking off QA
+python -m scripts.dependency_matrix survey --config presets/dependency_targets.toml --output tools/dependency_matrix/report.json
+python -m scripts.dependency_matrix guard --config presets/dependency_targets.toml --blockers presets/dependency_blockers.toml --status-output tools/dependency_matrix/status.json
 
 # Run end-user CLI commands (analyst workflow)
 poetry run python -m apps.analyst.cli overview
