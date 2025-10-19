@@ -34,16 +34,22 @@ def _valid_row() -> dict[str, str]:
     }
 
 
+@pytest.mark.skipif(
+    not GREAT_EXPECTATIONS_AVAILABLE,
+    reason="Great Expectations not available in this environment",
+)
 def test_validate_curated_dataframe_succeeds_for_valid_row() -> None:
-    pytest.skip("Great Expectations not available in Python 3.14 environment")
     frame = pd.DataFrame([_valid_row()])
     result = validate_curated_dataframe(frame)
     assert result.success
     assert result.unsuccessful_expectations == 0
 
 
+@pytest.mark.skipif(
+    not GREAT_EXPECTATIONS_AVAILABLE,
+    reason="Great Expectations not available in this environment",
+)
 def test_validate_curated_dataframe_flags_invalid_province() -> None:
-    pytest.skip("Great Expectations not available in Python 3.14 environment")
     invalid_row = _valid_row()
     invalid_row["Province"] = "Atlantis"
     frame = pd.DataFrame([invalid_row])
@@ -52,8 +58,11 @@ def test_validate_curated_dataframe_flags_invalid_province() -> None:
     assert result.unsuccessful_expectations >= 1
 
 
+@pytest.mark.skipif(
+    not GREAT_EXPECTATIONS_AVAILABLE,
+    reason="Great Expectations not available in this environment",
+)
 def test_validate_curated_dataframe_enforces_confidence_threshold() -> None:
-    pytest.skip("Great Expectations not available in Python 3.14 environment")
     low_confidence = _valid_row()
     low_confidence["Confidence"] = "40"
     frame = pd.DataFrame([low_confidence])
@@ -80,10 +89,13 @@ def contracts_runtime(
     return {"evidence_log": evidence_log, "contracts_dir": contracts_dir}
 
 
+@pytest.mark.skipif(
+    not DBT_AVAILABLE,
+    reason="dbt-core not available in this environment",
+)
 def test_dbt_contract_runner_passes(
     tmp_path: Path, contracts_runtime: dict[str, Path]
 ) -> None:
-    pytest.skip("dbt-core not available in Python 3.14 environment")
     dataset_path = tmp_path / "valid.csv"
     pd.DataFrame([_valid_row()]).to_csv(dataset_path, index=False)
 
@@ -108,10 +120,13 @@ def test_dbt_contract_runner_passes(
     assert os.environ.get("CONTRACTS_CANONICAL_JSON") == previous_canonical
 
 
+@pytest.mark.skipif(
+    not DBT_AVAILABLE,
+    reason="dbt-core not available in this environment",
+)
 def test_contracts_cli_reports_failures(
     tmp_path: Path, contracts_runtime: dict[str, Path]
 ) -> None:
-    pytest.skip("dbt-core not available in Python 3.14 environment")
     invalid_row = _valid_row()
     invalid_row["Website URL"] = "http://testflightschool.co.za"
     frame = pd.DataFrame([invalid_row])
@@ -136,10 +151,13 @@ def test_contracts_cli_reports_failures(
         assert "passed" in dbt_line
 
 
+@pytest.mark.skipif(
+    not DBT_AVAILABLE,
+    reason="dbt-core not available in this environment",
+)
 def test_contracts_cli_runs_both_suites_and_logs_evidence(
     tmp_path: Path, contracts_runtime: dict[str, Path]
 ) -> None:
-    pytest.skip("dbt-core not available in Python 3.14 environment")
     dataset_path = tmp_path / "valid.csv"
     pd.DataFrame([_valid_row()]).to_csv(dataset_path, index=False)
 

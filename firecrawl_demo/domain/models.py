@@ -4,30 +4,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
-try:
-    import pandas as pd
-    _PANDAS_AVAILABLE = True
-    PandasSeries = pd.Series
-    PandasDataFrame = pd.DataFrame
-except ImportError:
-    pd = None  # type: ignore
-    _PANDAS_AVAILABLE = False
-    PandasSeries = Any  # type: ignore
-    PandasDataFrame = Any  # type: ignore
-
 from firecrawl_demo.core import config
 
 if TYPE_CHECKING:
     from firecrawl_demo.integrations.storage.lakehouse import LakehouseManifest
     from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
     from firecrawl_demo.integrations.storage.versioning import VersionInfo
-    if _PANDAS_AVAILABLE:
-        import pandas as pd
-        PandasSeries = pd.Series
-        PandasDataFrame = pd.DataFrame
-    else:
-        PandasSeries = Any  # type: ignore
-        PandasDataFrame = Any  # type: ignore
 
 EXPECTED_COLUMNS = [
     "Name of Organisation",
