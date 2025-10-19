@@ -19,14 +19,14 @@ poetry env use 3.13
 poetry install --no-root
 
 # Run end-user CLI commands (analyst workflow)
-poetry run python -m app.cli overview
-poetry run python -m app.cli validate data/sample.csv --format json
-poetry run python -m app.cli enrich data/sample.csv --output data/sample_enriched.csv
-poetry run python -m app.cli contracts data/sample_enriched.csv --format text
+poetry run python -m apps.analyst.cli overview
+poetry run python -m apps.analyst.cli validate data/sample.csv --format json
+poetry run python -m apps.analyst.cli enrich data/sample.csv --output data/sample_enriched.csv
+poetry run python -m apps.analyst.cli contracts data/sample_enriched.csv --format text
 
 # Developer DX helpers mirroring CI
-poetry run python -m dev.cli qa plan
-poetry run python -m dev.cli qa all --dry-run
+poetry run python -m apps.automation.cli qa plan
+poetry run python -m apps.automation.cli qa all --dry-run
 ```
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
@@ -124,10 +124,9 @@ Key pages:
 - `firecrawl_demo/integrations/` — contracts, research adapters, lineage, lakehouse, drift, and Firecrawl client bindings.
 - `firecrawl_demo/governance/` — safety, evaluation, and secrets providers isolated from crawler orchestration.
 - `firecrawl_demo/interfaces/` — CLI, analyst UI, and MCP orchestration entrypoints.
-- `dev/` — experimentation workspace for analysts/developers. Codex allowed only after Promptfoo smoke tests pass.
+- `apps/` — deployable application surfaces (`analyst` for humans, `automation` for CI orchestration).
 - `tools/` — shared automation helpers (Promptfoo configs, audit recipes, QA fixtures).
-- `app/` — deployable application surface consuming the enrichment libraries.
-- `dist/` — hardened crawler distribution footprint with Codex integrations disabled.
+- `platform/` — infrastructure guardrails and operational script documentation (see `scripts/` for Python modules).
 
 ## Codex developer experience
 

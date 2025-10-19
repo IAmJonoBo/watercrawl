@@ -14,7 +14,7 @@
   - Gates: CSVW/R2RML validation; node/edge/degree checks in range; whylogs baselines + alerts wired.
 - [ ] **Phase 4 — LLM safety, evaluation, and MCP plan→commit** (AT‑31, AT‑32, AT‑33) — _Owner: Platform/Security · Due: 2026‑01‑31_
   - Gates: Ragas thresholds green; OWASP LLM Top‑10 red‑team passes; MCP audit logs show `If‑Match` and diff review.
-- [ ] **Validate Poetry exclude list in release pipeline** — _Owner: Platform · Due: 2025‑10‑31_
+- [x] **Validate Poetry exclude list in release pipeline** — _Owner: Platform · Due: 2025‑10‑31_
 - [ ] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
 - [ ] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
 - [ ] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
@@ -40,7 +40,7 @@
 - [x] 2025-10-18 — Hardened quality/evidence coverage: added QualityGate regression tests, exercised evidence sink fan-out, and enforced backend validation through docs + pre-commit cleanups.
 - [x] 2025-10-18 — Phase 2 progress: OpenLineage transport toggles (HTTP/Kafka/logging) wired via config, CLI now emits lineage/lakehouse/version manifest paths, and lineage events capture version metadata for downstream reproducibility.
 - [x] 2025-10-18 — Phase 2 provenance uplift: PROV graphs now record the enrichment agent, evidence counts, quality metrics, and generated manifests; DCAT entries surface quality measurements, reproducibility commands, contact metadata, and distribution links for evidence, manifests, and lineage bundles with regression coverage in `tests/test_lineage.py`.
-- [x] 2025-10-18 — DX/UX uplift: split analyst vs. developer CLIs (`app.cli`, `dev.cli`), added QA automation helpers, refreshed CLI docs, and extended test coverage for both entry points.
+- [x] 2025-10-18 — DX/UX uplift: split analyst vs. developer CLIs (`apps.analyst.cli`, `apps.automation.cli`), added QA automation helpers, refreshed CLI docs, and extended test coverage for both entry points.
 - [x] 2025-10-18 — Replaced CLI monkeypatch scaffolding with explicit dependency overrides and taught cleanup automation to detect/skip tracked artefacts with reporting hooks for post-build hygiene reviews.
 - [x] 2025-10-18 — Hardened in-memory cache expiry semantics with type-safe TTL handling, added regression coverage for `cache.load` edge cases, and re-ran the full QA suite to verify guards across pytest, lint, type, security, build, and dbt contracts.
 - [x] 2025-10-18 — DevEx baseline refreshed: full QA suite (pytest, coverage, ruff, mypy, bandit, pre-commit, build, dbt) recorded; gitignore, ruff, and pre-commit configs prepped for modernization; CI now caches Poetry envs and surfaces diffs for hook failures.
@@ -50,7 +50,9 @@
 - [x] 2025-10-18 — CLI + QA hardening: restored `_resolve_progress_flag` shim, tightened Pint quantity coercion for dimensionless inputs, implemented typed dev CLI command runner overrides, and reworked markdownlint/actionlint hooks to install via `npx`/downloaded binaries. Full baseline rerun (pytest, ruff, mypy, bandit, safety, pre-commit, dbt) green.
 - [x] 2025-10-18 — Extended regression coverage for pipeline orchestration, Excel helpers, and research adapters; added defensive unit tests for lakehouse/versioning flows and Firecrawl behaviour, then reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build).
 - [x] 2025-10-19 — Restructure integrations into adapter/telemetry/storage packages, introduce plugin registry with health probes, extend discovery tests, and rerun baseline QA (pytest+cov, ruff, mypy, bandit, safety, build) once dependency stubs land; contracts toolkit plugin registered with health checks and dev stub packages exported for offline installs.
+- [x] 2025-10-19 — Introduced `apps/` and `platform/` taxonomies with guardrail READMEs, reassigned CODEOWNERS ownership, validated Poetry excludes via wheel regression tests + CI guard, and documented the surface map in MkDocs and `Next_Steps.md`.
 - [x] 2025-10-19 — Consolidated dbt/GX projects under `data_contracts/`, introduced shared taxonomy/evidence config seeded via `CONTRACTS_CANONICAL_JSON`, refreshed docs/QA coverage, and added confidence-threshold enforcement to both toolchains.
+- [x] 2025-10-19 — Parsed Poetry excludes into wheel validation, added positive wheel payload assertions, and refreshed tooling docs to point at `apps/automation/` + `platform/scripts/` guardrails.
 
 ---
 
@@ -118,6 +120,7 @@ Execute in this order; each item must meet its gate before promotion.
 - [x] Cleanup automation — `scripts/cleanup.py`
 - [x] Lineage & lakehouse configuration → `docs/lineage-lakehouse.md`
 - [x] CLI surfaces → `docs/cli.md`
+- [x] Surface taxonomy → `docs/surface-taxonomy.md`
 - [ ] Data quality suites (GX/dbt/Deequ) → `docs/data-quality.md`
 - [ ] Codex DX bundle & evals → `codex/README.md`, `codex/evals/promptfooconfig.yaml`
 
@@ -130,6 +133,7 @@ Execute in this order; each item must meet its gate before promotion.
 - Keep Firecrawl SDK behind a feature flag until credentials and ALLOW_NETWORK_RESEARCH policy are finalised.
 - Enforce Python ≥3.11; monitor GE compatibility before removing `<3.14` pin.
 - Decide owner + storage for MCP audit logs (plan→diff→commit) and retention policy.
-- Block MCP/agent sessions in `dist` builds unless `promptfoo eval` has passed in the active branch.
+- Block MCP/agent sessions in hardened platform distributions unless `promptfoo eval` has passed in the active branch.
 - Kafka lineage transport requires the optional `kafka-python` dependency; platform team to confirm packaging before enabling Kafka emission in CI/staging.
 - Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments.
+- Regenerate `requirements-dev.txt` hashes so transitive dependencies like `narwhals` resolve under `--require-hashes` installs.

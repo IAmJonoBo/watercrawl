@@ -53,7 +53,7 @@ records the input fingerprint, output fingerprint, row count, and the command re
 release reviews so operators can replay or roll back snapshots deterministically.
 
 > **Codex guardrail:** run `promptfoo eval codex/evals/promptfooconfig.yaml` before enabling any Codex or MCP-assisted sessions.
-> Production (`dist/`) deployments must leave Codex disabled; only the `dev/` workspace may opt in after the smoke tests pass.
+> Production platform deployments must leave Codex disabled; only the `apps/automation/` workspace may opt in after the smoke tests pass.
 
 ## Problems Report Aggregation
 
@@ -118,7 +118,7 @@ The `problems_report.json` file follows this schema:
 - **CI Pipeline**: In `.github/workflows/ci.yml`, the report is generated after tests via `poetry run python scripts/collect_problems.py` and uploaded as a CI artifact named `ci-dashboards`. This ensures problems are visible in GitHub Actions runs.
 - **Ephemeral Runners**: Automatically generated during containerized or serverless executions to surface issues without full IDE access.
 - **Local Development**: Run manually or via the shell wrapper `scripts/collect_problems.sh` to check code quality before commits.
-- **Dev CLI**: While `poetry run python -m dev.cli qa all` mirrors most CI checks, the problems report is generated separately to aggregate findings post-QA.
+- **Automation CLI**: While `poetry run python -m apps.automation.cli qa all` mirrors most CI checks, the problems report is generated separately to aggregate findings post-QA.
 
 Analysts and Copilot agents must check `problems_report.json` for outstanding issues before remediation or enrichment tasks. This workflow blocks clean evidence logging and enrichment until problems are resolved.
 
@@ -139,7 +139,7 @@ The script outputs the path to the generated `problems_report.json`. Review the 
 For CI-like execution, run the full QA suite first:
 
 ```bash
-poetry run python -m dev.cli qa all
+poetry run python -m apps.automation.cli qa all
 poetry run python scripts/collect_problems.py
 ```
 

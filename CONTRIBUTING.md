@@ -36,7 +36,7 @@ This guide outlines our conventions and standards. By contributing, you agree to
 4. Run initial QA to verify your environment:
 
    ```bash
-   poetry run python -m dev.cli qa all
+   poetry run python -m apps.automation.cli qa all
    ```
 
 ## Development Workflow
@@ -224,7 +224,7 @@ register_plugin("adapters", "my-adapter", {
 ### CI Pipeline
 
 - Runs on push/PR to main
-- Mirrors local QA: `poetry run python -m dev.cli qa all`
+- Mirrors local QA: `poetry run python -m apps.automation.cli qa all`
 - Generates artifacts: coverage.xml, problems_report.json, ci-summary.md
 - Gates merges on all checks passing
 
@@ -232,12 +232,12 @@ register_plugin("adapters", "my-adapter", {
 
 ```bash
 # Full QA suite
-poetry run python -m dev.cli qa all
+poetry run python -m apps.automation.cli qa all
 
 # Individual checks
-poetry run python -m dev.cli qa tests
-poetry run python -m dev.cli qa lint
-poetry run python -m dev.cli qa typecheck
+poetry run python -m apps.automation.cli qa tests
+poetry run python -m apps.automation.cli qa lint
+poetry run python -m apps.automation.cli qa typecheck
 
 # Problems report
 poetry run python scripts/collect_problems.py

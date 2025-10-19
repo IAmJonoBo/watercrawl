@@ -2,6 +2,8 @@
 * @ACES-Aerodynamics/platform-team
 
 # Documentation
+/apps/analyst/ @ACES-Aerodynamics/automation
+/apps/automation/ @ACES-Aerodynamics/automation
 /docs/ @ACES-Aerodynamics/docs-team
 /mkdocs.yml @ACES-Aerodynamics/docs-team
 
@@ -14,6 +16,7 @@
 /firecrawl_demo/interfaces/ @ACES-Aerodynamics/automation
 
 # Infrastructure and analytics
+/platform/ @ACES-Aerodynamics/platform-team
 /analytics/ @ACES-Aerodynamics/data-engineering
 /firecrawl_demo/infrastructure/ @ACES-Aerodynamics/platform-team
 

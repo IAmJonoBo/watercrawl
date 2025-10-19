@@ -19,7 +19,7 @@ The ACES Enrichment Stack is a modular, compliance-driven pipeline for B2B data 
 
 1. **Prerequisites**: Python >=3.14,<3.15
 2. **Install**: `pip install poetry` then `poetry install`
-3. **Run**: `poetry run python -m app.cli overview`
+3. **Run**: `poetry run python -m apps.analyst.cli overview`
 
 See the [CLI documentation](cli.md) for detailed commands.
 

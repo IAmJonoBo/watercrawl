@@ -20,7 +20,7 @@
 6. **Interfaces** (`firecrawl_demo.interfaces`)
    - CLI, analyst UI, and MCP surfaces build on the application layer to expose validated enrichment workflows to humans and GitHub Copilot.
 
-> **Package boundaries.** `firecrawl_demo.domain` captures business invariants, `firecrawl_demo.application` orchestrates workflows against those invariants, `firecrawl_demo.infrastructure` persists artefacts, and `firecrawl_demo.integrations` houses optional systems (lineage, lakehouse, contracts, research). Production wheels still exclude development directories (`codex/`, `dev/`, `tools/`) so deployments remain lean.
+> **Package boundaries.** `firecrawl_demo.domain` captures business invariants, `firecrawl_demo.application` orchestrates workflows against those invariants, `firecrawl_demo.infrastructure` persists artefacts, and `firecrawl_demo.integrations` houses optional systems (lineage, lakehouse, contracts, research). Production wheels still exclude workspace directories (`codex/`, `apps/`, `platform/`, `tools/`) so deployments remain lean.
 
 ## Data Flow
 

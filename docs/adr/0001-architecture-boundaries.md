@@ -5,7 +5,7 @@
 - **Decision Makers:** Platform Architecture Guild
 - **Context:**
   - The monolithic `firecrawl_demo` package blended crawler orchestration, external integrations, governance controls, and Copilot orchestration in a single namespace.
-  - Production wheels unintentionally bundled development tooling (`codex/`, `dev/`, `tools/`) because Poetry defaulted to including the full repository in sdists.
+  - Production wheels unintentionally bundled workspace tooling (`codex/`, `apps/`, `platform/`, `tools/`) because Poetry defaulted to including the full repository in sdists.
   - Copilot/MCP orchestration imports risked leaking into crawler runtime contexts, complicating dependency reasoning.
 - **Decision:**
   - Introduce four first-class packages: `firecrawl_demo.core`, `firecrawl_demo.integrations`, `firecrawl_demo.governance`, and `firecrawl_demo.interfaces`.
