@@ -73,6 +73,8 @@
   Pre-commit `sqlfluff`/`markdownlint-cli2` hooks remain blocked by the missing analytics dbt project and long-form docs, while
   actionlint/hadolint binaries still require downloadable artefacts in this environment.
 
+- [x] 2025-10-20 — Tightened phone normalization to accept only South African prefixes, refreshed compliance edge-case tests (including punctuation and optional trunk zeros), confirmed pipeline expectations, and reran QA suite (`pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing`, `ruff check .`, `mypy .`, `bandit -r firecrawl_demo`, `python -m tools.security.offline_safety`, `poetry build`).
+
 ---
 
 ## 2) Red‑Team Integration — Quick Index (WC‑01 … WC‑20)
