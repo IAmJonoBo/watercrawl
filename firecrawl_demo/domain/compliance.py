@@ -5,7 +5,7 @@ import json
 import re
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlparse
 
 from firecrawl_demo.core import config
@@ -21,9 +21,9 @@ else:  # pragma: no cover - runtime protocol for loose coupling
 
 
 try:  # pragma: no cover - optional dependency
-    import dns.resolver  # type: ignore[import-not-found]
+    import dns.resolver
 except ImportError:  # pragma: no cover - fallback path
-    dns_resolver = None  # type: ignore[assignment]
+    dns_resolver: Any = None
 else:  # pragma: no cover - optional dependency
     # Use the dns.resolver module directly so exception types such as
     # NXDOMAIN remain accessible. The resolver module exposes a `resolve`
@@ -32,7 +32,7 @@ else:  # pragma: no cover - optional dependency
     # catch. Instantiating Resolver() hides these attributes on the returned
     # object, leading to AttributeError when trying to access
     # ``resolver.NXDOMAIN`` under newer dnspython releases.
-    dns_resolver = dns.resolver  # type: ignore[assignment]
+    dns_resolver = dns.resolver
 
 _PHONE_RE = re.compile(r"^\+27\d{9}$")
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")

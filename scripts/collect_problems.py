@@ -14,31 +14,41 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SQLFLUFF_AVAILABLE = True
-try:  # pragma: no branch - import guard for script execution
-    from tools.sql.sqlfluff_runner import (
-        DEFAULT_DBT_PROJECT,
-        DEFAULT_DUCKDB,
-        ensure_duckdb,
-    )
-except ModuleNotFoundError as exc:  # pragma: no cover - defensive path fix
-    if exc.name == "duckdb":
-        SQLFLUFF_AVAILABLE = False
-    else:
-        PROJECT_ROOT = Path(__file__).resolve().parents[1]
-        if str(PROJECT_ROOT) not in sys.path:
-            sys.path.insert(0, str(PROJECT_ROOT))
-        try:
-            from tools.sql.sqlfluff_runner import (  # type: ignore[import-not-found]
-                DEFAULT_DBT_PROJECT,
-                DEFAULT_DUCKDB,
-                ensure_duckdb,
-            )
-        except ModuleNotFoundError as inner_exc:  # pragma: no cover - fallback
-            if inner_exc.name == "duckdb":
-                SQLFLUFF_AVAILABLE = False
-            else:
-                raise
+SQLFLUFF_AVAILABLE = sys.version_info < (3, 14)
+if SQLFLUFF_AVAILABLE:
+    try:  # pragma: no branch - import guard for script execution
+        from tools.sql.sqlfluff_runner import (
+            DEFAULT_DBT_PROJECT,
+            DEFAULT_DUCKDB,
+            ensure_duckdb,
+        )
+    except ModuleNotFoundError as exc:  # pragma: no cover - defensive path fix
+        if exc.name == "duckdb":
+            SQLFLUFF_AVAILABLE = False
+        else:
+            PROJECT_ROOT = Path(__file__).resolve().parents[1]
+            if str(PROJECT_ROOT) not in sys.path:
+                sys.path.insert(0, str(PROJECT_ROOT))
+            try:
+                from tools.sql.sqlfluff_runner import (
+                    DEFAULT_DBT_PROJECT,
+                    DEFAULT_DUCKDB,
+                    ensure_duckdb,
+                )
+            except ModuleNotFoundError as inner_exc:  # pragma: no cover - fallback
+                if inner_exc.name == "duckdb":
+                    SQLFLUFF_AVAILABLE = False
+                else:
+                    raise
+else:  # pragma: no cover - placeholders for type checking when disabled
+    DEFAULT_DBT_PROJECT = Path("data_contracts/analytics")
+    DEFAULT_DUCKDB = Path("target/contracts.duckdb")
+
+    def ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
+        raise RuntimeError(
+            f"sqlfluff unavailable on Python {sys.version_info.major}.{sys.version_info.minor}"
+        )
+
 
 # Bandit doesn't support Python 3.14 yet (ast.Num removed)
 BANDIT_AVAILABLE = sys.version_info < (3, 14)
@@ -420,25 +430,29 @@ TOOL_SPECS: list[ToolSpec] = [
         parser=parse_mypy_output,
     ),
     ToolSpec(
-        name="pylint",
-        command=_static_command(
-            "pylint",
-            "firecrawl_demo",
-            "app",
-            "scripts",
-            "tests",
-            "--output-format=json",
-            "--score=n",
-        ),
-        parser=parse_pylint_output,
-        optional=True,
-    ),
-    ToolSpec(
         name="yamllint",
         command=_static_command("yamllint", "--format", "parsable", "."),
         parser=parse_yamllint_output,
     ),
 ]
+
+if os.getenv("ENABLE_PYLINT", "0") == "1":
+    TOOL_SPECS.append(
+        ToolSpec(
+            name="pylint",
+            command=_static_command(
+                "pylint",
+                "firecrawl_demo",
+                "app",
+                "scripts",
+                "tests",
+                "--output-format=json",
+                "--score=n",
+            ),
+            parser=parse_pylint_output,
+            optional=True,
+        )
+    )
 
 BANDIT_TOOL: ToolSpec | None = None
 if BANDIT_AVAILABLE:

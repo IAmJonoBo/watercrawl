@@ -116,3 +116,23 @@ filterwarnings = [
   "ignore:Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater:UserWarning",
   # Allow other warnings to show
 ]
+
+[tool.mypy]
+python_version = "3.13"
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+  "boto3",
+  "botocore.*",
+  "azure.identity",
+  "azure.keyvault.secrets",
+  "duckdb",
+  "great_expectations",
+  "great_expectations.*",
+  "pyspark",
+  "pyspark.*",
+  "dns",
+  "dns.*",
+]
+ignore_missing_imports = true

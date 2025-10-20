@@ -6,14 +6,15 @@ JVM-based data quality validation alongside Great Expectations and dbt.
 
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Deequ requires PySpark, which is optional for this project
+# Deequ requires PySpark, which is optional for this project. Import lazily so
+# environments without the dependency can still execute the stub runner.
 try:
-    import pyspark  # noqa: F401
-
+    importlib.import_module("pyspark")
     DEEQU_AVAILABLE = True
 except ImportError:
     DEEQU_AVAILABLE = False

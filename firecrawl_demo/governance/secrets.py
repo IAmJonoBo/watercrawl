@@ -61,10 +61,8 @@ class AwsSecretsManagerProvider:
         session: Any | None = None,
     ) -> None:
         try:  # pragma: no cover - optional dependency
-            import boto3  # type: ignore[import-not-found, import-untyped]
-            from botocore.exceptions import (  # type: ignore[import-not-found, import-untyped]
-                ClientError,
-            )
+            import boto3
+            from botocore.exceptions import ClientError
         except ImportError as exc:  # pragma: no cover - import-time guard
             raise SecretsProviderError(
                 "boto3 is required for AwsSecretsManagerProvider"
@@ -112,12 +110,8 @@ class AzureKeyVaultProvider:
         secret_prefix: str | None = None,
     ) -> None:
         try:  # pragma: no cover - optional dependency
-            from azure.identity import (  # type: ignore[import-not-found, import-untyped]
-                DefaultAzureCredential,
-            )
-            from azure.keyvault.secrets import (  # type: ignore[import-not-found, import-untyped]
-                SecretClient,
-            )
+            from azure.identity import DefaultAzureCredential
+            from azure.keyvault.secrets import SecretClient
         except ImportError as exc:  # pragma: no cover - import-time guard
             raise SecretsProviderError(
                 "azure-identity and azure-keyvault-secrets are required for AzureKeyVaultProvider"

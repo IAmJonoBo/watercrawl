@@ -80,7 +80,7 @@ of silencing mypy regressions.
 | Gate          | Threshold/Expectation                                                                |
 | ------------- | ------------------------------------------------------------------------------------ |
 | Tests         | 100% pass, coverage tracked via `pytest --cov`.                                      |
-| Lint          | Ruff, Black/Isort, Yamllint, SQLFluff, Markdownlint, Hadolint, Actionlint all green. |
+| Lint          | Ruff, Black/Isort, Yamllint, Markdownlint, Hadolint, Actionlint all green; run SQLFluff on Python 3.13 until dbt restores Python 3.14 support. |
 | Types         | `mypy` success, including third-party stubs.                                         |
 | Security      | No `bandit`/`safety` High/Medium findings without mitigation.                        |
 | Evidence      | Every enriched row logged with ≥2 sources.                                           |
@@ -90,6 +90,16 @@ of silencing mypy regressions.
 Monitor `adapter_failures` and `sanity_issues` in pipeline metrics/CLI output;
 any non-zero count should trigger investigation into upstream research adapters
 or missing evidence before publishing results.
+
+### Problems report automation
+
+`scripts/collect_problems.py` aggregates the core QA tools (Ruff, mypy, Yamllint) into `problems_report.json`. Optional integrations stay opt-in:
+
+- **Bandit** only runs on Python versions prior to 3.14 while the upstream project restores support.
+- **SQLFluff** is skipped automatically on Python ≥ 3.14 because dbt’s templater stack currently fails under `mashumaro`. When SQL linting is required, install Python 3.13 (`uv python install 3.13.0`), switch Poetry to that interpreter, run `poetry run python -m tools.sql.sqlfluff_runner --project-dir data_contracts/analytics`, and then switch back to the default interpreter.
+- **Pylint** can be re-enabled by exporting `ENABLE_PYLINT=1` before running the collector; it remains optional to keep the default workflow fast.
+
+The `.sqlfluff` configuration is already scoped to `data_contracts/analytics`, so teams stay on the same dbt golden path regardless of where the lint is executed.
 
 ## Evidence Sink Configuration
 

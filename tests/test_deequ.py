@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from firecrawl_demo.integrations.contracts import (
     DEEQU_AVAILABLE,
     DeequContractResult,

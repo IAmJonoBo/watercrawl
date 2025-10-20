@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-20T03:55:28.363824+00:00",
+  "generated_at": "2025-10-20T05:01:48.660075+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -122,64 +122,12 @@
       }
     },
     {
-      "tool": "pylint",
-      "status": "not_installed",
-      "error": "[Errno 2] No such file or directory: 'pylint'"
-    },
-    {
       "tool": "yamllint",
       "status": "completed",
       "returncode": 0,
       "issues": [],
       "summary": {
         "issue_count": 0
-      }
-    },
-    {
-      "tool": "bandit",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
-      "summary": {
-        "issue_count": 0,
-        "severity_counts": {},
-        "confidence_counts": {},
-        "metrics": {
-          "loc": 7262,
-          "nosec": 0,
-          "skipped_tests": 0
-        }
-      },
-      "stderr_preview": {
-        "chunks": [
-          "[main]\tINFO\tprofile include tests: None",
-          "[main]\tINFO\tprofile exclude tests: None",
-          "[main]\tINFO\tcli include tests: None",
-          "[main]\tINFO\tcli exclude tests: None",
-          ""
-        ]
-      }
-    },
-    {
-      "tool": "sqlfluff",
-      "status": "completed_with_exit_code",
-      "returncode": 2,
-      "issues": [],
-      "summary": {
-        "issue_count": 0,
-        "files_with_issues": 0
-      },
-      "stderr_preview": {
-        "chunks": [
-          "ERROR      dbt_project_dir: /home/runner/work/watercrawl/watercrawl/analytics could not be accessed. Check it exists. ",
-          "ERROR      dbt_profiles_dir: /home/runner/work/watercrawl/watercrawl/analytics could not be accessed. Check it exists. ",
-          "",
-          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt.exceptions.DbtProjectError: Runtime Error",
-          "  No dbt_project.yml found at expected path /home/runner/work/watercrawl/watercrawl/analytics/dbt_project.yml",
-          "  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml",
-          "  ",
-          ""
-        ]
       }
     }
   ]

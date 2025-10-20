@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """Helpers for executing Great Expectations contracts on curated datasets."""
 
+import importlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,34 +17,43 @@ from .shared_config import canonical_contracts_config
 
 # Try to import Great Expectations modules
 try:
-    from great_expectations.core.batch import Batch  # type: ignore[import-untyped]
-    from great_expectations.core.batch_spec import (
-        RuntimeDataBatchSpec,  # type: ignore[import-untyped]
+    _ge_batch = importlib.import_module("great_expectations.core.batch")
+    _ge_batch_spec = importlib.import_module("great_expectations.core.batch_spec")
+    _ge_expectation_suite = importlib.import_module(
+        "great_expectations.core.expectation_suite"
     )
-    from great_expectations.core.expectation_suite import (
-        ExpectationSuite,  # type: ignore[import-untyped]
+    _ge_context_factory = importlib.import_module(
+        "great_expectations.data_context.data_context.context_factory"
     )
-    from great_expectations.data_context.data_context.context_factory import (
-        project_manager,  # type: ignore[attr-defined]
+    _ge_execution_engine = importlib.import_module(
+        "great_expectations.execution_engine.pandas_execution_engine"
     )
-    from great_expectations.execution_engine.pandas_execution_engine import (  # type: ignore[import-untyped]
-        PandasExecutionEngine,
+    _ge_expectations_config = importlib.import_module(
+        "great_expectations.expectations.expectation_configuration"
     )
-    from great_expectations.expectations.expectation_configuration import (  # type: ignore[import-untyped]
-        ExpectationConfiguration,
-    )
-    from great_expectations.validator.validator import (
-        Validator,  # type: ignore[import-untyped]
-    )
+    _ge_validator = importlib.import_module("great_expectations.validator.validator")
 
-    project_manager.is_using_cloud = lambda: False  # type: ignore[assignment,attr-defined]
+    Batch = cast(Any, getattr(_ge_batch, "Batch"))
+    RuntimeDataBatchSpec = cast(Any, getattr(_ge_batch_spec, "RuntimeDataBatchSpec"))
+    ExpectationSuite = cast(Any, getattr(_ge_expectation_suite, "ExpectationSuite"))
+    project_manager = getattr(_ge_context_factory, "project_manager", None)
+    PandasExecutionEngine = cast(
+        Any, getattr(_ge_execution_engine, "PandasExecutionEngine")
+    )
+    ExpectationConfiguration = cast(
+        Any, getattr(_ge_expectations_config, "ExpectationConfiguration")
+    )
+    Validator = cast(Any, getattr(_ge_validator, "Validator"))
+
+    if project_manager and hasattr(project_manager, "is_using_cloud"):
+        project_manager.is_using_cloud = lambda: False
     GREAT_EXPECTATIONS_AVAILABLE = True
 except (ImportError, TypeError, AttributeError):
     GREAT_EXPECTATIONS_AVAILABLE = False
 
     # Fallback classes when Great Expectations is not available
     @dataclass
-    class ExpectationSuite:  # type: ignore[no-redef]
+    class _FallbackExpectationSuite:
         name: str
         expectations: list[Any]
         meta: dict[str, Any]
@@ -54,7 +64,7 @@ except (ImportError, TypeError, AttributeError):
             self.meta = {}
 
     @dataclass
-    class ExpectationConfiguration:  # type: ignore[no-redef]
+    class _FallbackExpectationConfiguration:
         expectation_type: str
         kwargs: dict[str, Any]
         meta: dict[str, Any] | None
@@ -71,34 +81,43 @@ except (ImportError, TypeError, AttributeError):
             self.kwargs = kwargs or {}
             self.meta = meta
 
-        def to_domain_obj(self) -> ExpectationConfiguration:  # type: ignore[misc]
-            return self  # type: ignore[return-value]
+        def to_domain_obj(self) -> "_FallbackExpectationConfiguration":
+            return self
 
     @dataclass
-    class RuntimeDataBatchSpec:  # type: ignore[no-redef]
+    class _FallbackRuntimeDataBatchSpec:
         batch_data: Any
 
     @dataclass
-    class Batch:  # type: ignore[no-redef]
+    class _FallbackBatch:
         data: Any
-        batch_spec: RuntimeDataBatchSpec
+        batch_spec: _FallbackRuntimeDataBatchSpec
 
-        def __init__(self, data: Any, batch_spec: RuntimeDataBatchSpec):
+        def __init__(
+            self, data: Any, batch_spec: _FallbackRuntimeDataBatchSpec
+        ) -> None:
             self.data = data
             self.batch_spec = batch_spec
 
-    class PandasExecutionEngine:  # type: ignore[no-redef]
+    class _FallbackPandasExecutionEngine:
         pass
 
     @dataclass
-    class Validator:  # type: ignore[no-redef]
-        execution_engine: PandasExecutionEngine
-        expectation_suite: ExpectationSuite
-        batches: list[Batch]
+    class _FallbackValidator:
+        execution_engine: Any
+        expectation_suite: Any
+        batches: list[Any]
 
         def validate(self) -> Any:
             # Fallback validation - always return success when GE unavailable
             return FallbackValidationResult()
+
+    ExpectationSuite = _FallbackExpectationSuite
+    ExpectationConfiguration = _FallbackExpectationConfiguration
+    RuntimeDataBatchSpec = _FallbackRuntimeDataBatchSpec
+    Batch = _FallbackBatch
+    PandasExecutionEngine = _FallbackPandasExecutionEngine
+    Validator = _FallbackValidator
 
 
 @dataclass
@@ -145,7 +164,7 @@ def _expectation_suite_path() -> Path:
     )
 
 
-def _load_expectation_suite() -> ExpectationSuite:
+def _load_expectation_suite() -> Any:
     if not GREAT_EXPECTATIONS_AVAILABLE:
         # Return fallback suite when GE unavailable
         return ExpectationSuite(name="fallback_suite", expectations=[])
@@ -187,16 +206,16 @@ def _load_expectation_suite() -> ExpectationSuite:
 
             meta_raw = entry.get("meta")
             meta = dict(meta_raw) if isinstance(meta_raw, dict) else None
-            config = ExpectationConfiguration(  # type: ignore[call-arg]
+            config = ExpectationConfiguration(
                 type=expectation_type,
                 kwargs=kwargs,
                 meta=meta,
             )
-            suite.add_expectation_configuration(config)  # type: ignore[arg-type]
+            suite.add_expectation_configuration(config)
     return _apply_canonical_configuration(suite)
 
 
-def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
+def _apply_canonical_configuration(suite: Any) -> Any:
     """Ensure the suite reflects canonical taxonomy and thresholds."""
 
     if not GREAT_EXPECTATIONS_AVAILABLE:

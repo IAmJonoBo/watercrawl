@@ -173,10 +173,20 @@ Supported QA tools include:
 
 - **Ruff**: Python linter and formatter.
 - **Mypy**: Static type checker.
-- **Pylint**: Advanced Python linter (optional, may not be installed).
-- **Bandit**: Security linter for Python code.
 - **Yamllint**: YAML file linter.
-- **SQLFluff**: SQL linter for dbt models (using DuckDB dialect).
+- **Bandit** (Python < 3.14): security linter for Python code. The script skips Bandit automatically on interpreters where the upstream project has not restored Python 3.14 support.
+- **SQLFluff** (Python < 3.14): SQL linter for dbt models (DuckDB dialect). See the compatibility note below for running it under an older interpreter when required.
+- **Pylint** (opt-in): advanced Python linter. Set `ENABLE_PYLINT=1` when invoking `scripts/collect_problems.py` to include it in the aggregated report.
+
+> **Python 3.14 compatibility:** dbt 1.10.x currently pulls in a `mashumaro` release that breaks SQLFluff's dbt templater on Python ≥3.14. The problems collector therefore skips SQLFluff by default on those interpreters. When you need SQL linting, install Python 3.13 alongside the default toolchain (e.g., `uv python install 3.13.0`), switch Poetry to that interpreter temporarily, and run:
+>
+> ```bash
+> poetry env use 3.13
+> poetry run python -m tools.sql.sqlfluff_runner --project-dir data_contracts/analytics
+> poetry env use 3.14
+> ```
+>
+> The `.sqlfluff` config already targets `data_contracts/analytics`, so the command above lints the golden-path dbt project while reusing the same DuckDB cache directory. Switch the environment back to Python 3.14 (or the repository default) once the lint step completes.
 
 Each tool's results are captured with status, return code, parsed issues, and summary metrics. The report includes a generation timestamp for freshness tracking.
 

@@ -474,12 +474,12 @@ def coverage_command(output_format: str, output_path: Path | None) -> None:
         if output_format == "json":
             click.echo(json.dumps(report, indent=2))
     else:
-        click.echo(f"Contract Coverage Report")
-        click.echo(f"========================")
+        click.echo("Contract Coverage Report")
+        click.echo("========================")
         click.echo(f"Total tables: {coverage.total_tables}")
         click.echo(f"Covered tables: {coverage.covered_tables}")
         click.echo(f"Coverage: {coverage.coverage_percent:.1f}%")
-        click.echo(f"Threshold: 95.0%")
+        click.echo("Threshold: 95.0%")
         click.echo(f"Status: {'✓ PASS' if coverage.meets_threshold else '✗ FAIL'}")
         click.echo()
         click.echo("Coverage by tool:")

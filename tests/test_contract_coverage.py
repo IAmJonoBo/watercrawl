@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from firecrawl_demo.integrations.contracts import (
     calculate_contract_coverage,
     report_coverage,
@@ -18,9 +16,10 @@ def test_calculate_contract_coverage_finds_sample_dataset() -> None:
 
     # Should have at least one table (sample)
     assert coverage.total_tables >= 1
-    assert "sample" in [
-        t for t in ["sample"] if t not in coverage.uncovered_tables
-    ] or "sample" not in coverage.uncovered_tables
+    assert (
+        "sample" in [t for t in ["sample"] if t not in coverage.uncovered_tables]
+        or "sample" not in coverage.uncovered_tables
+    )
 
 
 def test_calculate_contract_coverage_checks_great_expectations() -> None:

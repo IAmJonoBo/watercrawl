@@ -104,10 +104,13 @@ ignore = ["E203", "E501"]
 - **isort**: Import sorting with Black profile
 - **Ruff**: Linting (E, F, W rules; ignore E203, E501)
 - **Mypy**: Static type checking (strict mode)
-- **Bandit**: Security linting
+- **Bandit**: Security linting (Python <3.14 until upstream restores support)
 - **Yamllint**: YAML validation
-- **SQLFluff**: SQL linting for dbt models
+- **SQLFluff**: SQL linting for dbt models (run under Python 3.13; see note below)
+- **Pylint**: Optional advanced linting (`ENABLE_PYLINT=1` when using the problems collector)
 - **Markdownlint**: Markdown style enforcement
+
+> SQLFluff's dbt templater currently fails on Python 3.14 because of a transitively bundled `mashumaro` release. When linting SQL, install Python 3.13 (for example `uv python install 3.13.0`), switch the Poetry environment with `poetry env use 3.13`, run the SQLFluff command, and then return to the default interpreter via `poetry env use 3.14`.
 
 Run all linters: `poetry run pre-commit run --all-files`
 

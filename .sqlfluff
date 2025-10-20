@@ -1,12 +1,12 @@
 [sqlfluff]
 templater = dbt
 dialect = duckdb
-ignore = analytics/target,analytics/dbt_packages
+ignore = data_contracts/analytics/target,data_contracts/analytics/dbt_packages
 exclude_rules = CP01,RF06,LT01,LT08,LT09
 
 [sqlfluff:templater:dbt]
-project_dir = analytics
-profiles_dir = analytics
+project_dir = data_contracts/analytics
+profiles_dir = data_contracts/analytics
 
 [sqlfluff:rules:layout.long_lines]
 max_line_length = 120
