@@ -203,6 +203,49 @@ def test_pipeline_records_lakehouse_versioning_and_lineage(tmp_path: Path) -> No
     )
 
 
+def test_pipeline_records_email_issue_for_bare_domain() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Bare Domain Flight",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "example.com",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "INFO@other.org",
+            }
+        ]
+    )
+
+    research_adapter = StaticResearchAdapter(
+        {
+            "Bare Domain Flight": ResearchFinding(
+                sources=[
+                    "https://www.caa.co.za/operators/bare-domain-flight",
+                    "https://press.example.com/bare-domain-flight",
+                ],
+                confidence=80,
+            )
+        }
+    )
+
+    pipe = Pipeline(
+        research_adapter=research_adapter,
+        quality_gate=QualityGate(min_confidence=0, require_official_source=False),
+    )
+
+    report = asyncio.run(pipe.run_dataframe_async(frame))
+
+    assert report.quality_issues
+    email_issue = next(
+        (issue for issue in report.quality_issues if issue.code == "invalid_email"),
+        None,
+    )
+    assert email_issue is not None
+    assert "Email domain does not match official domain" in email_issue.message
+
+
 def test_frame_from_payload_reads_path(tmp_path: Path) -> None:
     pipe = Pipeline()
     frame = _minimal_frame()

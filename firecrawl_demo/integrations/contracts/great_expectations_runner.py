@@ -24,7 +24,7 @@ try:
         ExpectationSuite,  # type: ignore[import-untyped]
     )
     from great_expectations.data_context.data_context.context_factory import (
-        project_manager,  # type: ignore[attr-defined]; type: ignore[attr-defined]
+        project_manager,  # type: ignore[attr-defined]
     )
     from great_expectations.execution_engine.pandas_execution_engine import (  # type: ignore[import-untyped]
         PandasExecutionEngine,
@@ -160,8 +160,6 @@ def _load_expectation_suite() -> ExpectationSuite:
     evidence = canonical.get("evidence", {})
     min_conf = float(evidence.get("minimum_confidence", 0))
     max_conf = float(evidence.get("maximum_confidence", 100))
-    has_confidence_check = False
-
     expectations_payload = payload.get("expectations", [])
     if isinstance(expectations_payload, list):
         for entry in expectations_payload:
@@ -186,7 +184,6 @@ def _load_expectation_suite() -> ExpectationSuite:
             ):
                 kwargs["min_value"] = min_conf
                 kwargs["max_value"] = float(kwargs.get("max_value", max_conf))
-                has_confidence_check = True
 
             meta_raw = entry.get("meta")
             meta = dict(meta_raw) if isinstance(meta_raw, dict) else None

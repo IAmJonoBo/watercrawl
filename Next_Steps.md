@@ -67,6 +67,11 @@
 - [x] 2025-10-22 — Factored shared CLI workflows into `firecrawl_demo.interfaces.cli_base`, enforced plan→commit artefacts across analyst/dev/MCP surfaces, expanded CLI/MCP/automation tests for guardrails, and refreshed docs. Follow-up on GE/dbt and lint blockers resolved via canonical contract wiring on 2025-10-20 (see below).
 - [x] 2025-10-23 — Restored `python -m app.cli` compatibility by shimming the analyst CLI, extended regression tests for the alias, and documented the shim in CLI docs. GE/dbt contracts, Black, and isort gates now green after canonical expectations/macros refresh (2025-10-20).
 - [x] 2025-10-20 — Regenerated Great Expectations suite with canonical confidence/province/status wiring, added dbt `contracts_accepted_values` test, normalised runner confidence handling, and tightened Bandit suppressions/config. Baseline rerun: `pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing` (226 passed, 3 skipped), `dbt build --select tag:contracts`, `bandit -r tools`, `bandit -r tests -c tools/security/bandit_tests.yaml`, `black --check .`, `isort --check-only .`, `ruff check .`; direct `poetry run mypy firecrawl_demo tests` currently hangs (killed after several minutes) so rely on `scripts/collect_problems.py` aggregation (mypy exit 0) and flag for follow-up.
+- [x] 2025-10-23 — Normalised scheme-less domain handling for compliance checks, extended email mismatch regressions in compliance/pipeline tests, and addressed outstanding ruff/mypy warnings.
+  Baseline rerun: `pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing`, `ruff check .`, `mypy .`,
+  `bandit -r firecrawl_demo`, and `python -m tools.security.offline_safety`.
+  Pre-commit `sqlfluff`/`markdownlint-cli2` hooks remain blocked by the missing analytics dbt project and long-form docs, while
+  actionlint/hadolint binaries still require downloadable artefacts in this environment.
 
 ---
 
