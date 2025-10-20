@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.domain.models import EvidenceRecord
+from firecrawl_demo.infrastructure.planning import PlanCommitContract
 from firecrawl_demo.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
 )
+from firecrawl_demo.interfaces.cli_base import PlanCommitGuard
 from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 
 
@@ -18,10 +21,72 @@ class DummyPipeline(Pipeline):
         super().__init__()
 
 
-def _plan_payload(tmp_path: Path) -> dict[str, object]:
-    plan_path = tmp_path / "mcp.plan"
-    plan_path.write_text("plan: mcp enrich", encoding="utf-8")
-    return {"plan_artifacts": [str(plan_path)]}
+def _write_plan(tmp_path: Path, name: str = "change") -> Path:
+    plan_path = tmp_path / f"{name}.plan"
+    plan_payload = {
+        "changes": [
+            {
+                "field": "Website URL",
+                "value": "https://example.org",
+            }
+        ],
+        "instructions": "Promote verified contact details",
+    }
+    plan_path.write_text(json.dumps(plan_payload), encoding="utf-8")
+    return plan_path
+
+
+def _write_commit(
+    tmp_path: Path,
+    name: str = "change",
+    rag: dict[str, float] | None = None,
+) -> Path:
+    commit_path = tmp_path / f"{name}.commit"
+    commit_payload = {
+        "diff_format": "markdown",
+        "if_match": '"etag-example"',
+        "diff_summary": "Update contact information",
+        "rag": rag
+        or {
+            "faithfulness": 0.94,
+            "context_precision": 0.91,
+            "answer_relevancy": 0.92,
+        },
+    }
+    commit_path.write_text(json.dumps(commit_payload), encoding="utf-8")
+    return commit_path
+
+
+def _plan_commit_payload(
+    tmp_path: Path, *, rag: dict[str, float] | None = None, name: str = "change"
+) -> dict[str, object]:
+    plan_path = _write_plan(tmp_path, name=name)
+    commit_path = _write_commit(tmp_path, name=name, rag=rag)
+    return {
+        "plan_artifacts": [str(plan_path)],
+        "commit_artifacts": [str(commit_path)],
+    }
+
+
+def _make_guard(tmp_path: Path) -> PlanCommitGuard:
+    contract = PlanCommitContract(
+        require_plan=True,
+        diff_format="markdown",
+        audit_topic="audit.plan-commit.test",
+        allow_force_commit=False,
+        require_commit=True,
+        require_if_match=True,
+        audit_log_path=tmp_path / "plan_commit_audit.jsonl",
+        max_diff_size=5000,
+        blocked_domains=(),
+        blocked_keywords=(),
+        rag_thresholds={
+            "faithfulness": 0.8,
+            "context_precision": 0.7,
+            "answer_relevancy": 0.7,
+        },
+    )
+    return PlanCommitGuard(contract=contract)
 
 
 def test_mcp_lists_tasks() -> None:
@@ -103,7 +168,8 @@ class SimpleAdapter(ResearchAdapter):
 def test_mcp_enrich_task_uses_injected_sink(tmp_path: Path) -> None:
     sink = RecordingSink(calls=[])
     pipeline = Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink)
-    server = CopilotMCPServer(pipeline=pipeline)
+    guard = _make_guard(tmp_path)
+    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
 
     rows = [
         {
@@ -124,7 +190,7 @@ def test_mcp_enrich_task_uses_injected_sink(tmp_path: Path) -> None:
             "method": "run_task",
             "params": {
                 "task": "enrich_dataset",
-                "payload": {"rows": rows, **_plan_payload(tmp_path)},
+                "payload": {"rows": rows, **_plan_commit_payload(tmp_path)},
             },
         }
     )
@@ -138,7 +204,8 @@ def test_mcp_enrich_task_uses_injected_sink(tmp_path: Path) -> None:
 
 def test_mcp_enrich_rejects_missing_plan(tmp_path: Path) -> None:
     pipeline = Pipeline(research_adapter=SimpleAdapter())
-    server = CopilotMCPServer(pipeline=pipeline)
+    guard = _make_guard(tmp_path)
+    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
 
     rows = [
         {
@@ -157,7 +224,13 @@ def test_mcp_enrich_rejects_missing_plan(tmp_path: Path) -> None:
             "jsonrpc": "2.0",
             "id": 8,
             "method": "run_task",
-            "params": {"task": "enrich_dataset", "payload": {"rows": rows}},
+            "params": {
+                "task": "enrich_dataset",
+                "payload": {
+                    "rows": rows,
+                    "commit_artifacts": [str(_write_commit(tmp_path))],
+                },
+            },
         }
     )
 
@@ -165,10 +238,107 @@ def test_mcp_enrich_rejects_missing_plan(tmp_path: Path) -> None:
     assert "plan" in response["error"]["message"].lower()
 
 
+def test_mcp_enrich_rejects_missing_commit(tmp_path: Path) -> None:
+    pipeline = Pipeline(research_adapter=SimpleAdapter())
+    guard = _make_guard(tmp_path)
+    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+
+    rows = [
+        {
+            "Name of Organisation": "Commit Flight",
+            "Province": "gauteng",
+            "Status": "Candidate",
+            "Website URL": "",
+            "Contact Person": "",
+            "Contact Number": "011 555 0000",
+            "Contact Email Address": "",
+        }
+    ]
+
+    response = server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 9,
+            "method": "run_task",
+            "params": {
+                "task": "enrich_dataset",
+                "payload": {
+                    "rows": rows,
+                    "plan_artifacts": [str(_write_plan(tmp_path, name="missing"))],
+                },
+            },
+        }
+    )
+
+    assert response["error"]["code"] == -32001
+    assert "commit" in response["error"]["message"].lower()
+
+
+def test_mcp_enrich_logs_audit_entry(tmp_path: Path) -> None:
+    guard = _make_guard(tmp_path)
+    pipeline = Pipeline(research_adapter=SimpleAdapter())
+    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+
+    response = server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "run_task",
+            "params": {
+                "task": "enrich_dataset",
+                "payload": {"rows": [], **_plan_commit_payload(tmp_path)},
+            },
+        }
+    )
+
+    assert response["result"]["status"] == "ok"
+    audit_path = guard.contract.audit_log_path
+    assert audit_path.exists()
+    entry = json.loads(audit_path.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert entry["command"] == "mcp.enrich_dataset"
+    assert entry["allowed"] is True
+    assert entry["plans"]
+    assert entry["commits"]
+    assert entry["metrics"]["rag_faithfulness"] >= 0.9
+
+
+def test_mcp_enrich_rejects_low_rag_metrics(tmp_path: Path) -> None:
+    guard = _make_guard(tmp_path)
+    pipeline = Pipeline(research_adapter=SimpleAdapter())
+    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+
+    low_rag = {"faithfulness": 0.5, "context_precision": 0.9, "answer_relevancy": 0.9}
+    response = server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "run_task",
+            "params": {
+                "task": "enrich_dataset",
+                "payload": {"rows": [], **_plan_commit_payload(tmp_path, rag=low_rag)},
+            },
+        }
+    )
+
+    assert response["error"]["code"] == -32001
+    assert "rag" in response["error"]["message"].lower()
+
+    audit_lines = (
+        guard.contract.audit_log_path.read_text(encoding="utf-8").strip().splitlines()
+    )
+    failure_entry = json.loads(audit_lines[-1])
+    assert failure_entry["allowed"] is False
+    assert any(
+        violation["code"].startswith("rag_")
+        for violation in failure_entry["violations"]
+    )
+
+
 def test_mcp_reports_last_run_metrics_and_sanity_findings(tmp_path: Path) -> None:
     sink = RecordingSink(calls=[])
     pipeline = Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink)
-    server = CopilotMCPServer(pipeline=pipeline)
+    guard = _make_guard(tmp_path)
+    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
 
     rows = [
         {
@@ -189,7 +359,7 @@ def test_mcp_reports_last_run_metrics_and_sanity_findings(tmp_path: Path) -> Non
             "method": "run_task",
             "params": {
                 "task": "enrich_dataset",
-                "payload": {"rows": rows, **_plan_payload(tmp_path)},
+                "payload": {"rows": rows, **_plan_commit_payload(tmp_path)},
             },
         }
     )

@@ -58,7 +58,7 @@ _Last updated: 2025-10-17_
 
 1. Add STRIDE + MITRE mapping for pipeline & MCP interfaces (documented in section 3.13).
 2. Extend CI with Scorecard/SBOM/provenance to progress toward SLSA Level 2. ✅ CI now generates CycloneDX SBOMs, Sigstore signatures, and emits OpenSSF Scorecard reports.
-3. Harden MCP diff/commit controls with allowlisted tools and auditing.
+3. Harden MCP diff/commit controls with allowlisted tools and auditing. ✅ Plan→commit guard now enforces commit artefacts, `If-Match`, RAG thresholds, and JSONL audit logs for CLI/MCP flows.
 
 ### 3.3 Framework Gap Analysis
 

@@ -21,7 +21,7 @@
 - [x] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
 - [x] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
 - [x] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
-- [ ] **MCP plan→commit audit logging + policy enforcement** — _Owner: Platform/Security · Due: 2025‑12‑05_ (WC‑05/06)
+- [x] **MCP plan→commit audit logging + policy enforcement** — _Owner: Platform/Security · Due: 2025‑12‑05_ (WC‑05/06)
 - [ ] **whylogs drift dashboards + alert routing** — _Owner: Platform/Data · Due: 2025‑12‑05_ (WC‑11)
 - [ ] **Mutation testing pilot for pipeline hotspots** — _Owner: QA/Platform · Due: 2025‑12‑05_ (WC‑15)
 - [ ] **Backstage TechDocs + golden‑path template** — _Owner: Platform/DevEx · Due: 2026‑01‑15_ (WC‑19)
@@ -44,6 +44,7 @@
 - [x] 2025-10-20 — Phase 4 safety gate: Plan→commit policy now requires matching `*.plan`/`*.commit` artefacts with `If-Match` headers, RAG metrics, and prompt-injection heuristics; audit events are appended to `data/logs/plan_commit_audit.jsonl` and MCP payloads enforce the same contract.
 - [x] 2025-10-20 — Published ADR 0003 documenting the threat model and STRIDE/MITRE mapping for CLI, MCP, evidence sinks, and governance surfaces; Next_Steps risk gates now reference the baseline matrix and quarterly tabletop cadence.
 - [x] 2025-10-20 — Supply-chain automation: CI now emits CycloneDX SBOMs, Sigstore signatures for wheels/sdists, and weekly OpenSSF Scorecard scans; developer workflow documents gitsign configuration for OIDC-backed commit signing.
+- [x] 2025-10-20 — MCP plan→commit enforcement hardening: Sigstore-style audit log JSONL now records MCP executions; guard rejects missing `*.commit`, `If-Match`, or low RAG metrics, and tests cover audit logging paths.
 - [x] 2025-10-20 — Accessibility baseline: Added axe-core smoke tests for the Streamlit analyst UI, documented heuristic review steps, and wired the smoke test into CI.
 
 ---
