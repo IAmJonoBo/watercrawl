@@ -25,7 +25,6 @@ exclude = [
 python = ">=3.12,<3.15"
 pandas = "2.3.3"
 openpyxl = "^3.1.0"
-streamlit = "^1.50.0"
 requests = "2.32.5"
 httpx = "0.28.1"
 tenacity = "^9.1.2"
@@ -38,7 +37,6 @@ azure-identity = "^1.25.1"
 azure-keyvault-secrets = "^4.10.0"
 pint = "0.25"
 firecrawl-py = "^4.5.0"
-pyarrow = "^21.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.4.2"
@@ -72,6 +70,13 @@ types-setuptools = "*"
 types-urllib3 = "1.26.25.14"
 types-python-dateutil = "2.9.0.20251008"
 narwhals = "2.8.0"
+
+[tool.poetry.group.ui]
+optional = true
+
+[tool.poetry.group.ui.dependencies]
+streamlit = "^1.50.0"
+pyarrow = { version = "^21.0.0", python = ">=3.12,<3.14" }
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -98,6 +98,7 @@ or missing evidence before publishing results.
 - **Bandit** only runs on Python versions prior to 3.14 while the upstream project restores support.
 - **SQLFluff** is skipped automatically on Python ≥ 3.14 because dbt’s templater stack currently fails under `mashumaro`. When SQL linting is required, install Python 3.13 (`uv python install 3.13.0`), switch Poetry to that interpreter, run `poetry run python -m tools.sql.sqlfluff_runner --project-dir data_contracts/analytics`, and then switch back to the default interpreter.
 - **Pylint** can be re-enabled by exporting `ENABLE_PYLINT=1` before running the collector; it remains optional to keep the default workflow fast.
+- The optional Poetry group `ui` bundles Streamlit and PyArrow (currently limited to Python `<3.14`). Default installs skip the group so baseline environments no longer fail on missing Arrow wheels; run `poetry install --with ui` from Python 3.12/3.13 whenever you need the analyst UI or first-class Parquet exports.
 
 The `.sqlfluff` configuration is already scoped to `data_contracts/analytics`, so teams stay on the same dbt golden path regardless of where the lint is executed.
 

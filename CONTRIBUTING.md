@@ -112,6 +112,8 @@ ignore = ["E203", "E501"]
 
 > SQLFluff's dbt templater currently fails on Python 3.14 because of a transitively bundled `mashumaro` release. When linting SQL, install Python 3.13 (for example `uv python install 3.13.0`), switch the Poetry environment with `poetry env use 3.13`, run the SQLFluff command, and then return to the default interpreter via `poetry env use 3.14`.
 
+> Streamlit and PyArrow ship in the optional Poetry dependency group `ui`. Default installs skip that group to keep Python 3.14 environments green; run `poetry install --with ui` from Python 3.12/3.13 when you need the analyst UI or Parquet exports.
+
 Run all linters: `poetry run pre-commit run --all-files`
 
 ### Testing Standards
