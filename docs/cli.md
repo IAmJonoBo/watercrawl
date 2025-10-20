@@ -28,7 +28,7 @@ poetry run python -m apps.analyst.cli validate data/input.csv --format json
 ### `enrich`
 
 ```bash
-poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output.csv --plan plans/run.plan --format text
+poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output.csv --plan plans/run.plan --commit commits/run.commit --format text
 ```
 
 - Validates, enriches, and writes the dataset.
@@ -37,6 +37,8 @@ poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output
 - Displays a Rich-powered progress bar for text output by default (`--no-progress` to disable).
 - JSON responses now include an `adapter_failures` field so pipelines can alert on degraded runs.
 - Requires at least one recorded `*.plan` artefact when policy mandates plan→commit guardrails (`--plan` accepts multiple paths; `--force` is available only when `PLAN_COMMIT_ALLOW_FORCE=1`).
+- Requires at least one `*.commit` artefact summarising the approved diff, `If-Match` value, and RAG/RAGAS metrics that met policy thresholds (`--commit` accepts multiple paths).
+- Successful runs append JSON audit entries to `data/logs/plan_commit_audit.jsonl`, capturing plan paths, commit metadata, and policy decisions for traceability.
 
 ### `contracts`
 
@@ -93,7 +95,7 @@ poetry run python -m apps.automation.cli qa all --dry-run
 - Executes (or previews with `--dry-run`) the cleanup, dependency sync, test, lint, type-check, security, pre-commit, build, and dbt stages.
 - Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
 - Automatically provisions Python 3.14 with uv when the active interpreter is older than 3.13 (disable with `--no-auto-bootstrap`).
-- Enforces plan artefacts before running destructive steps such as `scripts.cleanup`; supply `--plan path/to/change.plan` to acknowledge the recorded intent.
+- Enforces plan artefacts before running destructive steps such as `scripts.cleanup`; supply `--plan path/to/change.plan` and matching `--commit path/to/change.commit` acknowledgements when the policy contract requires them.
 
 ### Targeted QA commands
 

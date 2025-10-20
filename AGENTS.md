@@ -47,6 +47,7 @@ Name of Organisation | Province | Status | Website URL | Contact Person | Contac
 - Deduplicate by canonical organisation/domain or person+organisation.
 - If uncertain, mark `Needs Review` with a one-line next action.
 - Justify use of role inboxes when no named email exists.
+- Plan→commit guardrail: before running CLI/MCP writes, capture a `*.plan` artefact describing intended changes and a matching `*.commit` artefact with the reviewed diff, `If-Match` value, and RAG metrics. Missing artefacts are rejected by policy.
 
 ## Deliverables
 

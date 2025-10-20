@@ -392,6 +392,7 @@ def _invoke_specs(
     fail_fast: bool = False,
     plan_guard: PlanCommitGuard | None = None,
     plan_paths: Sequence[Path] | None = None,
+    commit_paths: Sequence[Path] | None = None,
     force: bool = False,
 ) -> int:
     runner = _get_command_runner()
@@ -401,6 +402,7 @@ def _invoke_specs(
         fail_fast=fail_fast,
         plan_guard=plan_guard,
         plan_paths=plan_paths,
+        commit_paths=commit_paths,
         force=force,
     )
 
@@ -424,6 +426,7 @@ def _run_command_specs(
     console: Console | None = None,
     plan_guard: PlanCommitGuard | None = None,
     plan_paths: Sequence[Path] | None = None,
+    commit_paths: Sequence[Path] | None = None,
     force: bool = False,
 ) -> int:
     console = console or Console()
@@ -447,7 +450,10 @@ def _run_command_specs(
         if spec.requires_plan and plan_guard is not None:
             try:
                 plan_guard.require(
-                    f"qa.{spec.name.lower().replace(' ', '_')}", plan_paths, force=force
+                    f"qa.{spec.name.lower().replace(' ', '_')}",
+                    plan_paths,
+                    commit_paths=commit_paths,
+                    force=force,
                 )
             except PlanCommitError as exc:
                 raise click.ClickException(str(exc)) from exc
@@ -549,6 +555,13 @@ def qa_plan(skip_dbt: bool) -> None:
     help="Path(s) to plan artefacts authorising cleanup operations.",
 )
 @click.option(
+    "--commit",
+    "commits",
+    type=click.Path(path_type=Path),
+    multiple=True,
+    help="Path(s) to commit artefacts acknowledging diff review.",
+)
+@click.option(
     "--force",
     is_flag=True,
     help="Bypass plan enforcement when policy permits force commits.",
@@ -559,6 +572,7 @@ def qa_all(
     skip_dbt: bool,
     auto_bootstrap: bool,
     plans: Sequence[Path],
+    commits: Sequence[Path],
     force: bool,
 ) -> None:
     """Run the full QA suite that mirrors CI."""
@@ -572,6 +586,7 @@ def qa_all(
         fail_fast=fail_fast,
         plan_guard=None if dry_run else CLI_ENVIRONMENT.plan_guard,
         plan_paths=plans,
+        commit_paths=commits,
         force=force,
     )
     raise SystemExit(exit_code)

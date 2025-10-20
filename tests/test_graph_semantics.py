@@ -87,4 +87,20 @@ def test_generate_graph_semantics_report_flags_missing_province() -> None:
     assert not report.valid
     issue_codes = [issue.code for issue in report.issues]
     assert "MISSING_PROVINCE" in issue_codes
+    assert "PROVINCE_NODE_UNDERFLOW" in issue_codes
     assert any(isinstance(issue, GraphValidationIssue) for issue in report.issues)
+
+
+def test_generate_graph_semantics_report_flags_low_average_degree() -> None:
+    frame = _sample_frame()
+    frame.loc[0, "Status"] = ""
+    frame.loc[0, "Province"] = ""
+
+    report = generate_graph_semantics_report(
+        frame=frame,
+        dataset_uri="file://flight-schools.csv",
+        evidence_log_uri=None,
+    )
+
+    issue_codes = [issue.code for issue in report.issues]
+    assert "AVG_DEGREE_UNDERFLOW" in issue_codes

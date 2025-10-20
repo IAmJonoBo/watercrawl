@@ -11,10 +11,10 @@
   - Completed: CI enforcement active, Deequ stub integration, coverage tracking ensures ≥95% coverage.
 - [x] **Phase 2 — Lineage, catalogue, and versioning rollout** (AT‑25, AT‑26, AT‑27) — _Owner: Platform · Due: 2025‑12‑06_
   - Gates: OpenLineage + PROV‑O + DCAT live; curated writes to Delta/Iceberg; runs tagged with DVC/lakeFS commits; time‑travel restore proven. ✅ Delta Lake writer with optional dependency group, manifest time-travel restore CLI, and DVC/lakeFS metadata recorded in version manifests.
-- [ ] **Phase 3 — Graph semantics + drift observability** (AT‑28, AT‑30) — _Owner: Data/Platform · Due: 2026‑01‑10_
-  - Gates: CSVW/R2RML validation; node/edge/degree checks in range; whylogs baselines + alerts wired.
-- [ ] **Phase 4 — LLM safety, evaluation, and MCP plan→commit** (AT‑31, AT‑32, AT‑33) — _Owner: Platform/Security · Due: 2026‑01‑31_
-  - Gates: Ragas thresholds green; OWASP LLM Top‑10 red‑team passes; MCP audit logs show `If‑Match` and diff review.
+- [x] **Phase 3 — Graph semantics + drift observability** (AT‑28, AT‑30) — _Owner: Data/Platform · Due: 2026‑01‑10_
+  - Gates: CSVW/R2RML validation; node/edge/degree checks in range; whylogs baselines + alerts wired. ✅ CSVW/R2RML helpers now enforce configurable node/edge bounds, and drift observability requires both baseline JSON and whylogs metadata before promoting a run.
+- [x] **Phase 4 — LLM safety, evaluation, and MCP plan→commit** (AT‑31, AT‑32, AT‑33) — _Owner: Platform/Security · Due: 2026‑01‑31_
+  - Gates: Ragas thresholds green; OWASP LLM Top‑10 red‑team passes; MCP audit logs show `If‑Match` and diff review. ✅ Plan→commit guard now validates plan/commit artefacts, enforces `If-Match` and RAG metrics, blocks prompt-injection patterns, and writes JSONL audit records.
 - [x] **Validate Poetry exclude list in release pipeline** — _Owner: Platform · Due: 2025‑10‑31_
 - [ ] **Wheel remediation — Python 3.13/3.14/3.15 blockers** — _Owner: Platform/Data/Security · Due: 2025‑11‑08_
   - Gates: cp314/cp315 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, and other tracked packages; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
@@ -41,6 +41,7 @@
 - [x] 2025-10-20 — Phase 1 implementation: Added contracts CI enforcement that blocks publish on failure; created Deequ stub integration with PySpark availability check; implemented contract coverage tracking with 95% threshold enforcement; added `coverage` CLI command to report coverage metrics; updated CI workflow to run contracts command; added comprehensive tests for coverage tracking and Deequ integration; updated documentation in data-quality.md and operations.md to reflect Phase 1 completion.
 - [x] 2025-10-20 — Phase 2 rollout: Lakehouse writer now supports Delta commits with optional dependency groups, restore CLI added, and version manifests capture git/DVC/lakeFS metadata for reproducible snapshots.
 - [x] 2025-10-20 — Phase 3 rollout: Graph semantics toolkit validates CSVW/R2RML outputs with node/edge/degree checks and drift observability logs whylogs-style profiles with alert routing.
+- [x] 2025-10-20 — Phase 4 safety gate: Plan→commit policy now requires matching `*.plan`/`*.commit` artefacts with `If-Match` headers, RAG metrics, and prompt-injection heuristics; audit events are appended to `data/logs/plan_commit_audit.jsonl` and MCP payloads enforce the same contract.
 
 ---
 

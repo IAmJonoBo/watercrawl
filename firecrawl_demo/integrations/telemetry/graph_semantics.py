@@ -12,6 +12,7 @@ except ImportError:
     pd = None  # type: ignore
     _PANDAS_AVAILABLE = False
 
+from firecrawl_demo.core import config
 from firecrawl_demo.integrations.integration_plugins import (
     IntegrationPlugin,
     PluginConfigSchema,
@@ -179,6 +180,10 @@ def _build_graph_metrics(frame: Any) -> tuple[GraphMetrics, list[GraphValidation
     provinces = frame["Province"].dropna().astype(str)
     statuses = frame["Status"].dropna().astype(str)
 
+    organisations = organisations[organisations.str.strip() != ""]
+    provinces = provinces[provinces.str.strip() != ""]
+    statuses = statuses[statuses.str.strip() != ""]
+
     org_nodes = len(organisations.unique())
     province_nodes = len(provinces.unique())
     status_nodes = len(statuses.unique())
@@ -248,6 +253,92 @@ def _build_graph_metrics(frame: Any) -> tuple[GraphMetrics, list[GraphValidation
     return metrics, issues
 
 
+def _validate_metric_ranges(metrics: GraphMetrics) -> Iterable[GraphValidationIssue]:
+    settings = getattr(config, "GRAPH_SEMANTICS", None)
+    if settings is None or not getattr(settings, "enabled", True):
+        return []
+
+    def _issue(
+        code: str, message: str, value: Any | None = None
+    ) -> GraphValidationIssue:
+        details = {"value": value} if value is not None else None
+        return GraphValidationIssue(code=code, message=message, details=details)
+
+    if metrics.organisation_nodes < settings.min_organisation_nodes:
+        yield _issue(
+            "ORG_NODE_UNDERFLOW",
+            (
+                f"Organisation node count {metrics.organisation_nodes} below "
+                f"minimum {settings.min_organisation_nodes}."
+            ),
+            metrics.organisation_nodes,
+        )
+    if metrics.province_nodes < settings.min_province_nodes:
+        yield _issue(
+            "PROVINCE_NODE_UNDERFLOW",
+            (
+                f"Province node count {metrics.province_nodes} below "
+                f"minimum {settings.min_province_nodes}."
+            ),
+            metrics.province_nodes,
+        )
+    if metrics.status_nodes < settings.min_status_nodes:
+        yield _issue(
+            "STATUS_NODE_UNDERFLOW",
+            (
+                f"Status node count {metrics.status_nodes} below "
+                f"minimum {settings.min_status_nodes}."
+            ),
+            metrics.status_nodes,
+        )
+    if metrics.province_nodes > settings.max_province_nodes:
+        yield _issue(
+            "PROVINCE_NODE_OVERFLOW",
+            (
+                f"Province node count {metrics.province_nodes} exceeds "
+                f"maximum {settings.max_province_nodes}."
+            ),
+            metrics.province_nodes,
+        )
+    if metrics.status_nodes > settings.max_status_nodes:
+        yield _issue(
+            "STATUS_NODE_OVERFLOW",
+            (
+                f"Status node count {metrics.status_nodes} exceeds "
+                f"maximum {settings.max_status_nodes}."
+            ),
+            metrics.status_nodes,
+        )
+    if metrics.edge_count < settings.min_edge_count:
+        yield _issue(
+            "EDGE_UNDERFLOW",
+            (
+                f"Edge count {metrics.edge_count} below minimum "
+                f"{settings.min_edge_count}."
+            ),
+            metrics.edge_count,
+        )
+
+    if metrics.average_degree < settings.min_average_degree:
+        yield _issue(
+            "AVG_DEGREE_UNDERFLOW",
+            (
+                f"Average degree {metrics.average_degree:.2f} below minimum "
+                f"{settings.min_average_degree:.2f}."
+            ),
+            metrics.average_degree,
+        )
+    if metrics.average_degree > settings.max_average_degree:
+        yield _issue(
+            "AVG_DEGREE_OVERFLOW",
+            (
+                f"Average degree {metrics.average_degree:.2f} exceeds maximum "
+                f"{settings.max_average_degree:.2f}."
+            ),
+            metrics.average_degree,
+        )
+
+
 def generate_graph_semantics_report(
     *,
     frame: Any,
@@ -270,6 +361,7 @@ def generate_graph_semantics_report(
     issues.extend(_validate_r2rml(r2rml_mapping, frame))
     metrics, metric_issues = _build_graph_metrics(frame)
     issues.extend(metric_issues)
+    issues.extend(_validate_metric_ranges(metrics))
 
     return GraphSemanticsReport(
         csvw_metadata=csvw_metadata,

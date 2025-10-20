@@ -211,6 +211,8 @@ Document answers as they arrive and update this playbook accordingly.
 
 > The items below fold in the latest red‑team recommendations with **specific, testable actions**. Use these IDs in issues/PR titles. All actions are **feature‑flagged** where applicable and must prove reversibility.
 
+> **2025-10-20 update:** WC‑05/06 controls are live. Plan→commit now mandates matching `*.plan`/`*.commit` artefacts with `If-Match` headers, RAG metrics, prompt-injection filtering, and JSONL audit logs for every write.
+
 ### 5.1 High‑Impact Actions (execute first)
 
 |        ID | Description                                                                                                                                                                                | Owner    | Due | Dependencies | Acceptance / Quality Gates                                                                                              | Evidence / Artefacts                                                  | Links                                      |

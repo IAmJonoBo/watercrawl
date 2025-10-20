@@ -30,8 +30,33 @@ def _write_sample_csv(path: Path, include_email: bool = False) -> None:
 
 def _write_plan(tmp_path: Path) -> Path:
     plan_path = tmp_path / "change.plan"
-    plan_path.write_text("plan: enrich dataset", encoding="utf-8")
+    plan_payload = {
+        "changes": [
+            {
+                "field": "Website URL",
+                "value": "https://www.aerolabs.co.za",
+            }
+        ],
+        "instructions": "Promote verified website",
+    }
+    plan_path.write_text(json.dumps(plan_payload), encoding="utf-8")
     return plan_path
+
+
+def _write_commit(tmp_path: Path) -> Path:
+    commit_path = tmp_path / "change.commit"
+    commit_payload = {
+        "if_match": '"etag-aerolabs"',
+        "diff_summary": "Website URL updated to https://www.aerolabs.co.za",
+        "diff_format": "markdown",
+        "rag": {
+            "faithfulness": 0.92,
+            "context_precision": 0.88,
+            "answer_relevancy": 0.9,
+        },
+    }
+    commit_path.write_text(json.dumps(commit_payload), encoding="utf-8")
+    return commit_path
 
 
 def _make_record(name: str = "Atlas") -> SchoolRecord:
@@ -67,6 +92,7 @@ def test_cli_enrich_creates_output(tmp_path):
     output_path = tmp_path / "output.csv"
     _write_sample_csv(input_path, include_email=True)
     plan_path = _write_plan(tmp_path)
+    commit_path = _write_commit(tmp_path)
 
     original_manager = cli.LineageManager
     with cli.override_cli_dependencies(
@@ -85,6 +111,8 @@ def test_cli_enrich_creates_output(tmp_path):
                 "json",
                 "--plan",
                 str(plan_path),
+                "--commit",
+                str(commit_path),
             ],
         )
     assert result.exit_code == 0
@@ -92,6 +120,7 @@ def test_cli_enrich_creates_output(tmp_path):
     assert payload["rows_enriched"] == 1
     assert output_path.exists()
     assert "lineage_artifacts" in payload
+    assert payload["commit_artifacts"] == [str(commit_path)]
     lineage_dir = Path(payload["lineage_artifacts"]["openlineage"]).parent
     assert lineage_dir.exists()
 
@@ -117,10 +146,33 @@ def test_cli_enrich_requires_plan(tmp_path):
     assert "requires at least one *.plan" in result.output
 
 
+def test_cli_enrich_requires_commit(tmp_path):
+    input_path = tmp_path / "input.csv"
+    output_path = tmp_path / "output.csv"
+    _write_sample_csv(input_path, include_email=True)
+    plan_path = _write_plan(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli_group,
+        [
+            "enrich",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--plan",
+            str(plan_path),
+        ],
+    )
+    assert result.exit_code != 0
+    assert "requires at least one *.commit" in result.output
+
+
 def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
     input_path = tmp_path / "input.csv"
     output_path = tmp_path / "output.csv"
     plan_path = _write_plan(tmp_path)
+    commit_path = _write_commit(tmp_path)
     _write_sample_csv(input_path, include_email=True)
 
     with caplog.at_level("INFO", logger="firecrawl_demo.plan_commit"):
@@ -134,11 +186,20 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
                 str(output_path),
                 "--plan",
                 str(plan_path),
+                "--commit",
+                str(commit_path),
             ],
         )
     assert result.exit_code == 0
     assert "plan_commit.audit" in caplog.text
     assert str(plan_path) in caplog.text
+    audit_path = cli.plan_guard.contract.audit_log_path
+    assert audit_path.exists()
+    last_record = json.loads(
+        audit_path.read_text(encoding="utf-8").strip().splitlines()[-1]
+    )
+    assert last_record["allowed"] is True
+    assert str(plan_path) in last_record["plans"]
 
 
 def test_cli_enrich_force_rejected_when_policy_disallows(tmp_path):
@@ -498,7 +559,15 @@ def test_cli_enrich_warns_on_adapter_failures(tmp_path):
     ):
         runner = CliRunner()
         result = runner.invoke(
-            cli_group, ["enrich", str(input_path), "--plan", str(plan_path)]
+            cli_group,
+            [
+                "enrich",
+                str(input_path),
+                "--plan",
+                str(plan_path),
+                "--commit",
+                str(_write_commit(tmp_path)),
+            ],
         )
 
     assert result.exit_code == 0

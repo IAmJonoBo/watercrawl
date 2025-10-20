@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import replace
 from pathlib import Path
 
 import pandas as pd
@@ -11,6 +12,7 @@ from firecrawl_demo.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
 )
+from firecrawl_demo.integrations.telemetry.drift import DriftBaseline, save_baseline
 
 
 class StubResearchAdapter(ResearchAdapter):
@@ -342,6 +344,83 @@ def test_pipeline_reports_duplicate_names_in_sanity_findings():
     assert duplicate_findings, "Expected duplicate organisation sanity findings"
     assert {finding.row_id for finding in duplicate_findings} == {2, 3}
     assert report.metrics["quality_rejections"] == 0
+
+
+def test_pipeline_surfaces_drift_baseline_missing(monkeypatch, tmp_path):
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Baseline Check Aero",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    adapter = StubResearchAdapter({"Baseline Check Aero": ResearchFinding()})
+    missing_baseline = tmp_path / "missing_baseline.json"
+    patched_settings = replace(
+        config.DRIFT,
+        baseline_path=missing_baseline,
+        whylogs_baseline_path=None,
+        require_baseline=True,
+        require_whylogs_metadata=True,
+    )
+    monkeypatch.setattr(config, "DRIFT", patched_settings)
+
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    issues = {finding.issue for finding in report.sanity_findings}
+    assert "drift_baseline_missing" in issues
+    assert report.metrics.get("drift_missing_baseline", 0) == 1
+
+
+def test_pipeline_flags_missing_whylogs_metadata(monkeypatch, tmp_path):
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Baseline Check Aero",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    adapter = StubResearchAdapter({"Baseline Check Aero": ResearchFinding()})
+    baseline_path = tmp_path / "baseline.json"
+    save_baseline(
+        DriftBaseline(
+            status_counts={"Candidate": 1},
+            province_counts={"Gauteng": 1},
+            total_rows=1,
+        ),
+        baseline_path,
+    )
+    missing_metadata = tmp_path / "missing_meta.json"
+    patched_settings = replace(
+        config.DRIFT,
+        baseline_path=baseline_path,
+        whylogs_baseline_path=missing_metadata,
+        require_baseline=True,
+        require_whylogs_metadata=True,
+        whylogs_output_dir=tmp_path,
+    )
+    monkeypatch.setattr(config, "DRIFT", patched_settings)
+
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(df)
+
+    issues = {finding.issue for finding in report.sanity_findings}
+    assert "whylogs_baseline_missing" in issues
 
 
 def test_pipeline_blocks_low_quality_adapter_updates():

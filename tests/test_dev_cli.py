@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, cast
 
@@ -12,8 +13,33 @@ from apps.automation import cli as automation_cli
 
 def _write_plan(tmp_path: Path) -> Path:
     plan_path = tmp_path / "qa.plan"
-    plan_path.write_text("plan: qa cleanup", encoding="utf-8")
+    plan_payload = {
+        "changes": [
+            {
+                "field": "Command",
+                "value": "qa cleanup",
+            }
+        ],
+        "instructions": "Execute QA cleanup plan",
+    }
+    plan_path.write_text(json.dumps(plan_payload), encoding="utf-8")
     return plan_path
+
+
+def _write_commit(tmp_path: Path) -> Path:
+    commit_path = tmp_path / "qa.commit"
+    commit_payload = {
+        "if_match": '"etag-qa"',
+        "diff_summary": "QA cleanup tasks acknowledged",
+        "diff_format": "markdown",
+        "rag": {
+            "faithfulness": 0.85,
+            "context_precision": 0.82,
+            "answer_relevancy": 0.84,
+        },
+    }
+    commit_path.write_text(json.dumps(commit_payload), encoding="utf-8")
+    return commit_path
 
 
 def test_qa_plan_outputs_table() -> None:
@@ -39,6 +65,7 @@ class _RecordingRunner:
         console=None,
         plan_guard=None,
         plan_paths=None,
+        commit_paths=None,
         force: bool = False,
     ) -> int:
         if plan_guard is not None and not dry_run:
@@ -47,6 +74,7 @@ class _RecordingRunner:
                     plan_guard.require(
                         f"qa.{spec.name.lower().replace(' ', '_')}",
                         plan_paths,
+                        commit_paths=commit_paths,
                         force=force,
                     )
                     break
@@ -56,6 +84,7 @@ class _RecordingRunner:
         self.capture["console"] = console
         self.capture["plan_guard"] = plan_guard
         self.capture["plan_paths"] = plan_paths
+        self.capture["commit_paths"] = commit_paths
         self.capture["force"] = force
         return 0
 
@@ -162,6 +191,7 @@ def test_qa_all_requires_plan_for_cleanup(tmp_path: Path) -> None:
 
 def test_qa_all_accepts_plan(tmp_path: Path) -> None:
     plan_path = _write_plan(tmp_path)
+    commit_path = _write_commit(tmp_path)
     captured: dict[str, Any] = {}
     with automation_cli.override_command_runner(_RecordingRunner(captured)):
         runner = CliRunner()
@@ -174,9 +204,14 @@ def test_qa_all_accepts_plan(tmp_path: Path) -> None:
                 "--skip-dbt",
                 "--plan",
                 str(plan_path),
+                "--commit",
+                str(commit_path),
             ],
         )
     assert result.exit_code == 0
     plan_paths = captured.get("plan_paths")
     assert plan_paths is not None
     assert any(str(plan_path) in str(candidate) for candidate in plan_paths)
+    commit_paths = captured.get("commit_paths")
+    assert commit_paths is not None
+    assert any(str(commit_path) in str(candidate) for candidate in commit_paths)

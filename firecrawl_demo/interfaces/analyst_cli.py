@@ -222,6 +222,13 @@ def validate(input_path: Path, output_format: str, progress: bool | None) -> Non
     help="Path(s) to recorded plan artefacts required before writes.",
 )
 @click.option(
+    "--commit",
+    "commits",
+    type=click.Path(path_type=Path),
+    multiple=True,
+    help="Path(s) to recorded commit artefacts confirming diff review.",
+)
+@click.option(
     "--force",
     is_flag=True,
     help="Bypass plan enforcement when policy allows force commits.",
@@ -232,6 +239,7 @@ def enrich(
     output_format: str,
     progress: bool | None,
     plans: Sequence[Path],
+    commits: Sequence[Path],
     force: bool,
 ) -> None:
     """Validate, enrich, and export a dataset."""
@@ -246,7 +254,12 @@ def enrich(
     pipeline_factory = _get_cli_override("Pipeline", Pipeline)
     plan_guard = _get_cli_override("plan_guard", CLI_ENVIRONMENT.plan_guard)
     try:
-        validated_plans = plan_guard.require("cli.enrich", list(plans), force=force)
+        validation = plan_guard.require(
+            "cli.enrich",
+            list(plans),
+            commit_paths=list(commits),
+            force=force,
+        )
     except PlanCommitError as exc:
         raise click.ClickException(str(exc)) from exc
     evidence_sink = evidence_sink_factory()
@@ -294,7 +307,8 @@ def enrich(
         "issues": issues_payload,
         "output_path": str(target),
         "adapter_failures": report.metrics["adapter_failures"],
-        "plan_artifacts": [str(path) for path in validated_plans],
+        "plan_artifacts": [str(path) for path in validation.plan_paths],
+        "commit_artifacts": [str(path) for path in validation.commit_paths],
     }
     if report.lineage_artifacts:
         payload["lineage_artifacts"] = {
@@ -332,15 +346,15 @@ def enrich(
             click.echo(
                 f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."
             )
-        if validated_plans:
+        if validation.plan_paths:
             click.echo(
-                "Plan artefacts:"
-                + " "
-                + ", ".join(str(path) for path in validated_plans)
+                "Plan artefacts: "
+                + ", ".join(str(path) for path in validation.plan_paths)
             )
-        if report.lineage_artifacts:
+        if validation.commit_paths:
             click.echo(
-                f"Lineage artefacts: {report.lineage_artifacts.openlineage_path.parent}"
+                "Commit artefacts: "
+                + ", ".join(str(path) for path in validation.commit_paths)
             )
 
 

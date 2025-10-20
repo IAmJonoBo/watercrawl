@@ -192,6 +192,22 @@ class PlanCommitSettings:
     diff_format: str = "markdown"
     audit_topic: str = "audit.plan-commit"
     allow_force_commit: bool = False
+    require_commit: bool = True
+    require_if_match: bool = True
+    audit_log_path: Path = field(
+        default_factory=lambda: DATA_DIR / "logs" / "plan_commit_audit.jsonl"
+    )
+    max_diff_size: int = 5000
+    blocked_domains: tuple[str, ...] = ()
+    blocked_keywords: tuple[str, ...] = (
+        "rm -rf",
+        "drop database",
+        "curl http://",
+        "wget http://",
+    )
+    rag_faithfulness_threshold: float = 0.75
+    rag_context_precision_threshold: float = 0.7
+    rag_answer_relevancy_threshold: float = 0.7
 
 
 @dataclass(frozen=True)
@@ -241,6 +257,19 @@ class VersioningSettings:
 
 
 @dataclass(frozen=True)
+class GraphSemanticsSettings:
+    enabled: bool = True
+    min_organisation_nodes: int = 1
+    min_province_nodes: int = 1
+    max_province_nodes: int = len(PROVINCES)
+    min_status_nodes: int = 1
+    max_status_nodes: int = len(CANONICAL_STATUSES)
+    min_edge_count: int = 2
+    min_average_degree: float = 1.5
+    max_average_degree: float = 4.0
+
+
+@dataclass(frozen=True)
 class DriftSettings:
     enabled: bool = True
     threshold: float = 0.15
@@ -249,9 +278,12 @@ class DriftSettings:
     whylogs_output_dir: Path = field(
         default_factory=lambda: DATA_DIR / "observability" / "whylogs"
     )
+    require_baseline: bool = True
+    require_whylogs_metadata: bool = True
 
 
 DRIFT: DriftSettings = DriftSettings()
+GRAPH_SEMANTICS: GraphSemanticsSettings = GraphSemanticsSettings()
 
 
 def _build_deployment_settings(provider: SecretsProvider) -> DeploymentSettings:
@@ -312,6 +344,10 @@ def _build_drift_settings(provider: SecretsProvider) -> DriftSettings:
         baseline_path=baseline_path,
         whylogs_baseline_path=whylogs_baseline_path,
         whylogs_output_dir=whylogs_output,
+        require_baseline=_env_bool("DRIFT_REQUIRE_BASELINE", True, provider),
+        require_whylogs_metadata=_env_bool(
+            "DRIFT_REQUIRE_WHYLOGS_METADATA", True, provider
+        ),
     )
 
 
@@ -502,6 +538,7 @@ def configure(provider: SecretsProvider | None = None) -> None:
     global OBSERVABILITY
     global POLICY_GUARDS
     global PLAN_COMMIT
+    global GRAPH_SEMANTICS
     global LINEAGE
     global LAKEHOUSE
     global DEPLOYMENT
@@ -635,6 +672,20 @@ def configure(provider: SecretsProvider | None = None) -> None:
         cache_seconds=_env_int("OPA_CACHE_SECONDS", 30, SECRETS_PROVIDER),
     )
 
+    blocked_keyword_env = _env_list("PLAN_COMMIT_BLOCKED_KEYWORDS", SECRETS_PROVIDER)
+    default_blocked_keywords = [
+        "rm -rf",
+        "drop database",
+        "curl http://",
+        "wget http://",
+    ]
+    if blocked_keyword_env:
+        combined_keywords = list(
+            dict.fromkeys(blocked_keyword_env + default_blocked_keywords)
+        )
+    else:
+        combined_keywords = default_blocked_keywords
+
     PLAN_COMMIT = PlanCommitSettings(
         require_plan=_env_bool("PLAN_COMMIT_REQUIRED", True, SECRETS_PROVIDER),
         diff_format=_get_value("PLAN_COMMIT_DIFF_FORMAT", "markdown", SECRETS_PROVIDER)
@@ -646,6 +697,44 @@ def configure(provider: SecretsProvider | None = None) -> None:
         allow_force_commit=_env_bool(
             "PLAN_COMMIT_ALLOW_FORCE", False, SECRETS_PROVIDER
         ),
+        require_commit=_env_bool("PLAN_COMMIT_REQUIRE_COMMIT", True, SECRETS_PROVIDER),
+        require_if_match=_env_bool(
+            "PLAN_COMMIT_REQUIRE_IF_MATCH", True, SECRETS_PROVIDER
+        ),
+        audit_log_path=_env_path("PLAN_COMMIT_AUDIT_LOG_PATH", SECRETS_PROVIDER)
+        or (DATA_DIR / "logs" / "plan_commit_audit.jsonl"),
+        max_diff_size=_env_int("PLAN_COMMIT_MAX_DIFF_SIZE", 5000, SECRETS_PROVIDER),
+        blocked_domains=tuple(
+            _env_list("PLAN_COMMIT_BLOCKED_DOMAINS", SECRETS_PROVIDER)
+        ),
+        blocked_keywords=tuple(combined_keywords),
+        rag_faithfulness_threshold=_env_float(
+            "PLAN_COMMIT_RAG_FAITHFULNESS", 0.75, SECRETS_PROVIDER
+        ),
+        rag_context_precision_threshold=_env_float(
+            "PLAN_COMMIT_RAG_CONTEXT_PRECISION", 0.7, SECRETS_PROVIDER
+        ),
+        rag_answer_relevancy_threshold=_env_float(
+            "PLAN_COMMIT_RAG_ANSWER_RELEVANCY", 0.7, SECRETS_PROVIDER
+        ),
+    )
+
+    GRAPH_SEMANTICS = GraphSemanticsSettings(
+        enabled=_env_bool("GRAPH_SEMANTICS_ENABLED", True, SECRETS_PROVIDER),
+        min_organisation_nodes=_env_int(
+            "GRAPH_MIN_ORGANISATION_NODES", 1, SECRETS_PROVIDER
+        ),
+        min_province_nodes=_env_int("GRAPH_MIN_PROVINCE_NODES", 1, SECRETS_PROVIDER),
+        max_province_nodes=_env_int(
+            "GRAPH_MAX_PROVINCE_NODES", len(PROVINCES), SECRETS_PROVIDER
+        ),
+        min_status_nodes=_env_int("GRAPH_MIN_STATUS_NODES", 1, SECRETS_PROVIDER),
+        max_status_nodes=_env_int(
+            "GRAPH_MAX_STATUS_NODES", len(CANONICAL_STATUSES), SECRETS_PROVIDER
+        ),
+        min_edge_count=_env_int("GRAPH_MIN_EDGE_COUNT", 2, SECRETS_PROVIDER),
+        min_average_degree=_env_float("GRAPH_MIN_AVG_DEGREE", 1.5, SECRETS_PROVIDER),
+        max_average_degree=_env_float("GRAPH_MAX_AVG_DEGREE", 4.0, SECRETS_PROVIDER),
     )
 
     lineage_root = _env_path("LINEAGE_ARTIFACT_ROOT", SECRETS_PROVIDER) or (

@@ -79,7 +79,7 @@ The `firecrawl_demo.infrastructure.planning` module provides an `InfrastructureP
 - **CrawlerPlan** captures the frontier backend, scheduling policy, politeness delays, depth limits, trap-rule file, and user agent.
 - **ObservabilityPlan** defines probe paths, SLO thresholds, and alert routes.
 - **PolicyPlan** records the OPA bundle path, decision namespace, and enforcement mode.
-- **PlanCommitContract** encodes the plan→commit guardrails for automation, including the audit topic used by the evidence sink and optional force-commit escape hatches.
+- **PlanCommitContract** encodes the plan→commit guardrails for automation, including required plan/commit artefacts, `If-Match`/RAG thresholds, append-only audit log paths, and optional force-commit escape hatches.
 
 Call `build_infrastructure_plan()` to obtain a frozen snapshot suitable for documentation exports, MCP tool manifests, or CI assertions before agents are allowed to crawl.
 

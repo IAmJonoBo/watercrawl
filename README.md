@@ -75,6 +75,8 @@ The exported requirements files include pinned versions with SHA256 hashes for r
 - **CLI** commands for analysts and automation runs (`firecrawl_demo.interfaces.cli`).
 - **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
   remediation guidance into the evidence log and MCP.
+- **Graph semantics + drift observability** with CSVW/R2RML validation, configurable node/edge thresholds, and mandatory whylogs baselines that surface `drift_baseline_missing` / `whylogs_baseline_missing` sanity findings when artefacts are absent.
+- **Plan→commit safety gate** enforcing plan and commit artefacts (including `If-Match` headers and RAG metrics), prompt-injection heuristics, and append-only audit logs to `data/logs/plan_commit_audit.jsonl` for MCP and CLI writes.
 - **Data contracts** with a dual Great Expectations + dbt suite, executed via the `contracts`
   CLI command and archived as evidence artefacts for each dataset revision.
 - **Lineage + lakehouse artefacts** generated alongside every enrichment run (OpenLineage, PROV-O, DCAT, and snapshot manifests) so analysts can trace provenance and reproduce curated tables. PROV graphs record the enrichment agent, evidence counts, and quality metrics while DCAT entries expose reproducibility commands, contact metadata, and distribution links for manifests and lineage bundles. CLI runs now print the lineage directory plus lakehouse/version manifest paths for immediate runbook inclusion.

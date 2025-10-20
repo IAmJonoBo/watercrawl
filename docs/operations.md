@@ -126,7 +126,9 @@ poetry run python -m dev.cli mcp summarize-last-run
 poetry run python -m dev.cli mcp list-sanity-issues
 ```
 
-> **Plan guard:** When invoking `enrich_dataset` via MCP, include `plan_artifacts` in the payload so the server can record plan→commit evidence before executing destructive work.
+> **Plan guard:** When invoking `enrich_dataset` via MCP, include both `plan_artifacts` **and** `commit_artifacts` plus an `if_match` header in the payload so the server can record plan→commit evidence before executing destructive work. Commit artefacts capture the reviewed diff, policy decision, and RAG metrics; missing artefacts are rejected unless `PLAN_COMMIT_ALLOW_FORCE=1`.
+> - Tune thresholds via `PLAN_COMMIT_RAG_FAITHFULNESS`, `PLAN_COMMIT_RAG_CONTEXT_PRECISION`, and `PLAN_COMMIT_RAG_ANSWER_RELEVANCY`.
+> - Audit events append to `PLAN_COMMIT_AUDIT_LOG_PATH` (defaults to `data/logs/plan_commit_audit.jsonl`).
 
 ### Data Lakehouse Operations
 
@@ -155,6 +157,12 @@ poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3
 - Configure drift baselines via `DRIFT_BASELINE_PATH` (JSON with `status_counts`, `province_counts`, and `total_rows`). Use `python -m firecrawl_demo.integrations.telemetry.drift` helpers or the provided notebook to generate the initial baseline from a trusted dataset.
 - Whylogs profiles are emitted to `DRIFT_WHYLOGS_OUTPUT` (default `data/observability/whylogs/`). Set `DRIFT_WHYLOGS_BASELINE` to a stored profile metadata JSON to enable automatic alerting.
 - Each pipeline run logs a whylogs-compatible profile (fallback JSON when the `whylogs` package is unavailable) and raises alerts when category ratios drift beyond `DRIFT_THRESHOLD` (default `0.15`). Alerts surface in `PipelineReport.drift_report` and increment the `drift_alerts` metric for downstream dashboards.
+- Set `DRIFT_REQUIRE_BASELINE=1` and `DRIFT_REQUIRE_WHYLOGS_METADATA=1` to raise `drift_baseline_missing` and `whylogs_baseline_missing` sanity findings when either artefact is absent, ensuring analysts remediate missing baselines before promoting a run.
+
+### Graph semantics metrics
+
+- CSVW and R2RML outputs now enforce configurable bounds via `GRAPH_SEMANTICS_ENABLED=1` and the `GRAPH_MIN_*` / `GRAPH_MAX_*` environment variables.
+- Defaults guard against empty provinces/statuses, isolated organisation nodes, and low-degree graphs. Violations are reported as `GraphValidationIssue` entries (for example `PROVINCE_NODE_UNDERFLOW`, `EDGE_UNDERFLOW`, or `AVG_DEGREE_UNDERFLOW`) and counted in the pipeline metrics.
 
 - Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
 

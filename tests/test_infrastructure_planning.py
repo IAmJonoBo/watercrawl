@@ -25,6 +25,13 @@ def test_build_infrastructure_plan_uses_defaults() -> None:
     assert plan.policy.enforcement_mode == "enforce"
     assert plan.policy.enforcing is True
     assert plan.plan_commit.require_plan is True
+    assert plan.plan_commit.require_commit is True
+    assert plan.plan_commit.require_if_match is True
+    assert plan.plan_commit.audit_log_path.name == "plan_commit_audit.jsonl"
+    assert plan.plan_commit.max_diff_size == 5000
+    assert plan.plan_commit.rag_thresholds["faithfulness"] == 0.75
+    assert plan.deployment.commit_required is True
+    assert plan.deployment.audit_log_path.name == "plan_commit_audit.jsonl"
 
 
 def test_build_infrastructure_plan_respects_configuration() -> None:
@@ -53,6 +60,15 @@ def test_build_infrastructure_plan_respects_configuration() -> None:
             "PLAN_COMMIT_DIFF_FORMAT": "json",
             "PLAN_COMMIT_AUDIT_TOPIC": "audit.plan-commit.test",
             "PLAN_COMMIT_ALLOW_FORCE": "1",
+            "PLAN_COMMIT_REQUIRE_COMMIT": "0",
+            "PLAN_COMMIT_REQUIRE_IF_MATCH": "0",
+            "PLAN_COMMIT_AUDIT_LOG_PATH": "logs/custom_audit.jsonl",
+            "PLAN_COMMIT_MAX_DIFF_SIZE": "2048",
+            "PLAN_COMMIT_BLOCKED_DOMAINS": "blocked.example.com",
+            "PLAN_COMMIT_BLOCKED_KEYWORDS": "rm -rf,net use",
+            "PLAN_COMMIT_RAG_FAITHFULNESS": "0.85",
+            "PLAN_COMMIT_RAG_CONTEXT_PRECISION": "0.8",
+            "PLAN_COMMIT_RAG_ANSWER_RELEVANCY": "0.75",
         }
     )
 
@@ -87,6 +103,17 @@ def test_build_infrastructure_plan_respects_configuration() -> None:
     assert plan.plan_commit.diff_format == "json"
     assert plan.plan_commit.audit_topic == "audit.plan-commit.test"
     assert plan.plan_commit.allow_force_commit is True
+    assert plan.plan_commit.require_commit is False
+    assert plan.plan_commit.require_if_match is False
+    assert str(plan.plan_commit.audit_log_path).endswith("logs/custom_audit.jsonl")
+    assert plan.plan_commit.max_diff_size == 2048
+    assert plan.plan_commit.blocked_domains == ("blocked.example.com",)
+    assert plan.plan_commit.blocked_keywords == ("rm -rf", "net use")
+    assert plan.plan_commit.rag_thresholds["faithfulness"] == 0.85
+    assert plan.plan_commit.rag_thresholds["context_precision"] == 0.8
+    assert plan.plan_commit.rag_thresholds["answer_relevancy"] == 0.75
+    assert plan.deployment.commit_required is False
+    assert str(plan.deployment.audit_log_path).endswith("logs/custom_audit.jsonl")
 
 
 def test_infrastructure_plan_matches_baseline_snapshot() -> None:

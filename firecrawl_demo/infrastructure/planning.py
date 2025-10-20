@@ -76,6 +76,13 @@ class PlanCommitContract:
     diff_format: str
     audit_topic: str
     allow_force_commit: bool
+    require_commit: bool
+    require_if_match: bool
+    audit_log_path: Path
+    max_diff_size: int
+    blocked_domains: tuple[str, ...]
+    blocked_keywords: tuple[str, ...]
+    rag_thresholds: Mapping[str, float]
 
 
 @dataclass(frozen=True)
@@ -87,6 +94,8 @@ class DeploymentAlignment:
     opa_decision_path: str
     automation_topics: tuple[str, ...]
     plan_required: bool
+    commit_required: bool
+    audit_log_path: Path
 
 
 @dataclass(frozen=True)
@@ -150,6 +159,17 @@ def build_infrastructure_plan() -> InfrastructurePlan:
         diff_format=plan_commit_settings.diff_format,
         audit_topic=plan_commit_settings.audit_topic,
         allow_force_commit=plan_commit_settings.allow_force_commit,
+        require_commit=plan_commit_settings.require_commit,
+        require_if_match=plan_commit_settings.require_if_match,
+        audit_log_path=plan_commit_settings.audit_log_path,
+        max_diff_size=plan_commit_settings.max_diff_size,
+        blocked_domains=plan_commit_settings.blocked_domains,
+        blocked_keywords=plan_commit_settings.blocked_keywords,
+        rag_thresholds={
+            "faithfulness": plan_commit_settings.rag_faithfulness_threshold,
+            "context_precision": plan_commit_settings.rag_context_precision_threshold,
+            "answer_relevancy": plan_commit_settings.rag_answer_relevancy_threshold,
+        },
     )
 
     deployment_alignment = DeploymentAlignment(
@@ -162,6 +182,8 @@ def build_infrastructure_plan() -> InfrastructurePlan:
         opa_decision_path=policy_settings.decision_path,
         automation_topics=(plan_commit_settings.audit_topic,),
         plan_required=plan_commit_settings.require_plan,
+        commit_required=plan_commit_settings.require_commit,
+        audit_log_path=plan_commit_settings.audit_log_path,
     )
 
     return InfrastructurePlan(

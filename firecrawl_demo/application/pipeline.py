@@ -523,11 +523,30 @@ class Pipeline(PipelineService):
             comparator = self.drift_tools.get("compare_to_baseline")
             load_baseline_fn = self.drift_tools.get("load_baseline")
             baseline_path = _resolve_path(config.DRIFT.baseline_path)
+            baseline_missing = not (
+                baseline_path is not None and baseline_path.exists()
+            )
+            if config.DRIFT.require_baseline and baseline_missing:
+                metrics["drift_missing_baseline"] = (
+                    metrics.get("drift_missing_baseline", 0) + 1
+                )
+                sanity_findings.append(
+                    SanityCheckFinding(
+                        row_id=0,
+                        organisation="Global",
+                        issue="drift_baseline_missing",
+                        remediation=(
+                            "Generate a baseline JSON with "
+                            "`firecrawl_demo.integrations.telemetry.drift.save_baseline` "
+                            "and point DRIFT_BASELINE_PATH to the stored file."
+                        ),
+                    )
+                )
+                metrics["sanity_issues"] = metrics.get("sanity_issues", 0) + 1
             if (
                 callable(comparator)
                 and callable(load_baseline_fn)
-                and baseline_path
-                and baseline_path.exists()
+                and not baseline_missing
             ):
                 try:
                     baseline = load_baseline_fn(baseline_path)
@@ -563,7 +582,33 @@ class Pipeline(PipelineService):
                         baseline_meta_path = _resolve_path(
                             config.DRIFT.whylogs_baseline_path
                         )
-                        if baseline_meta_path and baseline_meta_path.exists():
+                        baseline_meta_missing = not (
+                            baseline_meta_path is not None
+                            and baseline_meta_path.exists()
+                        )
+                        if (
+                            config.DRIFT.require_whylogs_metadata
+                            and baseline_meta_missing
+                        ):
+                            metrics["drift_missing_whylogs_baseline"] = (
+                                metrics.get("drift_missing_whylogs_baseline", 0) + 1
+                            )
+                            sanity_findings.append(
+                                SanityCheckFinding(
+                                    row_id=0,
+                                    organisation="Global",
+                                    issue="whylogs_baseline_missing",
+                                    remediation=(
+                                        "Persist metadata JSON from an approved baseline "
+                                        "profile (via `log_whylogs_profile`) and set "
+                                        "DRIFT_WHYLOGS_BASELINE."
+                                    ),
+                                )
+                            )
+                            metrics["sanity_issues"] = (
+                                metrics.get("sanity_issues", 0) + 1
+                            )
+                        if not baseline_meta_missing:
                             baseline_meta = load_meta_fn(baseline_meta_path)
                             observed_meta = load_meta_fn(profile_info.metadata_path)
                             alerts = compare_meta_fn(
