@@ -51,6 +51,12 @@ jobs:
         run: >-
           poetry run pytest --maxfail=5 --disable-warnings --cov=firecrawl_demo
           --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=pytest-results.xml
+      - name: Run data contracts
+        run: >-
+          poetry run python -m apps.analyst.cli contracts data/sample.csv --format json
+      - name: Check contract coverage
+        run: >-
+          poetry run python -m apps.analyst.cli coverage --format json
       - name: Validate wheel contents
         run: poetry run python -m scripts.validate_wheel
       - name: Aggregate Problems Report

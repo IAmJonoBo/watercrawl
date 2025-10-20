@@ -65,9 +65,14 @@ poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-repo
 ### Data Quality
 
 ```bash
-poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample.csv --format json
+poetry run python -m apps.analyst.cli contracts data/sample.csv --format json
+poetry run python -m apps.analyst.cli coverage --format json
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
+
+The `coverage` command reports contract coverage across all curated tables and
+exits with code 1 if coverage is below 95%. This ensures that all curated
+datasets have quality checks defined before they are published.
 
 ### Infrastructure & Config
 

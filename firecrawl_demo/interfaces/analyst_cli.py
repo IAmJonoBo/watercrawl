@@ -24,8 +24,10 @@ from firecrawl_demo.infrastructure.evidence import build_evidence_sink
 from firecrawl_demo.integrations.contracts import (
     CuratedDatasetContractResult,
     DbtContractResult,
+    calculate_contract_coverage,
     persist_contract_artifacts,
     record_contracts_evidence,
+    report_coverage,
     run_dbt_contract_tests,
     validate_curated_file,
 )
@@ -442,6 +444,58 @@ def contracts(input_path: Path, output_format: str) -> None:
                     )
 
     if not payload["success"]:
+        raise click.exceptions.Exit(1)
+
+
+@cli.command("coverage")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    default="text",
+    help="Output format (text or JSON).",
+)
+@click.option(
+    "--output",
+    "output_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="Write JSON report to specified file.",
+)
+def coverage_command(output_format: str, output_path: Path | None) -> None:
+    """Report contract coverage across curated tables.
+
+    Calculates the percentage of curated tables covered by Great Expectations,
+    dbt, and Deequ contracts. Exits with code 1 if coverage is below 95%.
+    """
+    coverage = calculate_contract_coverage()
+
+    if output_format == "json" or output_path:
+        report = report_coverage(output_path)
+        if output_format == "json":
+            click.echo(json.dumps(report, indent=2))
+    else:
+        click.echo(f"Contract Coverage Report")
+        click.echo(f"========================")
+        click.echo(f"Total tables: {coverage.total_tables}")
+        click.echo(f"Covered tables: {coverage.covered_tables}")
+        click.echo(f"Coverage: {coverage.coverage_percent:.1f}%")
+        click.echo(f"Threshold: 95.0%")
+        click.echo(f"Status: {'✓ PASS' if coverage.meets_threshold else '✗ FAIL'}")
+        click.echo()
+        click.echo("Coverage by tool:")
+        for tool, count in coverage.coverage_by_tool.items():
+            click.echo(f"  {tool}: {count} tables")
+        if coverage.uncovered_tables:
+            click.echo()
+            click.echo("Uncovered tables:")
+            for table in coverage.uncovered_tables:
+                click.echo(f"  - {table}")
+
+    if not coverage.meets_threshold:
+        click.echo(
+            f"\nERROR: Coverage ({coverage.coverage_percent:.1f}%) is below threshold (95%)",
+            err=True,
+        )
         raise click.exceptions.Exit(1)
 
 
