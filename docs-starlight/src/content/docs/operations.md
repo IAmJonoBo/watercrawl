@@ -101,6 +101,7 @@ or missing evidence before publishing results.
 - The optional Poetry group `ui` bundles Streamlit and PyArrow (currently limited to Python `<3.14`). Default installs skip the group so baseline environments no longer fail on missing Arrow wheels; run `poetry install --with ui` from Python 3.12/3.13 whenever you need the analyst UI or first-class Parquet exports.
 - The `lakehouse` dependency group adds native Delta Lake support. Use `poetry install --with ui --with lakehouse` on Python 3.12/3.13 to record real Delta commits; without the group the writer falls back to filesystem snapshots and marks the manifest as degraded.
 - Restore snapshots programmatically (`poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3 --output tmp.csv`) to verify time-travel and roll back runs when required.
+- Configure drift monitoring via `DRIFT_BASELINE_PATH`, `DRIFT_WHYLOGS_OUTPUT`, and `DRIFT_WHYLOGS_BASELINE`. Each pipeline run logs a whylogs-style profile (fallback JSON when the library is absent) and surfaces alerts whenever ratios deviate beyond `DRIFT_THRESHOLD`.
 
 The `.sqlfluff` configuration is already scoped to `data_contracts/analytics`, so teams stay on the same dbt golden path regardless of where the lint is executed.
 

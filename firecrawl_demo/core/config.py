@@ -240,6 +240,20 @@ class VersioningSettings:
     )
 
 
+@dataclass(frozen=True)
+class DriftSettings:
+    enabled: bool = True
+    threshold: float = 0.15
+    baseline_path: Path | None = None
+    whylogs_baseline_path: Path | None = None
+    whylogs_output_dir: Path = field(
+        default_factory=lambda: DATA_DIR / "observability" / "whylogs"
+    )
+
+
+DRIFT: DriftSettings = DriftSettings()
+
+
 def _build_deployment_settings(provider: SecretsProvider) -> DeploymentSettings:
     profile = (_get_value("DEPLOYMENT_PROFILE", "dev", provider) or "dev").lower()
     override = _get_value("DEPLOYMENT_CODEX_ENABLED", None, provider)
@@ -277,6 +291,27 @@ def _build_versioning_settings(provider: SecretsProvider) -> VersioningSettings:
         dvc_remote=_get_value("VERSIONING_DVC_REMOTE", None, provider),
         lakefs_repo=_get_value("VERSIONING_LAKEFS_REPO", None, provider),
         reproduce_command=reproduce_command,
+    )
+
+
+def _build_drift_settings(provider: SecretsProvider) -> DriftSettings:
+    enabled = _env_bool("DRIFT_ENABLED", True, provider)
+    threshold_raw = _get_value("DRIFT_THRESHOLD", None, provider)
+    try:
+        threshold = float(threshold_raw) if threshold_raw is not None else 0.15
+    except ValueError:
+        threshold = 0.15
+    baseline_path = _env_path("DRIFT_BASELINE_PATH", provider)
+    whylogs_baseline_path = _env_path("DRIFT_WHYLOGS_BASELINE", provider)
+    whylogs_output = _env_path("DRIFT_WHYLOGS_OUTPUT", provider)
+    if whylogs_output is None:
+        whylogs_output = DATA_DIR / "observability" / "whylogs"
+    return DriftSettings(
+        enabled=enabled,
+        threshold=threshold,
+        baseline_path=baseline_path,
+        whylogs_baseline_path=whylogs_baseline_path,
+        whylogs_output_dir=whylogs_output,
     )
 
 
@@ -471,6 +506,7 @@ def configure(provider: SecretsProvider | None = None) -> None:
     global LAKEHOUSE
     global DEPLOYMENT
     global VERSIONING
+    global DRIFT
 
     SECRETS_PROVIDER = provider or build_provider_from_environment()
 
@@ -669,6 +705,7 @@ def configure(provider: SecretsProvider | None = None) -> None:
 
     DEPLOYMENT = _build_deployment_settings(SECRETS_PROVIDER)
     VERSIONING = _build_versioning_settings(SECRETS_PROVIDER)
+    DRIFT = _build_drift_settings(SECRETS_PROVIDER)
 
 
 def resolve_api_key(

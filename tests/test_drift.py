@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
 from firecrawl_demo.integrations.telemetry.drift import (
     DriftBaseline,
     DriftReport,
+    WhylogsAlert,
     compare_to_baseline,
+    compare_whylogs_metadata,
+    load_baseline,
+    load_whylogs_metadata,
+    log_whylogs_profile,
+    save_baseline,
 )
 
 
@@ -43,3 +51,40 @@ def test_compare_to_baseline_flags_large_shift() -> None:
         report.status_drift["Verified"].observed_ratio
         != report.status_drift["Verified"].baseline_ratio
     )
+
+
+def test_save_and_load_baseline(tmp_path: Path) -> None:
+    baseline = DriftBaseline(
+        status_counts={"Verified": 5},
+        province_counts={"Gauteng": 5},
+        total_rows=5,
+    )
+    path = tmp_path / "baseline.json"
+    save_baseline(baseline, path)
+
+    loaded = load_baseline(path)
+    assert loaded.status_counts == baseline.status_counts
+    assert loaded.total_rows == baseline.total_rows
+
+
+def test_whylogs_profile_fallback_and_alerts(tmp_path: Path) -> None:
+    baseline_frame = _sample_frame()
+    observed_frame = _sample_frame()
+    observed_frame.loc[1, "Status"] = "Verified"
+
+    baseline_profile = log_whylogs_profile(
+        baseline_frame, tmp_path / "baseline_profile.bin"
+    )
+    observed_profile = log_whylogs_profile(
+        observed_frame, tmp_path / "observed_profile.bin"
+    )
+
+    baseline_metadata = load_whylogs_metadata(baseline_profile.metadata_path)
+    observed_metadata = load_whylogs_metadata(observed_profile.metadata_path)
+
+    alerts = compare_whylogs_metadata(
+        baseline_metadata, observed_metadata, threshold=0.10
+    )
+
+    assert all(isinstance(alert, WhylogsAlert) for alert in alerts)
+    assert any(alert.column == "Status" for alert in alerts)

@@ -114,6 +114,8 @@ ignore = ["E203", "E501"]
 
 > Streamlit and PyArrow ship in the optional Poetry dependency group `ui`. Default installs skip that group to keep Python 3.14 environments green; run `poetry install --with ui` from Python 3.12/3.13 when you need the analyst UI or Parquet exports.
 
+> Delta Lake support is packaged in the optional `lakehouse` group. Combine it with the UI extras (`poetry install --with ui --with lakehouse`) when you need native Delta commits or time-travel restores; otherwise the writer falls back to filesystem snapshots.
+
 Run all linters: `poetry run pre-commit run --all-files`
 
 ### Testing Standards

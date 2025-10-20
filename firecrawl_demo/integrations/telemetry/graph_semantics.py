@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
+import re
+from dataclasses import dataclass, field
+from typing import Any, Iterable
 
 try:
     import pandas as pd
@@ -17,6 +19,48 @@ from firecrawl_demo.integrations.integration_plugins import (
     PluginHealthStatus,
     register_plugin,
 )
+
+REQUIRED_COLUMNS = (
+    "Name of Organisation",
+    "Province",
+    "Status",
+)
+
+
+@dataclass
+class GraphValidationIssue:
+    code: str
+    message: str
+    details: dict[str, Any] | None = None
+
+
+@dataclass
+class GraphMetrics:
+    organisation_nodes: int
+    province_nodes: int
+    status_nodes: int
+    edge_count: int
+    min_degree: int
+    max_degree: int
+    average_degree: float
+    node_count: int = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.node_count = (
+            self.organisation_nodes + self.province_nodes + self.status_nodes
+        )
+
+
+@dataclass
+class GraphSemanticsReport:
+    csvw_metadata: dict[str, Any]
+    r2rml_mapping: str
+    metrics: GraphMetrics
+    issues: list[GraphValidationIssue]
+
+    @property
+    def valid(self) -> bool:
+        return not self.issues
 
 
 def build_csvw_metadata(
@@ -72,7 +116,177 @@ def build_r2rml_mapping(*, dataset_uri: str, table_name: str) -> str:
     return mapping.strip()
 
 
-__all__ = ["build_csvw_metadata", "build_r2rml_mapping"]
+def _validate_required_columns(frame: Any) -> Iterable[GraphValidationIssue]:
+    missing = [column for column in REQUIRED_COLUMNS if column not in frame.columns]
+    for column in missing:
+        yield GraphValidationIssue(
+            code="MISSING_COLUMN",
+            message=f"Required column '{column}' not found in dataset.",
+            details={"column": column},
+        )
+
+
+def _validate_csvw(
+    metadata: dict[str, Any], frame: Any
+) -> Iterable[GraphValidationIssue]:
+    schema_columns = metadata.get("table", {}).get("tableSchema", {}).get("columns", [])
+    csvw_columns = [column.get("name") for column in schema_columns]
+    extra_columns = [column for column in csvw_columns if column not in frame.columns]
+    for column in extra_columns:
+        yield GraphValidationIssue(
+            code="CSVW_UNKNOWN_COLUMN",
+            message=f"CSVW metadata references unknown column '{column}'.",
+            details={"column": column},
+        )
+
+
+R2RML_COLUMN_PATTERN = re.compile(r'rr:column\s+"(?P<column>[^"]+)"')
+
+
+def _validate_r2rml(mapping: str, frame: Any) -> Iterable[GraphValidationIssue]:
+    referenced_columns = R2RML_COLUMN_PATTERN.findall(mapping)
+    for column in referenced_columns:
+        if column not in frame.columns:
+            yield GraphValidationIssue(
+                code="R2RML_UNKNOWN_COLUMN",
+                message=f"R2RML mapping references unknown column '{column}'.",
+                details={"column": column},
+            )
+
+
+def _build_graph_metrics(frame: Any) -> tuple[GraphMetrics, list[GraphValidationIssue]]:
+    issues: list[GraphValidationIssue] = []
+    if not _PANDAS_AVAILABLE or not hasattr(frame, "dropna"):
+        return (
+            GraphMetrics(
+                organisation_nodes=0,
+                province_nodes=0,
+                status_nodes=0,
+                edge_count=0,
+                min_degree=0,
+                max_degree=0,
+                average_degree=0.0,
+            ),
+            [
+                GraphValidationIssue(
+                    code="PANDAS_REQUIRED",
+                    message="Graph metric calculation requires pandas.",
+                )
+            ],
+        )
+
+    organisations = frame["Name of Organisation"].dropna().astype(str)
+    provinces = frame["Province"].dropna().astype(str)
+    statuses = frame["Status"].dropna().astype(str)
+
+    org_nodes = len(organisations.unique())
+    province_nodes = len(provinces.unique())
+    status_nodes = len(statuses.unique())
+
+    degree_map: dict[str, int] = {}
+    edge_count = 0
+    for _, row in frame.iterrows():
+        org = str(row.get("Name of Organisation", "")).strip()
+        province = str(row.get("Province", "")).strip()
+        status = str(row.get("Status", "")).strip()
+
+        if not org:
+            issues.append(
+                GraphValidationIssue(
+                    code="MISSING_ORGANISATION",
+                    message="Row missing organisation name for graph construction.",
+                )
+            )
+            continue
+
+        degree_map.setdefault(org, 0)
+
+        if province:
+            degree_map[org] += 1
+            edge_count += 1
+        else:
+            issues.append(
+                GraphValidationIssue(
+                    code="MISSING_PROVINCE",
+                    message=f"Organisation '{org}' missing province edge.",
+                    details={"organisation": org},
+                )
+            )
+
+        if status:
+            degree_map[org] += 1
+            edge_count += 1
+        else:
+            issues.append(
+                GraphValidationIssue(
+                    code="MISSING_STATUS",
+                    message=f"Organisation '{org}' missing status edge.",
+                    details={"organisation": org},
+                )
+            )
+
+    degrees = list(degree_map.values()) or [0]
+    metrics = GraphMetrics(
+        organisation_nodes=org_nodes,
+        province_nodes=province_nodes,
+        status_nodes=status_nodes,
+        edge_count=edge_count,
+        min_degree=min(degrees),
+        max_degree=max(degrees),
+        average_degree=sum(degrees) / len(degrees),
+    )
+
+    for organisation, degree in degree_map.items():
+        if degree == 0:
+            issues.append(
+                GraphValidationIssue(
+                    code="ISOLATED_ORGANISATION",
+                    message=f"Organisation '{organisation}' has zero degree.",
+                    details={"organisation": organisation},
+                )
+            )
+    return metrics, issues
+
+
+def generate_graph_semantics_report(
+    *,
+    frame: Any,
+    dataset_uri: str,
+    evidence_log_uri: str | None = None,
+    table_name: str = "flight_schools",
+) -> GraphSemanticsReport:
+    csvw_metadata = build_csvw_metadata(
+        frame=frame,
+        dataset_uri=dataset_uri,
+        evidence_log_uri=evidence_log_uri,
+    )
+    r2rml_mapping = build_r2rml_mapping(
+        dataset_uri=dataset_uri,
+        table_name=table_name,
+    )
+
+    issues: list[GraphValidationIssue] = list(_validate_required_columns(frame))
+    issues.extend(_validate_csvw(csvw_metadata, frame))
+    issues.extend(_validate_r2rml(r2rml_mapping, frame))
+    metrics, metric_issues = _build_graph_metrics(frame)
+    issues.extend(metric_issues)
+
+    return GraphSemanticsReport(
+        csvw_metadata=csvw_metadata,
+        r2rml_mapping=r2rml_mapping,
+        metrics=metrics,
+        issues=issues,
+    )
+
+
+__all__ = [
+    "GraphMetrics",
+    "GraphSemanticsReport",
+    "GraphValidationIssue",
+    "build_csvw_metadata",
+    "build_r2rml_mapping",
+    "generate_graph_semantics_report",
+]
 
 
 def _graph_health_probe(context: PluginContext) -> PluginHealthStatus:
@@ -94,6 +308,7 @@ register_plugin(
         factory=lambda ctx: {
             "build_csvw_metadata": build_csvw_metadata,
             "build_r2rml_mapping": build_r2rml_mapping,
+            "generate_graph_semantics_report": generate_graph_semantics_report,
         },
         config_schema=PluginConfigSchema(
             optional_dependencies=("pandas",),

@@ -6,6 +6,7 @@ import asyncio
 import logging
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
@@ -119,6 +120,28 @@ def _load_lineage_manager() -> LineageManager | None:
     return cast(LineageManager | None, manager)
 
 
+def _load_graph_semantics_toolkit() -> dict[str, Any] | None:
+    try:
+        toolkit = instantiate_plugin("telemetry", "graph_semantics", allow_missing=True)
+    except PluginLookupError:
+        return None
+    return cast(dict[str, Any] | None, toolkit)
+
+
+def _load_drift_tools() -> dict[str, Any] | None:
+    try:
+        tools = instantiate_plugin("telemetry", "drift", allow_missing=True)
+    except PluginLookupError:
+        return None
+    return cast(dict[str, Any] | None, tools)
+
+
+def _resolve_path(path: Path | None) -> Path | None:
+    if path is None:
+        return None
+    return path if path.is_absolute() else (config.PROJECT_ROOT / path)
+
+
 @dataclass
 class Pipeline(PipelineService):
     """Coordinate validation, enrichment, and evidence logging."""
@@ -137,6 +160,12 @@ class Pipeline(PipelineService):
     )
     versioning_manager: VersioningManager | None = field(
         default_factory=lambda: _load_versioning_manager()
+    )
+    graph_semantics_toolkit: dict[str, Any] | None = field(
+        default_factory=lambda: _load_graph_semantics_toolkit()
+    )
+    drift_tools: dict[str, Any] | None = field(
+        default_factory=lambda: _load_drift_tools()
     )
     _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
 
@@ -296,7 +325,9 @@ class Pipeline(PipelineService):
             for column in cleared_columns:
                 # Ensure column is object dtype to avoid pandas incompatibility warnings
                 if working_frame_cast[column].dtype != "object":
-                    working_frame_cast[column] = working_frame_cast[column].astype("object")
+                    working_frame_cast[column] = working_frame_cast[column].astype(
+                        "object"
+                    )
                 working_frame_cast.at[idx, column] = ""
 
             changed_columns = self._collect_changed_columns(original_record, record)
@@ -417,6 +448,34 @@ class Pipeline(PipelineService):
             ),
         )
         active_context = lineage_context
+
+        if self.graph_semantics_toolkit:
+            generator = self.graph_semantics_toolkit.get(
+                "generate_graph_semantics_report"
+            )
+            if callable(generator):
+                dataset_uri = None
+                if active_context:
+                    dataset_uri = active_context.output_uri or active_context.input_uri
+                if not dataset_uri:
+                    dataset_uri = (
+                        (config.PROCESSED_DIR / "enriched.csv").resolve().as_uri()
+                    )
+                evidence_path = config.EVIDENCE_LOG
+                evidence_uri = (
+                    evidence_path.resolve().as_uri()
+                    if isinstance(evidence_path, Path) and evidence_path.exists()
+                    else None
+                )
+                graph_report = generator(
+                    frame=report.refined_dataframe,
+                    dataset_uri=dataset_uri,
+                    evidence_log_uri=evidence_uri,
+                    table_name=config.LAKEHOUSE.table_name,
+                )
+                report.graph_semantics = graph_report
+                if graph_report and graph_report.issues:
+                    metrics["graph_semantics_issues"] = len(graph_report.issues)
         manifest = None
         version_info = None
         if self.lakehouse_writer and active_context:
@@ -459,6 +518,69 @@ class Pipeline(PipelineService):
             report.lakehouse_manifest = manifest
         if version_info is not None:
             report.version_info = version_info
+
+        if self.drift_tools and config.DRIFT.enabled:
+            comparator = self.drift_tools.get("compare_to_baseline")
+            load_baseline_fn = self.drift_tools.get("load_baseline")
+            baseline_path = _resolve_path(config.DRIFT.baseline_path)
+            if (
+                callable(comparator)
+                and callable(load_baseline_fn)
+                and baseline_path
+                and baseline_path.exists()
+            ):
+                try:
+                    baseline = load_baseline_fn(baseline_path)
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.warning("drift.baseline_load_failed", exc_info=exc)
+                    baseline = None
+                if baseline is not None:
+                    drift_report = comparator(
+                        frame=report.refined_dataframe,
+                        baseline=baseline,
+                        threshold=config.DRIFT.threshold,
+                    )
+                    log_profile_fn = self.drift_tools.get("log_whylogs_profile")
+                    load_meta_fn = self.drift_tools.get("load_whylogs_metadata")
+                    compare_meta_fn = self.drift_tools.get("compare_whylogs_metadata")
+                    output_dir = _resolve_path(config.DRIFT.whylogs_output_dir)
+                    if (
+                        callable(log_profile_fn)
+                        and callable(load_meta_fn)
+                        and callable(compare_meta_fn)
+                        and output_dir is not None
+                    ):
+                        run_identifier = (
+                            active_context.run_id
+                            if active_context and active_context.run_id
+                            else datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+                        )
+                        profile_path = output_dir / f"{run_identifier}.whylogs"
+                        profile_info = log_profile_fn(
+                            report.refined_dataframe, profile_path
+                        )
+                        drift_report.whylogs_profile = profile_info
+                        baseline_meta_path = _resolve_path(
+                            config.DRIFT.whylogs_baseline_path
+                        )
+                        if baseline_meta_path and baseline_meta_path.exists():
+                            baseline_meta = load_meta_fn(baseline_meta_path)
+                            observed_meta = load_meta_fn(profile_info.metadata_path)
+                            alerts = compare_meta_fn(
+                                baseline_meta,
+                                observed_meta,
+                                config.DRIFT.threshold,
+                            )
+                            drift_report.whylogs_alerts = alerts
+                            if alerts:
+                                drift_report.exceeded_threshold = True
+                                metrics["drift_alerts"] = metrics.get(
+                                    "drift_alerts", 0
+                                ) + len(alerts)
+                    if drift_report.exceeded_threshold:
+                        metrics["drift_alerts"] = metrics.get("drift_alerts", 0) + 1
+                    report.drift_report = drift_report
+
         self._last_report = report
         listener.on_complete(metrics)
         return report

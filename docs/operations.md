@@ -150,6 +150,12 @@ poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --output tm
 poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3 --output tmp/restored.csv
 ```
 
+### Drift observability
+
+- Configure drift baselines via `DRIFT_BASELINE_PATH` (JSON with `status_counts`, `province_counts`, and `total_rows`). Use `python -m firecrawl_demo.integrations.telemetry.drift` helpers or the provided notebook to generate the initial baseline from a trusted dataset.
+- Whylogs profiles are emitted to `DRIFT_WHYLOGS_OUTPUT` (default `data/observability/whylogs/`). Set `DRIFT_WHYLOGS_BASELINE` to a stored profile metadata JSON to enable automatic alerting.
+- Each pipeline run logs a whylogs-compatible profile (fallback JSON when the `whylogs` package is unavailable) and raises alerts when category ratios drift beyond `DRIFT_THRESHOLD` (default `0.15`). Alerts surface in `PipelineReport.drift_report` and increment the `drift_alerts` metric for downstream dashboards.
+
 - Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
 
 Run the `contracts` command against the latest curated export (swap in the

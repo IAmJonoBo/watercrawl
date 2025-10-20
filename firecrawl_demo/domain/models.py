@@ -9,6 +9,10 @@ from firecrawl_demo.core import config
 if TYPE_CHECKING:
     from firecrawl_demo.integrations.storage.lakehouse import LakehouseManifest
     from firecrawl_demo.integrations.storage.versioning import VersionInfo
+    from firecrawl_demo.integrations.telemetry.drift import DriftReport
+    from firecrawl_demo.integrations.telemetry.graph_semantics import (
+        GraphSemanticsReport,
+    )
     from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
 
 EXPECTED_COLUMNS = [
@@ -212,6 +216,8 @@ class PipelineReport:
     lineage_artifacts: LineageArtifacts | None = None
     lakehouse_manifest: LakehouseManifest | None = None
     version_info: VersionInfo | None = None
+    graph_semantics: GraphSemanticsReport | None = None
+    drift_report: DriftReport | None = None
 
     @property
     def issues(self) -> list[ValidationIssue]:

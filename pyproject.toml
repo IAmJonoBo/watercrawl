@@ -143,6 +143,8 @@ module = [
   "great_expectations.*",
   "pyspark",
   "pyspark.*",
+  "whylogs",
+  "whylogs.*",
   "dns",
   "dns.*",
 ]

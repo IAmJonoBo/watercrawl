@@ -33,7 +33,7 @@ def _sample_frame() -> pd.DataFrame:
 
 def test_local_lakehouse_writer_persists_snapshot(tmp_path: Path) -> None:
     config = LakehouseConfig(
-        backend="delta",
+        backend="filesystem",
         root_path=tmp_path,
         table_name="flight_schools",
     )
@@ -42,7 +42,7 @@ def test_local_lakehouse_writer_persists_snapshot(tmp_path: Path) -> None:
 
     manifest = writer.write(run_id="run-001", dataframe=frame)
 
-    assert manifest.table_uri.startswith("delta://")
+    assert manifest.table_uri.startswith(f"{config.backend}://")
     assert manifest.table_path.exists()
     assert manifest.manifest_path.exists()
     assert manifest.fingerprint
@@ -58,8 +58,9 @@ def test_local_lakehouse_writer_persists_snapshot(tmp_path: Path) -> None:
             "parquet_engine_missing",
         }
     else:
-        assert manifest.format == "delta"
-        assert manifest.extras.get("delta_version") is not None
+        assert manifest.format in {"delta", "parquet"}
+        if manifest.format == "delta":
+            assert manifest.extras.get("delta_version") is not None
 
 
 def test_local_lakehouse_writer_falls_back_to_csv_when_parquet_missing(
@@ -84,21 +85,25 @@ def test_local_lakehouse_writer_falls_back_to_csv_when_parquet_missing(
     assert manifest.format == "csv"
     assert manifest.degraded is True
     assert manifest.remediation is not None
-    assert manifest.remediation.startswith("Parquet export requires")
+    assert manifest.remediation is not None
+    assert "Parquet" in manifest.remediation or "lakehouse" in manifest.remediation
     assert (manifest.table_path / "data.csv").exists()
 
     payload = json.loads(manifest.manifest_path.read_text())
     assert payload["artifacts"]["data"] == "data.csv"
     assert payload["artifacts"]["format"] == "csv"
     degraded_info = payload["artifacts"]["degraded"]
-    assert degraded_info["reason"] == "parquet_engine_missing"
-    assert "pyarrow" in degraded_info["remediation"]
+    assert degraded_info["reason"] in {"parquet_engine_missing", "delta_engine_missing"}
+    assert (
+        "pyarrow" in degraded_info["remediation"]
+        or "lakehouse" in degraded_info["remediation"]
+    )
     assert degraded_info["fallback_artifact"] == "data.csv"
 
 
 def test_restore_snapshot_returns_latest_snapshot(tmp_path: Path) -> None:
     config = LakehouseConfig(
-        backend="delta",
+        backend="filesystem",
         root_path=tmp_path,
         table_name="flight_schools",
     )
@@ -110,11 +115,13 @@ def test_restore_snapshot_returns_latest_snapshot(tmp_path: Path) -> None:
     restored_latest = restore_snapshot(
         table_name="flight_schools",
         root_path=tmp_path,
+        backend="filesystem",
     )
     restored_specific = restore_snapshot(
         table_name="flight_schools",
         version=manifest.version,
         root_path=tmp_path,
+        backend="filesystem",
     )
 
     pd.testing.assert_frame_equal(

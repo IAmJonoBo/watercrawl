@@ -6,8 +6,11 @@ import pandas as pd
 
 from firecrawl_demo.core.excel import EXPECTED_COLUMNS
 from firecrawl_demo.integrations.telemetry.graph_semantics import (
+    GraphSemanticsReport,
+    GraphValidationIssue,
     build_csvw_metadata,
     build_r2rml_mapping,
+    generate_graph_semantics_report,
 )
 
 
@@ -52,3 +55,36 @@ def test_r2rml_mapping_contains_predicates() -> None:
     assert "rr:logicalTable" in mapping
     assert "ex:province" in mapping
     assert "rr:template" in mapping
+
+
+def test_generate_graph_semantics_report_success(tmp_path: Path) -> None:
+    frame = _sample_frame()
+    report = generate_graph_semantics_report(
+        frame=frame,
+        dataset_uri="file://flight-schools.csv",
+        evidence_log_uri="file://evidence.csv",
+    )
+
+    assert isinstance(report, GraphSemanticsReport)
+    assert report.valid
+    assert report.metrics.organisation_nodes == 1
+    assert report.metrics.edge_count == 2
+    assert (
+        report.csvw_metadata["table"]["notes"]["evidenceLog"] == "file://evidence.csv"
+    )
+
+
+def test_generate_graph_semantics_report_flags_missing_province() -> None:
+    frame = _sample_frame()
+    frame.loc[0, "Province"] = ""
+
+    report = generate_graph_semantics_report(
+        frame=frame,
+        dataset_uri="file://flight-schools.csv",
+        evidence_log_uri=None,
+    )
+
+    assert not report.valid
+    issue_codes = [issue.code for issue in report.issues]
+    assert "MISSING_PROVINCE" in issue_codes
+    assert any(isinstance(issue, GraphValidationIssue) for issue in report.issues)
