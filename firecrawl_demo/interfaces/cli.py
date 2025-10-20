@@ -21,6 +21,7 @@ try:
     build_evidence_sink = _analyst_cli.build_evidence_sink
     read_dataset = _analyst_cli.read_dataset
     override_cli_dependencies = _analyst_cli.override_cli_dependencies
+    plan_guard = _analyst_cli.CLI_ENVIRONMENT.plan_guard
 
 except ImportError:
     # Provide dummy objects when pandas is not available
@@ -40,6 +41,7 @@ except ImportError:
     build_evidence_sink = None  # type: ignore
     read_dataset = None  # type: ignore
     override_cli_dependencies = None  # type: ignore
+    plan_guard = None  # type: ignore
 
 __all__ = [
     "cli",
@@ -54,6 +56,7 @@ __all__ = [
     "build_evidence_sink",
     "read_dataset",
     "override_cli_dependencies",
+    "plan_guard",
 ]
 
 

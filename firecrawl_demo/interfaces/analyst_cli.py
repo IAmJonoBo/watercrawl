@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, TypeVar
@@ -31,7 +31,14 @@ from firecrawl_demo.integrations.contracts import (
 )
 from firecrawl_demo.integrations.storage.lakehouse import build_lakehouse_writer
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
+from firecrawl_demo.interfaces.cli_base import (
+    CliEnvironment,
+    PlanCommitError,
+    load_cli_environment,
+)
 from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
+
+CLI_ENVIRONMENT: CliEnvironment = load_cli_environment()
 
 T = TypeVar("T")
 
@@ -205,11 +212,25 @@ def validate(input_path: Path, output_format: str, progress: bool | None) -> Non
     default=None,
     help="Display a progress bar during enrichment (defaults to on for text output).",
 )
+@click.option(
+    "--plan",
+    "plans",
+    type=click.Path(path_type=Path),
+    multiple=True,
+    help="Path(s) to recorded plan artefacts required before writes.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Bypass plan enforcement when policy allows force commits.",
+)
 def enrich(
     input_path: Path,
     output_path: Path | None,
     output_format: str,
     progress: bool | None,
+    plans: Sequence[Path],
+    force: bool,
 ) -> None:
     """Validate, enrich, and export a dataset."""
 
@@ -221,6 +242,11 @@ def enrich(
         "build_lakehouse_writer", build_lakehouse_writer
     )
     pipeline_factory = _get_cli_override("Pipeline", Pipeline)
+    plan_guard = _get_cli_override("plan_guard", CLI_ENVIRONMENT.plan_guard)
+    try:
+        validated_plans = plan_guard.require("cli.enrich", list(plans), force=force)
+    except PlanCommitError as exc:
+        raise click.ClickException(str(exc)) from exc
     evidence_sink = evidence_sink_factory()
     lineage_manager = lineage_manager_factory()
     lakehouse_writer = lakehouse_writer_factory()
@@ -266,6 +292,7 @@ def enrich(
         "issues": issues_payload,
         "output_path": str(target),
         "adapter_failures": report.metrics["adapter_failures"],
+        "plan_artifacts": [str(path) for path in validated_plans],
     }
     if report.lineage_artifacts:
         payload["lineage_artifacts"] = {
@@ -302,6 +329,12 @@ def enrich(
         if payload["adapter_failures"]:
             click.echo(
                 f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."
+            )
+        if validated_plans:
+            click.echo(
+                "Plan artefacts:"
+                + " "
+                + ", ".join(str(path) for path in validated_plans)
             )
         if report.lineage_artifacts:
             click.echo(
@@ -420,7 +453,11 @@ def mcp_server(stdio: bool) -> None:
     pipeline_factory = _get_cli_override("Pipeline", Pipeline)
     sink_factory = _get_cli_override("build_evidence_sink", build_evidence_sink)
     server_factory = _get_cli_override("CopilotMCPServer", CopilotMCPServer)
-    server = server_factory(pipeline=pipeline_factory(evidence_sink=sink_factory()))
+    plan_guard = _get_cli_override("plan_guard", CLI_ENVIRONMENT.plan_guard)
+    server = server_factory(
+        pipeline=pipeline_factory(evidence_sink=sink_factory()),
+        plan_guard=plan_guard,
+    )
     if stdio:
         asyncio_run = _get_cli_override("asyncio_run", asyncio.run)
         asyncio_run(server.serve_stdio())
