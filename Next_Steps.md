@@ -1,4 +1,4 @@
-# Next Steps (Q4‑2025 → Q1‑2026)
+# Next Steps
 
 > Single source of truth for what ships next. Kept lean, action‑oriented, and auditable. All write paths follow **plan → diff → commit** with `If‑Match` preconditions and produce lineage/provenance artefacts.
 
@@ -34,53 +34,6 @@
 ## Steps (iteration log)
 
 - [ ] 2025-10-19 — Baseline QA attempt on fresh environment blocked: `poetry install` fails under Python 3.14 because `pyarrow==21.0.0` only ships source dists (no cp314 wheels) and the build backend requires an Arrow SDK. Documented blocker before proceeding with dependency upgrades.
-- [x] 2025-10-19 — Expanded Python support to include 3.13 and 3.14, updated optional dependencies (Great Expectations and dbt-core) to work with both versions, refreshed all documentation, and ensured backward compatibility.
-- [x] 2025-10-21 — Added dependency blocker allow-list + status artefacts, wired guard checks into automation/CI, labelled Renovate PRs for wheel gaps, refreshed docs/README, and logged remediation tasks for Python 3.13/3.14 upgrades.
-- [x] 2025-10-21 — Raised the minimum supported interpreter to Python 3.14, taught the automation CLI to auto-bootstrap uv/Poetry environments on ephemeral runners, refreshed dependency blocker targets for Python 3.14/3.15, and documented the workflow in README + docs.
-- [x] 2025-10-18 — Carved out `firecrawl_demo.domain` and `firecrawl_demo.application`, added application interfaces, migrated evidence sinks to infrastructure, refreshed docs, and recorded ADR 0002.
-- [x] 2025-10-18 — Reviewed domain/application refactor commit, reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build) to confirm clean slate and capture coverage hotspots.
-- [x] 2025-10-18 — Hardened problems_report pipeline with structured truncation, added actionlint/hadolint bootstrappers, and re-ran full QA suite (pytest, ruff, mypy, bandit, safety, pre-commit, build, CLI contracts, dbt, problems collector).
-- [x] 2025-10-18 — Hardened CLI bootstrap downloads with atomic writes, SSL fallback guardrails, and path traversal detection; added regression tests for hadolint/actionlint bootstrapping and re-ran full QA suite (pytest+coverage, ruff, black, isort, mypy, bandit, safety, sqlfluff, pre-commit, dotenv-linter, build, CLI contracts, dbt).
-- [x] 2025-10-18 — Baseline QA suite re-validated; scripted cleanup keeps local artefacts aligned with CI and unblocks failing pushes.
-- [x] 2025-10-18 — Phase 2 hygiene: refreshed governance/drift modules via `pyupgrade` and documented the cleanup workflow for analysts.
-- [x] 2025-10-18 — Hardened quality/evidence coverage: added QualityGate regression tests, exercised evidence sink fan-out, and enforced backend validation through docs + pre-commit cleanups.
-- [x] 2025-10-18 — Phase 2 progress: OpenLineage transport toggles (HTTP/Kafka/logging) wired via config, CLI now emits lineage/lakehouse/version manifest paths, and lineage events capture version metadata for downstream reproducibility.
-- [x] 2025-10-18 — Phase 2 provenance uplift: PROV graphs now record the enrichment agent, evidence counts, quality metrics, and generated manifests; DCAT entries surface quality measurements, reproducibility commands, contact metadata, and distribution links for evidence, manifests, and lineage bundles with regression coverage in `tests/test_lineage.py`.
-- [x] 2025-10-18 — DX/UX uplift: split analyst vs. developer CLIs (`apps.analyst.cli`, `apps.automation.cli`), added QA automation helpers, refreshed CLI docs, and extended test coverage for both entry points.
-- [x] 2025-10-18 — Replaced CLI monkeypatch scaffolding with explicit dependency overrides and taught cleanup automation to detect/skip tracked artefacts with reporting hooks for post-build hygiene reviews.
-- [x] 2025-10-18 — Hardened in-memory cache expiry semantics with type-safe TTL handling, added regression coverage for `cache.load` edge cases, and re-ran the full QA suite to verify guards across pytest, lint, type, security, build, and dbt contracts.
-- [x] 2025-10-18 — DevEx baseline refreshed: full QA suite (pytest, coverage, ruff, mypy, bandit, pre-commit, build, dbt) recorded; gitignore, ruff, and pre-commit configs prepped for modernization; CI now caches Poetry envs and surfaces diffs for hook failures.
-- [x] 2025-10-18 — Linting uplift: integrate Safety, SQLFluff (dbt-aware), markdownlint, yamllint, hadolint, and actionlint into pre-commit + CI with docs updated; confirm Safety offline workflow and SQLFluff dbt target path automation.
-- [x] 2025-10-18 — SQLFluff/duckdb hardening: runner reinitialises corrupt DuckDB targets, added regression tests for CLI env setup, pinned Dockerfile Poetry install, resolved markdownlint/hadolint gating, and reran full QA suite (pytest, coverage, ruff, mypy, bandit, safety, sqlfluff, markdownlint, yamllint, hadolint, actionlint, dbt, build).
-- [x] 2025-10-18 — Warning remediation: reordered marshmallow filters, suppressed dbt CLI deprecations, closed dbt log handlers, and reran baseline QA (pytest, ruff, mypy, bandit, safety, build, dbt). Pre-commit still failing on hadolint/actionlint downloads and pymarkdown MD013 allowances.
-- [x] 2025-10-18 — CLI + QA hardening: restored `_resolve_progress_flag` shim, tightened Pint quantity coercion for dimensionless inputs, implemented typed dev CLI command runner overrides, and reworked markdownlint/actionlint hooks to install via `npx`/downloaded binaries. Full baseline rerun (pytest, ruff, mypy, bandit, safety, pre-commit, dbt) green.
-- [x] 2025-10-18 — Extended regression coverage for pipeline orchestration, Excel helpers, and research adapters; added defensive unit tests for lakehouse/versioning flows and Firecrawl behaviour, then reran baseline QA (pytest+coverage, ruff, black, isort, mypy, bandit, offline safety, build).
-- [x] 2025-10-19 — Restructure integrations into adapter/telemetry/storage packages, introduce plugin registry with health probes, extend discovery tests, and rerun baseline QA (pytest+cov, ruff, mypy, bandit, safety, build) once dependency stubs land; contracts toolkit plugin registered with health checks and dev stub packages exported for offline installs.
-- [x] 2025-10-19 — Introduced `apps/` and `platform/` taxonomies with guardrail READMEs, reassigned CODEOWNERS ownership, validated Poetry excludes via wheel regression tests + CI guard, and documented the surface map in MkDocs and `Next_Steps.md`.
-- [x] 2025-10-19 — Consolidated dbt/GX projects under `data_contracts/`, introduced shared taxonomy/evidence config seeded via `CONTRACTS_CANONICAL_JSON`, refreshed docs/QA coverage, and added confidence-threshold enforcement to both toolchains.
-- [x] 2025-10-19 — Parsed Poetry excludes into wheel validation, added positive wheel payload assertions, and refreshed tooling docs to point at `apps/automation/` + `platform/scripts/` guardrails.
-- [x] 2025-10-19 — Chunked `stderr`/`raw` previews in `collect_problems.py` to avoid >4 KiB shell lines, documented the new preview shape, added regression coverage, and captured the `python -m pytest tests/test_collect_problems.py` run (failsafe skip when DuckDB is absent; broader baseline blocked on Python ≥3.14 and hashed narwhals wheel).
-- [x] 2025-10-20 — Added a uv-powered Python bootstrapper, wired it into the automation CLI, refreshed contributor docs, regenerated hashed requirements, and added a ripgrep ignore manifest to stop >4 KiB shell output regressions.
-- [x] 2025-10-20 — Introduced `scripts.dependency_matrix` with pytest coverage, surfaced wheel gaps for Python 3.13/3.14 in `tools/dependency_matrix/report.json`, and wired the survey into the automation CLI/operations runbook to gate plan→upgrade flows.
-- [x] 2025-10-22 — Codified session protocol in `AGENTS.md` to require context sweep, baseline QA attempt, and problems_report triage before enrichment work; emphasised ownership/quality gates for remediation loop.
-- [x] 2025-10-22 — Restored markdownlint pre-commit parity with vendored binaries, refreshed curated dataset staging model for DuckDB compatibility, hardened dependency matrix typing, modernised contracts tests to use availability gates, and documented targeted lint/type checks.
-- [x] 2025-10-22 — Factored shared CLI workflows into `firecrawl_demo.interfaces.cli_base`, enforced plan→commit artefacts across analyst/dev/MCP surfaces, expanded CLI/MCP/automation tests for guardrails, and refreshed docs. Follow-up on GE/dbt and lint blockers resolved via canonical contract wiring on 2025-10-20 (see below).
-- [x] 2025-10-23 — Restored `python -m app.cli` compatibility by shimming the analyst CLI, extended regression tests for the alias, and documented the shim in CLI docs. GE/dbt contracts, Black, and isort gates now green after canonical expectations/macros refresh (2025-10-20).
-- [x] 2025-10-20 — Regenerated Great Expectations suite with canonical confidence/province/status wiring, added dbt `contracts_accepted_values` test, normalised runner confidence handling, and tightened Bandit suppressions/config. Baseline rerun: `pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing` (226 passed, 3 skipped), `dbt build --select tag:contracts`, `bandit -r tools`, `bandit -r tests -c tools/security/bandit_tests.yaml`, `black --check .`, `isort --check-only .`, `ruff check .`; direct `poetry run mypy firecrawl_demo tests` currently hangs (killed after several minutes) so rely on `scripts/collect_problems.py` aggregation (mypy exit 0) and flag for follow-up.
-- [x] 2025-10-23 — Normalised scheme-less domain handling for compliance checks, extended email mismatch regressions in compliance/pipeline tests, and addressed outstanding ruff/mypy warnings.
-  Baseline rerun: `pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing`, `ruff check .`, `mypy .`,
-  `bandit -r firecrawl_demo`, and `python -m tools.security.offline_safety`.
-  Pre-commit `sqlfluff`/`markdownlint-cli2` hooks remain blocked by the missing analytics dbt project and long-form docs, while
-  actionlint/hadolint binaries still require downloadable artefacts in this environment.
-
-- [x] 2025-10-23 — Added lakehouse parquet-engine fallback with CSV degradation manifest signals and regression test coverage.
-  Baseline QA attempts remain blocked in this environment: `pytest` fails during collection because dependencies such as
-  `pandas`, `rich`, `marshmallow`, `duckdb`, and `botocore` are unavailable; `mypy` reports missing stubs for pandas/requests and
-  absent optional packages; `bandit`, `yamllint`, and `pylint` binaries are not installed; and `python -m build` cannot run
-  without the `build` module. Captured warnings via `warnings.warn` and recorded remediation guidance inside the manifest
-  payload.
-
-- [x] 2025-10-20 — Tightened phone normalization to accept only South African prefixes, refreshed compliance edge-case tests (including punctuation and optional trunk zeros), confirmed pipeline expectations, and reran QA suite (`pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing`, `ruff check .`, `mypy .`, `bandit -r firecrawl_demo`, `python -m tools.security.offline_safety`, `poetry build`).
 
 ---
 
