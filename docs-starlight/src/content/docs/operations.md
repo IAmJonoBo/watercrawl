@@ -17,7 +17,7 @@ poetry run python -m scripts.cleanup
 Then execute the quality gates:
 
 ```bash
-poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 poetry run ruff check .
 poetry run python -m tools.sql.sqlfluff_runner
 poetry run yamllint --strict -c .yamllint.yaml .
@@ -86,6 +86,35 @@ of silencing mypy regressions.
 | Evidence      | Every enriched row logged with ≥2 sources.                                           |
 | Sanity Checks | `sanity_issues` metric is zero or tracked with remediation owners.                   |
 | Documentation | MkDocs updated for any behavioural change.                                           |
+
+## Supply Chain Hardening
+
+- The CI workflow builds release artifacts (`poetry build`), generates a CycloneDX SBOM at `artifacts/sbom/cyclonedx.json`, and signs the wheel/sdist with Sigstore (bundles under `artifacts/signatures/`).
+- Verify signatures locally:
+
+  ```bash
+  sigstore verify identity \
+    --cert-identity "https://github.com/IAmJonoBo/watercrawl/.github/workflows/ci.yml@refs/heads/main" \
+    --cert-oidc-issuer https://token.actions.githubusercontent.com \
+    --bundle artifacts/signatures/bundles/dist/firecrawl_demo-*.whl.sigstore \
+    dist/firecrawl_demo-*.whl
+  ```
+
+- OpenSSF Scorecard runs via `.github/workflows/scorecard.yml` on every push to `main`, on a weekly schedule, and on demand. Review SARIF results in the repository Security tab or download the `scorecard-results` artifact.
+
+### Developer commit signing (gitsign)
+
+Set up [gitsign](https://github.com/sigstore/gitsign) so local commits carry OIDC-backed signatures:
+
+```bash
+brew install sigstore/tap/gitsign
+gitsign init
+git config --global commit.gpgsign true
+git config --global gpg.x509.program gitsign
+git config --global gpg.format x509
+```
+
+After configuring, `git commit` automatically signs using the GitHub Actions OIDC provider (or another configured issuer).
 
 Monitor `adapter_failures` and `sanity_issues` in pipeline metrics/CLI output;
 any non-zero count should trigger investigation into upstream research adapters

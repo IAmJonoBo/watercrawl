@@ -7,6 +7,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+      security-events: write
     strategy:
       matrix:
         python-version: ["3.14", "3.15"]
@@ -57,6 +62,27 @@ jobs:
       - name: Check contract coverage
         run: >-
           poetry run python -m apps.analyst.cli coverage --format json
+      - name: Build distribution artifacts
+        if: matrix.python-version == '3.14'
+        run: poetry build
+      - name: Install supply-chain tooling
+        if: matrix.python-version == '3.14'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cyclonedx-bom==3.9.0 sigstore==2.3.0
+      - name: Generate CycloneDX SBOM
+        if: matrix.python-version == '3.14'
+        run: |
+          mkdir -p artifacts/sbom
+          cyclonedx-bom --poetry pyproject.toml --format json --output artifacts/sbom/cyclonedx.json
+      - name: Sign distribution artifacts with Sigstore
+        if: matrix.python-version == '3.14'
+        run: |
+          sigstore sign dist/*.whl dist/*.tar.gz
+          if [ -d ".sigstore" ]; then
+            mkdir -p artifacts/signatures
+            mv .sigstore artifacts/signatures/bundles
+          fi
       - name: Validate wheel contents
         run: poetry run python -m scripts.validate_wheel
       - name: Aggregate Problems Report
@@ -70,6 +96,7 @@ jobs:
             --json ci-dashboard.json
           cat ci-summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload CI artifacts
+        if: matrix.python-version == '3.14'
         uses: actions/upload-artifact@v4
         with:
           name: ci-dashboards
@@ -81,6 +108,10 @@ jobs:
             problems_report.json
             tools/dependency_matrix/report.json
             tools/dependency_matrix/status.json
+            dist/*.whl
+            dist/*.tar.gz
+            artifacts/sbom/cyclonedx.json
+            artifacts/signatures/**
       - name: Install Node.js and markdownlint-cli2
         uses: actions/setup-node@v6
         with:

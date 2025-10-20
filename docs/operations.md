@@ -78,6 +78,35 @@ The `coverage` command reports contract coverage across all curated tables and
 exits with code 1 if coverage is below 95%. This ensures that all curated
 datasets have quality checks defined before they are published.
 
+### Supply chain artifacts
+
+- CI builds distribution artifacts via `poetry build`, produces a CycloneDX SBOM at `artifacts/sbom/cyclonedx.json`, and signs the wheel/sdist with Sigstore (bundles stored under `artifacts/signatures/`).
+- Verify signatures locally:
+
+  ```bash
+  sigstore verify identity \
+    --cert-identity "https://github.com/IAmJonoBo/watercrawl/.github/workflows/ci.yml@refs/heads/main" \
+    --cert-oidc-issuer https://token.actions.githubusercontent.com \
+    --bundle artifacts/signatures/bundles/dist/firecrawl_demo-*.whl.sigstore \
+    dist/firecrawl_demo-*.whl
+  ```
+
+- Scorecard runs live in `.github/workflows/scorecard.yml`. Review the latest SARIF under the repository Security tab or download the `scorecard-results` artifact from workflow runs.
+
+### Developer commit signing (gitsign)
+
+All contributors should configure [gitsign](https://github.com/sigstore/gitsign) to ensure commits are OIDC-signed:
+
+```bash
+brew install sigstore/tap/gitsign  # or follow upstream installation guidance
+gitsign init
+git config --global commit.gpgsign true
+git config --global gpg.x509.program gitsign
+git config --global gpg.format x509
+```
+
+With these settings, `git commit` automatically obtains an OIDC token from GitHub and records the signature in the commit metadata.
+
 ### Infrastructure & Config
 
 ```bash

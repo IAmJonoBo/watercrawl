@@ -1,0 +1,43 @@
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Prepare results directory
+        run: mkdir -p results
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2.3.1
+        with:
+          results_file: results/scorecard
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload Scorecard SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results/scorecard.sarif
+
+      - name: Upload Scorecard artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorecard-results
+          path: results/

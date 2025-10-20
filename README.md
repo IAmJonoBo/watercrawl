@@ -119,6 +119,22 @@ poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_
 
 > The `scripts/run_pytest.sh` wrapper discovers the Poetry-managed Python 3.14 interpreter (or provisions one via `uv`) so `pytest` never falls back to a stale system binary.
 
+## Supply Chain Hardening
+
+- GitHub Actions runs an OpenSSF Scorecard workflow on `main` and weekly schedules to track supply-chain posture (see `.github/workflows/scorecard.yml`).
+- The primary CI job now publishes CycloneDX SBOMs (`artifacts/sbom/cyclonedx.json`) and Sigstore bundles for the built wheel and sdist (`artifacts/signatures/`).
+- Verify a signed artifact locally with:
+
+  ```bash
+  sigstore verify identity \
+    --cert-identity "https://github.com/IAmJonoBo/watercrawl/.github/workflows/ci.yml@refs/heads/main" \
+    --cert-oidc-issuer https://token.actions.githubusercontent.com \
+    --bundle artifacts/signatures/bundles/dist/firecrawl_demo-*.whl.sigstore \
+    dist/firecrawl_demo-*.whl
+  ```
+
+- Developers should configure [gitsign](https://github.com/sigstore/gitsign) locally (`gitsign init && git config --global commit.gpgsign true`) so every commit is OIDC-signed by default.
+
 ## Documentation
 
 MkDocs site configuration lives in `mkdocs.yml`. Preview locally with:
