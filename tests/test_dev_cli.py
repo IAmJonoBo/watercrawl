@@ -89,10 +89,12 @@ class _RecordingRunner:
         return 0
 
     def describe(self) -> str:
+        """Return a description of the test runner."""
         return "recording test runner"
 
 
 def test_qa_all_dry_run_skips_dbt() -> None:
+    """Test that the 'qa all' command with --dry-run and --skip-dbt skips dbt-related specs."""
     captured: dict[str, Any] = {}
 
     with automation_cli.override_command_runner(_RecordingRunner(captured)):
@@ -110,6 +112,7 @@ def test_qa_all_dry_run_skips_dbt() -> None:
 
 
 def test_qa_security_skip_secrets() -> None:
+    """Test that the 'qa security' command skips secrets checks when --skip-secrets is used."""
     captured: dict[str, Any] = {}
 
     with automation_cli.override_command_runner(_RecordingRunner(captured)):
@@ -130,6 +133,7 @@ def test_qa_security_skip_secrets() -> None:
 
 
 def test_auto_bootstrap_invoked_for_dependencies(monkeypatch) -> None:
+    """Test that auto-bootstrap is invoked for dependencies when Python version is insufficient."""
     invoked: dict[str, list[str]] = {}
     monkeypatch.setattr(automation_cli, "_python_meets_minimum", lambda: False)
 
@@ -155,6 +159,7 @@ def test_auto_bootstrap_invoked_for_dependencies(monkeypatch) -> None:
 
 
 def test_auto_bootstrap_can_be_disabled(monkeypatch) -> None:
+    """Test that auto-bootstrap can be disabled and bootstrap_python.main is not called."""
     monkeypatch.setattr(automation_cli, "_python_meets_minimum", lambda: False)
 
     def _fail_main(_argv: list[str]) -> int:
@@ -171,7 +176,8 @@ def test_auto_bootstrap_can_be_disabled(monkeypatch) -> None:
     assert result.exit_code == 0
 
 
-def test_qa_all_requires_plan_for_cleanup(tmp_path: Path) -> None:
+def test_qa_all_requires_plan_for_cleanup() -> None:
+    """Test that 'qa all' requires a plan for cleanup and fails if not provided."""
     captured: dict[str, Any] = {}
     with automation_cli.override_command_runner(_RecordingRunner(captured)):
         runner = CliRunner()
@@ -190,6 +196,7 @@ def test_qa_all_requires_plan_for_cleanup(tmp_path: Path) -> None:
 
 
 def test_qa_all_accepts_plan(tmp_path: Path) -> None:
+    """Test that 'qa all' accepts provided plan and commit artefacts and processes them correctly."""
     plan_path = _write_plan(tmp_path)
     commit_path = _write_commit(tmp_path)
     captured: dict[str, Any] = {}
@@ -218,6 +225,7 @@ def test_qa_all_accepts_plan(tmp_path: Path) -> None:
 
 
 def test_qa_all_generate_plan_creates_artifacts(tmp_path: Path) -> None:
+    """Test that generating a QA plan creates both plan and commit artifacts in the target directory."""
     target_dir = tmp_path / "plans"
     captured: dict[str, Any] = {}
     with automation_cli.override_command_runner(_RecordingRunner(captured)):
@@ -251,6 +259,7 @@ def test_qa_all_generate_plan_creates_artifacts(tmp_path: Path) -> None:
 
 
 def test_qa_plan_writes_artifacts(tmp_path: Path) -> None:
+    """Test that writing a QA plan also writes the corresponding commit artifact."""
     plan_path = tmp_path / "generated.plan"
     commit_path = tmp_path / "generated.commit"
     runner = CliRunner()
@@ -277,6 +286,7 @@ def test_qa_plan_writes_artifacts(tmp_path: Path) -> None:
 
 
 def test_qa_fmt_generates_plan(tmp_path: Path) -> None:
+    """Test that generating a QA format plan creates both plan and commit artifacts in the target directory."""
     target_dir = tmp_path / "plans"
     captured: dict[str, Any] = {}
     with automation_cli.override_command_runner(_RecordingRunner(captured)):
@@ -306,6 +316,7 @@ def test_qa_fmt_generates_plan(tmp_path: Path) -> None:
 
 
 def test_qa_problems_summarises_results(monkeypatch, tmp_path: Path) -> None:
+    """Test that the 'qa problems' command summarises results and handles issue reporting correctly."""
     fake_results = [
         {
             "tool": "ruff",

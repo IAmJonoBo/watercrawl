@@ -1,13 +1,17 @@
+"""Unit tests for firecrawl_demo.domain.models data structures and serialization."""
+
 import pandas as pd
 
 from firecrawl_demo.domain import models
 
 
 def test_models_import():
+    """Test that the Organisation model can be imported from models."""
     assert hasattr(models, "Organisation")
 
 
 def test_quality_issue_structure():
+    """Test the structure and serialization of QualityIssue."""
     issue = models.QualityIssue(
         row_id=3,
         organisation="Example Org",
@@ -28,6 +32,7 @@ def test_quality_issue_structure():
 
 
 def test_rollback_plan_serialisation():
+    """Test the serialization of RollbackPlan and RollbackAction models."""
     action = models.RollbackAction(
         row_id=2,
         organisation="Flight School",
@@ -57,6 +62,7 @@ def test_rollback_plan_serialisation():
 
 
 def test_pipeline_report_includes_quality_metadata():
+    """Test that PipelineReport includes quality issues and rollback plan metadata."""
     report = models.PipelineReport(
         refined_dataframe=pd.DataFrame(),
         validation_report=models.ValidationReport(issues=[], rows=0),

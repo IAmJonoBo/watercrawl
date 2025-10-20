@@ -1,3 +1,9 @@
+"""Lakehouse storage integration for Watercrawl.
+
+Provides local and Delta Lake-backed snapshotting, manifest generation, and restoration
+for curated datasets, supporting modular plugin registration and evidence-backed data lineage.
+"""
+
 from __future__ import annotations
 
 import hashlib
