@@ -18,7 +18,7 @@
 - [x] **Validate Poetry exclude list in release pipeline** — _Owner: Platform · Due: 2025‑10‑31_
 - [ ] **Wheel remediation — Python 3.13/3.14/3.15 blockers** — _Owner: Platform/Data/Security · Due: 2025‑11‑08_
   - Gates: cp314/cp315 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, and other tracked packages; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
-- [ ] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
+- [x] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
 - [ ] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
 - [ ] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
 - [ ] **MCP plan→commit audit logging + policy enforcement** — _Owner: Platform/Security · Due: 2025‑12‑05_ (WC‑05/06)
@@ -42,6 +42,7 @@
 - [x] 2025-10-20 — Phase 2 rollout: Lakehouse writer now supports Delta commits with optional dependency groups, restore CLI added, and version manifests capture git/DVC/lakeFS metadata for reproducible snapshots.
 - [x] 2025-10-20 — Phase 3 rollout: Graph semantics toolkit validates CSVW/R2RML outputs with node/edge/degree checks and drift observability logs whylogs-style profiles with alert routing.
 - [x] 2025-10-20 — Phase 4 safety gate: Plan→commit policy now requires matching `*.plan`/`*.commit` artefacts with `If-Match` headers, RAG metrics, and prompt-injection heuristics; audit events are appended to `data/logs/plan_commit_audit.jsonl` and MCP payloads enforce the same contract.
+- [x] 2025-10-20 — Published ADR 0003 documenting the threat model and STRIDE/MITRE mapping for CLI, MCP, evidence sinks, and governance surfaces; Next_Steps risk gates now reference the baseline matrix and quarterly tabletop cadence.
 
 ---
 

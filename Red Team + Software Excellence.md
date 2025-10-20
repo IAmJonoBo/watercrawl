@@ -188,7 +188,7 @@ Log additional findings in Next_Steps as they arise.
   - `.github/workflows/supply-chain.yml` — SBOM + signing pipeline.
   - `SECURITY.md` — threat model summary & vulnerability disclosure process.
   - `backstage/catalog-info.yaml` + `templates/` scaffolds.
-  - `docs/threat-model.md` — STRIDE, MITRE mappings, attack trees.
+  - `docs/adr/0003-threat-model-stride-mitre.md` — STRIDE, MITRE mappings, attack trees.
   - `app/tests/accessibility/` — axe/smoke scripts.
 
 ### 4.6 30/60/90 Roadmap

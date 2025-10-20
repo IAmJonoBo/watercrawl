@@ -4,3 +4,4 @@
 | ---- | --------------------------------------------------------------- | -------- |
 | 0001 | [Segmented Package Boundaries](0001-architecture-boundaries.md) | Accepted |
 | 0002 | [Promote Domain/Application Boundaries](0002-domain-application-separation.md) | Accepted |
+| 0003 | [Threat Model & STRIDE/MITRE Mapping](0003-threat-model-stride-mitre.md) | Accepted |
