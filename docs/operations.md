@@ -139,6 +139,16 @@ poetry run python -m firecrawl_demo.infrastructure.lineage capture --run-id $(da
 ```
 
 - The Streamlit analyst UI and the Parquet writer engine are packaged in the optional Poetry dependency group `ui`. Default installs on Python 3.14 skip these packages (PyArrow wheels are still pending); run `poetry install --with ui` from Python 3.12/3.13 when you need the UI or native Parquet snapshots. Without the group, lakehouse exports fall back to CSV with remediation guidance in the manifest.
+- The Delta Lake writer is provided by the optional dependency group `lakehouse`. Enable it alongside the UI group (`poetry install --with ui --with lakehouse`) on Python 3.12/3.13 to produce native Delta commits with time-travel support. When the group is absent, the writer automatically records filesystem snapshots and marks the manifest as degraded.
+- Restore any snapshot (or Delta version) with:
+
+```bash
+# Restore the latest snapshot to a CSV file
+poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --output tmp/restored.csv
+
+# Restore a specific Delta commit (requires --with lakehouse)
+poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3 --output tmp/restored.csv
+```
 
 - Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
 

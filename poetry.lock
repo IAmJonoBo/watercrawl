@@ -1437,6 +1437,32 @@ files = [
 ]
 
 [[package]]
+name = "deltalake"
+version = "0.18.2"
+description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
+optional = false
+python-versions = ">=3.8"
+groups = ["lakehouse"]
+markers = "python_version < \"3.14\""
+files = [
+    {file = "deltalake-0.18.2-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:da5ac401d4dd571d5e9438f773cfe7b726475afb83d01cdded7ef51f6eb92653"},
+    {file = "deltalake-0.18.2-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:c788520fe22225e860bea777d991893ae47a4778467c9ce65fa35bc511554989"},
+    {file = "deltalake-0.18.2-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:828026848c862d8d0edfb5b962da8398d38610ebee6c38d01e96ca45496db00d"},
+    {file = "deltalake-0.18.2-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:07f3de64f61bcdc894b341554c9385fa9fcb1a33ad1c61ab28c1f00d107e9bed"},
+    {file = "deltalake-0.18.2-cp38-abi3-win_amd64.whl", hash = "sha256:ee0594f82e8dad10ad933de9dd14f379d23a25c4744edd3224cdba9a8b5951eb"},
+    {file = "deltalake-0.18.2.tar.gz", hash = "sha256:c6f9ad68736413a6d7c1526d60905cdf4aaeb59b8c95cc782661250917719aef"},
+]
+
+[package.dependencies]
+pyarrow = ">=8"
+pyarrow-hotfix = "*"
+
+[package.extras]
+devel = ["azure-storage-blob (==12.20.0)", "mypy (>=1.8.0,<1.9.0)", "packaging (>=20)", "pytest", "pytest-benchmark", "pytest-cov", "pytest-mock", "pytest-timeout", "ruff (>=0.3.0,<0.4.0)", "sphinx (<=4.5)", "sphinx-rtd-theme", "toml", "wheel"]
+pandas = ["pandas"]
+pyspark = ["delta-spark", "numpy (==1.22.2)", "pyspark"]
+
+[[package]]
 name = "diff-cover"
 version = "9.7.1"
 description = "Run coverage and linting reports on diffs"
@@ -4227,7 +4253,7 @@ version = "21.0.0"
 description = "Python library for Apache Arrow"
 optional = false
 python-versions = ">=3.9"
-groups = ["ui"]
+groups = ["lakehouse", "ui"]
 files = [
     {file = "pyarrow-21.0.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:e563271e2c5ff4d4a4cbeb2c83d5cf0d4938b891518e676025f7268c6fe5fe26"},
     {file = "pyarrow-21.0.0-cp310-cp310-macosx_12_0_x86_64.whl", hash = "sha256:fee33b0ca46f4c85443d6c450357101e47d53e6c3f008d658c27a2d020d44c79"},
@@ -4273,9 +4299,23 @@ files = [
     {file = "pyarrow-21.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:cdc4c17afda4dab2a9c0b79148a43a7f4e1094916b3e18d8975bfd6d6d52241f"},
     {file = "pyarrow-21.0.0.tar.gz", hash = "sha256:5051f2dccf0e283ff56335760cbc8622cf52264d67e359d5569541ac11b6d5bc"},
 ]
+markers = {lakehouse = "python_version < \"3.14\""}
 
 [package.extras]
 test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
+
+[[package]]
+name = "pyarrow-hotfix"
+version = "0.7"
+description = ""
+optional = false
+python-versions = ">=3.5"
+groups = ["lakehouse"]
+markers = "python_version < \"3.14\""
+files = [
+    {file = "pyarrow_hotfix-0.7-py3-none-any.whl", hash = "sha256:3236f3b5f1260f0e2ac070a55c1a7b339c4bb7267839bd2015e283234e758100"},
+    {file = "pyarrow_hotfix-0.7.tar.gz", hash = "sha256:59399cd58bdd978b2e42816a4183a55c6472d4e33d183351b6069f11ed42661d"},
+]
 
 [[package]]
 name = "pycparser"
@@ -7130,4 +7170,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.15"
-content-hash = "9def8531e3f5b5060386f9f7cf16947f83f52ba5adf9faec59ed86c77a7b0a58"
+content-hash = "7453c9e9e2867cb4602aa90cf496ee07f45a4b51daa6bc3ff14878bcbda3857f"

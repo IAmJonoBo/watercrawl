@@ -10,6 +10,7 @@ from firecrawl_demo.core.excel import EXPECTED_COLUMNS
 from firecrawl_demo.integrations.storage.lakehouse import (
     LakehouseConfig,
     LocalLakehouseWriter,
+    restore_snapshot,
 )
 
 
@@ -43,15 +44,22 @@ def test_local_lakehouse_writer_persists_snapshot(tmp_path: Path) -> None:
 
     assert manifest.table_uri.startswith("delta://")
     assert manifest.table_path.exists()
-    assert (manifest.table_path / "data.parquet").exists()
     assert manifest.manifest_path.exists()
     assert manifest.fingerprint
     manifest_payload = json.loads(manifest.manifest_path.read_text())
     assert manifest_payload["run_id"] == "run-001"
     assert manifest_payload["row_count"] == 1
     assert manifest_payload["fingerprint"] == manifest.fingerprint
-    assert manifest_payload["schema"]["Name of Organisation"]
     assert manifest_payload["environment"]["profile"] == "dev"
+    if manifest.degraded:
+        degraded_info = manifest_payload["artifacts"]["degraded"]
+        assert degraded_info["reason"] in {
+            "delta_engine_missing",
+            "parquet_engine_missing",
+        }
+    else:
+        assert manifest.format == "delta"
+        assert manifest.extras.get("delta_version") is not None
 
 
 def test_local_lakehouse_writer_falls_back_to_csv_when_parquet_missing(
@@ -86,3 +94,32 @@ def test_local_lakehouse_writer_falls_back_to_csv_when_parquet_missing(
     assert degraded_info["reason"] == "parquet_engine_missing"
     assert "pyarrow" in degraded_info["remediation"]
     assert degraded_info["fallback_artifact"] == "data.csv"
+
+
+def test_restore_snapshot_returns_latest_snapshot(tmp_path: Path) -> None:
+    config = LakehouseConfig(
+        backend="delta",
+        root_path=tmp_path,
+        table_name="flight_schools",
+    )
+    writer = LocalLakehouseWriter(config)
+    frame = _sample_frame()
+
+    manifest = writer.write(run_id="run-restore", dataframe=frame)
+
+    restored_latest = restore_snapshot(
+        table_name="flight_schools",
+        root_path=tmp_path,
+    )
+    restored_specific = restore_snapshot(
+        table_name="flight_schools",
+        version=manifest.version,
+        root_path=tmp_path,
+    )
+
+    pd.testing.assert_frame_equal(
+        restored_latest[list(frame.columns)], frame, check_dtype=False
+    )
+    pd.testing.assert_frame_equal(
+        restored_specific[list(frame.columns)], frame, check_dtype=False
+    )

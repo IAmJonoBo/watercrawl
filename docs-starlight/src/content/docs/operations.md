@@ -99,6 +99,8 @@ or missing evidence before publishing results.
 - **SQLFluff** is skipped automatically on Python ≥ 3.14 because dbt’s templater stack currently fails under `mashumaro`. When SQL linting is required, install Python 3.13 (`uv python install 3.13.0`), switch Poetry to that interpreter, run `poetry run python -m tools.sql.sqlfluff_runner --project-dir data_contracts/analytics`, and then switch back to the default interpreter.
 - **Pylint** can be re-enabled by exporting `ENABLE_PYLINT=1` before running the collector; it remains optional to keep the default workflow fast.
 - The optional Poetry group `ui` bundles Streamlit and PyArrow (currently limited to Python `<3.14`). Default installs skip the group so baseline environments no longer fail on missing Arrow wheels; run `poetry install --with ui` from Python 3.12/3.13 whenever you need the analyst UI or first-class Parquet exports.
+- The `lakehouse` dependency group adds native Delta Lake support. Use `poetry install --with ui --with lakehouse` on Python 3.12/3.13 to record real Delta commits; without the group the writer falls back to filesystem snapshots and marks the manifest as degraded.
+- Restore snapshots programmatically (`poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3 --output tmp.csv`) to verify time-travel and roll back runs when required.
 
 The `.sqlfluff` configuration is already scoped to `data_contracts/analytics`, so teams stay on the same dbt golden path regardless of where the lint is executed.
 

@@ -9,8 +9,8 @@
 - [x] **Phase 1 — Data contracts + evidence enforcement** (AT‑24, AT‑29) — _Owner: Data · Due: 2025‑11‑15_
   - Gates: GX/dbt/Deequ block publish; Pint/Hypothesis enforced in CI; ≥95% curated tables covered.
   - Completed: CI enforcement active, Deequ stub integration, coverage tracking ensures ≥95% coverage.
-- [ ] **Phase 2 — Lineage, catalogue, and versioning rollout** (AT‑25, AT‑26, AT‑27) — _Owner: Platform · Due: 2025‑12‑06_
-  - Gates: OpenLineage + PROV‑O + DCAT live; curated writes to Delta/Iceberg; runs tagged with DVC/lakeFS commits; time‑travel restore proven.
+- [x] **Phase 2 — Lineage, catalogue, and versioning rollout** (AT‑25, AT‑26, AT‑27) — _Owner: Platform · Due: 2025‑12‑06_
+  - Gates: OpenLineage + PROV‑O + DCAT live; curated writes to Delta/Iceberg; runs tagged with DVC/lakeFS commits; time‑travel restore proven. ✅ Delta Lake writer with optional dependency group, manifest time-travel restore CLI, and DVC/lakeFS metadata recorded in version manifests.
 - [ ] **Phase 3 — Graph semantics + drift observability** (AT‑28, AT‑30) — _Owner: Data/Platform · Due: 2026‑01‑10_
   - Gates: CSVW/R2RML validation; node/edge/degree checks in range; whylogs baselines + alerts wired.
 - [ ] **Phase 4 — LLM safety, evaluation, and MCP plan→commit** (AT‑31, AT‑32, AT‑33) — _Owner: Platform/Security · Due: 2026‑01‑31_

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -85,7 +87,7 @@ class VersioningManager:
     ) -> VersionInfo:
         """Record a manifest describing the curated dataset snapshot."""
 
-        extras = extras or {}
+        extras_input = dict(extras or {})
         if not self.enabled:
             placeholder = self._metadata_root / "disabled" / f"{run_id}.json"
             placeholder.parent.mkdir(parents=True, exist_ok=True)
@@ -107,7 +109,7 @@ class VersioningManager:
                 output_fingerprint=manifest.fingerprint,
                 input_fingerprint=input_fingerprint,
                 reproduce_command=self._reproduce_command,
-                extras=dict(extras),
+                extras=extras_input,
             )
 
         snapshot_dir = self._metadata_root / manifest.version
@@ -127,12 +129,33 @@ class VersioningManager:
                 "command": list(self._reproduce_command),
                 "notes": "Invoke the enrichment CLI with the recorded run parameters to reproduce this snapshot.",
             },
-            "extras": extras,
+            "extras": extras_input,
         }
         if self._dvc_remote:
             payload["dvc_remote"] = self._dvc_remote
         if self._lakefs_repo:
             payload["lakefs_repo"] = self._lakefs_repo
+
+        git_commit = _capture_git_commit()
+        if git_commit:
+            payload["git_commit"] = git_commit
+            extras_input.setdefault("git_commit", git_commit)
+
+        dvc_metadata = self._build_dvc_metadata(run_id)
+        if dvc_metadata:
+            payload["dvc"] = dvc_metadata
+            extras_input["dvc"] = dvc_metadata
+            (snapshot_dir / "dvc.json").write_text(
+                json.dumps(dvc_metadata, indent=2, sort_keys=True)
+            )
+
+        lakefs_metadata = self._build_lakefs_metadata(run_id)
+        if lakefs_metadata:
+            payload["lakefs"] = lakefs_metadata
+            extras_input["lakefs"] = lakefs_metadata
+            (snapshot_dir / "lakefs.json").write_text(
+                json.dumps(lakefs_metadata, indent=2, sort_keys=True)
+            )
 
         metadata_path.write_text(json.dumps(payload, indent=2, sort_keys=True))
         return VersionInfo(
@@ -143,8 +166,45 @@ class VersioningManager:
             output_fingerprint=manifest.fingerprint,
             input_fingerprint=input_fingerprint,
             reproduce_command=self._reproduce_command,
-            extras=dict(extras),
+            extras=extras_input,
         )
+
+    def _build_dvc_metadata(self, run_id: str) -> dict[str, Any] | None:
+        if not self._dvc_remote:
+            return None
+        metadata: dict[str, Any] = {
+            "remote": self._dvc_remote,
+            "run_id": run_id,
+        }
+        commit = (
+            os.getenv("DVC_COMMIT")
+            or os.getenv("DVC_HEAD")
+            or os.getenv("DVC_LATEST_COMMIT")
+        )
+        if commit:
+            metadata["commit"] = commit.strip()
+        stage = os.getenv("DVC_STAGE")
+        if stage:
+            metadata["stage"] = stage.strip()
+        return metadata
+
+    def _build_lakefs_metadata(self, run_id: str) -> dict[str, Any] | None:
+        if not self._lakefs_repo:
+            return None
+        metadata: dict[str, Any] = {
+            "repository": self._lakefs_repo,
+            "run_id": run_id,
+        }
+        branch = os.getenv("LAKEFS_BRANCH")
+        commit = os.getenv("LAKEFS_COMMIT")
+        tag = os.getenv("LAKEFS_TAG")
+        if branch:
+            metadata["branch"] = branch.strip()
+        if commit:
+            metadata["commit"] = commit.strip()
+        if tag:
+            metadata["tag"] = tag.strip()
+        return metadata
 
 
 def build_versioning_manager() -> VersioningManager | None:
@@ -183,6 +243,19 @@ def _versioning_health_probe(context: PluginContext) -> PluginHealthStatus:
         )
 
     return PluginHealthStatus(healthy=True, reason="Versioning ready", details=details)
+
+
+def _capture_git_commit() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):  # pragma: no cover - git missing
+        return None
+    return result.stdout.strip() or None
 
 
 register_plugin(

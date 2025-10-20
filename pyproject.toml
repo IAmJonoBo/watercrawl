@@ -78,6 +78,12 @@ optional = true
 streamlit = "^1.50.0"
 pyarrow = { version = "^21.0.0", python = ">=3.12,<3.14" }
 
+[tool.poetry.group.lakehouse]
+optional = true
+
+[tool.poetry.group.lakehouse.dependencies]
+deltalake = { version = ">=0.17,<0.19", python = ">=3.12,<3.14" }
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
