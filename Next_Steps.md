@@ -36,6 +36,7 @@
 - [ ] 2025-10-19 — Baseline QA attempt on fresh environment blocked: `poetry install` fails under Python 3.14 because `pyarrow==21.0.0` only ships source dists (no cp314 wheels) and the build backend requires an Arrow SDK. Documented blocker before proceeding with dependency upgrades.
 - [x] 2025-10-20 — Replaced committed `node_modules` artefacts with scripted installs (`scripts/bootstrap_env`) and added pre-commit managed `markdownlint-cli2`. TLS-restricted runners still need allow-listed access for nodeenv downloads (see Risks).
 - [x] 2025-10-20 — Bundled `hadolint` (v2.14.0) and `actionlint` (v1.7.1) binaries in `tools/bin/` for all platforms (Linux x86_64/arm64, macOS x86_64/arm64) to support ephemeral runners without internet access. Bootstrap utilities now check for bundled binaries first before attempting downloads. CI and Dockerfile updated to use bundled binaries.
+- [x] 2025-10-20 — Code hardening sprint: Fixed failing test_actionlint_rejects_path_traversal by disabling bundled binary lookup in test; fixed all ruff linting issues (whitespace, import order); replaced deprecated datetime.utcnow() with datetime.now(UTC) in 3 locations; fixed yamllint line-length violation in CI workflow. All quality gates now pass: ruff (0 issues), mypy (0 errors), yamllint (0 issues), bandit (0 issues), pytest (237 passed). CodeQL security scan clean. Updated problems_report.json reflects green status.
 
 ---
 

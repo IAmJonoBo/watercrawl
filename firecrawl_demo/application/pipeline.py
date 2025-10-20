@@ -294,6 +294,9 @@ class Pipeline(PipelineService):
             if row_findings:
                 sanity_findings.extend(row_findings)
             for column in cleared_columns:
+                # Ensure column is object dtype to avoid pandas incompatibility warnings
+                if working_frame_cast[column].dtype != "object":
+                    working_frame_cast[column] = working_frame_cast[column].astype("object")
                 working_frame_cast.at[idx, column] = ""
 
             changed_columns = self._collect_changed_columns(original_record, record)
@@ -562,6 +565,9 @@ class Pipeline(PipelineService):
         frame_cast = cast(Any, frame)
         for column, value in record.as_dict().items():
             if value is not None:
+                # Ensure column is object dtype to avoid pandas incompatibility warnings
+                if frame_cast[column].dtype != "object":
+                    frame_cast[column] = frame_cast[column].astype("object")
                 frame_cast.at[index, column] = value
 
     def _collect_changed_columns(

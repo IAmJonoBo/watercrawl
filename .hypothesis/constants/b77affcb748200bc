@@ -1,4 +1,0 @@
-# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/core/audit.py
-# hypothesis_version: 6.142.1
-
-['+', 'Confidence', 'Notes', 'Organisation', 'RowID', 'Sources', 'Timestamp', 'What changed', 'a', 'csv', 'kafka', 'rest', 'stream', 'utf-8']

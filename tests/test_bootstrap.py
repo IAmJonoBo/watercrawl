@@ -54,6 +54,8 @@ def test_actionlint_rejects_path_traversal(
         shutil.copyfile(archive_path, destination)
 
     monkeypatch.setattr(bootstrap, "_download", fake_download)
+    # Disable bundled binary lookup so we force download and extraction
+    monkeypatch.setenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED", "1")
 
     with pytest.raises(bootstrap.BootstrapError) as excinfo:
         bootstrap.ensure_actionlint()

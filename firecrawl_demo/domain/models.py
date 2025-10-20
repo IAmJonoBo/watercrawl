@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 from firecrawl_demo.core import config
@@ -78,7 +78,7 @@ class EvidenceRecord:
     sources: list[str]
     notes: str
     confidence: int
-    timestamp: datetime = field(default_factory=lambda: datetime.utcnow())
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def as_dict(self) -> dict[str, str]:
         return {

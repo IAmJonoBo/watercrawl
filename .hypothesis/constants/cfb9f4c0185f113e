@@ -1,4 +1,0 @@
-# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/core/pipeline.py
-# hypothesis_version: 6.142.1
-
-[', ', '.', '. Remediation: ', '.ac.za', '.gov.za', '.mil.za', '.org.za', '; ', 'Contact Number', 'Contact Person', 'Evidence shortfall: ', 'Name of Organisation', 'Needs Review', 'No changes', 'Province', 'Remediation: ', 'Status', 'Unknown', 'Verified', 'Website URL', 'adapter_failures', 'block', 'caa.co.za', 'empty', 'enrich_dataset', 'enriched_rows', 'environment', 'findings', 'internal://record', 'issues', 'issues_found', 'list_sanity_issues', 'message', 'metrics', 'missing_column', 'ok', 'path', 'province_unknown', 'quality_issues', 'quality_rejections', 'rollback_plan', 'rows', 'rows_enriched', 'rows_total', 'sanity_issue_count', 'sanity_issues', 'source', 'status', 'summarize_last_run', 'validate_dataset', 'verified_rows']

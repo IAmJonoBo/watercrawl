@@ -1,4 +1,0 @@
-# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/core/models.py
-# hypothesis_version: 6.142.1
-
-['; ', 'Confidence', 'Contact Number', 'Contact Person', 'Name of Organisation', 'Needs Review', 'Notes', 'Organisation', 'Province', 'RowID', 'Sources', 'Status', 'Timestamp', 'Unknown', 'Website URL', 'What changed', 'actions', 'block', 'code', 'columns', 'issue', 'message', 'organisation', 'previous_values', 'reason', 'remediation', 'row_id', 'seconds', 'severity', 'warn']

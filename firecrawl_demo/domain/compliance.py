@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 from collections.abc import Iterable, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Protocol
 from urllib.parse import urlparse
 
@@ -194,7 +194,7 @@ def evidence_entry(
     notes: str,
     confidence: int,
 ) -> dict[str, str]:
-    timestamp = datetime.utcnow().isoformat(timespec="seconds")
+    timestamp = datetime.now(UTC).isoformat(timespec="seconds")
     # Enforce ≥2 sources and at least one official
     official_keywords = [".gov.za", "caa.co.za", "ac.za", "org.za"]
     official_present = any(any(k in s for k in official_keywords) for s in sources)
@@ -261,7 +261,7 @@ def append_evidence_log(
                 sources=sources,
                 notes=row.get("Notes", ""),
                 confidence=confidence,
-                timestamp=timestamp or datetime.utcnow(),
+                timestamp=timestamp or datetime.now(UTC),
             )
         )
 

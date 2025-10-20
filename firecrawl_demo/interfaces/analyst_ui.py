@@ -43,11 +43,11 @@ def main() -> None:
         df.to_excel(config.ENRICHED_XLSX, index=False)
         # --- Audit trail ---
         import csv
-        from datetime import datetime
+        from datetime import UTC, datetime
 
         audit_path = Path(config.PROCESSED_DIR) / "feedback_audit.csv"
         audit_row = {
-            "Timestamp": datetime.utcnow().isoformat(timespec="seconds"),
+            "Timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
             "RowIndex": idx,
             "Previous": prev,
             "New": feedback,

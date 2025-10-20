@@ -93,7 +93,8 @@ jobs:
             "$HADOLINT_BIN" Dockerfile || true
           else
             # Fallback to downloading if bundled binary not available
-            HADOLINT_URL="https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-$(uname -s)-$(uname -m)"
+            HADOLINT_URL="https://github.com/hadolint/hadolint/releases/download"
+            HADOLINT_URL="${HADOLINT_URL}/v2.14.0/hadolint-$(uname -s)-$(uname -m)"
             wget -O /usr/local/bin/hadolint "$HADOLINT_URL"
             chmod +x /usr/local/bin/hadolint
             hadolint Dockerfile || true
