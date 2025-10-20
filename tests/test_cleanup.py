@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import subprocess
+# Tests intentionally exercise git workflows to ensure CLI parity.
+import subprocess  # nosec B404
 from pathlib import Path
 
 import pytest
@@ -72,19 +73,21 @@ def test_cleanup_rejects_paths_outside_project_root(tmp_path: Path) -> None:
 
 
 def test_cleanup_skips_tracked_targets(tmp_path: Path) -> None:
-    subprocess.run(("git", "init"), check=True, cwd=tmp_path)
+    subprocess.run(("git", "init"), check=True, cwd=tmp_path)  # nosec B603
     subprocess.run(
         ("git", "-C", str(tmp_path), "config", "user.email", "test@example.com"),
         check=True,
-    )
+    )  # nosec B603
     subprocess.run(
         ("git", "-C", str(tmp_path), "config", "user.name", "Test User"),
         check=True,
-    )
+    )  # nosec B603
     tracked = tmp_path / "dist" / "keep.txt"
     tracked.parent.mkdir(parents=True)
     tracked.write_text("keep", encoding="utf-8")
-    subprocess.run(("git", "-C", str(tmp_path), "add", "dist/keep.txt"), check=True)
+    subprocess.run(
+        ("git", "-C", str(tmp_path), "add", "dist/keep.txt"), check=True
+    )  # nosec B603
 
     result = cleanup.cleanup(project_root=tmp_path)
 

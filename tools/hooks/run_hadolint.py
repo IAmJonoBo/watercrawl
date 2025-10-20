@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import subprocess
+# Bandit: subprocess usage is limited to the downloaded hadolint binary.
+import subprocess  # nosec B404
 import sys
 
 from .bootstrap import BootstrapError, ensure_hadolint
@@ -15,7 +16,7 @@ def main(argv: list[str] | None = None) -> int:
     except BootstrapError as exc:
         print(exc, file=sys.stderr)
         return 1
-    completed = subprocess.run([str(binary), *args], check=False)
+    completed = subprocess.run([str(binary), *args], check=False)  # nosec B603
     return completed.returncode
 
 

@@ -45,7 +45,9 @@ class _RecordingRunner:
             for spec in specs:
                 if getattr(spec, "requires_plan", False):
                     plan_guard.require(
-                        f"qa.{spec.name.lower().replace(' ', '_')}", plan_paths, force=force
+                        f"qa.{spec.name.lower().replace(' ', '_')}",
+                        plan_paths,
+                        force=force,
                     )
                     break
         self.capture["specs"] = specs

@@ -43,6 +43,9 @@ def test_validate_curated_dataframe_succeeds_for_valid_row() -> None:
     result = validate_curated_dataframe(frame)
     assert result.success
     assert result.unsuccessful_expectations == 0
+    assert result.statistics.get("successful_expectations") == result.statistics.get(
+        "evaluated_expectations"
+    )
 
 
 @pytest.mark.skipif(

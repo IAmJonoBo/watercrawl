@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
-import subprocess
+
+# Subprocess interactions are stubbed to exercise the collector pipeline.
+import subprocess  # nosec B404
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path

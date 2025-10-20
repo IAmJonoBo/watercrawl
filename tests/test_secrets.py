@@ -19,6 +19,8 @@ from firecrawl_demo.governance.secrets import (
     build_provider_from_environment,
 )
 
+# bandit: disable=B101,B106 - pytest assertions and stub secrets are expected in tests
+
 
 class DummyProvider:
     def __init__(self, values: dict[str, str | None]) -> None:

@@ -15,16 +15,16 @@ models:
         description: South African province derived from the curated dataset.
         tests:
           - not_null
-          - accepted_values:
+          - contracts_accepted_values:
               arguments:
-                values: {{contracts_province_values()}}
+                canonical_key: provinces
       - name: status
         description: Curated lifecycle status aligned with ACES taxonomy.
         tests:
           - not_null
-          - accepted_values:
+          - contracts_accepted_values:
               arguments:
-                values: {{contracts_status_values()}}
+                canonical_key: statuses
       - name: website_url
         description: Primary organisation website, expected to use HTTPS.
         tests:
