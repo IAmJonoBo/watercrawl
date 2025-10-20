@@ -47,6 +47,7 @@
 - [x] 2025-10-20 — MCP plan→commit enforcement hardening: Sigstore-style audit log JSONL now records MCP executions; guard rejects missing `*.commit`, `If-Match`, or low RAG metrics, and tests cover audit logging paths.
 - [x] 2025-10-20 — Accessibility baseline: Added axe-core smoke tests for the Streamlit analyst UI, documented heuristic review steps, and wired the smoke test into CI.
 - [x] 2025-10-21 — Drift telemetry upgrade: Pipeline writes whylogs alert history (`alerts.json`) and Prometheus textfile metrics (`metrics.prom`) with configuration via `DRIFT_ALERT_OUTPUT` / `DRIFT_PROMETHEUS_OUTPUT`; docs updated, baseline seeding utility + sample Prometheus rules committed, and tests cover log/metric emission.
+- [x] 2025-10-21 — QA automation upgrade: Added format/problems commands with plan auto-generation, integrated mypy into Trunk linting, and documented new CQ workflows to minimise manual triage.
 
 ---
 

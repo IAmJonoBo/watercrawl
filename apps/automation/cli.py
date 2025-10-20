@@ -25,7 +25,7 @@ from firecrawl_demo.interfaces.cli_base import (
     PlanCommitGuard,
     load_cli_environment,
 )
-from scripts import bootstrap_python
+from scripts import bootstrap_python, collect_problems
 
 CLI_ENVIRONMENT = load_cli_environment()
 
@@ -46,12 +46,14 @@ def _format_args(args: Sequence[str]) -> str:
     return shlex.join(args)
 
 
-def _default_qa_instructions(include_dbt: bool) -> str:
-    suffix = " (dbt contracts skipped)." if not include_dbt else "."
-    return (
-        "Execute the QA suite via `apps.automation.cli qa all` to validate the repo"
-        + suffix
-    )
+def _derive_instructions(
+    specs: Sequence[CommandSpec], override: str | None = None
+) -> str:
+    if override:
+        text = override.strip()
+        return text or "Execute QA tasks."
+    task_names = ", ".join(spec.name for spec in specs)
+    return f"Execute QA tasks: {task_names}."
 
 
 def _build_plan_payload(
@@ -126,6 +128,66 @@ def _write_json_file(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return path
+
+
+def _maybe_generate_plan_artifacts(
+    *,
+    specs: Sequence[CommandSpec],
+    dry_run: bool,
+    guard: PlanCommitGuard | None,
+    plan_paths: Sequence[Path],
+    commit_paths: Sequence[Path],
+    generate_plan: bool,
+    plan_dir: Path | None,
+    instructions: str,
+    if_match_token: str | None,
+    console: Console,
+) -> tuple[list[Path], list[Path], PlanCommitGuard | None]:
+    plan_paths_list = list(plan_paths)
+    commit_paths_list = list(commit_paths)
+    active_guard = guard
+    if generate_plan and not dry_run:
+        active_guard = active_guard or CLI_ENVIRONMENT.plan_guard
+        if active_guard is None:
+            raise click.ClickException(
+                "Plan guard is not configured; cannot generate plan artefacts."
+            )
+        if plan_paths_list or commit_paths_list:
+            console.print(
+                Text.assemble(
+                    ("Skipping auto plan generation", "yellow"),
+                    " because plan/commit artefacts were provided.",
+                )
+            )
+        else:
+            target_dir = plan_dir or (config.DATA_DIR / "logs" / "plans")
+            target_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+            base_name = f"qa_{timestamp}"
+            plan_path = _ensure_unique_path(target_dir / f"{base_name}.plan")
+            commit_path = _ensure_unique_path(target_dir / f"{base_name}.commit")
+            plan_payload = _build_plan_payload(specs, instructions=instructions)
+            _write_json_file(plan_path, plan_payload, overwrite=False)
+            commit_payload = _build_commit_payload(
+                specs,
+                diff_format=active_guard.contract.diff_format,
+                if_match_token=if_match_token,
+                instructions=instructions,
+            )
+            _write_json_file(commit_path, commit_payload, overwrite=False)
+            plan_paths_list.append(plan_path)
+            commit_paths_list.append(commit_path)
+            console.print(
+                Text.assemble(
+                    ("Generated plan artefact → ", "green"), plan_path.as_posix()
+                )
+            )
+            console.print(
+                Text.assemble(
+                    ("Generated commit artefact → ", "green"), commit_path.as_posix()
+                )
+            )
+    return plan_paths_list, commit_paths_list, active_guard
 
 
 _MINIMUM_PYTHON_VERSION = (3, 14)
@@ -272,6 +334,26 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
             ),
             description="Lint GitHub workflow automation for logic and syntax errors.",
             tags=("ci",),
+        ),
+    ],
+    "format": [
+        CommandSpec(
+            name="Ruff (fix)",
+            args=("poetry", "run", "ruff", "check", ".", "--fix"),
+            description="Apply Ruff auto-fixes across the repository.",
+            requires_plan=True,
+        ),
+        CommandSpec(
+            name="Isort (fmt)",
+            args=("poetry", "run", "isort", "--profile", "black", "."),
+            description="Sort imports using the Black profile.",
+            requires_plan=True,
+        ),
+        CommandSpec(
+            name="Black (fmt)",
+            args=("poetry", "run", "black", "."),
+            description="Format Python files with Black.",
+            requires_plan=True,
         ),
     ],
     "typecheck": [
@@ -653,9 +735,7 @@ def qa_plan(
     console = Console()
     console.print(_render_plan_table(specs))
 
-    instructions = instructions_override or _default_qa_instructions(
-        include_dbt=not skip_dbt
-    )
+    instructions = _derive_instructions(specs, instructions_override)
 
     if write_plan is not None:
         payload = _build_plan_payload(specs, instructions=instructions)
@@ -758,54 +838,19 @@ def qa_all(
     console = Console()
     _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap, console=console)
     specs = _collect_specs(_QA_DEFAULT_SEQUENCE, include_dbt=not skip_dbt)
-    plan_paths_list = list(plans)
-    commit_paths_list = list(commits)
-
-    guard = None if dry_run else CLI_ENVIRONMENT.plan_guard
-    if generate_plan and not dry_run:
-        guard = guard or CLI_ENVIRONMENT.plan_guard
-        if guard is None:
-            raise click.ClickException(
-                "Plan guard is not configured; cannot generate plan artefacts."
-            )
-        if plan_paths_list or commit_paths_list:
-            console.print(
-                Text.assemble(
-                    ("Skipping auto plan generation", "yellow"),
-                    " because plan/commit artefacts were provided.",
-                )
-            )
-        else:
-            target_dir = plan_dir or (config.DATA_DIR / "logs" / "plans")
-            target_dir.mkdir(parents=True, exist_ok=True)
-            timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
-            base_name = f"qa_{timestamp}"
-            plan_path = _ensure_unique_path(target_dir / f"{base_name}.plan")
-            commit_path = _ensure_unique_path(target_dir / f"{base_name}.commit")
-            instructions = plan_note or _default_qa_instructions(
-                include_dbt=not skip_dbt
-            )
-            plan_payload = _build_plan_payload(specs, instructions=instructions)
-            _write_json_file(plan_path, plan_payload, overwrite=False)
-            commit_payload = _build_commit_payload(
-                specs,
-                diff_format=guard.contract.diff_format,
-                if_match_token=generated_if_match,
-                instructions=instructions,
-            )
-            _write_json_file(commit_path, commit_payload, overwrite=False)
-            plan_paths_list.append(plan_path)
-            commit_paths_list.append(commit_path)
-            console.print(
-                Text.assemble(
-                    ("Generated plan artefact → ", "green"), plan_path.as_posix()
-                )
-            )
-            console.print(
-                Text.assemble(
-                    ("Generated commit artefact → ", "green"), commit_path.as_posix()
-                )
-            )
+    instructions = _derive_instructions(specs, plan_note)
+    plan_paths_list, commit_paths_list, guard = _maybe_generate_plan_artifacts(
+        specs=specs,
+        dry_run=dry_run,
+        guard=None if dry_run else CLI_ENVIRONMENT.plan_guard,
+        plan_paths=plans,
+        commit_paths=commits,
+        generate_plan=generate_plan,
+        plan_dir=plan_dir,
+        instructions=instructions,
+        if_match_token=generated_if_match,
+        console=console,
+    )
 
     exit_code = _invoke_specs(
         specs,
@@ -855,6 +900,153 @@ def qa_tests(dry_run: bool, auto_bootstrap: bool) -> None:
     specs = _collect_specs(["tests"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
     raise SystemExit(exit_code)
+
+
+@qa.command("fmt")
+@click.option(
+    "--dry-run", is_flag=True, help="Preview format commands without executing them."
+)
+@click.option(
+    "--auto-bootstrap/--no-auto-bootstrap",
+    default=True,
+    help="Automatically provision Python 3.14 with uv when required.",
+    show_default=True,
+)
+@click.option(
+    "--plan",
+    "plans",
+    type=click.Path(path_type=Path),
+    multiple=True,
+    help="Path(s) to plan artefacts authorising formatting operations.",
+)
+@click.option(
+    "--commit",
+    "commits",
+    type=click.Path(path_type=Path),
+    multiple=True,
+    help="Path(s) to commit artefacts acknowledging diff review.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Bypass plan enforcement when policy permits force commits.",
+)
+@click.option(
+    "--generate-plan",
+    is_flag=True,
+    help="Automatically generate plan/commit artefacts before applying formatters.",
+)
+@click.option(
+    "--plan-dir",
+    type=click.Path(path_type=Path),
+    help="Directory for generated plan/commit artefacts (defaults to data/logs/plans).",
+)
+@click.option(
+    "--plan-note",
+    type=str,
+    help="Custom instructions text to embed in generated artefacts.",
+)
+@click.option(
+    "--if-match-token",
+    "generated_if_match",
+    type=str,
+    help="Override the If-Match token used in generated commit artefacts.",
+)
+def qa_fmt(
+    dry_run: bool,
+    auto_bootstrap: bool,
+    plans: Sequence[Path],
+    commits: Sequence[Path],
+    force: bool,
+    generate_plan: bool,
+    plan_dir: Path | None,
+    plan_note: str | None,
+    generated_if_match: str | None,
+) -> None:
+    """Run auto-formatters (Ruff fix, isort, Black) with plan guard support."""
+
+    console = Console()
+    _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap, console=console)
+    specs = _collect_specs(["format"])
+    instructions = _derive_instructions(specs, plan_note)
+    plan_paths_list, commit_paths_list, guard = _maybe_generate_plan_artifacts(
+        specs=specs,
+        dry_run=dry_run,
+        guard=None if dry_run else CLI_ENVIRONMENT.plan_guard,
+        plan_paths=plans,
+        commit_paths=commits,
+        generate_plan=generate_plan,
+        plan_dir=plan_dir,
+        instructions=instructions,
+        if_match_token=generated_if_match,
+        console=console,
+    )
+    exit_code = _invoke_specs(
+        specs,
+        dry_run=dry_run,
+        plan_guard=guard,
+        plan_paths=tuple(plan_paths_list),
+        commit_paths=tuple(commit_paths_list),
+        force=force,
+    )
+    raise SystemExit(exit_code)
+
+
+@qa.command("problems")
+@click.option(
+    "--fail-on-issues/--no-fail-on-issues",
+    default=False,
+    help="Return a non-zero exit code when any tool reports issues.",
+)
+def qa_problems(fail_on_issues: bool) -> None:
+    """Run the problems collector and summarise outstanding QA findings."""
+
+    console = Console()
+    console.print(Text.assemble(("Collecting problems…", "cyan")))
+    results = collect_problems.collect()
+    collect_problems.write_report(results)
+
+    table = Table(title="Problems report summary")
+    table.add_column("Tool", style="magenta")
+    table.add_column("Status", style="cyan")
+    table.add_column("Issues", justify="right")
+    table.add_column("Return", justify="right")
+
+    total_issues = 0
+    for entry in results:
+        summary = entry.get("summary", {})
+        issue_count = int(summary.get("issue_count", 0))
+        total_issues += issue_count
+        status = entry.get("status", "unknown")
+        style = "green"
+        if status not in {"completed", "completed_with_exit_code"}:
+            style = "yellow"
+        if issue_count > 0:
+            style = "red"
+        table.add_row(
+            entry.get("tool", "unknown"),
+            status,
+            str(issue_count),
+            str(entry.get("returncode", "")),
+            style=style,
+        )
+
+    console.print(table)
+    console.print(
+        Text.assemble(
+            ("Problems report written to ", "green"),
+            collect_problems.REPORT_PATH.as_posix(),
+        )
+    )
+    if total_issues:
+        console.print(
+            Text.assemble(
+                ("Detected ", "yellow"),
+                str(total_issues),
+                (" outstanding issue(s).", "yellow"),
+            )
+        )
+    raise SystemExit(1 if total_issues and fail_on_issues else 0)
 
 
 @qa.command("lint")

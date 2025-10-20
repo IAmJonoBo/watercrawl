@@ -32,6 +32,8 @@ poetry run python -m apps.analyst.cli contracts data/sample_enriched.csv --forma
 poetry run python -m apps.automation.cli qa plan  # add --write-plan/--write-commit to emit artefacts
 poetry run python -m apps.automation.cli qa all --dry-run
 poetry run python -m apps.automation.cli qa all  # auto-installs Python 3.14 via uv when needed; add --generate-plan to materialise plan/commit artefacts
+poetry run python -m apps.automation.cli qa fmt --generate-plan --plan-dir tmp/plans
+poetry run python -m apps.automation.cli qa problems --fail-on-issues
 ```
 
 > `scripts.bootstrap_env` provisions the uv-managed interpreter, installs the

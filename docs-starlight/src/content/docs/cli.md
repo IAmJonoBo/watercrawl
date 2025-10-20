@@ -96,16 +96,38 @@ poetry run python -m apps.automation.cli qa all --dry-run
 - Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
 - Honour plan→commit guardrails by supplying `--plan ... --commit ...` or simply pass `--generate-plan` (with an optional `--plan-dir`) to auto-generate compliant artefacts before the cleanup step runs.
 
+### `qa fmt`
+
+```bash
+poetry run python -m apps.automation.cli qa fmt --generate-plan
+```
+
+- Applies Ruff auto-fixes, isort, and Black in sequence.
+- Requires plan artefacts; provide them explicitly or rely on `--generate-plan`/`--plan-dir` to create compliant files.
+- Accepts `--dry-run` and `--no-auto-bootstrap` for faster previews.
+
+### `qa problems`
+
+```bash
+poetry run python -m apps.automation.cli qa problems --fail-on-issues
+```
+
+- Aggregates lint, type-check, and policy outputs via `problems_report.json`.
+- Prints a per-tool summary table so developers can triage without opening the JSON artefact.
+- With `--fail-on-issues`, returns a non-zero exit code when any tool reports findings.
+
 ### Targeted QA commands
 
 Each QA stage is also exposed individually:
 
 - `poetry run python -m apps.automation.cli qa tests`
 - `poetry run python -m apps.automation.cli qa lint`
+- `poetry run python -m apps.automation.cli qa fmt --generate-plan`
 - `poetry run python -m apps.automation.cli qa typecheck`
 - `poetry run python -m apps.automation.cli qa security --skip-secrets`
 - `poetry run python -m apps.automation.cli qa build`
 - `poetry run python -m apps.automation.cli qa contracts --dry-run`
+- `poetry run python -m apps.automation.cli qa problems`
 
 ## Analyst UI
 

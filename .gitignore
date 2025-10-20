@@ -59,10 +59,10 @@ dbt_modules/
 *.log
 *.tmp
 *.cache
+data/logs/
 
 # Test-generated artifacts
 artifacts/
 data/interim/evidence_log.csv
 data/lakehouse/
 data/versioning/
-

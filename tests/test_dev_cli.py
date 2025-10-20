@@ -274,3 +274,74 @@ def test_qa_plan_writes_artifacts(tmp_path: Path) -> None:
     assert plan_payload["changes"], "plan artefact should list QA steps"
     commit_payload = json.loads(commit_path.read_text())
     assert commit_payload["if_match"] == '"qa-auto"'
+
+
+def test_qa_fmt_generates_plan(tmp_path: Path) -> None:
+    target_dir = tmp_path / "plans"
+    captured: dict[str, Any] = {}
+    with automation_cli.override_command_runner(_RecordingRunner(captured)):
+        runner = CliRunner()
+        result = runner.invoke(
+            automation_cli.cli,
+            [
+                "qa",
+                "fmt",
+                "--no-auto-bootstrap",
+                "--generate-plan",
+                "--plan-dir",
+                str(target_dir),
+                "--if-match-token",
+                "fmt-token",
+            ],
+        )
+    assert result.exit_code == 0
+    plan_files = list(target_dir.glob("*.plan"))
+    commit_files = list(target_dir.glob("*.commit"))
+    assert len(plan_files) == 1
+    assert len(commit_files) == 1
+    fmt_plan = json.loads(plan_files[0].read_text())
+    assert fmt_plan["changes"], "format plan should list commands"
+    fmt_commit = json.loads(commit_files[0].read_text())
+    assert fmt_commit["if_match"] == '"fmt-token"'
+
+
+def test_qa_problems_summarises_results(monkeypatch, tmp_path: Path) -> None:
+    fake_results = [
+        {
+            "tool": "ruff",
+            "status": "completed_with_exit_code",
+            "returncode": 1,
+            "issues": [{"path": "file.py", "line": 1, "message": "err"}],
+            "summary": {"issue_count": 1},
+        },
+        {
+            "tool": "mypy",
+            "status": "completed",
+            "returncode": 0,
+            "issues": [],
+            "summary": {"issue_count": 0},
+        },
+    ]
+    report_path = tmp_path / "problems.json"
+    monkeypatch.setattr(
+        automation_cli.collect_problems, "collect", lambda: fake_results
+    )
+
+    def _fake_write(results: Any) -> None:
+        report_path.write_text(json.dumps(results), encoding="utf-8")
+
+    monkeypatch.setattr(automation_cli.collect_problems, "write_report", _fake_write)
+    monkeypatch.setattr(
+        automation_cli.collect_problems, "REPORT_PATH", report_path, raising=False
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(automation_cli.cli, ["qa", "problems"])
+    assert result.exit_code == 0
+    assert "ruff" in result.output
+    assert report_path.exists()
+
+    result_fail = runner.invoke(
+        automation_cli.cli, ["qa", "problems", "--fail-on-issues"]
+    )
+    assert result_fail.exit_code == 1

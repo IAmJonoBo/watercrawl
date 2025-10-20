@@ -99,16 +99,38 @@ poetry run python -m apps.automation.cli qa all --dry-run
 - Automatically provisions Python 3.14 with uv when the active interpreter is older than 3.13 (disable with `--no-auto-bootstrap`).
 - Enforces plan artefacts before running destructive steps such as `scripts.cleanup`; supply `--plan path/to/change.plan` and matching `--commit path/to/change.commit` acknowledgements when the policy contract requires them, or pass `--generate-plan` to materialise fresh artefacts automatically (use `--plan-dir` to control the output directory).
 
+### `qa fmt`
+
+```bash
+poetry run python -m apps.automation.cli qa fmt --generate-plan --plan-dir tmp/plans
+```
+
+- Applies Ruff auto-fixes, isort, and Black in sequence to normalise imports and formatting.
+- Requires plan artefacts by default; use `--plan/--commit` to provide them or `--generate-plan` (with optional `--plan-note` / `--if-match-token`) to materialise compliant artefacts automatically.
+- Honours `--dry-run` and `--no-auto-bootstrap` toggles when previewing or skipping uv provisioning.
+
+### `qa problems`
+
+```bash
+poetry run python -m apps.automation.cli qa problems --fail-on-issues
+```
+
+- Runs the consolidated problems collector and prints a per-tool summary table.
+- Writes `problems_report.json` with previews to share in PRs or CI artefacts.
+- Return code is non-zero only when `--fail-on-issues` is supplied and issues are detected, making it safe to wire into optional QA hooks.
+
 ### Targeted QA commands
 
 Each QA stage is also exposed individually:
 
 - `poetry run python -m apps.automation.cli qa tests`
 - `poetry run python -m apps.automation.cli qa lint`
+- `poetry run python -m apps.automation.cli qa fmt --generate-plan`
 - `poetry run python -m apps.automation.cli qa typecheck`
 - `poetry run python -m apps.automation.cli qa security --skip-secrets`
 - `poetry run python -m apps.automation.cli qa build`
 - `poetry run python -m apps.automation.cli qa contracts --dry-run`
+- `poetry run python -m apps.automation.cli qa problems`
 
 Pass `--auto-bootstrap/--no-auto-bootstrap` to any targeted command to control whether uv is invoked automatically. The `qa dependencies` command now installs the Poetry environment before running the compatibility survey and guard checks, ensuring ephemeral runners start from a consistent toolchain.
 
