@@ -54,6 +54,9 @@ jobs:
       - name: Run data contracts
         run: >-
           poetry run python -m apps.analyst.cli contracts data/sample.csv --format json
+      - name: Check contract coverage
+        run: >-
+          poetry run python -m apps.analyst.cli coverage --format json
       - name: Validate wheel contents
         run: poetry run python -m scripts.validate_wheel
       - name: Aggregate Problems Report
