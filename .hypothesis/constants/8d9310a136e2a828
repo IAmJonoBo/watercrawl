@@ -1,4 +1,0 @@
-# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/contracts/dbt_runner.py
-# hypothesis_version: 6.142.1
-
-[0.0, '--fail-fast', '--profiles-dir', '--project-dir', '--select', '--target', '--threads', '--vars', 'CURATED_DATASET_PATH', 'DBT_LOG_PATH', 'DBT_PROFILES_DIR', 'DBT_TARGET', 'DBT_TARGET_PATH', 'analytics', 'build', 'ci', 'curated_source_path', 'elapsed_time', 'logs', 'pass', 'result', 'results', 'run_results.json', 'skipped', 'status', 'success', 'tag:contracts', 'target', 'warn']

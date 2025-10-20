@@ -1,4 +1,0 @@
-# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/versioning.py
-# hypothesis_version: 6.142.1
-
-['VersionInfo', 'VersioningManager', 'command', 'created_at', 'disabled', 'dvc_remote', 'enabled', 'extras', 'generated_at', 'input_fingerprint', 'lakefs_repo', 'lakehouse_manifest', 'notes', 'output_fingerprint', 'output_row_count', 'reproduce', 'run_id', 'strategy', 'table_uri', 'utf-8', 'version', 'version.json']

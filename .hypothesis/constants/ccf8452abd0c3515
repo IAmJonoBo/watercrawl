@@ -1,4 +1,0 @@
-# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/integrations/graph_semantics.py
-# hypothesis_version: 6.142.1
-
-['.csv', '/{row_id}', '@context', 'build_csvw_metadata', 'build_r2rml_mapping', 'columns', 'datatype', 'evidenceLog', 'name', 'notes', 'string', 'table', 'tableSchema', 'titles', 'url']

@@ -1,4 +1,0 @@
-# file: /Users/jonathanbotha/firecrawl-demo/firecrawl_demo/core/compliance.py
-# hypothesis_version: 6.142.1
-
-['+27', ', ', '.gov.za', '0', '27', ';', '; ', '@', 'Candidate', 'Confidence', 'Domain', 'Email format invalid', 'Email missing', 'MX', 'MX lookup failed', 'Missing email domain', 'NXDOMAIN', 'Needs Review', 'No MX records found', 'No changes', 'NoAnswer', 'NoNameservers', 'Notes', 'Organisation', 'Phone missing', 'Role inbox', 'Role inbox used', 'RowID', 'Source may be stale.', 'Sources', 'Timeout', 'Timestamp', 'Unknown', 'Verified', 'What changed', '\\D', '^\\+27\\d{9}$', 'ac.za', 'archive', 'caa.co.za', 'org.za', 'seconds', 'utf-8', 'wayback', 'www.']
