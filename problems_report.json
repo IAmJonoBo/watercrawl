@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-20T02:25:45.440533+00:00",
+  "generated_at": "2025-10-20T02:35:26.459265+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -13,10 +13,467 @@
     },
     {
       "tool": "mypy",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "issues": [
+        {
+          "path": "firecrawl_demo/__init__.py",
+          "line": 6,
+          "message": "Cannot find implementation or library stub for module named \"marshmallow.warnings\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "tools/sql/sqlfluff_runner.py",
+          "line": 15,
+          "message": "Cannot find implementation or library stub for module named \"duckdb\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "tests/test_sqlfluff_runner.py",
+          "line": 7,
+          "message": "Cannot find implementation or library stub for module named \"duckdb\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/core/config.py",
+          "line": 16,
+          "message": "Cannot find implementation or library stub for module named \"dotenv\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "examples.py",
+          "line": 13,
+          "message": "Cannot find implementation or library stub for module named \"pydantic\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 11,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 12,
+          "message": "Cannot find implementation or library stub for module named \"pint\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/core/excel.py",
+          "line": 13,
+          "message": "Cannot find implementation or library stub for module named \"pint.errors\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 7,
+          "message": "Library stubs not installed for \"requests\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/core/__init__.py",
+          "line": 4,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/storage/lakehouse.py",
+          "line": 12,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/domain/validation.py",
+          "line": 7,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/storage/versioning.py",
+          "line": 13,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/telemetry/lineage/__init__.py",
+          "line": 12,
+          "message": "Library stubs not installed for \"requests\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/application/interfaces.py",
+          "line": 11,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_versioning.py",
+          "line": 6,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_validation.py",
+          "line": 1,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_models.py",
+          "line": 1,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_lineage.py",
+          "line": 10,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/interfaces/analyst_ui.py",
+          "line": 5,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/interfaces/analyst_ui.py",
+          "line": 6,
+          "message": "Cannot find implementation or library stub for module named \"streamlit\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/telemetry/graph_semantics.py",
+          "line": 6,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/telemetry/drift.py",
+          "line": 8,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 10,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 19,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations.core.batch\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 20,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations.core.batch_spec\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 23,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations.core.expectation_suite\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 26,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations.data_context.data_context.context_factory\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 29,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations.execution_engine.pandas_execution_engine\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 32,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations.expectations.expectation_configuration\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 35,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations.validator.validator\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/dbt_runner.py",
+          "line": 106,
+          "message": "Cannot find implementation or library stub for module named \"dbt.cli.main\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/infrastructure/evidence.py",
+          "line": 11,
+          "message": "Cannot find implementation or library stub for module named \"structlog\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/infrastructure/evidence.py",
+          "line": 12,
+          "message": "Cannot find implementation or library stub for module named \"structlog.typing\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "tests/test_graph_semantics.py",
+          "line": 5,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_drift.py",
+          "line": 3,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/application/pipeline.py",
+          "line": 14,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_secrets.py",
+          "line": 9,
+          "message": "Cannot find implementation or library stub for module named \"botocore.exceptions\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "tests/test_pipeline.py",
+          "line": 8,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_lakehouse.py",
+          "line": 6,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_excel.py",
+          "line": 5,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_excel.py",
+          "line": 7,
+          "message": "Cannot find implementation or library stub for module named \"hypothesis\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "tests/test_excel.py",
+          "line": 9,
+          "message": "Cannot find implementation or library stub for module named \"hypothesis.extra.pandas\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "tests/test_e2e_pipeline.py",
+          "line": 4,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_audit.py",
+          "line": 6,
+          "message": "Cannot find implementation or library stub for module named \"structlog.typing\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 69,
+          "message": "Cannot find implementation or library stub for module named \"dbt.cli.main\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/__init__.py",
+          "line": 97,
+          "message": "Cannot find implementation or library stub for module named \"great_expectations\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "apps/automation/cli.py",
+          "line": 16,
+          "message": "Cannot find implementation or library stub for module named \"rich.console\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "apps/automation/cli.py",
+          "line": 17,
+          "message": "Cannot find implementation or library stub for module named \"rich.table\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "apps/automation/cli.py",
+          "line": 18,
+          "message": "Cannot find implementation or library stub for module named \"rich.text\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/interfaces/analyst_cli.py",
+          "line": 15,
+          "message": "Cannot find implementation or library stub for module named \"rich.console\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/interfaces/analyst_cli.py",
+          "line": 16,
+          "message": "Cannot find implementation or library stub for module named \"rich.progress\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/interfaces/cli.py",
+          "line": 4,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/interfaces/__init__.py",
+          "line": 4,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/interfaces/__init__.py",
+          "line": 5,
+          "message": "Cannot find implementation or library stub for module named \"streamlit\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "tests/test_contracts.py",
+          "line": 9,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_cli.py",
+          "line": 7,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "tests/test_analyst_ui.py",
+          "line": 4,
+          "message": "Library stubs not installed for \"pandas\" ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "apps/analyst/cli.py",
+          "line": 6,
+          "message": "Cannot find implementation or library stub for module named \"rich.console\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "apps/analyst/cli.py",
+          "line": 7,
+          "message": "Cannot find implementation or library stub for module named \"rich.table\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        }
+      ],
       "notes": [
+        {
+          "path": "firecrawl_demo/core/external_sources.py",
+          "line": 7,
+          "message": "Hint: \"python3 -m pip install types-requests\"",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/application/interfaces.py",
+          "line": 11,
+          "message": "Hint: \"python3 -m pip install pandas-stubs\"",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/application/interfaces.py",
+          "line": 11,
+          "message": "(or run \"mypy --install-types\" to install all missing stub packages)",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 19,
+          "message": "Error code \"import-not-found\" not covered by \"type: ignore\" comment",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 29,
+          "message": "Error code \"import-not-found\" not covered by \"type: ignore\" comment",
+          "severity": "note"
+        },
+        {
+          "path": "firecrawl_demo/integrations/contracts/great_expectations_runner.py",
+          "line": 32,
+          "message": "Error code \"import-not-found\" not covered by \"type: ignore\" comment",
+          "severity": "note"
+        },
         {
           "path": "tests/test_compliance.py",
           "line": 183,
@@ -30,6 +487,12 @@
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_secrets.py",
+          "line": 9,
+          "message": "Error code \"import-not-found\" not covered by \"type: ignore\" comment",
+          "severity": "note"
         },
         {
           "path": "tests/test_cache.py",
@@ -114,11 +577,17 @@
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
+        },
+        {
+          "path": "apps/analyst/cli.py",
+          "line": 6,
+          "message": "See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports",
+          "severity": "note"
         }
       ],
       "summary": {
-        "issue_count": 0,
-        "note_count": 14
+        "issue_count": 60,
+        "note_count": 22
       }
     },
     {
@@ -128,59 +597,13 @@
     },
     {
       "tool": "yamllint",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
-      "summary": {
-        "issue_count": 0
-      }
+      "status": "failed",
+      "error": "[Errno 2] No such file or directory: 'yamllint'"
     },
     {
       "tool": "bandit",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
-      "summary": {
-        "issue_count": 0,
-        "severity_counts": {},
-        "confidence_counts": {},
-        "metrics": {
-          "loc": 7224,
-          "nosec": 0,
-          "skipped_tests": 0
-        }
-      },
-      "stderr_preview": {
-        "chunks": [
-          "[main]\tINFO\tprofile include tests: None",
-          "[main]\tINFO\tprofile exclude tests: None",
-          "[main]\tINFO\tcli include tests: None",
-          "[main]\tINFO\tcli exclude tests: None",
-          ""
-        ]
-      }
-    },
-    {
-      "tool": "sqlfluff",
-      "status": "completed_with_exit_code",
-      "returncode": 2,
-      "issues": [],
-      "summary": {
-        "issue_count": 0,
-        "files_with_issues": 0
-      },
-      "stderr_preview": {
-        "chunks": [
-          "ERROR      dbt_project_dir: /workspace/watercrawl/analytics could not be accessed. Check it exists. ",
-          "ERROR      dbt_profiles_dir: /workspace/watercrawl/analytics could not be accessed. Check it exists. ",
-          "",
-          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt.exceptions.DbtProjectError: Runtime Error",
-          "  No dbt_project.yml found at expected path /workspace/watercrawl/analytics/dbt_project.yml",
-          "  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml",
-          "  ",
-          ""
-        ]
-      }
+      "status": "failed",
+      "error": "[Errno 2] No such file or directory: 'bandit'"
     }
   ]
 }
