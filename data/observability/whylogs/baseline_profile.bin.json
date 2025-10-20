@@ -1,0 +1,12 @@
+{
+  "backend": "fallback",
+  "generated_at": "2025-10-20T11:12:59.148249+00:00",
+  "profile_path": "data/observability/whylogs/baseline_profile.bin",
+  "province_counts": {
+    "Gauteng": 1
+  },
+  "status_counts": {
+    "Candidate": 1
+  },
+  "total_rows": 1
+}

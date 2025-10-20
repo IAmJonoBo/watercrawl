@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-20T11:03:31.400550+00:00",
+  "generated_at": "2025-10-20T11:28:00.043609+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -17,6 +17,20 @@
       "returncode": 0,
       "issues": [],
       "notes": [
+        {
+          "path": "tests/test_compliance.py",
+          "line": 183,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 205,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -48,20 +62,6 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 183,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 205,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"

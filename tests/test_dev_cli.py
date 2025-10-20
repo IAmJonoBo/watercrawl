@@ -215,3 +215,62 @@ def test_qa_all_accepts_plan(tmp_path: Path) -> None:
     commit_paths = captured.get("commit_paths")
     assert commit_paths is not None
     assert any(str(commit_path) in str(candidate) for candidate in commit_paths)
+
+
+def test_qa_all_generate_plan_creates_artifacts(tmp_path: Path) -> None:
+    target_dir = tmp_path / "plans"
+    captured: dict[str, Any] = {}
+    with automation_cli.override_command_runner(_RecordingRunner(captured)):
+        runner = CliRunner()
+        result = runner.invoke(
+            automation_cli.cli,
+            [
+                "qa",
+                "all",
+                "--no-auto-bootstrap",
+                "--skip-dbt",
+                "--generate-plan",
+                "--plan-dir",
+                str(target_dir),
+                "--if-match-token",
+                "qa-token",
+            ],
+        )
+    assert result.exit_code == 0
+    plan_files = list(target_dir.glob("*.plan"))
+    commit_files = list(target_dir.glob("*.commit"))
+    assert len(plan_files) == 1
+    assert len(commit_files) == 1
+    plan_payload = json.loads(plan_files[0].read_text())
+    assert plan_payload["changes"], "plan should contain changes"
+    commit_payload = json.loads(commit_files[0].read_text())
+    assert commit_payload["if_match"] == '"qa-token"'
+    assert "diff_summary" in commit_payload
+    assert any(str(plan_files[0]) in str(path) for path in captured["plan_paths"])
+    assert any(str(commit_files[0]) in str(path) for path in captured["commit_paths"])
+
+
+def test_qa_plan_writes_artifacts(tmp_path: Path) -> None:
+    plan_path = tmp_path / "generated.plan"
+    commit_path = tmp_path / "generated.commit"
+    runner = CliRunner()
+    result = runner.invoke(
+        automation_cli.cli,
+        [
+            "qa",
+            "plan",
+            "--skip-dbt",
+            "--write-plan",
+            str(plan_path),
+            "--write-commit",
+            str(commit_path),
+            "--if-match-token",
+            "qa-auto",
+            "--overwrite",
+        ],
+    )
+    assert result.exit_code == 0
+    plan_payload = json.loads(plan_path.read_text())
+    assert plan_payload["changes"], "plan artefact should list QA steps"
+    commit_payload = json.loads(commit_path.read_text())
+    assert commit_payload["if_match"] == '"qa-auto"'

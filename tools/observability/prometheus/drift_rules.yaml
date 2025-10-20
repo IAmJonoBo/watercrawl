@@ -1,0 +1,23 @@
+groups:
+  - name: drift-monitoring
+    rules:
+      - alert: WhylogsDriftAlertsDetected
+        expr: whylogs_drift_alerts_total > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Drift detected for dataset {{ $labels.dataset }}"
+          description: >
+            One or more whylogs drift alerts fired during run {{ $labels.run_id }}.
+            Investigate evidence log entries and recent enrichment changes before promoting outputs.
+      - alert: WhylogsDriftThresholdExceeded
+        expr: whylogs_drift_exceeded_threshold > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Drift threshold exceeded for dataset {{ $labels.dataset }}"
+          description: >
+            Drift threshold exceeded for dataset {{ $labels.dataset }} in run {{ $labels.run_id }}.
+            Pause publication until root cause is identified and the baseline is recalibrated.

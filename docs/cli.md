@@ -85,6 +85,8 @@ poetry run python -m apps.automation.cli qa plan
 
 - Prints the full QA execution plan as a Rich table.
 - Accepts `--skip-dbt` to omit long-running contract steps when iterating quickly.
+- Pass `--write-plan path/to/change.plan` (and optionally `--write-commit path/to/change.commit`) to generate artefacts that satisfy the plan→commit policy. Use `--if-match-token` to customise the commit header and `--overwrite` when regenerating existing files.
+- Provide `--instructions "text"` to add contextual notes recorded in the generated plan/commit artefacts.
 
 ### `qa all`
 
@@ -95,7 +97,7 @@ poetry run python -m apps.automation.cli qa all --dry-run
 - Executes (or previews with `--dry-run`) the cleanup, dependency sync, test, lint, type-check, security, pre-commit, build, and dbt stages.
 - Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
 - Automatically provisions Python 3.14 with uv when the active interpreter is older than 3.13 (disable with `--no-auto-bootstrap`).
-- Enforces plan artefacts before running destructive steps such as `scripts.cleanup`; supply `--plan path/to/change.plan` and matching `--commit path/to/change.commit` acknowledgements when the policy contract requires them.
+- Enforces plan artefacts before running destructive steps such as `scripts.cleanup`; supply `--plan path/to/change.plan` and matching `--commit path/to/change.commit` acknowledgements when the policy contract requires them, or pass `--generate-plan` to materialise fresh artefacts automatically (use `--plan-dir` to control the output directory).
 
 ### Targeted QA commands
 

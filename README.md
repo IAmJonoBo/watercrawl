@@ -29,9 +29,9 @@ poetry run python -m apps.analyst.cli enrich data/sample.csv --output data/sampl
 poetry run python -m apps.analyst.cli contracts data/sample_enriched.csv --format text
 
 # Developer DX helpers mirroring CI
-poetry run python -m apps.automation.cli qa plan
+poetry run python -m apps.automation.cli qa plan  # add --write-plan/--write-commit to emit artefacts
 poetry run python -m apps.automation.cli qa all --dry-run
-poetry run python -m apps.automation.cli qa all  # auto-installs Python 3.14 via uv when needed
+poetry run python -m apps.automation.cli qa all  # auto-installs Python 3.14 via uv when needed; add --generate-plan to materialise plan/commit artefacts
 ```
 
 > `scripts.bootstrap_env` provisions the uv-managed interpreter, installs the

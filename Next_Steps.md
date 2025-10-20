@@ -22,7 +22,7 @@
 - [x] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
 - [x] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
 - [x] **MCP plan→commit audit logging + policy enforcement** — _Owner: Platform/Security · Due: 2025‑12‑05_ (WC‑05/06)
-- [ ] **whylogs drift dashboards + alert routing** — _Owner: Platform/Data · Due: 2025‑12‑05_ (WC‑11)
+- [ ] **whylogs drift dashboards + alert routing** — _Owner: Platform/Data · Due: 2025‑12‑05_ (WC‑11) — _Progress: pipeline now emits append-only alert logs + Prometheus gauges; dashboards/alert routing pending_
 - [ ] **Mutation testing pilot for pipeline hotspots** — _Owner: QA/Platform · Due: 2025‑12‑05_ (WC‑15)
 - [ ] **Backstage TechDocs + golden‑path template** — _Owner: Platform/DevEx · Due: 2026‑01‑15_ (WC‑19)
 - [ ] **Signed artefact promotion with policy‑as‑code** — _Owner: Platform/Security · Due: 2026‑01‑31_ (WC‑13/14)
@@ -46,6 +46,7 @@
 - [x] 2025-10-20 — Supply-chain automation: CI now emits CycloneDX SBOMs, Sigstore signatures for wheels/sdists, and weekly OpenSSF Scorecard scans; developer workflow documents gitsign configuration for OIDC-backed commit signing.
 - [x] 2025-10-20 — MCP plan→commit enforcement hardening: Sigstore-style audit log JSONL now records MCP executions; guard rejects missing `*.commit`, `If-Match`, or low RAG metrics, and tests cover audit logging paths.
 - [x] 2025-10-20 — Accessibility baseline: Added axe-core smoke tests for the Streamlit analyst UI, documented heuristic review steps, and wired the smoke test into CI.
+- [x] 2025-10-21 — Drift telemetry upgrade: Pipeline writes whylogs alert history (`alerts.json`) and Prometheus textfile metrics (`metrics.prom`) with configuration via `DRIFT_ALERT_OUTPUT` / `DRIFT_PROMETHEUS_OUTPUT`; docs updated, baseline seeding utility + sample Prometheus rules committed, and tests cover log/metric emission.
 
 ---
 

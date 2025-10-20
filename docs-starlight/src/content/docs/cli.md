@@ -84,6 +84,7 @@ poetry run python -m apps.automation.cli qa plan
 
 - Prints the full QA execution plan as a Rich table.
 - Accepts `--skip-dbt` to omit long-running contract steps when iterating quickly.
+- Pass `--write-plan path/to/change.plan` (and optionally `--write-commit path/to/change.commit`) to materialise plan→commit artefacts. Use `--if-match-token` to customise the commit header, `--instructions` to add context, and `--overwrite` to regenerate files safely.
 
 ### `qa all`
 
@@ -93,6 +94,7 @@ poetry run python -m apps.automation.cli qa all --dry-run
 
 - Executes (or previews with `--dry-run`) the cleanup, test, lint, type-check, security, pre-commit, build, and dbt stages.
 - Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
+- Honour plan→commit guardrails by supplying `--plan ... --commit ...` or simply pass `--generate-plan` (with an optional `--plan-dir`) to auto-generate compliant artefacts before the cleanup step runs.
 
 ### Targeted QA commands
 

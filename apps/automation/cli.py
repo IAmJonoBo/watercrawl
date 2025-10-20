@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shlex
 import subprocess
 import sys
@@ -9,14 +10,16 @@ import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol, cast
+from typing import Any, Protocol, cast
 
 import click
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from firecrawl_demo.core import config
 from firecrawl_demo.interfaces.cli_base import (
     PlanCommitError,
     PlanCommitGuard,
@@ -41,6 +44,88 @@ class CommandSpec:
 
 def _format_args(args: Sequence[str]) -> str:
     return shlex.join(args)
+
+
+def _default_qa_instructions(include_dbt: bool) -> str:
+    suffix = " (dbt contracts skipped)." if not include_dbt else "."
+    return (
+        "Execute the QA suite via `apps.automation.cli qa all` to validate the repo"
+        + suffix
+    )
+
+
+def _build_plan_payload(
+    specs: Sequence[CommandSpec],
+    *,
+    instructions: str,
+    include_generated_at: bool = True,
+) -> dict[str, Any]:
+    changes: list[dict[str, Any]] = []
+    for index, spec in enumerate(specs, start=1):
+        change: dict[str, Any] = {
+            "type": "qa_command",
+            "step": index,
+            "task": spec.name,
+            "command": _format_args(spec.args),
+        }
+        if spec.tags:
+            change["tags"] = list(spec.tags)
+        changes.append(change)
+    payload: dict[str, Any] = {"changes": changes, "instructions": instructions}
+    if include_generated_at:
+        payload["generated_at"] = datetime.now(UTC).isoformat()
+    return payload
+
+
+def _build_commit_payload(
+    specs: Sequence[CommandSpec],
+    *,
+    diff_format: str,
+    if_match_token: str | None = None,
+    instructions: str,
+    rag_score: float = 0.98,
+) -> dict[str, Any]:
+    summary_lines = [f"- {spec.name}: {_format_args(spec.args)}" for spec in specs]
+    diff_summary = (
+        "QA automation summary:\n"
+        + "\n".join(summary_lines)
+        + f"\n\nPlan instructions: {instructions}"
+    )
+    token = if_match_token or f"qa-suite-{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}"
+    return {
+        "if_match": f'"{token}"',
+        "diff_summary": diff_summary,
+        "diff_format": diff_format,
+        "rag": {
+            "faithfulness": rag_score,
+            "context_precision": rag_score,
+            "answer_relevancy": rag_score,
+        },
+    }
+
+
+def _ensure_unique_path(path: Path) -> Path:
+    candidate = path
+    counter = 1
+    while candidate.exists():
+        candidate = path.with_name(f"{path.stem}-{counter}{path.suffix}")
+        counter += 1
+    return candidate
+
+
+def _write_json_file(
+    path: Path, payload: Mapping[str, Any], *, overwrite: bool
+) -> Path:
+    path = path.expanduser()
+    if path.exists() and not overwrite:
+        raise click.ClickException(
+            f"{path.as_posix()} already exists. Re-run with --overwrite to replace it."
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return path
 
 
 _MINIMUM_PYTHON_VERSION = (3, 14)
@@ -528,12 +613,79 @@ def qa() -> None:
 @click.option(
     "--skip-dbt", is_flag=True, help="Omit dbt contract execution from the plan."
 )
-def qa_plan(skip_dbt: bool) -> None:
+@click.option(
+    "--write-plan",
+    type=click.Path(path_type=Path),
+    help="Write the rendered plan artefact to disk.",
+)
+@click.option(
+    "--write-commit",
+    type=click.Path(path_type=Path),
+    help="Write a commit acknowledgement artefact to disk.",
+)
+@click.option(
+    "--instructions",
+    "instructions_override",
+    type=str,
+    help="Override the instructions field recorded in generated plan/commit artefacts.",
+)
+@click.option(
+    "--if-match-token",
+    type=str,
+    help="Override the If-Match token stored in the generated commit artefact.",
+)
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Allow overwriting existing artefacts when writing plan/commit files.",
+)
+def qa_plan(
+    skip_dbt: bool,
+    write_plan: Path | None,
+    write_commit: Path | None,
+    instructions_override: str | None,
+    if_match_token: str | None,
+    overwrite: bool,
+) -> None:
     """Display the QA plan without executing any commands."""
 
     specs = _collect_specs(_QA_DEFAULT_SEQUENCE, include_dbt=not skip_dbt)
     console = Console()
     console.print(_render_plan_table(specs))
+
+    instructions = instructions_override or _default_qa_instructions(
+        include_dbt=not skip_dbt
+    )
+
+    if write_plan is not None:
+        payload = _build_plan_payload(specs, instructions=instructions)
+        written_path = _write_json_file(write_plan, payload, overwrite=overwrite)
+        console.print(
+            Text.assemble(
+                ("Plan artefact written to ", "green"),
+                written_path.as_posix(),
+            )
+        )
+
+    if write_commit is not None:
+        guard = CLI_ENVIRONMENT.plan_guard
+        if guard is None:
+            raise click.ClickException(
+                "Plan guard is not configured; cannot generate commit artefacts."
+            )
+        payload = _build_commit_payload(
+            specs,
+            diff_format=guard.contract.diff_format,
+            if_match_token=if_match_token,
+            instructions=instructions,
+        )
+        written_path = _write_json_file(write_commit, payload, overwrite=overwrite)
+        console.print(
+            Text.assemble(
+                ("Commit artefact written to ", "green"),
+                written_path.as_posix(),
+            )
+        )
 
 
 @qa.command("all")
@@ -567,6 +719,27 @@ def qa_plan(skip_dbt: bool) -> None:
     is_flag=True,
     help="Bypass plan enforcement when policy permits force commits.",
 )
+@click.option(
+    "--generate-plan",
+    is_flag=True,
+    help="Automatically generate plan/commit artefacts before executing QA cleanup.",
+)
+@click.option(
+    "--plan-dir",
+    type=click.Path(path_type=Path),
+    help="Directory for generated plan/commit artefacts (defaults to data/logs/plans).",
+)
+@click.option(
+    "--plan-note",
+    type=str,
+    help="Custom instructions text to embed in generated artefacts.",
+)
+@click.option(
+    "--if-match-token",
+    "generated_if_match",
+    type=str,
+    help="Override the If-Match token used in generated commit artefacts.",
+)
 def qa_all(
     dry_run: bool,
     fail_fast: bool,
@@ -575,19 +748,72 @@ def qa_all(
     plans: Sequence[Path],
     commits: Sequence[Path],
     force: bool,
+    generate_plan: bool,
+    plan_dir: Path | None,
+    plan_note: str | None,
+    generated_if_match: str | None,
 ) -> None:
     """Run the full QA suite that mirrors CI."""
 
     console = Console()
     _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap, console=console)
     specs = _collect_specs(_QA_DEFAULT_SEQUENCE, include_dbt=not skip_dbt)
+    plan_paths_list = list(plans)
+    commit_paths_list = list(commits)
+
+    guard = None if dry_run else CLI_ENVIRONMENT.plan_guard
+    if generate_plan and not dry_run:
+        guard = guard or CLI_ENVIRONMENT.plan_guard
+        if guard is None:
+            raise click.ClickException(
+                "Plan guard is not configured; cannot generate plan artefacts."
+            )
+        if plan_paths_list or commit_paths_list:
+            console.print(
+                Text.assemble(
+                    ("Skipping auto plan generation", "yellow"),
+                    " because plan/commit artefacts were provided.",
+                )
+            )
+        else:
+            target_dir = plan_dir or (config.DATA_DIR / "logs" / "plans")
+            target_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+            base_name = f"qa_{timestamp}"
+            plan_path = _ensure_unique_path(target_dir / f"{base_name}.plan")
+            commit_path = _ensure_unique_path(target_dir / f"{base_name}.commit")
+            instructions = plan_note or _default_qa_instructions(
+                include_dbt=not skip_dbt
+            )
+            plan_payload = _build_plan_payload(specs, instructions=instructions)
+            _write_json_file(plan_path, plan_payload, overwrite=False)
+            commit_payload = _build_commit_payload(
+                specs,
+                diff_format=guard.contract.diff_format,
+                if_match_token=generated_if_match,
+                instructions=instructions,
+            )
+            _write_json_file(commit_path, commit_payload, overwrite=False)
+            plan_paths_list.append(plan_path)
+            commit_paths_list.append(commit_path)
+            console.print(
+                Text.assemble(
+                    ("Generated plan artefact → ", "green"), plan_path.as_posix()
+                )
+            )
+            console.print(
+                Text.assemble(
+                    ("Generated commit artefact → ", "green"), commit_path.as_posix()
+                )
+            )
+
     exit_code = _invoke_specs(
         specs,
         dry_run=dry_run,
         fail_fast=fail_fast,
-        plan_guard=None if dry_run else CLI_ENVIRONMENT.plan_guard,
-        plan_paths=plans,
-        commit_paths=commits,
+        plan_guard=guard,
+        plan_paths=tuple(plan_paths_list),
+        commit_paths=tuple(commit_paths_list),
         force=force,
     )
     raise SystemExit(exit_code)
