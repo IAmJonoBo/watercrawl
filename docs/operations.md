@@ -91,6 +91,8 @@ poetry run python scripts/collect_problems.py
 poetry run python -m firecrawl_demo.interfaces.cli validate data/sample.csv --evidence-log data/interim/evidence_log.csv
 ```
 
+> **Plan requirement:** When running `poetry run python -m apps.automation.cli qa all` (non dry-run), include one or more `--plan` arguments pointing at recorded `*.plan` artefacts so the cleanup step passes plan→commit enforcement. Use `--dry-run` while drafting the plan or `--force` only when `PLAN_COMMIT_ALLOW_FORCE=1`.
+
 ## Development Workflows
 
 ### E2E Pipeline Testing
@@ -98,11 +100,11 @@ poetry run python -m firecrawl_demo.interfaces.cli validate data/sample.csv --ev
 ```bash
 # Full pipeline with sample data
 poetry run python -m app.cli validate data/sample.csv
-poetry run python -m app.cli enrich data/sample.csv --output data/processed/enriched.csv
+poetry run python -m app.cli enrich data/sample.csv --output data/processed/enriched.csv --plan plans/run.plan
 poetry run python -m app.cli contracts data/processed/enriched.csv
 
 # With evidence logging
-poetry run python -m app.cli enrich data/sample.csv --output data/processed/enriched.csv --evidence-log data/interim/evidence_log.csv
+poetry run python -m app.cli enrich data/sample.csv --output data/processed/enriched.csv --evidence-log data/interim/evidence_log.csv --plan plans/run.plan
 ```
 
 ### MCP Server Testing
@@ -115,6 +117,8 @@ poetry run python -m app.cli mcp-server
 poetry run python -m dev.cli mcp summarize-last-run
 poetry run python -m dev.cli mcp list-sanity-issues
 ```
+
+> **Plan guard:** When invoking `enrich_dataset` via MCP, include `plan_artifacts` in the payload so the server can record plan→commit evidence before executing destructive work.
 
 ### Data Lakehouse Operations
 

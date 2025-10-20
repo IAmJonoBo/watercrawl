@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from pathlib import Path
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.domain.models import EvidenceRecord
@@ -15,6 +16,12 @@ from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 class DummyPipeline(Pipeline):
     def __init__(self) -> None:  # pragma: no cover - base init
         super().__init__()
+
+
+def _plan_payload(tmp_path: Path) -> dict[str, object]:
+    plan_path = tmp_path / "mcp.plan"
+    plan_path.write_text("plan: mcp enrich", encoding="utf-8")
+    return {"plan_artifacts": [str(plan_path)]}
 
 
 def test_mcp_lists_tasks() -> None:
@@ -93,7 +100,7 @@ class SimpleAdapter(ResearchAdapter):
         )
 
 
-def test_mcp_enrich_task_uses_injected_sink() -> None:
+def test_mcp_enrich_task_uses_injected_sink(tmp_path: Path) -> None:
     sink = RecordingSink(calls=[])
     pipeline = Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink)
     server = CopilotMCPServer(pipeline=pipeline)
@@ -115,7 +122,10 @@ def test_mcp_enrich_task_uses_injected_sink() -> None:
             "jsonrpc": "2.0",
             "id": 4,
             "method": "run_task",
-            "params": {"task": "enrich_dataset", "payload": {"rows": rows}},
+            "params": {
+                "task": "enrich_dataset",
+                "payload": {"rows": rows, **_plan_payload(tmp_path)},
+            },
         }
     )
 
@@ -126,7 +136,36 @@ def test_mcp_enrich_task_uses_injected_sink() -> None:
     assert any("caa.co.za" in source for source in recorded_entries[0].sources)
 
 
-def test_mcp_reports_last_run_metrics_and_sanity_findings() -> None:
+def test_mcp_enrich_rejects_missing_plan(tmp_path: Path) -> None:
+    pipeline = Pipeline(research_adapter=SimpleAdapter())
+    server = CopilotMCPServer(pipeline=pipeline)
+
+    rows = [
+        {
+            "Name of Organisation": "Example Flight School",
+            "Province": "gauteng",
+            "Status": "Candidate",
+            "Website URL": "",
+            "Contact Person": "",
+            "Contact Number": "011 555 0000",
+            "Contact Email Address": "",
+        }
+    ]
+
+    response = server.process_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "run_task",
+            "params": {"task": "enrich_dataset", "payload": {"rows": rows}},
+        }
+    )
+
+    assert response["error"]["code"] == -32001
+    assert "plan" in response["error"]["message"].lower()
+
+
+def test_mcp_reports_last_run_metrics_and_sanity_findings(tmp_path: Path) -> None:
     sink = RecordingSink(calls=[])
     pipeline = Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink)
     server = CopilotMCPServer(pipeline=pipeline)
@@ -148,7 +187,10 @@ def test_mcp_reports_last_run_metrics_and_sanity_findings() -> None:
             "jsonrpc": "2.0",
             "id": 5,
             "method": "run_task",
-            "params": {"task": "enrich_dataset", "payload": {"rows": rows}},
+            "params": {
+                "task": "enrich_dataset",
+                "payload": {"rows": rows, **_plan_payload(tmp_path)},
+            },
         }
     )
 

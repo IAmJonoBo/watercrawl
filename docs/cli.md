@@ -9,7 +9,7 @@ Both entry points run through Poetry: `poetry run python -m apps.analyst.cli ...
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
-> **Compatibility note:** `firecrawl_demo.interfaces.cli` remains available for backwards compatibility and simply re-exports the analyst CLI.
+> **Compatibility note:** `firecrawl_demo.interfaces.cli` remains available for backwards compatibility and simply re-exports the analyst CLI. Legacy automation that shells out to `python -m app.cli` continues to work via a compatibility shim that forwards to `apps.analyst.cli`.
 
 ## Analyst commands (`apps.analyst.cli`)
 
@@ -28,7 +28,7 @@ poetry run python -m apps.analyst.cli validate data/input.csv --format json
 ### `enrich`
 
 ```bash
-poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output.csv --format text
+poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output.csv --plan plans/run.plan --format text
 ```
 
 - Validates, enriches, and writes the dataset.
@@ -36,6 +36,7 @@ poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output
 - Supports JSON output for pipelines.
 - Displays a Rich-powered progress bar for text output by default (`--no-progress` to disable).
 - JSON responses now include an `adapter_failures` field so pipelines can alert on degraded runs.
+- Requires at least one recorded `*.plan` artefact when policy mandates plan→commit guardrails (`--plan` accepts multiple paths; `--force` is available only when `PLAN_COMMIT_ALLOW_FORCE=1`).
 
 ### `contracts`
 
@@ -72,7 +73,7 @@ poetry run python -m apps.analyst.cli mcp-server
 
 ## Developer QA helpers (`apps.automation.cli`)
 
-The developer CLI mirrors the GitHub Actions workflow locally and adds DX-focused conveniences.
+The developer CLI mirrors the GitHub Actions workflow locally and adds DX-focused conveniences. It is exposed as both `apps.automation.cli` and the compatibility shim `python -m dev.cli` for tooling that expects the legacy module path.
 
 ### `qa plan`
 
@@ -92,6 +93,7 @@ poetry run python -m apps.automation.cli qa all --dry-run
 - Executes (or previews with `--dry-run`) the cleanup, dependency sync, test, lint, type-check, security, pre-commit, build, and dbt stages.
 - Supports `--fail-fast` and `--skip-dbt` toggles to match local needs.
 - Automatically provisions Python 3.14 with uv when the active interpreter is older than 3.13 (disable with `--no-auto-bootstrap`).
+- Enforces plan artefacts before running destructive steps such as `scripts.cleanup`; supply `--plan path/to/change.plan` to acknowledge the recorded intent.
 
 ### Targeted QA commands
 

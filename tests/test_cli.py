@@ -28,6 +28,12 @@ def _write_sample_csv(path: Path, include_email: bool = False) -> None:
     df.to_csv(path, index=False)
 
 
+def _write_plan(tmp_path: Path) -> Path:
+    plan_path = tmp_path / "change.plan"
+    plan_path.write_text("plan: enrich dataset", encoding="utf-8")
+    return plan_path
+
+
 def _make_record(name: str = "Atlas") -> SchoolRecord:
     return SchoolRecord.from_dataframe_row(
         pd.Series(
@@ -60,6 +66,7 @@ def test_cli_enrich_creates_output(tmp_path):
     input_path = tmp_path / "input.csv"
     output_path = tmp_path / "output.csv"
     _write_sample_csv(input_path, include_email=True)
+    plan_path = _write_plan(tmp_path)
 
     original_manager = cli.LineageManager
     with cli.override_cli_dependencies(
@@ -76,6 +83,8 @@ def test_cli_enrich_creates_output(tmp_path):
                 str(output_path),
                 "--format",
                 "json",
+                "--plan",
+                str(plan_path),
             ],
         )
     assert result.exit_code == 0
@@ -85,6 +94,71 @@ def test_cli_enrich_creates_output(tmp_path):
     assert "lineage_artifacts" in payload
     lineage_dir = Path(payload["lineage_artifacts"]["openlineage"]).parent
     assert lineage_dir.exists()
+
+
+def test_cli_enrich_requires_plan(tmp_path):
+    input_path = tmp_path / "input.csv"
+    output_path = tmp_path / "output.csv"
+    _write_sample_csv(input_path, include_email=True)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli_group,
+        [
+            "enrich",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "requires at least one *.plan" in result.output
+
+
+def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
+    input_path = tmp_path / "input.csv"
+    output_path = tmp_path / "output.csv"
+    plan_path = _write_plan(tmp_path)
+    _write_sample_csv(input_path, include_email=True)
+
+    with caplog.at_level("INFO", logger="firecrawl_demo.plan_commit"):
+        runner = CliRunner()
+        result = runner.invoke(
+            cli_group,
+            [
+                "enrich",
+                str(input_path),
+                "--output",
+                str(output_path),
+                "--plan",
+                str(plan_path),
+            ],
+        )
+    assert result.exit_code == 0
+    assert "plan_commit.audit" in caplog.text
+    assert str(plan_path) in caplog.text
+
+
+def test_cli_enrich_force_rejected_when_policy_disallows(tmp_path):
+    input_path = tmp_path / "input.csv"
+    output_path = tmp_path / "output.csv"
+    _write_sample_csv(input_path, include_email=True)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli_group,
+        [
+            "enrich",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--force",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "Force overrides are disabled" in result.output
 
 
 def test_cli_validate_text_mode_without_progress(tmp_path):
@@ -241,7 +315,7 @@ def test_mcp_server_stdio_invokes_async_loop():
     server_instances: list[object] = []
 
     class DummyServer:
-        def __init__(self, pipeline):
+        def __init__(self, pipeline, *, plan_guard):
             self.pipeline = pipeline
             self.called = False
             server_instances.append(self)
@@ -271,6 +345,7 @@ def test_mcp_server_stdio_invokes_async_loop():
         Pipeline=fake_pipeline,
         build_evidence_sink=fake_sink,
         asyncio_run=fake_run,
+        plan_guard=cli.plan_guard,
     ):
         result = runner.invoke(cli_group, ["mcp-server"])
     assert result.exit_code == 0
@@ -281,9 +356,10 @@ def test_mcp_server_stdio_invokes_async_loop():
 def test_mcp_server_rejects_non_stdio():
     runner = CliRunner()
     with cli.override_cli_dependencies(
-        CopilotMCPServer=lambda pipeline: pipeline,
+        CopilotMCPServer=lambda pipeline, *, plan_guard: pipeline,
         Pipeline=lambda *_, **__: "pipeline",
         build_evidence_sink=lambda: "sink",
+        plan_guard=cli.plan_guard,
     ):
         result = runner.invoke(cli_group, ["mcp-server", "--no-stdio"])
     assert result.exit_code == 2
@@ -360,6 +436,7 @@ def test_cli_validate_progress_path(tmp_path):
 def test_cli_enrich_warns_on_adapter_failures(tmp_path):
     input_path = tmp_path / "input.csv"
     input_path.write_text("dummy", encoding="utf-8")
+    plan_path = _write_plan(tmp_path)
 
     class DummyReport:
         issues = []
@@ -417,9 +494,12 @@ def test_cli_enrich_warns_on_adapter_failures(tmp_path):
         ),
         build_lakehouse_writer=lambda: None,
         RichPipelineProgress=DummyProgress,
+        plan_guard=cli.plan_guard,
     ):
         runner = CliRunner()
-        result = runner.invoke(cli_group, ["enrich", str(input_path)])
+        result = runner.invoke(
+            cli_group, ["enrich", str(input_path), "--plan", str(plan_path)]
+        )
 
     assert result.exit_code == 0
     assert "Warnings: 4 research lookups failed" in result.output

@@ -6,6 +6,11 @@ import sys
 from typing import Any
 
 from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.interfaces.cli_base import (
+    PlanCommitError,
+    PlanCommitGuard,
+    load_cli_environment,
+)
 
 _JSONRPC = "2.0"
 
@@ -13,8 +18,12 @@ _JSONRPC = "2.0"
 class CopilotMCPServer:
     """Minimal JSON-RPC server exposing pipeline automation tasks to Copilot."""
 
-    def __init__(self, pipeline: Pipeline) -> None:
+    def __init__(
+        self, pipeline: Pipeline, *, plan_guard: PlanCommitGuard | None = None
+    ) -> None:
         self.pipeline = pipeline
+        environment = load_cli_environment()
+        self._plan_guard = plan_guard or environment.plan_guard
 
     def process_request(self, request: dict[str, Any]) -> dict[str, Any]:
         method = request.get("method")
@@ -43,6 +52,19 @@ class CopilotMCPServer:
         if method == "run_task":
             task = params.get("task")
             payload = params.get("payload", {})
+            if (
+                task == "enrich_dataset"
+                and isinstance(payload, dict)
+                and self._plan_guard is not None
+            ):
+                try:
+                    self._plan_guard.require_for_payload("mcp.enrich_dataset", payload)
+                except PlanCommitError as exc:
+                    return {
+                        "jsonrpc": _JSONRPC,
+                        "id": request_id,
+                        "error": {"code": -32001, "message": str(exc)},
+                    }
             try:
                 result = self.pipeline.run_task(str(task), payload)
             except KeyError:

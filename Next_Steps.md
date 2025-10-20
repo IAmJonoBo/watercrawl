@@ -64,6 +64,8 @@
 - [x] 2025-10-20 — Introduced `scripts.dependency_matrix` with pytest coverage, surfaced wheel gaps for Python 3.13/3.14 in `tools/dependency_matrix/report.json`, and wired the survey into the automation CLI/operations runbook to gate plan→upgrade flows.
 - [x] 2025-10-22 — Codified session protocol in `AGENTS.md` to require context sweep, baseline QA attempt, and problems_report triage before enrichment work; emphasised ownership/quality gates for remediation loop.
 - [x] 2025-10-22 — Restored markdownlint pre-commit parity with vendored binaries, refreshed curated dataset staging model for DuckDB compatibility, hardened dependency matrix typing, modernised contracts tests to use availability gates, and documented targeted lint/type checks.
+- [ ] 2025-10-22 — Factored shared CLI workflows into `firecrawl_demo.interfaces.cli_base`, enforced plan→commit artefacts across analyst/dev/MCP surfaces, expanded CLI/MCP/automation tests for guardrails, and refreshed docs. Baseline still reports failing Great Expectations contract (`tests/test_contracts.py::test_validate_curated_dataframe_succeeds_for_valid_row`) and outstanding import-order lint (`isort`), Black full-repo check aborted due to runtime.
+- [ ] 2025-10-23 — Restored `python -m app.cli` compatibility by shimming the analyst CLI, extended regression tests for the alias, and documented the shim in CLI docs. Baseline QA remains red on Great Expectations/dbt contracts, `black --check` wants to reformat `tests/test_dev_cli.py`, and `isort` flags `firecrawl_demo/integrations/contracts/great_expectations_runner.py` import ordering; address before closing the plan.
 
 ---
 
