@@ -111,6 +111,7 @@ poetry run bandit -r firecrawl_demo
 poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
+poetry run python apps/analyst/accessibility/axe_smoke.py
 ```
 
 > Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.
@@ -134,6 +135,10 @@ poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_
   ```
 
 - Developers should configure [gitsign](https://github.com/sigstore/gitsign) locally (`gitsign init && git config --global commit.gpgsign true`) so every commit is OIDC-signed by default.
+
+## Accessibility Checks
+
+- The Streamlit analyst UI ships with an axe-core smoke test (`poetry run python apps/analyst/accessibility/axe_smoke.py`) that launches the app headlessly and reports WCAG violations. Known Streamlit chrome issues are whitelisted; any new violations fail CI and drop an `axe-results.json` artifact for triage.
 
 ## Documentation
 

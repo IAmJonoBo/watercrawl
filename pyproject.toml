@@ -70,6 +70,9 @@ types-setuptools = "*"
 types-urllib3 = "1.26.25.14"
 types-python-dateutil = "2.9.0.20251008"
 narwhals = "2.8.0"
+streamlit = "^1.50.0"
+axe-selenium-python = "^2.1.6"
+selenium = "^4.37.0"
 
 [tool.poetry.group.ui]
 optional = true

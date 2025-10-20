@@ -102,6 +102,10 @@ of silencing mypy regressions.
 
 - OpenSSF Scorecard runs via `.github/workflows/scorecard.yml` on every push to `main`, on a weekly schedule, and on demand. Review SARIF results in the repository Security tab or download the `scorecard-results` artifact.
 
+### Accessibility smoke test
+
+- Run the Streamlit axe-core check locally with `poetry run python apps/analyst/accessibility/axe_smoke.py`. The script boots the analyst UI headlessly, executes axe against the rendered DOM, and fails on violations beyond a small set of Streamlit chrome exclusions.
+
 ### Developer commit signing (gitsign)
 
 Set up [gitsign](https://github.com/sigstore/gitsign) so local commits carry OIDC-backed signatures:

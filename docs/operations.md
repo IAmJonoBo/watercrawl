@@ -93,6 +93,10 @@ datasets have quality checks defined before they are published.
 
 - Scorecard runs live in `.github/workflows/scorecard.yml`. Review the latest SARIF under the repository Security tab or download the `scorecard-results` artifact from workflow runs.
 
+### Accessibility smoke test
+
+- Run the Streamlit axe-core check locally with `poetry run python apps/analyst/accessibility/axe_smoke.py`. The script boots the analyst UI headlessly, runs axe against the rendered DOM, and fails on any violations outside the documented Streamlit chrome exclusions.
+
 ### Developer commit signing (gitsign)
 
 All contributors should configure [gitsign](https://github.com/sigstore/gitsign) to ensure commits are OIDC-signed:

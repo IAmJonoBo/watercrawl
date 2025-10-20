@@ -12,6 +12,7 @@
 - [ ] `poetry run pre-commit run --all-files`
 - [ ] `poetry build`
 - [ ] `poetry run dbt build --project-dir analytics --profiles-dir analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'`
+- [ ] `poetry run python apps/analyst/accessibility/axe_smoke.py`
 
 ## Quality Gates
 

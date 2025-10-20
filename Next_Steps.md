@@ -20,7 +20,7 @@
   - Gates: cp314/cp315 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, and other tracked packages; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
 - [x] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
 - [x] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
-- [ ] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
+- [x] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
 - [ ] **MCP plan→commit audit logging + policy enforcement** — _Owner: Platform/Security · Due: 2025‑12‑05_ (WC‑05/06)
 - [ ] **whylogs drift dashboards + alert routing** — _Owner: Platform/Data · Due: 2025‑12‑05_ (WC‑11)
 - [ ] **Mutation testing pilot for pipeline hotspots** — _Owner: QA/Platform · Due: 2025‑12‑05_ (WC‑15)
@@ -44,6 +44,7 @@
 - [x] 2025-10-20 — Phase 4 safety gate: Plan→commit policy now requires matching `*.plan`/`*.commit` artefacts with `If-Match` headers, RAG metrics, and prompt-injection heuristics; audit events are appended to `data/logs/plan_commit_audit.jsonl` and MCP payloads enforce the same contract.
 - [x] 2025-10-20 — Published ADR 0003 documenting the threat model and STRIDE/MITRE mapping for CLI, MCP, evidence sinks, and governance surfaces; Next_Steps risk gates now reference the baseline matrix and quarterly tabletop cadence.
 - [x] 2025-10-20 — Supply-chain automation: CI now emits CycloneDX SBOMs, Sigstore signatures for wheels/sdists, and weekly OpenSSF Scorecard scans; developer workflow documents gitsign configuration for OIDC-backed commit signing.
+- [x] 2025-10-20 — Accessibility baseline: Added axe-core smoke tests for the Streamlit analyst UI, documented heuristic review steps, and wired the smoke test into CI.
 
 ---
 

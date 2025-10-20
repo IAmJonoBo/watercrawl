@@ -62,6 +62,9 @@ jobs:
       - name: Check contract coverage
         run: >-
           poetry run python -m apps.analyst.cli coverage --format json
+      - name: Run Streamlit accessibility smoke test
+        if: matrix.python-version == '3.14'
+        run: poetry run python apps/analyst/accessibility/axe_smoke.py
       - name: Build distribution artifacts
         if: matrix.python-version == '3.14'
         run: poetry build
