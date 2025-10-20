@@ -1,0 +1,31 @@
+{
+  "artifacts": {
+    "data": "data.parquet"
+  },
+  "backend": "delta",
+  "created_at": "2025-10-20T01:01:21.945658",
+  "environment": {
+    "codex_enabled": true,
+    "crawler_mode": "full",
+    "profile": "dev"
+  },
+  "fingerprint": "712de74738618550b9124c937c206346ddcaf9c30dcc869fa18eb35731effca3",
+  "row_count": 1,
+  "run_id": "enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8",
+  "schema": {
+    "Contact Email Address": "object",
+    "Contact Number": "object",
+    "Contact Person": "object",
+    "Name of Organisation": "object",
+    "Province": "object",
+    "Status": "object",
+    "Website URL": "object"
+  },
+  "table": "flight_schools",
+  "version": "20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8",
+  "versioning": {
+    "enabled": true,
+    "metadata_root": "/home/runner/work/watercrawl/watercrawl/data/versioning",
+    "strategy": "manifest"
+  }
+}
