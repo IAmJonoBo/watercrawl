@@ -77,6 +77,10 @@ from firecrawl_demo.integrations.storage.versioning import (
     VersioningManager,
     fingerprint_dataframe,
 )
+from firecrawl_demo.integrations.telemetry.drift_dashboard import (
+    append_alert_report,
+    write_prometheus_metrics,
+)
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
@@ -563,17 +567,17 @@ class Pipeline(PipelineService):
                     load_meta_fn = self.drift_tools.get("load_whylogs_metadata")
                     compare_meta_fn = self.drift_tools.get("compare_whylogs_metadata")
                     output_dir = _resolve_path(config.DRIFT.whylogs_output_dir)
+                    run_identifier = (
+                        active_context.run_id
+                        if active_context and active_context.run_id
+                        else datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+                    )
                     if (
                         callable(log_profile_fn)
                         and callable(load_meta_fn)
                         and callable(compare_meta_fn)
                         and output_dir is not None
                     ):
-                        run_identifier = (
-                            active_context.run_id
-                            if active_context and active_context.run_id
-                            else datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
-                        )
                         profile_path = output_dir / f"{run_identifier}.whylogs"
                         profile_info = log_profile_fn(
                             report.refined_dataframe, profile_path
@@ -622,6 +626,40 @@ class Pipeline(PipelineService):
                                 metrics["drift_alerts"] = metrics.get(
                                     "drift_alerts", 0
                                 ) + len(alerts)
+                    dataset_name = config.LINEAGE.dataset_name
+                    alert_output = _resolve_path(config.DRIFT.alert_output_path)
+                    prometheus_output = _resolve_path(
+                        config.DRIFT.prometheus_output_path
+                    )
+                    profile_timestamp = (
+                        drift_report.whylogs_profile.generated_at
+                        if drift_report.whylogs_profile
+                        else datetime.now(UTC)
+                    )
+                    if alert_output is not None:
+                        try:
+                            append_alert_report(
+                                report=drift_report,
+                                output_path=alert_output,
+                                run_id=run_identifier,
+                                dataset_name=dataset_name,
+                                timestamp=profile_timestamp,
+                            )
+                        except Exception as exc:  # pragma: no cover - defensive
+                            logger.warning("drift.alert_append_failed", exc_info=exc)
+                    if prometheus_output is not None:
+                        try:
+                            write_prometheus_metrics(
+                                report=drift_report,
+                                metrics_path=prometheus_output,
+                                run_id=run_identifier,
+                                dataset_name=dataset_name,
+                                timestamp=profile_timestamp,
+                            )
+                        except Exception as exc:  # pragma: no cover - defensive
+                            logger.warning(
+                                "drift.prometheus_write_failed", exc_info=exc
+                            )
                     if drift_report.exceeded_threshold:
                         metrics["drift_alerts"] = metrics.get("drift_alerts", 0) + 1
                     report.drift_report = drift_report

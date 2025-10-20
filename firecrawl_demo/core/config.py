@@ -280,6 +280,12 @@ class DriftSettings:
     )
     require_baseline: bool = True
     require_whylogs_metadata: bool = True
+    alert_output_path: Path = field(
+        default_factory=lambda: DATA_DIR / "observability" / "whylogs" / "alerts.json"
+    )
+    prometheus_output_path: Path = field(
+        default_factory=lambda: DATA_DIR / "observability" / "whylogs" / "metrics.prom"
+    )
 
 
 DRIFT: DriftSettings = DriftSettings()
@@ -338,6 +344,8 @@ def _build_drift_settings(provider: SecretsProvider) -> DriftSettings:
     whylogs_output = _env_path("DRIFT_WHYLOGS_OUTPUT", provider)
     if whylogs_output is None:
         whylogs_output = DATA_DIR / "observability" / "whylogs"
+    alert_output = _env_path("DRIFT_ALERT_OUTPUT", provider)
+    prometheus_output = _env_path("DRIFT_PROMETHEUS_OUTPUT", provider)
     return DriftSettings(
         enabled=enabled,
         threshold=threshold,
@@ -348,6 +356,10 @@ def _build_drift_settings(provider: SecretsProvider) -> DriftSettings:
         require_whylogs_metadata=_env_bool(
             "DRIFT_REQUIRE_WHYLOGS_METADATA", True, provider
         ),
+        alert_output_path=alert_output
+        or (DATA_DIR / "observability" / "whylogs" / "alerts.json"),
+        prometheus_output_path=prometheus_output
+        or (DATA_DIR / "observability" / "whylogs" / "metrics.prom"),
     )
 
 

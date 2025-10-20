@@ -1,3 +1,4 @@
+import json
 from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
@@ -12,7 +13,11 @@ from firecrawl_demo.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
 )
-from firecrawl_demo.integrations.telemetry.drift import DriftBaseline, save_baseline
+from firecrawl_demo.integrations.telemetry.drift import (
+    DriftBaseline,
+    log_whylogs_profile,
+    save_baseline,
+)
 
 
 class StubResearchAdapter(ResearchAdapter):
@@ -421,6 +426,101 @@ def test_pipeline_flags_missing_whylogs_metadata(monkeypatch, tmp_path):
 
     issues = {finding.issue for finding in report.sanity_findings}
     assert "whylogs_baseline_missing" in issues
+
+
+def test_pipeline_writes_drift_dashboard_outputs(monkeypatch, tmp_path):
+    baseline_frame = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Baseline Org",
+                "Province": "Gauteng",
+                "Status": "Verified",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            },
+            {
+                "Name of Organisation": "Baseline Org 2",
+                "Province": "Gauteng",
+                "Status": "Verified",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            },
+        ]
+    )
+    observed_frame = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Observed Org",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            },
+            {
+                "Name of Organisation": "Observed Org 2",
+                "Province": "Western Cape",
+                "Status": "Candidate",
+                "Website URL": "",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            },
+        ]
+    )
+
+    baseline_path = tmp_path / "baseline.json"
+    save_baseline(
+        DriftBaseline(
+            status_counts={"Verified": 2},
+            province_counts={"Gauteng": 2},
+            total_rows=2,
+        ),
+        baseline_path,
+    )
+    baseline_profile = log_whylogs_profile(
+        baseline_frame, tmp_path / "baseline_profile.bin"
+    )
+    patched_settings = replace(
+        config.DRIFT,
+        baseline_path=baseline_path,
+        whylogs_baseline_path=baseline_profile.metadata_path,
+        whylogs_output_dir=tmp_path / "profiles",
+        alert_output_path=tmp_path / "alerts.json",
+        prometheus_output_path=tmp_path / "metrics.prom",
+        threshold=0.05,
+    )
+    monkeypatch.setattr(config, "DRIFT", patched_settings)
+
+    adapter = StubResearchAdapter(
+        {
+            "Observed Org": ResearchFinding(),
+            "Observed Org 2": ResearchFinding(),
+        }
+    )
+    pipeline = Pipeline(research_adapter=adapter)
+    report = pipeline.run_dataframe(observed_frame)
+    assert report.drift_report is not None
+    assert report.metrics.get("drift_alerts", 0) > 0
+
+    alert_payload = json.loads(
+        (patched_settings.alert_output_path).read_text(encoding="utf-8")
+    )
+    assert alert_payload, "Expected drift alert log entry"
+    latest_alert = alert_payload[-1]
+    assert latest_alert["dataset"] == config.LINEAGE.dataset_name
+    assert latest_alert["status_drift"]
+
+    metrics_content = patched_settings.prometheus_output_path.read_text(
+        encoding="utf-8"
+    )
+    assert "whylogs_drift_alerts_total" in metrics_content
+    assert "whylogs_drift_exceeded_threshold" in metrics_content
 
 
 def test_pipeline_blocks_low_quality_adapter_updates():

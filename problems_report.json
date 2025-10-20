@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-20T05:53:53.158663+00:00",
+  "generated_at": "2025-10-20T10:43:24.812427+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -13,23 +13,56 @@
     },
     {
       "tool": "mypy",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
-      "notes": [
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "issues": [
         {
-          "path": "tests/test_compliance.py",
-          "line": 183,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
+          "path": "tests/test_safety.py",
+          "line": 65,
+          "message": "Argument \"plan\" to \"evaluate_plan_commit\" has incompatible type \"dict[str, list[dict[str, str]]]\"; expected \"dict[str, object]\" ",
+          "severity": "error",
+          "code": "arg-type"
         },
         {
-          "path": "tests/test_compliance.py",
-          "line": 205,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
+          "path": "apps/analyst/accessibility/axe_smoke.py",
+          "line": 12,
+          "message": "Skipping analyzing \"axe_selenium_python\": module is installed, but missing library stubs or py.typed marker ",
+          "severity": "error",
+          "code": "import-untyped"
+        },
+        {
+          "path": "firecrawl_demo/integrations/telemetry/graph_semantics.py",
+          "line": 259,
+          "message": "No return value expected ",
+          "severity": "error",
+          "code": "return-value"
+        },
+        {
+          "path": "apps/automation/cli.py",
+          "line": 399,
+          "message": "Unexpected keyword argument \"commit_paths\" for \"__call__\" of \"CommandRunner\" ",
+          "severity": "error",
+          "code": "call-arg"
+        }
+      ],
+      "notes": [
+        {
+          "path": "tests/test_safety.py",
+          "line": 65,
+          "message": "\"dict\" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance",
+          "severity": "note"
+        },
+        {
+          "path": "tests/test_safety.py",
+          "line": 65,
+          "message": "Consider using \"Mapping\" instead, which is covariant in the value type",
+          "severity": "note"
+        },
+        {
+          "path": "apps/analyst/accessibility/axe_smoke.py",
+          "line": 12,
+          "message": "See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports",
+          "severity": "note"
         },
         {
           "path": "tests/test_cache.py",
@@ -67,58 +100,78 @@
           "code": "annotation-unchecked"
         },
         {
+          "path": "tests/test_compliance.py",
+          "line": 183,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 205,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "apps/automation/cli.py",
+          "line": 334,
+          "message": "\"__call__\" of \"CommandRunner\" defined here",
+          "severity": "note"
+        },
+        {
           "path": "tests/test_cli.py",
-          "line": 184,
+          "line": 245,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         },
         {
           "path": "tests/test_cli.py",
-          "line": 238,
+          "line": 299,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         },
         {
           "path": "tests/test_cli.py",
-          "line": 239,
+          "line": 300,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         },
         {
           "path": "tests/test_cli.py",
-          "line": 240,
+          "line": 301,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         },
         {
           "path": "tests/test_cli.py",
-          "line": 284,
+          "line": 345,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         },
         {
           "path": "tests/test_cli.py",
-          "line": 315,
+          "line": 376,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         },
         {
           "path": "tests/test_cli.py",
-          "line": 332,
+          "line": 393,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
         }
       ],
       "summary": {
-        "issue_count": 0,
-        "note_count": 14
+        "issue_count": 4,
+        "note_count": 18
       }
     },
     {
