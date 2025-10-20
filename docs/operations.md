@@ -7,6 +7,9 @@ artefacts so the suite mirrors CI output and ensure the minimum interpreter is
 available:
 
 ```bash
+python -m scripts.bootstrap_env --dry-run
+python -m scripts.bootstrap_env
+
 python -m scripts.bootstrap_python --install-uv --poetry
 poetry run python -m scripts.cleanup --dry-run
 poetry run python -m scripts.cleanup
