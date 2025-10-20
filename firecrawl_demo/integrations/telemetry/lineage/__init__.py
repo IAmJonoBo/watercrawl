@@ -131,7 +131,7 @@ class LineageContext:
     evidence_path: Path | None = None
     dataset_version: str | None = None
     lakehouse_uri: str | None = None
-    execution_start: datetime = field(default_factory=lambda: datetime.utcnow())
+    execution_start: datetime = field(default_factory=lambda: datetime.now(UTC))
     extras: dict[str, Any] = field(default_factory=dict)
 
     def with_lakehouse(
@@ -239,7 +239,7 @@ class LineageManager:
         artifact_dir = self.artifact_root / "lineage" / context.run_id
         artifact_dir.mkdir(parents=True, exist_ok=True)
 
-        completed_at = datetime.utcnow()
+        completed_at = datetime.now(UTC)
         events = build_openlineage_events(report, context, completed_at=completed_at)
         openlineage_path = artifact_dir / "openlineage.json"
         openlineage_path.write_text(json.dumps(events, indent=2, sort_keys=True))

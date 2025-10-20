@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -116,7 +116,7 @@ class VersioningManager:
         payload: dict[str, Any] = {
             "run_id": run_id,
             "version": manifest.version,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "input_fingerprint": input_fingerprint,
             "output_fingerprint": manifest.fingerprint,
             "output_row_count": manifest.row_count,

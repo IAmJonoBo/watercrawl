@@ -4,7 +4,7 @@ import hashlib
 import json
 import warnings
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -81,7 +81,7 @@ class LocalLakehouseWriter:
                 remediation=None,
             )
 
-        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
         version = f"{timestamp}-{run_id}"
         table_dir = self._config.root_path / self._config.table_name / version
         table_dir.mkdir(parents=True, exist_ok=True)
@@ -124,7 +124,7 @@ class LocalLakehouseWriter:
                 "data": data_path.name,
                 "format": storage_format,
             },
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "fingerprint": fingerprint,
             "row_count": row_count,
             "schema": schema,
