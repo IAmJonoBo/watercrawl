@@ -260,7 +260,7 @@ def validate_curated_dataframe(frame: pd.DataFrame) -> CuratedDatasetContractRes
 
     suite = _load_expectation_suite()
     batch_data = frame.copy()
-    
+
     # Convert Confidence to numeric type if present
     if "Confidence" in batch_data.columns:
         batch_data["Confidence"] = pd.to_numeric(

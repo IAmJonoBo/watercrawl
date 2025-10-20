@@ -16,15 +16,13 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: {{contracts_province_values()}}
+              values: "{{contracts_province_values()}}"
       - name: status
         description: Curated lifecycle status aligned with ACES taxonomy.
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: {{contracts_status_values()}}
+              values: "{{contracts_status_values()}}"
       - name: website_url
         description: Primary organisation website, expected to use HTTPS.
         tests:

@@ -3,8 +3,7 @@
     {% if not raw %}
         {% do exceptions.raise_compiler_error('CONTRACTS_CANONICAL_JSON must be set before running contracts macros.') %}
     {% endif %}
-    {% set json = modules.import('json') %}
-    {% do return(json.loads(raw)) %}
+    {% do return(fromjson(raw)) %}
 {% endmacro %}
 
 
