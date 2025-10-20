@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from urllib import error, request
 
-import axe_selenium_python
+import axe_selenium_python  # type: ignore[import-untyped]
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 

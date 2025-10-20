@@ -256,7 +256,7 @@ def _build_graph_metrics(frame: Any) -> tuple[GraphMetrics, list[GraphValidation
 def _validate_metric_ranges(metrics: GraphMetrics) -> Iterable[GraphValidationIssue]:
     settings = getattr(config, "GRAPH_SEMANTICS", None)
     if settings is None or not getattr(settings, "enabled", True):
-        return []
+        return
 
     def _issue(
         code: str, message: str, value: Any | None = None

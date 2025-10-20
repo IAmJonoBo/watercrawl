@@ -340,6 +340,7 @@ class CommandRunner(Protocol):
         console: Console | None = None,
         plan_guard: PlanCommitGuard | None = None,
         plan_paths: Sequence[Path] | None = None,
+        commit_paths: Sequence[Path] | None = None,
         force: bool = False,
     ) -> int: ...
 
