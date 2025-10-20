@@ -99,7 +99,7 @@ When offline, the pipeline still records reminders in the evidence log so analys
 ```bash
 poetry run python -m scripts.cleanup --dry-run  # inspect cleanup targets
 poetry run python -m scripts.cleanup            # remove cached artefacts
-poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 poetry run ruff check .
 poetry run python -m tools.sql.sqlfluff_runner
 poetry run yamllint --strict -c .yamllint.yaml .
@@ -116,6 +116,8 @@ poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_
 > Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.
 
 > The offline Safety runner relies on the vendored `safety-db` snapshot so QA can execute without network connectivity. Update the dependency periodically to refresh advisories.
+
+> The `scripts/run_pytest.sh` wrapper discovers the Poetry-managed Python 3.14 interpreter (or provisions one via `uv`) so `pytest` never falls back to a stale system binary.
 
 ## Documentation
 

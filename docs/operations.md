@@ -17,6 +17,8 @@ poetry run python -m scripts.cleanup
 
 > The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
 
+> Python 3.14 is the project baseline. `scripts/bootstrap_env` provisions the correct interpreter automatically, and helper wrappers like `scripts/run_pytest.sh` guard against accidental use of stale global Pythons.
+
 Before executing the rest of the suite, confirm the pinned dependencies ship
 compatible wheels for every Python target tracked in `presets/dependency_targets.toml`
 (Python 3.13 as the stable baseline, Python 3.14 as the current, Python 3.15 as the next candidate).
@@ -59,8 +61,10 @@ poetry run pre-commit run --all-files
 ### Testing
 
 ```bash
-poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 ```
+
+`scripts/run_pytest.sh` discovers the Poetry-managed Python 3.14 interpreter (or provisions one via `uv`) so local shells never fall back to an outdated `pytest` binary on the system PATH.
 
 ### Data Quality
 
@@ -334,7 +338,7 @@ poetry cache clear --all .
 poetry install --no-root
 
 # Check Python version compatibility
-python --version  # Should be 3.13+
+python --version  # Should be 3.14.x
 poetry env info
 ```
 
@@ -342,7 +346,7 @@ poetry env info
 
 ```bash
 # Run specific failing test with verbose output
-poetry run pytest tests/test_specific.py::TestClass::test_method -v -s
+./scripts/run_pytest.sh tests/test_specific.py::TestClass::test_method -v -s
 
 # Check for dependency conflicts
 poetry show --tree | grep -A 5 -B 5 <problematic_package>
