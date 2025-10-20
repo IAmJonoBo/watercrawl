@@ -15,7 +15,6 @@ python -m scripts.bootstrap_env
 
 # Manual steps when you need finer-grained control
 python -m scripts.bootstrap_python --install-uv --poetry
-pip install poetry
 poetry install --no-root
 
 # Refresh the dependency compatibility report and confirm only allow-listed
