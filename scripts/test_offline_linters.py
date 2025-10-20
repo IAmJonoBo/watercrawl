@@ -46,10 +46,9 @@ def test_bundled_binaries_exist():
 
     if missing:
         print(f"\n❌ Missing or non-executable binaries: {', '.join(missing)}")
-        return False
+        assert False, f"Missing binaries: {', '.join(missing)}"
     else:
         print("\n✅ All bundled binaries present and executable")
-        return True
 
 
 def test_bootstrap_functions():
@@ -64,7 +63,7 @@ def test_bootstrap_functions():
             print("  ✓ hadolint using bundled binary")
         else:
             print(f"  ✗ hadolint NOT using bundled binary (using {hadolint_path})")
-            return False
+            assert False, f"hadolint not using bundled binary: {hadolint_path}"
 
         actionlint_path = ensure_actionlint()
         print(f"  actionlint path: {actionlint_path}")
@@ -73,13 +72,12 @@ def test_bootstrap_functions():
             print("  ✓ actionlint using bundled binary")
         else:
             print(f"  ✗ actionlint NOT using bundled binary (using {actionlint_path})")
-            return False
+            assert False, f"actionlint not using bundled binary: {actionlint_path}"
 
         print("\n✅ Bootstrap functions correctly use bundled binaries")
-        return True
     except Exception as exc:
         print(f"\n❌ Bootstrap functions failed: {exc}")
-        return False
+        raise
 
 
 def test_binaries_work():
@@ -102,7 +100,7 @@ def test_binaries_work():
             print(f"  ✓ hadolint works: {version}")
         else:
             print(f"  ✗ hadolint failed: {result.stderr}")
-            return False
+            assert False, f"hadolint execution failed: {result.stderr}"
 
         actionlint_path = ensure_actionlint()
         result = subprocess.run(
@@ -117,13 +115,12 @@ def test_binaries_work():
             print(f"  ✓ actionlint works: {version}")
         else:
             print(f"  ✗ actionlint failed: {result.stderr}")
-            return False
+            assert False, f"actionlint execution failed: {result.stderr}"
 
         print("\n✅ All binaries execute correctly")
-        return True
     except Exception as exc:
         print(f"\n❌ Binary execution failed: {exc}")
-        return False
+        raise
 
 
 def main():
@@ -132,13 +129,16 @@ def main():
     print("Offline Linter Support Test Suite")
     print("=" * 60)
 
-    results = []
-    results.append(test_bundled_binaries_exist())
-    results.append(test_bootstrap_functions())
-    results.append(test_binaries_work())
+    failed = False
+    try:
+        test_bundled_binaries_exist()
+        test_bootstrap_functions()
+        test_binaries_work()
+    except (AssertionError, Exception):
+        failed = True
 
     print("\n" + "=" * 60)
-    if all(results):
+    if not failed:
         print("✅ All tests passed!")
         print("=" * 60)
         return 0
