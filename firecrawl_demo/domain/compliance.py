@@ -52,7 +52,12 @@ def normalize_province(province: str | None) -> str:
 def canonical_domain(url: str | None) -> str | None:
     if not url:
         return None
-    parsed = urlparse(url.strip())
+    cleaned = url.strip()
+    if not cleaned:
+        return None
+    if "://" not in cleaned:
+        cleaned = f"https://{cleaned}"
+    parsed = urlparse(cleaned)
     host = parsed.hostname or ""
     host = host.lower()
     if host.startswith("www."):

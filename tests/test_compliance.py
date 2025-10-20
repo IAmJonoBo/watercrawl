@@ -13,6 +13,7 @@ def test_normalize_helpers_cover_edge_cases():
     assert compliance.normalize_province("gauteng") == "Gauteng"
     assert compliance.normalize_province(" ") == "Unknown"
     assert compliance.canonical_domain("https://www.example.org/path") == "example.org"
+    assert compliance.canonical_domain("example.com") == "example.com"
     assert compliance.canonical_domain(None) is None
 
     phone, issues = compliance.normalize_phone("011 555 0100")
@@ -51,6 +52,12 @@ def test_validate_email_paths(monkeypatch):
     )
     assert cleaned == "thandi.nkosi@example.org"
     assert not issues
+
+    mismatch_email, mismatch_issues = compliance.validate_email(
+        "contact@other.org", compliance.canonical_domain("example.com")
+    )
+    assert mismatch_email == "contact@other.org"
+    assert "Email domain does not match official domain" in mismatch_issues
 
     monkeypatch.setattr(
         compliance,
