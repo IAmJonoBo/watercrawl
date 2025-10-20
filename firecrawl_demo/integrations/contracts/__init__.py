@@ -16,6 +16,12 @@ from firecrawl_demo.integrations.integration_plugins import (
     register_plugin,
 )
 
+from .coverage import (
+    ContractCoverage,
+    calculate_contract_coverage,
+    report_coverage,
+)
+from .deequ_runner import DEEQU_AVAILABLE, DeequContractResult, run_deequ_checks
 from .operations import persist_contract_artifacts, record_contracts_evidence
 from .shared_config import (
     canonical_contracts_config,
@@ -238,10 +244,18 @@ __all__ = [
     "CuratedDatasetContractResult",
     "validate_curated_dataframe",
     "validate_curated_file",
+    "DeequContractResult",
+    "run_deequ_checks",
+    "DEEQU_AVAILABLE",
+    "ContractCoverage",
+    "calculate_contract_coverage",
+    "report_coverage",
     "record_contracts_evidence",
     "persist_contract_artifacts",
     "canonical_contracts_config",
     "environment_payload",
     "restore_environment",
     "seed_environment",
+    "DBT_AVAILABLE",
+    "GREAT_EXPECTATIONS_AVAILABLE",
 ]

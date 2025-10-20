@@ -12,6 +12,7 @@ _USER_FACING_COMMANDS = {
     "validate": "Inspect a dataset and report quality issues before enrichment.",
     "enrich": "Validate, enrich, and export a curated dataset with evidence logging.",
     "contracts": "Run Great Expectations and dbt contracts to guard publishes.",
+    "coverage": "Report contract coverage across curated tables.",
 }
 
 
@@ -33,7 +34,7 @@ def overview() -> None:
     table.add_column("Step", justify="right", style="cyan", no_wrap=True)
     table.add_column("Command", style="magenta")
     table.add_column("Description", style="white")
-    ordered_commands = ["validate", "enrich", "contracts"]
+    ordered_commands = ["validate", "enrich", "contracts", "coverage"]
     for index, name in enumerate(ordered_commands, start=1):
         description = _USER_FACING_COMMANDS.get(name, "")
         table.add_row(str(index), name, description)
