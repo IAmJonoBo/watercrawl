@@ -47,9 +47,11 @@ repos:
         pass_filenames: false
       - id: markdownlint-cli2
         name: markdownlint-cli2
-        entry: node_modules/.bin/markdownlint-cli2
+        entry: markdownlint-cli2
+        language: node
+        additional_dependencies:
+          - markdownlint-cli2@0.18.0
         args: [--config, .markdownlint-cli2.yaml]
-        language: system
         types_or: [markdown]
       - id: actionlint
         name: actionlint

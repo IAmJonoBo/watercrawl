@@ -31,6 +31,10 @@ build/
 dist/
 *.egg-info/
 
+# Node dependencies
+node_modules/
+**/node_modules/
+
 # Coverage, test, and QA artefacts
 .coverage*
 coverage.xml

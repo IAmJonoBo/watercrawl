@@ -9,13 +9,12 @@ Modular toolkit for validating and enriching South African flight-school dataset
 **Environment setup:**
 
 ```bash
-# Provision the required Python toolchain and pin Poetry to it
+# Inspect and execute the consolidated bootstrap plan
+python -m scripts.bootstrap_env --dry-run
+python -m scripts.bootstrap_env
+
+# Manual steps when you need finer-grained control
 python -m scripts.bootstrap_python --install-uv --poetry
-
-# Install Poetry if not already installed
-pip install poetry
-
-# Install all dependencies (including Firecrawl SDK)
 poetry install --no-root
 
 # Refresh the dependency compatibility report and confirm only allow-listed
@@ -34,6 +33,11 @@ poetry run python -m apps.automation.cli qa plan
 poetry run python -m apps.automation.cli qa all --dry-run
 poetry run python -m apps.automation.cli qa all  # auto-installs Python 3.14 via uv when needed
 ```
+
+> `scripts.bootstrap_env` provisions the uv-managed interpreter, installs the
+> Poetry environment, installs pre-commit hooks, and syncs Node.js dependencies
+> for both the repository root and the Starlight documentation site in a single
+> run.
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
 
