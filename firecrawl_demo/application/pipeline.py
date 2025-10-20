@@ -562,6 +562,9 @@ class Pipeline(PipelineService):
         frame_cast = cast(Any, frame)
         for column, value in record.as_dict().items():
             if value is not None:
+                # Ensure column is object dtype to avoid pandas incompatibility warnings
+                if frame_cast[column].dtype != "object":
+                    frame_cast[column] = frame_cast[column].astype("object")
                 frame_cast.at[index, column] = value
 
     def _collect_changed_columns(

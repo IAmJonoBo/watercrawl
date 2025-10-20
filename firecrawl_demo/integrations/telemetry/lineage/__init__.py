@@ -5,7 +5,7 @@ import json
 import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, cast
 
@@ -396,7 +396,7 @@ def build_openlineage_events(
     }
     complete_event = {
         "eventType": "COMPLETE",
-        "eventTime": (completed_at or datetime.utcnow()).isoformat(),
+        "eventTime": (completed_at or datetime.now(UTC)).isoformat(),
         "run": run,
         "job": job,
         "inputs": inputs,
