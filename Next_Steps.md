@@ -35,6 +35,7 @@
 
 - [ ] 2025-10-19 — Baseline QA attempt on fresh environment blocked: `poetry install` fails under Python 3.14 because `pyarrow==21.0.0` only ships source dists (no cp314 wheels) and the build backend requires an Arrow SDK. Documented blocker before proceeding with dependency upgrades.
 - [x] 2025-10-20 — Replaced committed `node_modules` artefacts with scripted installs (`scripts/bootstrap_env`) and added pre-commit managed `markdownlint-cli2`. TLS-restricted runners still need allow-listed access for nodeenv downloads (see Risks).
+- [x] 2025-10-20 — Bundled `hadolint` (v2.14.0) and `actionlint` (v1.7.1) binaries in `tools/bin/` for all platforms (Linux x86_64/arm64, macOS x86_64/arm64) to support ephemeral runners without internet access. Bootstrap utilities now check for bundled binaries first before attempting downloads. CI and Dockerfile updated to use bundled binaries.
 
 ---
 
@@ -118,6 +119,6 @@ Execute in this order; each item must meet its gate before promotion.
 - Decide owner + storage for MCP audit logs (plan→diff→commit) and retention policy.
 - Block MCP/agent sessions in hardened platform distributions unless `promptfoo eval` has passed in the active branch.
 - Kafka lineage transport requires the optional `kafka-python` dependency; platform team to confirm packaging before enabling Kafka emission in CI/staging.
-- Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments. Node hooks now rely on `pre-commit`'s bundled `nodeenv`, which requires outbound TLS to `nodejs.org` or a pre-seeded cache.
+- **[RESOLVED]** ~~Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments.~~ `actionlint` and `hadolint` binaries are now bundled in `tools/bin/` for all platforms (Linux x86_64/arm64, macOS x86_64/arm64) to support ephemeral runners without internet access. Bootstrap utilities check for bundled binaries first. `markdownlint-cli2` still requires Node hooks via `pre-commit`'s bundled `nodeenv`.
 - Regenerate `requirements-dev.txt` hashes so transitive dependencies like `narwhals` resolve under `--require-hashes` installs.
 - Python 3.15 compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, `tornado`, and other tracked packages; track expectations via `presets/dependency_blockers.toml`, ongoing findings in `tools/dependency_matrix/report.json`, and guard outputs in `tools/dependency_matrix/status.json`.

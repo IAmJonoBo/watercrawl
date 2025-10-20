@@ -67,3 +67,17 @@ jobs:
           echo "Poetry:" $(poetry --version || true)
           echo "Node:" $(node --version || true)
           echo "npm:" $(npm --version || true)
+
+      - name: Verify bundled linter binaries
+        run: |
+          echo "Checking bundled linter binaries for offline support..."
+          if [ -x "tools/bin/hadolint-linux-x86_64" ]; then
+            echo "✓ hadolint (Linux x86_64) available"
+          else
+            echo "✗ hadolint (Linux x86_64) missing"
+          fi
+          if [ -x "tools/bin/actionlint-linux-x86_64" ]; then
+            echo "✓ actionlint (Linux x86_64) available"
+          else
+            echo "✗ actionlint (Linux x86_64) missing"
+          fi

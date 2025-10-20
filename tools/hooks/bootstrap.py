@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import BinaryIO
 
 CACHE_ROOT = Path.home() / ".cache" / "watercrawl" / "bin"
+# Bundled binaries directory for offline/ephemeral environments
+BUNDLED_BIN_ROOT = Path(__file__).parent.parent / "bin"
 
 
 class BootstrapError(RuntimeError):
@@ -100,6 +102,12 @@ def ensure_hadolint(version: str = "v2.14.0") -> Path:
     else:
         raise BootstrapError(f"Unsupported platform: {system} {machine}")
 
+    # Check for bundled binary first (for offline/ephemeral environments)
+    skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
+    bundled_path = BUNDLED_BIN_ROOT / binary_name
+    if not skip_bundled and bundled_path.exists():
+        return bundled_path
+
     target = CACHE_ROOT / f"hadolint-{version}-{system}-{machine}"
     if not target.exists():
         url = (
@@ -127,16 +135,26 @@ def ensure_actionlint(version: str = "v1.7.1") -> Path:
 
     if system == "darwin":
         if machine == "arm64":
+            binary_name = "actionlint-macos-arm64"
             archive_name = f"actionlint_{version.lstrip('v')}_darwin_arm64.tar.gz"
         else:
+            binary_name = "actionlint-macos-x86_64"
             archive_name = f"actionlint_{version.lstrip('v')}_darwin_amd64.tar.gz"
     elif system == "linux":
         if machine == "aarch64":
+            binary_name = "actionlint-linux-arm64"
             archive_name = f"actionlint_{version.lstrip('v')}_linux_arm64.tar.gz"
         else:
+            binary_name = "actionlint-linux-x86_64"
             archive_name = f"actionlint_{version.lstrip('v')}_linux_amd64.tar.gz"
     else:
         raise BootstrapError(f"Unsupported platform: {system} {machine}")
+
+    # Check for bundled binary first (for offline/ephemeral environments)
+    skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
+    bundled_path = BUNDLED_BIN_ROOT / binary_name
+    if not skip_bundled and bundled_path.exists():
+        return bundled_path
 
     archive_url = (
         "https://github.com/rhysd/actionlint/releases/download/"

@@ -85,19 +85,31 @@ jobs:
         run: npm install yaml
       - name: Lint Markdown
         run: npx markdownlint-cli2 '**/*.md' '#node_modules' || true
-      - name: Install Hadolint
-        run: |
-          HADOLINT_URL="https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-$(uname -s)-$(uname -m)"
-          wget -O /usr/local/bin/hadolint "$HADOLINT_URL"
-          chmod +x /usr/local/bin/hadolint
       - name: Lint Dockerfiles with Hadolint
-        run: hadolint Dockerfile || true
-      - name: Install ActionLint
         run: |
-          BASE_URL="https://github.com/rhysd/actionlint/releases/download/v1.7.8"
-          FILE_NAME="actionlint_$(uname -s)_$(uname -m).tar.gz"
-          ACTIONLINT_URL="$BASE_URL/$FILE_NAME"
-          curl -sSL "$ACTIONLINT_URL" | tar xz -C /usr/local/bin
-          chmod +x /usr/local/bin/actionlint
+          # Use bundled hadolint binary for offline environments
+          HADOLINT_BIN="tools/bin/hadolint-linux-x86_64"
+          if [ -x "$HADOLINT_BIN" ]; then
+            "$HADOLINT_BIN" Dockerfile || true
+          else
+            # Fallback to downloading if bundled binary not available
+            HADOLINT_URL="https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-$(uname -s)-$(uname -m)"
+            wget -O /usr/local/bin/hadolint "$HADOLINT_URL"
+            chmod +x /usr/local/bin/hadolint
+            hadolint Dockerfile || true
+          fi
       - name: Lint GitHub Actions workflows with ActionLint
-        run: actionlint -color || true
+        run: |
+          # Use bundled actionlint binary for offline environments
+          ACTIONLINT_BIN="tools/bin/actionlint-linux-x86_64"
+          if [ -x "$ACTIONLINT_BIN" ]; then
+            "$ACTIONLINT_BIN" -color || true
+          else
+            # Fallback to downloading if bundled binary not available
+            BASE_URL="https://github.com/rhysd/actionlint/releases/download/v1.7.8"
+            FILE_NAME="actionlint_$(uname -s)_$(uname -m).tar.gz"
+            ACTIONLINT_URL="$BASE_URL/$FILE_NAME"
+            curl -sSL "$ACTIONLINT_URL" | tar xz -C /usr/local/bin
+            chmod +x /usr/local/bin/actionlint
+            actionlint -color || true
+          fi
