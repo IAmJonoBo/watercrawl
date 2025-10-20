@@ -16,21 +16,37 @@ def test_normalize_helpers_cover_edge_cases():
     assert compliance.canonical_domain("example.com") == "example.com"
     assert compliance.canonical_domain(None) is None
 
-    phone, issues = compliance.normalize_phone("011 555 0100")
-    assert phone == "+27115550100"
-    assert not issues
+    local_phone, local_issues = compliance.normalize_phone("011 555 0100")
+    assert local_phone == "+27115550100"
+    assert not local_issues
+
+    punctuated_local, punctuated_local_issues = compliance.normalize_phone(
+        "082-123-4567"
+    )
+    assert punctuated_local == "+27821234567"
+    assert not punctuated_local_issues
+
+    international_prefix, international_prefix_issues = compliance.normalize_phone(
+        "+27 (0)82 123 4567"
+    )
+    assert international_prefix == "+27821234567"
+    assert not international_prefix_issues
+
+    bare_prefix, bare_prefix_issues = compliance.normalize_phone("27 82 123 4567")
+    assert bare_prefix == "+27821234567"
+    assert not bare_prefix_issues
 
     short_sa, short_sa_issues = compliance.normalize_phone("27-123-4567")
     assert short_sa is None
     assert any("E.164" in issue for issue in short_sa_issues)
 
-    fallback_phone, fallback_issues = compliance.normalize_phone("+44 73 123 4567")
-    assert fallback_phone == "+27731234567"
-    assert fallback_issues == []
+    foreign_phone, foreign_issues = compliance.normalize_phone("+44 73 123 4567")
+    assert foreign_phone is None
+    assert any("South African" in issue for issue in foreign_issues)
 
     invalid_phone, invalid_issues = compliance.normalize_phone("123")
     assert invalid_phone is None
-    assert "E.164" in invalid_issues[0]
+    assert any("E.164" in issue for issue in invalid_issues)
 
 
 def test_normalize_phone_handles_prefixed_plus(monkeypatch):

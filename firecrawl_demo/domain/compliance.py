@@ -69,21 +69,31 @@ def normalize_phone(raw_phone: str | None) -> tuple[str | None, list[str]]:
     if not raw_phone:
         return None, ["Phone missing"]
     digits = re.sub(r"\D", "", raw_phone)
-    normalized: str | None
-    if digits.startswith("27") and len(digits) == 11:
-        normalized = "+27" + digits[2:]
-    elif digits.startswith("0") and len(digits) == 10:
-        normalized = "+27" + digits[1:]
-    elif digits.startswith("27") and len(digits) == 9:
-        normalized = "+27" + digits[2:]
-    elif raw_phone.startswith("+27") and len(digits) == 11:
-        normalized = "+27" + digits[2:]
-    else:
-        normalized = None
-        if len(digits) >= 9:
-            normalized = "+27" + digits[-9:]
+    normalized: str | None = None
+    stripped = raw_phone.strip()
+    has_sa_prefix = False
+
+    def _normalize_global(local_digits: str) -> str | None:
+        trimmed = local_digits.lstrip("0")
+        if len(trimmed) == 9:
+            return "+27" + trimmed
+        return None
+
+    if stripped.startswith("+27") and digits.startswith("27"):
+        has_sa_prefix = True
+        normalized = _normalize_global(digits[2:])
+    elif digits.startswith("27"):
+        has_sa_prefix = True
+        normalized = _normalize_global(digits[2:])
+    elif digits.startswith("0"):
+        has_sa_prefix = True
+        if len(digits) == 10:
+            normalized = "+27" + digits[1:]
+
     issues: list[str] = []
     if not normalized or not _PHONE_RE.fullmatch(normalized):
+        if not has_sa_prefix:
+            issues.append("Phone must use a South African prefix (+27/27/0)")
         issues.append("Phone is not in +27 E.164 format")
         return None, issues
     return normalized, issues
