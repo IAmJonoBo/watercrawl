@@ -1,0 +1,95 @@
+{
+  "@context": {
+    "aces": "https://acesaero.co.za/ns/lineage#",
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#"
+  },
+  "@graph": [
+    {
+      "@id": "urn:uuid:enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8",
+      "@type": "prov:Activity",
+      "aces:metrics": {
+        "adapter_failures": 0,
+        "enriched_rows": 1,
+        "issues_found": 0,
+        "quality_issues": 0,
+        "quality_rejections": 0,
+        "rows_total": 1,
+        "sanity_issues": 2,
+        "verified_rows": 0
+      },
+      "aces:qualityIssues": 0,
+      "aces:sanityFindings": 2,
+      "prov:endedAtTime": "2025-10-20T01:01:21.946182",
+      "prov:generated": [
+        "file:///tmp/pytest-of-runner/pytest-1/test_cli_enrich_logs_plan_audi0/output.csv",
+        "delta:///home/runner/work/watercrawl/watercrawl/data/lakehouse/flight_schools/20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8",
+        "file:///home/runner/work/watercrawl/watercrawl/data/lakehouse/flight_schools/20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8/manifest.json",
+        "file:///home/runner/work/watercrawl/watercrawl/data/versioning/20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8/version.json",
+        "file:///home/runner/work/watercrawl/watercrawl/artifacts/lineage/enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8"
+      ],
+      "prov:startedAtTime": "2025-10-20T01:01:21.928829",
+      "prov:used": [
+        "file:///tmp/pytest-of-runner/pytest-1/test_cli_enrich_logs_plan_audi0/input.csv",
+        "file:///home/runner/work/watercrawl/watercrawl/data/interim/evidence_log.csv"
+      ],
+      "prov:wasAssociatedWith": "urn:aces:agent:enrichment"
+    },
+    {
+      "@id": "urn:aces:agent:enrichment",
+      "@type": "prov:Agent",
+      "dct:title": "enrichment pipeline",
+      "prov:type": "prov:SoftwareAgent"
+    },
+    {
+      "@id": "file:///tmp/pytest-of-runner/pytest-1/test_cli_enrich_logs_plan_audi0/input.csv",
+      "@type": "prov:Entity",
+      "dct:identifier": "urn:aces:dataset:flight-schools",
+      "dct:title": "flight-schools"
+    },
+    {
+      "@id": "file:///home/runner/work/watercrawl/watercrawl/data/interim/evidence_log.csv",
+      "@type": "prov:Entity",
+      "aces:evidenceCount": 1,
+      "dct:title": "Evidence Log"
+    },
+    {
+      "@id": "file:///tmp/pytest-of-runner/pytest-1/test_cli_enrich_logs_plan_audi0/output.csv",
+      "@type": "prov:Entity",
+      "aces:metrics": {
+        "adapter_failures": 0,
+        "enriched_rows": 1,
+        "issues_found": 0,
+        "quality_issues": 0,
+        "quality_rejections": 0,
+        "rows_total": 1,
+        "sanity_issues": 2,
+        "verified_rows": 0
+      },
+      "dct:identifier": "urn:aces:dataset-version:20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8",
+      "dct:title": "flight-schools (enriched)",
+      "prov:wasDerivedFrom": "file:///tmp/pytest-of-runner/pytest-1/test_cli_enrich_logs_plan_audi0/input.csv"
+    },
+    {
+      "@id": "delta:///home/runner/work/watercrawl/watercrawl/data/lakehouse/flight_schools/20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8",
+      "@type": "prov:Entity",
+      "dct:format": "application/delta",
+      "dct:title": "flight-schools Lakehouse Table"
+    },
+    {
+      "@id": "file:///home/runner/work/watercrawl/watercrawl/data/lakehouse/flight_schools/20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8/manifest.json",
+      "@type": "prov:Entity",
+      "dct:title": "Lakehouse Manifest"
+    },
+    {
+      "@id": "file:///home/runner/work/watercrawl/watercrawl/data/versioning/20251020T010121-enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8/version.json",
+      "@type": "prov:Entity",
+      "dct:title": "Version Manifest"
+    },
+    {
+      "@id": "file:///home/runner/work/watercrawl/watercrawl/artifacts/lineage/enrichment-331ba60b-d55c-4bc0-8cc9-af95488910b8",
+      "@type": "prov:Entity",
+      "dct:title": "Lineage Artefact Bundle"
+    }
+  ]
+}

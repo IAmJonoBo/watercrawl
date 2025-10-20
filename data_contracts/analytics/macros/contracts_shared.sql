@@ -7,6 +7,18 @@
 {% endmacro %}
 
 
+{% macro contracts_province_values() %}
+    {% set payload = _contracts_canonical_payload() %}
+    {% do return(payload.get('provinces', [])) %}
+{% endmacro %}
+
+
+{% macro contracts_status_values() %}
+    {% set payload = _contracts_canonical_payload() %}
+    {% do return(payload.get('statuses', [])) %}
+{% endmacro %}
+
+
 {% macro contracts_evidence_min_confidence() %}
     {% set payload = _contracts_canonical_payload() %}
     {% set evidence = payload.get('evidence', {}) %}

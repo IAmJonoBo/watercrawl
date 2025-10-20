@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
+import subprocess  # nosec B404 - subprocess usage is for controlled CI/tooling operations
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -19,6 +19,7 @@ class BootstrapError(RuntimeError):
 def _run(
     command: Sequence[str], *, check: bool = True
 ) -> subprocess.CompletedProcess[str]:
+    # nosec B603 - command is constructed from trusted sources (uv/git binaries)
     return subprocess.run(command, check=check, capture_output=True, text=True)
 
 

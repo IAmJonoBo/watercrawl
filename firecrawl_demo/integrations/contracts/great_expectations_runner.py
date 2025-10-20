@@ -24,7 +24,7 @@ try:
         ExpectationSuite,  # type: ignore[import-untyped]
     )
     from great_expectations.data_context.data_context.context_factory import (
-        project_manager,  # type: ignore[attr-defined]
+        project_manager,  # type: ignore[attr-defined]; type: ignore[attr-defined]
     )
     from great_expectations.execution_engine.pandas_execution_engine import (  # type: ignore[import-untyped]
         PandasExecutionEngine,
@@ -196,22 +196,76 @@ def _load_expectation_suite() -> ExpectationSuite:
                 meta=meta,
             )
             suite.add_expectation_configuration(config)  # type: ignore[arg-type]
+    return _apply_canonical_configuration(suite)
+
+
+def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
+    """Ensure the suite reflects canonical taxonomy and thresholds."""
+
+    if not GREAT_EXPECTATIONS_AVAILABLE:
+        return suite
+
+    config_payload = canonical_contracts_config()
+    provinces = list(config_payload.get("provinces", []))
+    statuses = list(config_payload.get("statuses", []))
+    evidence = config_payload.get("evidence", {})
+    min_conf = int(evidence.get("minimum_confidence", 0))
+    max_conf = int(evidence.get("maximum_confidence", 100))
+
+    has_confidence_check = False
+
+    # Create a new suite with modified expectations
+    modified_suite = ExpectationSuite(name=suite.name, expectations=[])
+    modified_suite.meta.update(suite.meta)
+
+    for expectation in suite.expectation_configurations:  # type: ignore[attr-defined]
+        if not isinstance(expectation, ExpectationConfiguration):
+            continue
+        expectation_type = expectation.type
+        column_raw = expectation.kwargs.get("column")
+        column = column_raw if isinstance(column_raw, str) else None
+
+        # Create a copy of kwargs to modify
+        new_kwargs = dict(expectation.kwargs)
+        new_meta = dict(expectation.meta) if expectation.meta else None
+
+        if expectation_type == "expect_column_values_to_be_in_set":
+            if column == "Province":
+                new_kwargs["value_set"] = provinces
+            elif column == "Status":
+                new_kwargs["value_set"] = statuses
+        elif (
+            expectation_type == "expect_column_values_to_be_between"
+            and column == "Confidence"
+        ):
+            # Override with canonical confidence thresholds
+            new_kwargs["min_value"] = float(min_conf)
+            new_kwargs["max_value"] = float(max_conf)
+            has_confidence_check = True
+
+        # Create new config with modified kwargs
+        new_config = ExpectationConfiguration(  # type: ignore[call-arg]
+            type=expectation_type,
+            kwargs=new_kwargs,
+            meta=new_meta,
+        )
+        modified_suite.add_expectation_configuration(new_config)  # type: ignore[arg-type]
 
     if not has_confidence_check:
         config = ExpectationConfiguration(  # type: ignore[call-arg]
             type="expect_column_values_to_be_between",
             kwargs={
                 "column": "Confidence",
-                "min_value": min_conf,
-                "max_value": max_conf,
+                "min_value": float(min_conf),
+                "max_value": float(max_conf),
             },
             meta={
                 "notes": "Evidence confidence must meet canonical thresholds.",
             },
         )
-        suite.add_expectation_configuration(config)  # type: ignore[arg-type]
+        modified_suite.add_expectation_configuration(config)  # type: ignore[arg-type]
 
-    return suite
+    return modified_suite
 
 
 def _prepare_validation_frame(frame: pd.DataFrame) -> pd.DataFrame:
@@ -239,7 +293,13 @@ def validate_curated_dataframe(frame: pd.DataFrame) -> CuratedDatasetContractRes
         )
 
     suite = _load_expectation_suite()
-    batch_data = _prepare_validation_frame(frame)
+    batch_data = frame.copy()
+
+    # Convert Confidence to numeric type if present
+    if "Confidence" in batch_data.columns:
+        batch_data["Confidence"] = pd.to_numeric(
+            batch_data["Confidence"], errors="coerce"
+        )
     batch = Batch(
         data=cast(Any, batch_data),
         batch_spec=RuntimeDataBatchSpec(batch_data=batch_data),

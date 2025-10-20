@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
+import subprocess  # nosec B404 - subprocess usage is for controlled QA tool execution
 import sys
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -158,6 +158,7 @@ def _run_subprocess(
     env: Mapping[str, str] | None = None,
     cwd: Path | None = None,
 ) -> CompletedProcess:
+    # nosec B603 - cmd is constructed from trusted tool specs (ruff, mypy, etc.)
     return subprocess.run(
         cmd,
         capture_output=True,

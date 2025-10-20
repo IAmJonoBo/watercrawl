@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
+import subprocess  # nosec B404 - subprocess usage is for controlled git operations
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -53,6 +53,7 @@ def _normalise_target(root: Path, target: str) -> Path:
 
 
 def _is_git_repository(root: Path) -> bool:
+    # nosec B603 - git command with hardcoded arguments for repo validation
     try:
         subprocess.run(
             ("git", "-C", str(root), "rev-parse", "--is-inside-work-tree"),
@@ -69,6 +70,7 @@ def _is_git_repository(root: Path) -> bool:
 
 def _list_tracked_files(root: Path, path: Path) -> tuple[Path, ...]:
     relative = path.relative_to(root)
+    # nosec B603 - git ls-files with controlled path arguments
     try:
         completed = subprocess.run(
             ("git", "-C", str(root), "ls-files", "--", str(relative)),
