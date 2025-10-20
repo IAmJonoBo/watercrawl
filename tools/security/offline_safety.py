@@ -126,7 +126,9 @@ def _match_vulnerabilities(
             for spec in specs:
                 try:
                     specifier = SpecifierSet(spec)
-                except Exception:  # pragma: no cover - guard corrupted DB entries
+                except (
+                    Exception
+                ):  # pragma: no cover - guard corrupted DB entries  # nosec B112
                     continue
                 if pin.version in specifier:
                     matches.append(

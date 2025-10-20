@@ -1,3 +1,5 @@
+# bandit: disable=B101 - pytest assertions exercise return payloads
+
 import json
 from pathlib import Path
 

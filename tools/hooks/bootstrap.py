@@ -10,6 +10,7 @@ import stat
 import tarfile
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import BinaryIO
@@ -23,15 +24,21 @@ class BootstrapError(RuntimeError):
 
 def _download(url: str, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    unverified = ssl._create_unverified_context()
-    contexts: list[ssl.SSLContext | None] = [None, unverified]
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme.lower() != "https":
+        raise BootstrapError(f"Refusing to download from non-HTTPS URL: {url}")
+
+    contexts: list[ssl.SSLContext | None] = [None]
+    unverified: ssl.SSLContext | None = ssl._create_unverified_context()  # nosec B323
     if os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_SSL"):
-        contexts.reverse()
+        contexts.insert(0, unverified)
+    else:
+        contexts.append(unverified)
 
     last_ssl_error: ssl.SSLError | None = None
     for context in contexts:
         try:
-            with urllib.request.urlopen(url, context=context) as response:
+            with urllib.request.urlopen(url, context=context) as response:  # nosec B310
                 _write_response(response, destination)
             return
         except ssl.SSLError as exc:  # pragma: no cover - depends on host configuration
