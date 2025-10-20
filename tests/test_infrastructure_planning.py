@@ -108,7 +108,13 @@ def test_build_infrastructure_plan_respects_configuration() -> None:
     assert str(plan.plan_commit.audit_log_path).endswith("logs/custom_audit.jsonl")
     assert plan.plan_commit.max_diff_size == 2048
     assert plan.plan_commit.blocked_domains == ("blocked.example.com",)
-    assert plan.plan_commit.blocked_keywords == ("rm -rf", "net use")
+    assert plan.plan_commit.blocked_keywords == (
+        "rm -rf",
+        "net use",
+        "drop database",
+        "curl http://",
+        "wget http://",
+    )
     assert plan.plan_commit.rag_thresholds["faithfulness"] == 0.85
     assert plan.plan_commit.rag_thresholds["context_precision"] == 0.8
     assert plan.plan_commit.rag_thresholds["answer_relevancy"] == 0.75
