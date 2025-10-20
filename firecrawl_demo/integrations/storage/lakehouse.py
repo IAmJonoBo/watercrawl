@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -46,6 +47,8 @@ class LakehouseManifest:
     version: str
     fingerprint: str
     row_count: int
+    degraded: bool = False
+    remediation: str | None = None
 
 
 class LocalLakehouseWriter:
@@ -74,6 +77,8 @@ class LocalLakehouseWriter:
                 version="disabled",
                 fingerprint="",
                 row_count=0,
+                degraded=False,
+                remediation=None,
             )
 
         timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
@@ -90,8 +95,25 @@ class LocalLakehouseWriter:
         row_count = int(len(dataframe))
         schema = {column: str(dtype) for column, dtype in dataframe.dtypes.items()}
 
+        storage_format = "parquet"
         data_path = table_dir / "data.parquet"
-        dataframe.to_parquet(data_path, index=False)
+        degraded = False
+        remediation_message: str | None = None
+        parquet_error: Exception | None = None
+        try:
+            dataframe.to_parquet(data_path, index=False)
+        except (ImportError, ValueError) as error:
+            degraded = True
+            storage_format = "csv"
+            parquet_error = error
+            data_path = table_dir / "data.csv"
+            remediation_message = (
+                "Parquet export requires an installed pandas parquet engine such as "
+                "'pyarrow' or 'fastparquet'. Falling back to CSV output at "
+                f"{data_path.name}."
+            )
+            warnings.warn(remediation_message, stacklevel=2)
+            dataframe.to_csv(data_path, index=False)
 
         manifest: dict[str, Any] = {
             "backend": self._config.backend,
@@ -100,6 +122,7 @@ class LocalLakehouseWriter:
             "run_id": run_id,
             "artifacts": {
                 "data": data_path.name,
+                "format": storage_format,
             },
             "created_at": datetime.utcnow().isoformat(),
             "fingerprint": fingerprint,
@@ -116,6 +139,19 @@ class LocalLakehouseWriter:
                 "metadata_root": str(config.VERSIONING.metadata_root),
             },
         }
+        if degraded:
+            if remediation_message:
+                manifest.setdefault("warnings", []).append(remediation_message)
+            manifest["artifacts"]["degraded"] = {
+                "reason": "parquet_engine_missing",
+                "remediation": (
+                    "Install 'pyarrow' or 'fastparquet' and rerun the lakehouse writer "
+                    "to generate parquet snapshots."
+                ),
+                "fallback_artifact": data_path.name,
+            }
+            if parquet_error is not None:
+                manifest["artifacts"]["degraded"]["exception"] = str(parquet_error)
         manifest_path = table_dir / "manifest.json"
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
 
@@ -124,10 +160,12 @@ class LocalLakehouseWriter:
             table_uri=table_uri,
             table_path=table_dir,
             manifest_path=manifest_path,
-            format=self._config.backend,
+            format=storage_format,
             version=version,
             fingerprint=fingerprint,
             row_count=row_count,
+            degraded=degraded,
+            remediation=remediation_message,
         )
 
 

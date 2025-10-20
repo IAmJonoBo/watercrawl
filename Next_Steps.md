@@ -73,6 +73,13 @@
   Pre-commit `sqlfluff`/`markdownlint-cli2` hooks remain blocked by the missing analytics dbt project and long-form docs, while
   actionlint/hadolint binaries still require downloadable artefacts in this environment.
 
+- [x] 2025-10-23 — Added lakehouse parquet-engine fallback with CSV degradation manifest signals and regression test coverage.
+  Baseline QA attempts remain blocked in this environment: `pytest` fails during collection because dependencies such as
+  `pandas`, `rich`, `marshmallow`, `duckdb`, and `botocore` are unavailable; `mypy` reports missing stubs for pandas/requests and
+  absent optional packages; `bandit`, `yamllint`, and `pylint` binaries are not installed; and `python -m build` cannot run
+  without the `build` module. Captured warnings via `warnings.warn` and recorded remediation guidance inside the manifest
+  payload.
+
 - [x] 2025-10-20 — Tightened phone normalization to accept only South African prefixes, refreshed compliance edge-case tests (including punctuation and optional trunk zeros), confirmed pipeline expectations, and reran QA suite (`pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing`, `ruff check .`, `mypy .`, `bandit -r firecrawl_demo`, `python -m tools.security.offline_safety`, `poetry build`).
 
 ---

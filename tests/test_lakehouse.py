@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from firecrawl_demo.core.excel import EXPECTED_COLUMNS
 from firecrawl_demo.integrations.storage.lakehouse import (
@@ -51,3 +52,37 @@ def test_local_lakehouse_writer_persists_snapshot(tmp_path: Path) -> None:
     assert manifest_payload["fingerprint"] == manifest.fingerprint
     assert manifest_payload["schema"]["Name of Organisation"]
     assert manifest_payload["environment"]["profile"] == "dev"
+
+
+def test_local_lakehouse_writer_falls_back_to_csv_when_parquet_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = LakehouseConfig(
+        backend="delta",
+        root_path=tmp_path,
+        table_name="flight_schools",
+    )
+    writer = LocalLakehouseWriter(config)
+    frame = _sample_frame()
+
+    def _raise_import_error(*_: object, **__: object) -> None:
+        raise ImportError("No parquet engine installed")
+
+    monkeypatch.setattr(pd.DataFrame, "to_parquet", _raise_import_error)
+
+    with pytest.warns(UserWarning, match="pyarrow"):
+        manifest = writer.write(run_id="run-002", dataframe=frame)
+
+    assert manifest.format == "csv"
+    assert manifest.degraded is True
+    assert manifest.remediation is not None
+    assert manifest.remediation.startswith("Parquet export requires")
+    assert (manifest.table_path / "data.csv").exists()
+
+    payload = json.loads(manifest.manifest_path.read_text())
+    assert payload["artifacts"]["data"] == "data.csv"
+    assert payload["artifacts"]["format"] == "csv"
+    degraded_info = payload["artifacts"]["degraded"]
+    assert degraded_info["reason"] == "parquet_engine_missing"
+    assert "pyarrow" in degraded_info["remediation"]
+    assert degraded_info["fallback_artifact"] == "data.csv"
