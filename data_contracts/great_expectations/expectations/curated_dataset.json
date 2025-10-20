@@ -11,7 +11,8 @@
           "Website URL",
           "Contact Person",
           "Contact Number",
-          "Contact Email Address"
+          "Contact Email Address",
+          "Confidence"
         ]
       },
       "meta": {

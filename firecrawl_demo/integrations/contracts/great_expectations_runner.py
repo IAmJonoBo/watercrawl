@@ -23,7 +23,7 @@ try:
     from great_expectations.core.expectation_suite import (
         ExpectationSuite,  # type: ignore[import-untyped]
     )
-    from great_expectations.data_context.data_context.context_factory import (  # type: ignore[attr-defined]
+    from great_expectations.data_context.data_context.context_factory import (
         project_manager,  # type: ignore[attr-defined]
     )
     from great_expectations.execution_engine.pandas_execution_engine import (  # type: ignore[import-untyped]
@@ -153,6 +153,15 @@ def _load_expectation_suite() -> ExpectationSuite:
     payload = json.loads(_expectation_suite_path().read_text())
     suite = ExpectationSuite(name=payload["expectation_suite_name"], expectations=[])
     suite.meta.update(payload.get("meta", {}))
+
+    canonical = canonical_contracts_config()
+    provinces = list(canonical.get("provinces", []))
+    statuses = list(canonical.get("statuses", []))
+    evidence = canonical.get("evidence", {})
+    min_conf = float(evidence.get("minimum_confidence", 0))
+    max_conf = float(evidence.get("maximum_confidence", 100))
+    has_confidence_check = False
+
     expectations_payload = payload.get("expectations", [])
     if isinstance(expectations_payload, list):
         for entry in expectations_payload:
@@ -163,6 +172,22 @@ def _load_expectation_suite() -> ExpectationSuite:
                 continue
             kwargs_raw = entry.get("kwargs", {})
             kwargs = dict(kwargs_raw) if isinstance(kwargs_raw, dict) else {}
+            column_raw = kwargs.get("column")
+            column = column_raw if isinstance(column_raw, str) else None
+
+            if expectation_type == "expect_column_values_to_be_in_set":
+                if column == "Province":
+                    kwargs["value_set"] = provinces
+                elif column == "Status":
+                    kwargs["value_set"] = statuses
+            elif (
+                expectation_type == "expect_column_values_to_be_between"
+                and column == "Confidence"
+            ):
+                kwargs["min_value"] = min_conf
+                kwargs["max_value"] = float(kwargs.get("max_value", max_conf))
+                has_confidence_check = True
+
             meta_raw = entry.get("meta")
             meta = dict(meta_raw) if isinstance(meta_raw, dict) else None
             config = ExpectationConfiguration(  # type: ignore[call-arg]
@@ -171,43 +196,6 @@ def _load_expectation_suite() -> ExpectationSuite:
                 meta=meta,
             )
             suite.add_expectation_configuration(config)  # type: ignore[arg-type]
-    return _apply_canonical_configuration(suite)
-
-
-def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
-    """Ensure the suite reflects canonical taxonomy and thresholds."""
-
-    if not GREAT_EXPECTATIONS_AVAILABLE:
-        return suite
-
-    config_payload = canonical_contracts_config()
-    provinces = list(config_payload.get("provinces", []))
-    statuses = list(config_payload.get("statuses", []))
-    evidence = config_payload.get("evidence", {})
-    min_conf = int(evidence.get("minimum_confidence", 0))
-    max_conf = int(evidence.get("maximum_confidence", 100))
-
-    has_confidence_check = False
-
-    for expectation in suite.expectation_configurations:  # type: ignore[attr-defined]
-        if not isinstance(expectation, ExpectationConfiguration):
-            continue
-        expectation_type = expectation.type
-        column_raw = expectation.kwargs.get("column")
-        column = column_raw if isinstance(column_raw, str) else None
-
-        if expectation_type == "expect_column_values_to_be_in_set":
-            if column == "Province":
-                expectation.kwargs["value_set"] = provinces
-            elif column == "Status":
-                expectation.kwargs["value_set"] = statuses
-        elif (
-            expectation_type == "expect_column_values_to_be_between"
-            and column == "Confidence"
-        ):
-            expectation.kwargs["min_value"] = min_conf
-            expectation.kwargs.setdefault("max_value", max_conf)
-            has_confidence_check = True
 
     if not has_confidence_check:
         config = ExpectationConfiguration(  # type: ignore[call-arg]
@@ -226,6 +214,15 @@ def _apply_canonical_configuration(suite: ExpectationSuite) -> ExpectationSuite:
     return suite
 
 
+def _prepare_validation_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy of *frame* normalised for Great Expectations."""
+
+    prepared = frame.copy()
+    if "Confidence" in prepared.columns:
+        prepared["Confidence"] = pd.to_numeric(prepared["Confidence"], errors="coerce")
+    return prepared
+
+
 def validate_curated_dataframe(frame: pd.DataFrame) -> CuratedDatasetContractResult:
     """Execute the curated dataset expectation suite against a dataframe."""
 
@@ -242,7 +239,7 @@ def validate_curated_dataframe(frame: pd.DataFrame) -> CuratedDatasetContractRes
         )
 
     suite = _load_expectation_suite()
-    batch_data = frame.copy()
+    batch_data = _prepare_validation_frame(frame)
     batch = Batch(
         data=cast(Any, batch_data),
         batch_spec=RuntimeDataBatchSpec(batch_data=batch_data),

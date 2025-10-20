@@ -3,20 +3,7 @@
     {% if not raw %}
         {% do exceptions.raise_compiler_error('CONTRACTS_CANONICAL_JSON must be set before running contracts macros.') %}
     {% endif %}
-    {% set json = modules.import('json') %}
-    {% do return(json.loads(raw)) %}
-{% endmacro %}
-
-
-{% macro contracts_province_values() %}
-    {% set payload = _contracts_canonical_payload() %}
-    {% do return(payload.get('provinces', [])) %}
-{% endmacro %}
-
-
-{% macro contracts_status_values() %}
-    {% set payload = _contracts_canonical_payload() %}
-    {% do return(payload.get('statuses', [])) %}
+    {% do return(fromjson(raw)) %}
 {% endmacro %}
 
 
@@ -31,4 +18,21 @@
     select *
     from {{ model }}
     where {{ column_name }} < {{ contracts_evidence_min_confidence() }}
+{% endtest %}
+
+
+{% test contracts_accepted_values(model, column_name, canonical_key) %}
+    {% set payload = _contracts_canonical_payload() %}
+    {% set allowed = payload.get(canonical_key, []) %}
+    {% if not allowed %}
+        {% do exceptions.raise_compiler_error('No canonical values configured for ' ~ canonical_key) %}
+    {% endif %}
+
+    select *
+    from {{ model }}
+    where {{ column_name }} not in (
+        {%- for value in allowed -%}
+            '{{ value | replace("'", "''") }}'{% if not loop.last %}, {% endif %}
+        {%- endfor -%}
+    )
 {% endtest %}

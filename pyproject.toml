@@ -81,6 +81,12 @@ build-backend = "poetry.core.masonry.api"
 line-length = 88
 target-version = ["py312", "py313", "py314"]
 include = "\\.pyi?$"
+extend-exclude = '''
+(
+  ^/node_modules/
+  |^/docs-starlight/
+)
+'''
 
 [tool.isort]
 profile = "black"

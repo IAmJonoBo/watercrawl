@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import os
-import subprocess
+
+# Bandit: subprocess usage is limited to the sqlfluff CLI with curated args.
+import subprocess  # nosec B404
 import sys
 from collections.abc import Sequence
 from contextlib import suppress
@@ -46,7 +48,7 @@ def run_sqlfluff(
     env.setdefault("DBT_DUCKDB_PATH", materialised_path.as_posix())
     cmd = ["sqlfluff", "lint", str(project_dir), *extra_args]
     print("Executing:", " ".join(cmd))
-    completed = subprocess.run(cmd, env=env, check=False)
+    completed = subprocess.run(cmd, env=env, check=False)  # nosec B603
     return completed.returncode
 
 
