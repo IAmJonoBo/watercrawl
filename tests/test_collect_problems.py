@@ -431,3 +431,57 @@ def test_write_report_includes_autofixes(tmp_path: Path) -> None:
     payload = json.loads(output.read_text())
     assert payload["autofixes"][0]["tool"] == "ruff"
     assert payload["summary"]["autofix"]["succeeded"] == 1
+
+
+def test_mypy_command_includes_stubs_in_mypypath() -> None:
+    """Test that mypy command builder includes stubs in MYPYPATH for ephemeral runners."""
+    cmd, env, cwd = collect_problems._mypy_command()
+    
+    assert cmd[0] == "mypy"
+    assert "." in cmd
+    assert "--show-error-codes" in cmd
+    
+    # Verify MYPYPATH is set when stubs directory exists
+    repo_root = Path(__file__).resolve().parents[1]
+    stubs_path = repo_root / "stubs"
+    
+    if stubs_path.exists():
+        assert env is not None
+        assert "MYPYPATH" in env
+        mypypath = env["MYPYPATH"]
+        # Should include both third_party and base stubs directories
+        assert str(stubs_path) in mypypath
+        third_party = stubs_path / "third_party"
+        if third_party.exists():
+            assert str(third_party) in mypypath
+
+
+def test_ephemeral_runner_summary_includes_stubs_info() -> None:
+    """Test that summary includes information about stubs availability."""
+    results = [
+        {
+            "tool": "mypy",
+            "status": "completed",
+            "summary": {"issue_count": 0, "note_count": 0},
+            "issues": [],
+            "notes": [],
+        }
+    ]
+    summary = collect_problems.build_overall_summary(results)
+    
+    # Should include stubs_available flag
+    assert "stubs_available" in summary
+    
+    # If stubs are available, should have ephemeral runner notes
+    if summary["stubs_available"]:
+        assert "ephemeral_runner_notes" in summary
+        notes = summary["ephemeral_runner_notes"]
+        assert any("stubs" in note.lower() for note in notes)
+
+
+def test_contracts_environment_fallback_graceful() -> None:
+    """Test that contracts_environment_payload has a graceful fallback."""
+    # This should not raise an error even if firecrawl_demo is not available
+    result = collect_problems.contracts_environment_payload()
+    assert isinstance(result, dict)
+
