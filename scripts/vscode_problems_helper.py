@@ -19,9 +19,10 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 DEFAULT_POLL_INTERVAL = 2.0
 

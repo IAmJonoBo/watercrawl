@@ -1115,27 +1115,9 @@ def collect(
             )
             continue
         parsed = spec.parser(completed)
-        summary_block = (
-            parsed.get("summary") if isinstance(parsed, dict) else None  # type: ignore[assignment]
-        )
         status = (
             "completed" if completed.returncode == 0 else "completed_with_exit_code"
         )
-        if (
-            status != "completed"
-            and isinstance(summary_block, dict)
-            and summary_block.get("issue_count", 0) == 0
-        ):
-            status = "completed"
-            if isinstance(parsed, dict):
-                parsed.setdefault("notes", []).append(  # type: ignore[call-arg]
-                    {
-                        "message": (
-                            "Tool exited with a non-zero status but reported no issues."
-                        ),
-                        "severity": "info",
-                    }
-                )
         entry: dict[str, Any] = {
             "tool": spec.name,
             "status": status,
@@ -1143,6 +1125,27 @@ def collect(
         }
         entry.update(parsed)
         entry.setdefault("issues", [])
+        summary_block = entry.get("summary")
+        if completed.returncode != 0:
+            if not isinstance(summary_block, dict):
+                summary_block = {}
+                entry["summary"] = summary_block
+            if summary_block.get("issue_count", 0) == 0:
+                message = (
+                    f"{spec.name} exited with status {completed.returncode} but "
+                    "did not report any findings."
+                )
+                entry["issues"].append(
+                    {
+                        "message": message,
+                        "severity": "error",
+                        "code": "tool_exit_non_zero",
+                        "tool": spec.name,
+                    }
+                )
+                summary_block["issue_count"] = 1
+                severity_counts = summary_block.setdefault("severity_counts", {})
+                severity_counts["error"] = severity_counts.get("error", 0) + 1
         if completed.stderr:
             _attach_preview(entry, "stderr_preview", completed.stderr)
         warnings, omitted_warnings = _extract_warnings(

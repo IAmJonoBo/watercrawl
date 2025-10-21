@@ -1,0 +1,169 @@
+{
+  "changes": [
+    {
+      "command": "poetry run python -m scripts.cleanup --dry-run",
+      "step": 1,
+      "task": "Cleanup preview",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run python -m scripts.cleanup",
+      "step": 2,
+      "task": "Cleanup",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry install --no-root",
+      "step": 3,
+      "tags": [
+        "python",
+        "poetry"
+      ],
+      "task": "Sync dependencies",
+      "type": "qa_command"
+    },
+    {
+      "command": "python -m scripts.dependency_matrix survey --config presets/dependency_targets.toml --output tools/dependency_matrix/report.json",
+      "step": 4,
+      "tags": [
+        "supply-chain",
+        "python"
+      ],
+      "task": "Dependency survey",
+      "type": "qa_command"
+    },
+    {
+      "command": "python -m scripts.dependency_matrix guard --config presets/dependency_targets.toml --blockers presets/dependency_blockers.toml --status-output tools/dependency_matrix/status.json",
+      "step": 5,
+      "tags": [
+        "supply-chain",
+        "python"
+      ],
+      "task": "Dependency guard",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run pytest --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing",
+      "step": 6,
+      "task": "Pytest",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run ruff check .",
+      "step": 7,
+      "task": "Ruff",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run isort --profile black --check-only .",
+      "step": 8,
+      "task": "Isort",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run black --check .",
+      "step": 9,
+      "task": "Black",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run yamllint --strict -c .yamllint.yaml .",
+      "step": 10,
+      "tags": [
+        "yaml"
+      ],
+      "task": "Yamllint",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run python -m tools.sql.sqlfluff_runner",
+      "step": 11,
+      "tags": [
+        "sql",
+        "dbt"
+      ],
+      "task": "SQLFluff",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run pre-commit run markdownlint-cli2 --all-files",
+      "step": 12,
+      "tags": [
+        "docs"
+      ],
+      "task": "Markdownlint",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run pre-commit run hadolint --all-files",
+      "step": 13,
+      "tags": [
+        "containers"
+      ],
+      "task": "Hadolint",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run pre-commit run actionlint --all-files",
+      "step": 14,
+      "tags": [
+        "ci"
+      ],
+      "task": "Actionlint",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run mypy .",
+      "step": 15,
+      "task": "Mypy",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run bandit -r firecrawl_demo",
+      "step": 16,
+      "task": "Bandit",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run dotenv-linter lint .env .env.example",
+      "step": 17,
+      "tags": [
+        "secrets"
+      ],
+      "task": "Dotenv lint",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt",
+      "step": 18,
+      "tags": [
+        "supply-chain"
+      ],
+      "task": "Safety",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run pre-commit run --all-files",
+      "step": 19,
+      "task": "Pre-commit",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry build",
+      "step": 20,
+      "task": "Poetry build",
+      "type": "qa_command"
+    },
+    {
+      "command": "poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{\"curated_source_path\": \"data/sample.csv\"}'",
+      "step": 21,
+      "tags": [
+        "dbt"
+      ],
+      "task": "dbt contracts",
+      "type": "qa_command"
+    }
+  ],
+  "generated_at": "2025-10-21T13:59:55.858427+00:00",
+  "instructions": "Execute QA tasks: Cleanup preview, Cleanup, Sync dependencies, Dependency survey, Dependency guard, Pytest, Ruff, Isort, Black, Yamllint, SQLFluff, Markdownlint, Hadolint, Actionlint, Mypy, Bandit, Dotenv lint, Safety, Pre-commit, Poetry build, dbt contracts."
+}

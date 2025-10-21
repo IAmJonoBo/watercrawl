@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T13:26:34.717055+00:00",
+  "generated_at": "2025-10-21T14:18:40.257769+00:00",
   "summary": {
     "issue_count": 0,
     "note_count": 14,
@@ -182,7 +182,7 @@
     {
       "tool": "bandit",
       "status": "completed",
-      "returncode": 1,
+      "returncode": 0,
       "issues": [],
       "summary": {
         "issue_count": 0
@@ -192,20 +192,20 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T13:26:26Z\",",
+          "  \"generated_at\": \"2025-10-21T14:18:26Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
-          "      \"CONFIDENCE.HIGH\": 1,",
+          "      \"CONFIDENCE.HIGH\": 0,",
           "      \"CONFIDENCE.LOW\": 0,",
           "      \"CONFIDENCE.MEDIUM\": 0,",
           "      \"CONFIDENCE.UNDEFINED\": 0,",
           "      \"SEVERITY.HIGH\": 0,",
-          "      \"SEVERITY.LOW\": 1,",
+          "      \"SEVERITY.LOW\": 0,",
           "      \"SEVERITY.MEDIUM\": 0,",
           "      \"SEVERITY.UNDEFINED\": 0,",
           "      \"loc\": 9714,",
           "      \"nosec\": 0,",
-          "      \"skipped_tests\": 2",
+          "      \"skipped_tests\": 3",
           "    },",
           "    \"firecrawl_demo/__init__.py\": {",
           "      \"CONFIDENCE.HIGH\": 0,",
@@ -231,15 +231,9 @@
           "      \"SEVERITY.UNDEFINED\": 0,\u2026"
         ],
         "truncated": true,
-        "omitted_characters": 19108,
+        "omitted_characters": 17972,
         "omitted_chunks": 36
       },
-      "notes": [
-        {
-          "message": "Tool exited with a non-zero status but reported no issues.",
-          "severity": "info"
-        }
-      ],
       "stderr_preview": {
         "chunks": [
           "[main]\tINFO\tprofile include tests: None",
@@ -285,18 +279,12 @@
     {
       "tool": "trunk",
       "status": "completed",
-      "returncode": 1,
+      "returncode": 0,
       "issues": [],
       "summary": {
         "issue_count": 0,
         "severity_counts": {}
       },
-      "notes": [
-        {
-          "message": "Tool exited with a non-zero status but reported no issues.",
-          "severity": "info"
-        }
-      ],
       "autofix_commands": [
         "trunk fmt"
       ]

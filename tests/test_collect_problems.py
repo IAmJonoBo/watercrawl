@@ -262,6 +262,34 @@ def test_collect_aggregates_and_truncates_outputs(
     assert any(action.get("type") == "warnings" for action in actions)
 
 
+def test_collect_surfaces_non_zero_exit_without_findings() -> None:
+    outputs = {
+        "failing": {
+            "stdout": "",
+            "stderr": "",
+            "returncode": 2,
+        }
+    }
+    runner = _Runner(outputs)
+
+    def parser(_: subprocess.CompletedProcess[str]) -> dict[str, Any]:
+        return {"issues": [], "summary": {"issue_count": 0}}
+
+    tools = [_make_spec("failing", parser)]
+
+    results = collect_problems.collect(tools=tools, runner=runner.__call__)
+    assert len(results) == 1
+    entry = results[0]
+    assert entry["status"] == "completed_with_exit_code"
+    assert entry["issues"]
+    issue = entry["issues"][0]
+    assert issue["code"] == "tool_exit_non_zero"
+    assert issue["severity"] == "error"
+    summary = entry["summary"]
+    assert summary["issue_count"] == 1
+    assert summary["severity_counts"]["error"] == 1
+
+
 def test_collect_default_registry_includes_autofix(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

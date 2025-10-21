@@ -250,7 +250,7 @@ def _versioning_health_probe(context: PluginContext) -> PluginHealthStatus:
 def _capture_git_commit() -> str | None:
     try:
         # Controlled git invocation; no user input reaches the command.
-        result = subprocess.run(  # nosec B603,B607
+        result = subprocess.run(  # nosec B603 B607
             ["git", "rev-parse", "HEAD"],
             capture_output=True,
             text=True,

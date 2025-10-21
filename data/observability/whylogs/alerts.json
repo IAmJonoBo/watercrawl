@@ -298,5 +298,35 @@
     "threshold": 0.15,
     "timestamp": "2025-10-21T12:07:30.860222+00:00",
     "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T140048",
+    "status_drift": [
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      },
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T14:00:48.022907+00:00",
+    "whylogs_alerts": []
   }
 ]
