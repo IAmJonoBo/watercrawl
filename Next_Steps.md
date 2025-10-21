@@ -129,8 +129,8 @@ Execute in this order; each item must meet its gate before promotion.
 - [x] MCP audit log policy — Owner, storage, retention → `docs/mcp-audit-policy.md`
 - [x] MCP promptfoo gate policy — Evaluation thresholds, rollout phases → `docs/mcp-promptfoo-gate.md`
 - [x] Chaos/FMEA scenario catalog — Failure modes, game day procedures → `docs/chaos-fmea-scenarios.md`
-- [ ] Data quality suites (GX/dbt/Deequ) → `docs/data-quality.md`
-- [ ] Codex DX bundle & evals → `codex/README.md`, `codex/evals/promptfooconfig.yaml`
+- [x] Data quality suites (GX/dbt/Deequ) → `docs/data-quality.md`
+- [x] Codex DX bundle & evals → `codex/README.md`, `codex/evals/promptfooconfig.yaml`
 
 ---
 
