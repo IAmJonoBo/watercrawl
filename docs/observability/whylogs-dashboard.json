@@ -1,0 +1,172 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.2.0",
+      "targets": [
+        {
+          "expr": "whylogs_drift_alerts_total",
+          "legendFormat": "{{dataset}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Whylogs Drift Alerts (latest run)",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 0.2 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 5 },
+      "id": 2,
+      "options": {
+        "displayMode": "lines",
+        "legend": {
+          "calcs": ["lastNotNull"],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showPoints": "never"
+      },
+      "targets": [
+        {
+          "expr": "whylogs_drift_ratio_difference",
+          "legendFormat": "{{dimension}} · {{category}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Ratio Difference by Dimension",
+      "type": "timeseries"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 14 },
+      "id": 3,
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true
+      },
+      "pluginVersion": "9.2.0",
+      "targets": [
+        {
+          "expr": "whylogs_drift_exceeded_threshold",
+          "format": "table",
+          "legendFormat": "{{dataset}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Runs Exceeding Threshold",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "Value": 1,
+              "dataset": 2,
+              "run_id": 0
+            },
+            "renameByName": {
+              "Value": "Exceeds threshold",
+              "dataset": "Dataset",
+              "run_id": "Run ID"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": ["whylogs", "drift"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "All", "value": "__all" },
+        "datasource": null,
+        "definition": "label_values(whylogs_drift_ratio_difference, dataset)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "dataset",
+        "options": [],
+        "query": {
+          "query": "label_values(whylogs_drift_ratio_difference, dataset)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-7d", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Whylogs Drift Overview",
+  "uid": "whylogs-drift",
+  "version": 1
+}

@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `docs/data-quality.md`: Added Phase 1.3 section documenting Deequ, CI enforcement, and coverage
   - `docs/operations.md`: Added coverage command to Data Quality section
   - `Next_Steps.md`: Marked Phase 1 as complete with completion notes
+- **Whylogs Drift Observability**: Introduced alert routing and dashboards
+  - Slack webhook notifications triggered when `DRIFT_SLACK_WEBHOOK` is configured and drift exceeds threshold
+  - Prometheus/Grafana starter dashboard published at `docs/observability/whylogs-dashboard.json`
+  - Operations guide updated with routing instructions and environment variables (`DRIFT_DASHBOARD_URL`, webhook guidance)
+  - Added tests covering Slack notifier success/failure paths and pipeline integration
 
 ### Changed
 

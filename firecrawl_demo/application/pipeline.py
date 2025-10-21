@@ -77,6 +77,7 @@ from firecrawl_demo.integrations.storage.versioning import (
     VersioningManager,
     fingerprint_dataframe,
 )
+from firecrawl_demo.integrations.telemetry.alerts import send_slack_alert
 from firecrawl_demo.integrations.telemetry.drift_dashboard import (
     append_alert_report,
     write_prometheus_metrics,
@@ -631,6 +632,8 @@ class Pipeline(PipelineService):
                     prometheus_output = _resolve_path(
                         config.DRIFT.prometheus_output_path
                     )
+                    slack_webhook = config.DRIFT.slack_webhook
+                    dashboard_url = config.DRIFT.dashboard_url
                     profile_timestamp = (
                         drift_report.whylogs_profile.generated_at
                         if drift_report.whylogs_profile
@@ -662,6 +665,30 @@ class Pipeline(PipelineService):
                             )
                     if drift_report.exceeded_threshold:
                         metrics["drift_alerts"] = metrics.get("drift_alerts", 0) + 1
+                        if slack_webhook:
+                            try:
+                                sent = send_slack_alert(
+                                    report=drift_report,
+                                    webhook_url=slack_webhook,
+                                    dataset=dataset_name,
+                                    run_id=run_identifier,
+                                    run_timestamp=profile_timestamp.isoformat(),
+                                    dashboard_url=dashboard_url,
+                                )
+                                key = (
+                                    "drift_alert_notifications"
+                                    if sent
+                                    else "drift_alert_notifications_failed"
+                                )
+                                metrics[key] = metrics.get(key, 0) + 1
+                            except Exception:  # pragma: no cover - defensive
+                                logger.warning(
+                                    "drift.slack_notification_failed", exc_info=True
+                                )
+                                metrics["drift_alert_notifications_failed"] = (
+                                    metrics.get("drift_alert_notifications_failed", 0)
+                                    + 1
+                                )
                     report.drift_report = drift_report
 
         self._last_report = report

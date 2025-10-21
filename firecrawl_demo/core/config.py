@@ -286,6 +286,8 @@ class DriftSettings:
     prometheus_output_path: Path = field(
         default_factory=lambda: DATA_DIR / "observability" / "whylogs" / "metrics.prom"
     )
+    slack_webhook: str | None = None
+    dashboard_url: str | None = None
 
 
 DRIFT: DriftSettings = DriftSettings()
@@ -346,6 +348,8 @@ def _build_drift_settings(provider: SecretsProvider) -> DriftSettings:
         whylogs_output = DATA_DIR / "observability" / "whylogs"
     alert_output = _env_path("DRIFT_ALERT_OUTPUT", provider)
     prometheus_output = _env_path("DRIFT_PROMETHEUS_OUTPUT", provider)
+    slack_webhook = _get_value("DRIFT_SLACK_WEBHOOK", None, provider)
+    dashboard_url = _get_value("DRIFT_DASHBOARD_URL", None, provider)
     return DriftSettings(
         enabled=enabled,
         threshold=threshold,
@@ -360,6 +364,8 @@ def _build_drift_settings(provider: SecretsProvider) -> DriftSettings:
         or (DATA_DIR / "observability" / "whylogs" / "alerts.json"),
         prometheus_output_path=prometheus_output
         or (DATA_DIR / "observability" / "whylogs" / "metrics.prom"),
+        slack_webhook=slack_webhook,
+        dashboard_url=dashboard_url,
     )
 
 

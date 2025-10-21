@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,7 @@ import pytest
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.application.quality import QualityGate
+from firecrawl_demo.core import config
 from firecrawl_demo.domain.models import EvidenceRecord, SchoolRecord
 from firecrawl_demo.integrations.adapters.research import (
     ResearchFinding,
@@ -201,6 +203,101 @@ def test_pipeline_records_lakehouse_versioning_and_lineage(tmp_path: Path) -> No
         evidence_sink.records
         and evidence_sink.records[0][0].organisation == "Example Flight School"
     )
+
+
+def test_pipeline_sends_slack_alert_on_drift(tmp_path: Path, monkeypatch) -> None:
+    baseline_path = tmp_path / "baseline.json"
+    baseline_payload = {
+        "status_counts": {"Candidate": 1},
+        "province_counts": {"Gauteng": 1},
+        "total_rows": 1,
+    }
+    baseline_path.write_text(json.dumps(baseline_payload), encoding="utf-8")
+
+    baseline_meta_path = tmp_path / "baseline_meta.json"
+    baseline_meta_payload = {
+        "generated_at": "2025-01-01T00:00:00+00:00",
+        "backend": "fallback",
+        "status_counts": {"Candidate": 1},
+        "province_counts": {"Gauteng": 1},
+        "total_rows": 1,
+        "profile_path": str(tmp_path / "baseline.whylogs"),
+    }
+    baseline_meta_path.write_text(json.dumps(baseline_meta_payload), encoding="utf-8")
+
+    output_dir = tmp_path / "whylogs"
+    alerts_path = tmp_path / "alerts.json"
+    metrics_path = tmp_path / "metrics.prom"
+
+    env_vars = {
+        "DRIFT_BASELINE_PATH": str(baseline_path),
+        "DRIFT_WHYLOGS_BASELINE": str(baseline_meta_path),
+        "DRIFT_WHYLOGS_OUTPUT": str(output_dir),
+        "DRIFT_ALERT_OUTPUT": str(alerts_path),
+        "DRIFT_PROMETHEUS_OUTPUT": str(metrics_path),
+        "DRIFT_SLACK_WEBHOOK": "https://hooks.slack.com/services/test",
+        "DRIFT_DASHBOARD_URL": "https://grafana.example/dashboard",
+    }
+    for key, value in env_vars.items():
+        monkeypatch.setenv(key, value)
+
+    config.configure()
+
+    captured: dict[str, dict[str, str]] = {}
+
+    def fake_send_slack_alert(**kwargs):
+        captured["kwargs"] = kwargs
+        return True
+
+    monkeypatch.setattr(
+        "firecrawl_demo.application.pipeline.send_slack_alert", fake_send_slack_alert
+    )
+
+    research_adapter = StaticResearchAdapter({})
+    evidence_sink = _RecordingEvidenceSink()
+    lakehouse_writer = TrackingLakehouseWriter(tmp_path)
+    versioning_manager = TrackingVersioningManager(tmp_path)
+    lineage_manager = TrackingLineageManager(tmp_path)
+
+    pipe = Pipeline(
+        research_adapter=research_adapter,
+        evidence_sink=evidence_sink,
+        quality_gate=QualityGate(min_confidence=0, require_official_source=False),
+        lakehouse_writer=lakehouse_writer,
+        versioning_manager=versioning_manager,
+        lineage_manager=lineage_manager,
+    )
+
+    frame = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Example Flight School",
+                "Province": "Western Cape",
+                "Status": "Verified",
+                "Website URL": "example.com",
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+    context = LineageContext(
+        run_id="run-drift-1",
+        namespace="ns",
+        job_name="enrichment",
+        dataset_name="flight-schools",
+        input_uri="file://input.csv",
+    )
+
+    report = asyncio.run(pipe.run_dataframe_async(frame, lineage_context=context))
+
+    assert "kwargs" in captured
+    assert captured["kwargs"]["dataset"] == "flight-schools"
+    assert report.metrics.get("drift_alert_notifications") == 1
+
+    for key in env_vars:
+        monkeypatch.delenv(key, raising=False)
+    config.configure()
 
 
 def test_pipeline_records_email_issue_for_bare_domain() -> None:
