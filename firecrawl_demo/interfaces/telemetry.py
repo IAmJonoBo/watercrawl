@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CommandTiming:
     """Timing information for a CLI command."""
-    
+
     command: str
     start_time: str
     end_time: str
@@ -40,26 +40,26 @@ class CommandTiming:
 @dataclass
 class DevExMetrics:
     """Developer experience metrics (SPACE framework)."""
-    
+
     # Satisfaction & Well-being
     command_success_rate: float = 0.0
     avg_error_recovery_time_s: float = 0.0
-    
+
     # Performance
     avg_command_duration_s: float = 0.0
     p95_command_duration_s: float = 0.0
-    
+
     # Activity
     total_commands_run: int = 0
     unique_commands: int = 0
-    
+
     # Communication & Collaboration
     # (Would be measured via surveys, not automated)
-    
+
     # Efficiency & Flow
     commands_under_target_latency: int = 0
     target_latency_s: float = 5.0
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return asdict(self)
@@ -68,32 +68,32 @@ class DevExMetrics:
 class TelemetryCollector:
     """
     Collects and aggregates CLI telemetry data.
-    
+
     Example:
         >>> collector = TelemetryCollector()
         >>> with collector.time_command("validate") as timing:
         ...     # Perform validation
         ...     timing["dataset_size"] = 100
-        >>> 
+        >>>
         >>> collector.save()
     """
-    
+
     def __init__(self, output_dir: Optional[Path] = None):
         self.output_dir = output_dir or Path("artifacts/telemetry")
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.timings: List[CommandTiming] = []
         self._load_existing()
-    
+
     def _load_existing(self) -> None:
         """Load existing telemetry data."""
         telemetry_file = self.output_dir / "command_timings.jsonl"
-        
+
         if not telemetry_file.exists():
             return
-        
+
         try:
-            with open(telemetry_file, 'r') as f:
+            with open(telemetry_file, "r") as f:
                 for line in f:
                     if line.strip():
                         data = json.loads(line)
@@ -101,15 +101,15 @@ class TelemetryCollector:
                         self.timings.append(timing)
         except Exception as e:
             logger.warning(f"Failed to load existing telemetry: {e}")
-    
+
     @contextmanager
     def time_command(self, command: str) -> Generator[Dict[str, Any], None, None]:
         """
         Time a CLI command and record telemetry.
-        
+
         Args:
             command: Name of the command
-            
+
         Yields:
             Metadata dictionary for adding context
         """
@@ -118,7 +118,7 @@ class TelemetryCollector:
         success = True
         error_message = None
         metadata: Dict[str, Any] = {}
-        
+
         try:
             yield metadata
         except Exception as e:
@@ -129,7 +129,7 @@ class TelemetryCollector:
             end_time = time.time()
             end_timestamp = datetime.now().isoformat()
             duration = end_time - start_time
-            
+
             timing = CommandTiming(
                 command=command,
                 start_time=start_timestamp,
@@ -137,66 +137,70 @@ class TelemetryCollector:
                 duration_seconds=duration,
                 success=success,
                 error_message=error_message,
-                metadata=metadata
+                metadata=metadata,
             )
-            
+
             self.timings.append(timing)
-            
+
             # Log timing
             status = "✓" if success else "✗"
             logger.info(f"{status} {command} completed in {duration:.2f}s")
-    
+
     def save(self) -> None:
         """Save telemetry data to disk."""
         telemetry_file = self.output_dir / "command_timings.jsonl"
-        
+
         try:
             # Append new timings
-            with open(telemetry_file, 'a') as f:
+            with open(telemetry_file, "a") as f:
                 # Find timings not yet written
-                existing_count = sum(1 for _ in open(telemetry_file)) if telemetry_file.exists() else 0
+                existing_count = (
+                    sum(1 for _ in open(telemetry_file))
+                    if telemetry_file.exists()
+                    else 0
+                )
                 new_timings = self.timings[existing_count:]
-                
+
                 for timing in new_timings:
                     json.dump(asdict(timing), f)
-                    f.write('\n')
-            
+                    f.write("\n")
+
             logger.debug(f"Saved {len(new_timings)} new timing entries")
-            
+
         except Exception as e:
             logger.error(f"Failed to save telemetry: {e}")
-    
+
     def get_metrics(self) -> DevExMetrics:
         """
         Calculate DevEx metrics from collected telemetry.
-        
+
         Returns:
             DevExMetrics with aggregated statistics
         """
         if not self.timings:
             return DevExMetrics()
-        
+
         # Calculate success rate
         successful = sum(1 for t in self.timings if t.success)
         total = len(self.timings)
         success_rate = successful / total if total > 0 else 0.0
-        
+
         # Calculate durations
         durations = [t.duration_seconds for t in self.timings]
         avg_duration = sum(durations) / len(durations) if durations else 0.0
-        
+
         # Calculate p95
         sorted_durations = sorted(durations)
         p95_index = int(len(sorted_durations) * 0.95)
         p95_duration = sorted_durations[p95_index] if sorted_durations else 0.0
-        
+
         # Count unique commands
         unique_commands = len(set(t.command for t in self.timings))
-        
+
         # Count commands under target latency
         target_latency = 5.0
         under_target = sum(1 for d in durations if d <= target_latency)
-        
+
         return DevExMetrics(
             command_success_rate=success_rate,
             avg_command_duration_s=avg_duration,
@@ -206,16 +210,16 @@ class TelemetryCollector:
             commands_under_target_latency=under_target,
             target_latency_s=target_latency,
         )
-    
+
     def export_summary(self) -> str:
         """
         Export a human-readable summary of metrics.
-        
+
         Returns:
             Formatted summary text
         """
         metrics = self.get_metrics()
-        
+
         lines = [
             "=== DevEx Telemetry Summary ===",
             "",
@@ -229,25 +233,25 @@ class TelemetryCollector:
             "",
             "Recent commands:",
         ]
-        
+
         # Show last 5 commands
         for timing in self.timings[-5:]:
             status = "✓" if timing.success else "✗"
             lines.append(
                 f"  {status} {timing.command} ({timing.duration_seconds:.2f}s)"
             )
-        
+
         return "\n".join(lines)
-    
+
     def export_prometheus(self) -> str:
         """
         Export metrics in Prometheus text format.
-        
+
         Returns:
             Prometheus-formatted metrics
         """
         metrics = self.get_metrics()
-        
+
         lines = [
             "# HELP watercrawl_cli_commands_total Total CLI commands run",
             "# TYPE watercrawl_cli_commands_total counter",
@@ -265,7 +269,7 @@ class TelemetryCollector:
             "# TYPE watercrawl_cli_p95_duration_seconds gauge",
             f"watercrawl_cli_p95_duration_seconds {metrics.p95_command_duration_s:.4f}",
         ]
-        
+
         return "\n".join(lines)
 
 

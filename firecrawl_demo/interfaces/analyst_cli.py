@@ -24,8 +24,8 @@ from firecrawl_demo.domain.models import SchoolRecord
 from firecrawl_demo.infrastructure.evidence import build_evidence_sink
 from firecrawl_demo.integrations.contracts import (
     CuratedDatasetContractResult,
-    DeequContractResult,
     DbtContractResult,
+    DeequContractResult,
     calculate_contract_coverage,
     persist_contract_artifacts,
     record_contracts_evidence,

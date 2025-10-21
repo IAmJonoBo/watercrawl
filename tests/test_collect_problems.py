@@ -436,15 +436,15 @@ def test_write_report_includes_autofixes(tmp_path: Path) -> None:
 def test_mypy_command_includes_stubs_in_mypypath() -> None:
     """Test that mypy command builder includes stubs in MYPYPATH for ephemeral runners."""
     cmd, env, cwd = collect_problems._mypy_command()
-    
+
     assert cmd[0] == "mypy"
     assert "." in cmd
     assert "--show-error-codes" in cmd
-    
+
     # Verify MYPYPATH is set when stubs directory exists
     repo_root = Path(__file__).resolve().parents[1]
     stubs_path = repo_root / "stubs"
-    
+
     if stubs_path.exists():
         assert env is not None
         assert "MYPYPATH" in env
@@ -468,10 +468,10 @@ def test_ephemeral_runner_summary_includes_stubs_info() -> None:
         }
     ]
     summary = collect_problems.build_overall_summary(results)
-    
+
     # Should include stubs_available flag
     assert "stubs_available" in summary
-    
+
     # If stubs are available, should have ephemeral runner notes
     if summary["stubs_available"]:
         assert "ephemeral_runner_notes" in summary
@@ -493,25 +493,23 @@ def test_collect_tracks_tool_execution_duration() -> None:
         "mypy": {"stdout": "Success: no issues found\n", "returncode": 0},
     }
     runner = _Runner(outputs)
-    
+
     tools = [
         _make_spec("ruff", collect_problems.parse_ruff_output),
         _make_spec("mypy", collect_problems.parse_mypy_output),
     ]
-    
+
     results = collect_problems.collect(tools=tools, runner=runner.__call__)
-    
+
     # All tools should have duration tracking
     for entry in results:
         assert "duration_seconds" in entry
         assert isinstance(entry["duration_seconds"], (int, float))
         assert entry["duration_seconds"] >= 0
-    
+
     # Summary should include performance metrics
     summary = collect_problems.build_overall_summary(results)
     assert "performance" in summary
     assert "total_duration_seconds" in summary["performance"]
     assert "slowest_tools" in summary["performance"]
     assert isinstance(summary["performance"]["slowest_tools"], list)
-
-

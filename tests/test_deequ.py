@@ -72,9 +72,7 @@ def test_deequ_runner_flags_verified_contact_gaps(tmp_path: Path) -> None:
 
     assert result.success is False
     failing_checks = {
-        entry["check"]
-        for entry in result.results
-        if not entry.get("success", True)
+        entry["check"] for entry in result.results if not entry.get("success", True)
     }
     assert "verified_email_present" in failing_checks
     assert result.metrics["verified_email_ratio"] == 0.0

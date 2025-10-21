@@ -130,9 +130,9 @@ def run_deequ_checks(dataset_path: Path) -> DeequContractResult:
     name_series = ensure_column("Name of Organisation")
 
     if confidence_series is not None:
-        numeric_confidence = pd.to_numeric(
-            confidence_series, errors="coerce"
-        ).fillna(math.nan)
+        numeric_confidence = pd.to_numeric(confidence_series, errors="coerce").fillna(
+            math.nan
+        )
         min_conf = canonical["evidence"]["minimum_confidence"]
         max_conf = canonical["evidence"]["maximum_confidence"]
         within_bounds = numeric_confidence.between(min_conf, max_conf, inclusive="both")
@@ -141,10 +141,13 @@ def run_deequ_checks(dataset_path: Path) -> DeequContractResult:
             "max": max_conf,
             "ratio": _ratio(int(within_bounds.sum()), row_count),
         }
-        failing_rows = frame.loc[~within_bounds.fillna(False), [
-            "Name of Organisation",
-            "Confidence",
-        ]]
+        failing_rows = frame.loc[
+            ~within_bounds.fillna(False),
+            [
+                "Name of Organisation",
+                "Confidence",
+            ],
+        ]
         record(
             "confidence_range",
             bool(within_bounds.all()),
@@ -161,27 +164,43 @@ def run_deequ_checks(dataset_path: Path) -> DeequContractResult:
             verified_emails = email_series[verified_mask].str.strip()
             email_present = verified_emails != ""
             email_valid = verified_emails.str.match(_EMAIL_PATTERN)
-            metrics["verified_email_ratio"] = _ratio(int(email_present.sum()), verified_total)
+            metrics["verified_email_ratio"] = _ratio(
+                int(email_present.sum()), verified_total
+            )
             metrics["verified_email_valid_ratio"] = _ratio(
                 int((email_present & email_valid).sum()), verified_total
             )
-            missing_email = frame.loc[verified_mask & ~email_present, [
-                "Name of Organisation",
-                "Contact Email Address",
-            ]]
-            invalid_email = frame.loc[verified_mask & email_present & ~email_valid, [
-                "Name of Organisation",
-                "Contact Email Address",
-            ]]
+            missing_email = frame.loc[
+                verified_mask & ~email_present,
+                [
+                    "Name of Organisation",
+                    "Contact Email Address",
+                ],
+            ]
+            invalid_email = frame.loc[
+                verified_mask & email_present & ~email_valid,
+                [
+                    "Name of Organisation",
+                    "Contact Email Address",
+                ],
+            ]
             record(
                 "verified_email_present",
                 bool(email_present.all()),
-                {"missing": missing_email.head(_MAX_FAILURE_EXAMPLES).to_dict("records")},
+                {
+                    "missing": missing_email.head(_MAX_FAILURE_EXAMPLES).to_dict(
+                        "records"
+                    )
+                },
             )
             record(
                 "verified_email_format",
                 bool(email_valid[verified_mask].all()),
-                {"invalid": invalid_email.head(_MAX_FAILURE_EXAMPLES).to_dict("records")},
+                {
+                    "invalid": invalid_email.head(_MAX_FAILURE_EXAMPLES).to_dict(
+                        "records"
+                    )
+                },
             )
         else:
             metrics["verified_email_ratio"] = 1.0
@@ -194,27 +213,43 @@ def run_deequ_checks(dataset_path: Path) -> DeequContractResult:
             verified_phones = phone_series[verified_mask].str.strip()
             phone_present = verified_phones != ""
             phone_valid = verified_phones.str.match(_PHONE_PATTERN)
-            metrics["verified_phone_ratio"] = _ratio(int(phone_present.sum()), verified_total)
+            metrics["verified_phone_ratio"] = _ratio(
+                int(phone_present.sum()), verified_total
+            )
             metrics["verified_phone_valid_ratio"] = _ratio(
                 int((phone_present & phone_valid).sum()), verified_total
             )
-            missing_phone = frame.loc[verified_mask & ~phone_present, [
-                "Name of Organisation",
-                "Contact Number",
-            ]]
-            invalid_phone = frame.loc[verified_mask & phone_present & ~phone_valid, [
-                "Name of Organisation",
-                "Contact Number",
-            ]]
+            missing_phone = frame.loc[
+                verified_mask & ~phone_present,
+                [
+                    "Name of Organisation",
+                    "Contact Number",
+                ],
+            ]
+            invalid_phone = frame.loc[
+                verified_mask & phone_present & ~phone_valid,
+                [
+                    "Name of Organisation",
+                    "Contact Number",
+                ],
+            ]
             record(
                 "verified_phone_present",
                 bool(phone_present.all()),
-                {"missing": missing_phone.head(_MAX_FAILURE_EXAMPLES).to_dict("records")},
+                {
+                    "missing": missing_phone.head(_MAX_FAILURE_EXAMPLES).to_dict(
+                        "records"
+                    )
+                },
             )
             record(
                 "verified_phone_format",
                 bool(phone_valid[verified_mask].all()),
-                {"invalid": invalid_phone.head(_MAX_FAILURE_EXAMPLES).to_dict("records")},
+                {
+                    "invalid": invalid_phone.head(_MAX_FAILURE_EXAMPLES).to_dict(
+                        "records"
+                    )
+                },
             )
         else:
             metrics["verified_phone_ratio"] = 1.0
@@ -225,10 +260,13 @@ def run_deequ_checks(dataset_path: Path) -> DeequContractResult:
         non_empty = stripped != ""
         https_mask = stripped.str.startswith(_HTTPS_PREFIX)
         metrics["https_ratio"] = _ratio(int((~non_empty | https_mask).sum()), row_count)
-        insecure_rows = frame.loc[non_empty & ~https_mask, [
-            "Name of Organisation",
-            "Website URL",
-        ]]
+        insecure_rows = frame.loc[
+            non_empty & ~https_mask,
+            [
+                "Name of Organisation",
+                "Website URL",
+            ],
+        ]
         record(
             "https_required",
             bool((~non_empty | https_mask).all()),
@@ -239,11 +277,16 @@ def run_deequ_checks(dataset_path: Path) -> DeequContractResult:
         stripped = phone_series.astype(str).str.strip()
         non_empty = stripped != ""
         valid = stripped.str.match(_PHONE_PATTERN)
-        metrics["phone_valid_ratio"] = _ratio(int((~non_empty | valid).sum()), row_count)
-        invalid_rows = frame.loc[non_empty & ~valid, [
-            "Name of Organisation",
-            "Contact Number",
-        ]]
+        metrics["phone_valid_ratio"] = _ratio(
+            int((~non_empty | valid).sum()), row_count
+        )
+        invalid_rows = frame.loc[
+            non_empty & ~valid,
+            [
+                "Name of Organisation",
+                "Contact Number",
+            ],
+        ]
         record(
             "phone_format",
             bool((~non_empty | valid).all()),
@@ -254,11 +297,16 @@ def run_deequ_checks(dataset_path: Path) -> DeequContractResult:
         stripped = email_series.astype(str).str.strip()
         non_empty = stripped != ""
         valid = stripped.str.match(_EMAIL_PATTERN)
-        metrics["email_valid_ratio"] = _ratio(int((~non_empty | valid).sum()), row_count)
-        invalid_rows = frame.loc[non_empty & ~valid, [
-            "Name of Organisation",
-            "Contact Email Address",
-        ]]
+        metrics["email_valid_ratio"] = _ratio(
+            int((~non_empty | valid).sum()), row_count
+        )
+        invalid_rows = frame.loc[
+            non_empty & ~valid,
+            [
+                "Name of Organisation",
+                "Contact Email Address",
+            ],
+        ]
         record(
             "email_format",
             bool((~non_empty | valid).all()),
