@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -59,6 +60,11 @@ MAX_ISSUES = 100
 PREVIEW_CHUNK = 200
 MAX_PREVIEW_CHUNKS = 40
 TRUNK_ENV_VAR = "TRUNK_CHECK_OPTS"
+AUTOFIX_COMMANDS: dict[str, list[str]] = {
+    "ruff": ["ruff", "check", ".", "--fix"],
+    "biome": ["npx", "biome", "check", "--apply", "--reporter", "json"],
+    "trunk": ["trunk", "fmt"],
+}
 
 CompletedProcess = subprocess.CompletedProcess[str]
 
@@ -785,7 +791,10 @@ def collect(
     return aggregated
 
 
-def build_overall_summary(results: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def build_overall_summary(
+    results: Sequence[Mapping[str, Any]],
+    autofixes: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     issue_total = 0
     note_total = 0
     fixable_total = 0
@@ -825,7 +834,7 @@ def build_overall_summary(results: Sequence[Mapping[str, Any]]) -> dict[str, Any
                     }
                 )
 
-    return {
+    summary_payload: dict[str, Any] = {
         "issue_count": issue_total,
         "note_count": note_total,
         "fixable_count": fixable_total,
@@ -835,21 +844,105 @@ def build_overall_summary(results: Sequence[Mapping[str, Any]]) -> dict[str, Any
         "tools_missing": tools_missing,
         "insights": highlight_insights,
     }
+    if autofixes:
+        attempted = len(autofixes)
+        succeeded = sum(1 for entry in autofixes if entry.get("status") == "succeeded")
+        failed = sum(1 for entry in autofixes if entry.get("status") == "failed")
+        unsupported = sum(
+            1 for entry in autofixes if entry.get("status") == "unsupported"
+        )
+        summary_payload["autofix"] = {
+            "attempted": attempted,
+            "succeeded": succeeded,
+            "failed": failed,
+            "unsupported": unsupported,
+        }
+    return summary_payload
 
 
-def write_report(results: Sequence[dict[str, Any]]) -> None:
+def write_report(
+    results: Sequence[dict[str, Any]],
+    *,
+    autofixes: Sequence[Mapping[str, Any]] | None = None,
+    output_path: Path = REPORT_PATH,
+) -> None:
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "summary": build_overall_summary(results),
+        "summary": build_overall_summary(results, autofixes),
         "tools": list(results),
+        "autofixes": list(autofixes or []),
     }
-    REPORT_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def main() -> None:
+def _run_autofix_command(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # nosec B603 - commands are predefined tool invocations
+        cmd,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
+def run_autofixes(
+    tools: Sequence[str] | None = None,
+    runner: Callable[
+        [Sequence[str]], subprocess.CompletedProcess[str]
+    ] = _run_autofix_command,
+) -> list[dict[str, Any]]:
+    selected = list(dict.fromkeys(tools or AUTOFIX_COMMANDS.keys()))
+    results: list[dict[str, Any]] = []
+    for tool in selected:
+        command = AUTOFIX_COMMANDS.get(tool)
+        if not command:
+            results.append({"tool": tool, "status": "unsupported"})
+            continue
+        process = runner(command)
+        entry: dict[str, Any] = {
+            "tool": tool,
+            "command": list(command),
+            "status": "succeeded" if process.returncode == 0 else "failed",
+            "returncode": process.returncode,
+        }
+        _attach_preview(entry, "stdout_preview", process.stdout)
+        _attach_preview(entry, "stderr_preview", process.stderr)
+        results.append(entry)
+    return results
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Collect lint/type-check results into problems_report.json",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=REPORT_PATH,
+        help=f"Write report to this path (default: {REPORT_PATH})",
+    )
+    parser.add_argument(
+        "--autofix",
+        action="store_true",
+        help="Attempt to run autofix commands for supported tools before collection.",
+    )
+    parser.add_argument(
+        "--autofix-tool",
+        action="append",
+        dest="autofix_tools",
+        help="Limit autofix to specific tools (can be repeated).",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    args = parse_args(argv)
+    autofix_results: list[dict[str, Any]] = []
+    if args.autofix:
+        autofix_results = run_autofixes(args.autofix_tools or None)
     results = collect()
-    write_report(results)
-    print(f"Problems report written to {REPORT_PATH}")
+    write_report(results, autofixes=autofix_results, output_path=args.output)
+    print(f"Problems report written to {args.output}")
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entrypoint

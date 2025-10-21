@@ -256,3 +256,34 @@ def test_sqlfluff_command_sets_duckdb_env(
     assert cmd[:3] == ["sqlfluff", "lint", "data_contracts/analytics"]
     assert env is not None and env["DBT_DUCKDB_PATH"] == expected.as_posix()
     assert cwd is None
+
+
+def test_run_autofixes_executes_commands(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_runner(cmd: Sequence[str]):
+        calls.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, stdout="ok", stderr="")
+
+    results = collect_problems.run_autofixes(["ruff", "unknown"], runner=fake_runner)
+    assert calls[0][:2] == ["ruff", "check"]
+    status_by_tool = {entry["tool"]: entry["status"] for entry in results}
+    assert status_by_tool["ruff"] == "succeeded"
+    assert status_by_tool["unknown"] == "unsupported"
+
+
+def test_write_report_includes_autofixes(tmp_path: Path) -> None:
+    results = [
+        {
+            "tool": "ruff",
+            "status": "completed",
+            "summary": {"issue_count": 0},
+            "issues": [],
+        }
+    ]
+    autofixes = [{"tool": "ruff", "status": "succeeded"}]
+    output = tmp_path / "report.json"
+    collect_problems.write_report(results, autofixes=autofixes, output_path=output)
+    payload = json.loads(output.read_text())
+    assert payload["autofixes"][0]["tool"] == "ruff"
+    assert payload["summary"]["autofix"]["succeeded"] == 1

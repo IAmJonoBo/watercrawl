@@ -122,6 +122,8 @@ poetry run python -m tools.security.offline_safety --requirements requirements.t
 poetry run pre-commit run --all-files
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 poetry run python apps/analyst/accessibility/axe_smoke.py
+# Aggregate lint/type issues (add --autofix to run available fixers before reporting)
+poetry run python scripts/collect_problems.py --output problems_report.json
 ```
 
 > Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.

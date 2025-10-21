@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T09:17:34.008076+00:00",
+  "generated_at": "2025-10-21T09:29:50.606939+00:00",
   "summary": {
     "issue_count": 4,
     "note_count": 14,
@@ -191,7 +191,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T09:17:19Z\",",
+          "  \"generated_at\": \"2025-10-21T09:29:37Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 3,",
@@ -279,23 +279,8 @@
       "returncode": 1,
       "issues": [],
       "summary": {
-        "issue_count": 0
-      },
-      "raw_preview": {
-        "chunks": [
-          "{\"issues\":[{\"file\":\"scripts/collect_problems.py\",\"line\":\"5\",\"column\":\"8\",\"message\":\"`argparse` imported but unused\",\"code\":\"F401\",\"level\":\"LEVEL_HIGH\",\"issueClass\":\"ISSUE_CLASS_FIXED\",\"linter\":\"ruff\",",
-          "\"autofixOptions\":[{\"message\":\"Remove unused import: `argparse`\",\"replacements\":[{\"filePath\":\"scripts/collect_problems.py\",\"length\":\"16\",\"offset\":\"115\"}]}],\"ranges\":[{\"offset\":\"122\",\"filePath\":\"scripts",
-          "/collect_problems.py\",\"length\":\"8\"}],\"issueUrl\":\"https://docs.astral.sh/ruff/rules/#F401\",\"targetType\":\"python\",\"targetPath\":\"scripts/collect_problems.py\"},{\"file\":\"scripts/collect_problems.py\",\"line\"",
-          ":\"175\",\"message\":\"subprocess call - check for execution of untrusted input.\",\"code\":\"B603\",\"level\":\"LEVEL_LOW\",\"issueClass\":\"ISSUE_CLASS_EXISTING\",\"linter\":\"bandit\",\"issueUrl\":\"https://pypi.org/projec",
-          "t/bandit/\",\"targetType\":\"python\",\"isSecurity\":true,\"targetPath\":\"scripts/collect_problems.py\"},{\"file\":\"scripts/collect_problems.py\",\"line\":\"485\",\"column\":\"20\",\"message\":\"Incompatible types in assignm",
-          "ent (expression has type \\\"int | None\\\", variable has type \\\"str\\\")\",\"code\":\"assignment\",\"level\":\"LEVEL_HIGH\",\"issueClass\":\"ISSUE_CLASS_FIXED\",\"linter\":\"mypy\",\"issueUrl\":\"https://mypy.readthedocs.io/e",
-          "n/stable/error_code_list.html\",\"targetType\":\"python\",\"targetPath\":\"scripts/collect_problems.py\"}],\"unformattedFiles\":[{\"file\":\"scripts/collect_problems.py\",\"line\":\"1\",\"column\":\"1\",\"message\":\"Incorrect",
-          " formatting, autoformat by running 'trunk fmt'\",\"level\":\"LEVEL_HIGH\",\"issueClass\":\"ISSUE_CLASS_UNFORMATTED\",\"linter\":\"isort\",\"targetPath\":\"scripts/collect_problems.py\"}],\"compareToUpstream\":true,\"lint",
-          "Actions\":[{\"paths\":[\"problems_report.json\"],\"linter\":\"git-diff-check\",\"fileGroupName\":\"ALL\",\"command\":\"lint\",\"verb\":\"TRUNK_VERB_CHECK\",\"actionDurationMs\":\"21\",\"cacheHit\":\"CACHE_HIT_NONE\"},{\"paths\":[\"s",
-          "cripts/collect_problems.py\"],\"linter\":\"git-diff-check\",\"fileGroupName\":\"ALL\",\"command\":\"lint\",\"verb\":\"TRUNK_VERB_CHECK\",\"actionDurationMs\":\"21\",\"cacheHit\":\"CACHE_HIT_NONE\"},{\"paths\":[\"problems_report.\u2026"
-        ],
-        "truncated": true,
-        "omitted_characters": 3238
+        "issue_count": 0,
+        "severity_counts": {}
       },
       "notes": [
         {
@@ -313,5 +298,6 @@
         "issue_count": 0
       }
     }
-  ]
+  ],
+  "autofixes": []
 }
