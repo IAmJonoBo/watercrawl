@@ -5,9 +5,9 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-STUBS_PATH="$REPO_ROOT/stubs"
+STUBS_PATH="${REPO_ROOT}/stubs"
 
-if [ ! -d "$STUBS_PATH" ]; then
+if [[ ! -d $STUBS_PATH ]]; then
 	echo "No stubs directory found at $STUBS_PATH" >&2
 	exit 1
 fi

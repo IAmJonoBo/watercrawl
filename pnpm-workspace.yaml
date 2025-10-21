@@ -1,3 +1,5 @@
 packages:
-  - '.'
-  - 'docs-starlight'
+  - .
+  - docs-starlight
+
+autoInstallPeers: true
