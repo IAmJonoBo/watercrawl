@@ -18,6 +18,7 @@ import logging
 import re
 from dataclasses import dataclass
 from typing import List, Optional, Set, Tuple
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +50,16 @@ class ContentCleaner:
     - Density-based text extraction
     - Block-level content scoring
     - Navigation/footer/header detection
+
+    Additionally, uses BeautifulSoup to robustly remove <script> and <style> tags.
     """
-    
-    def __init__(self, config: Optional[HygieneConfig] = None):
+
+    def _remove_script_tags_with_bs4(self, html: str) -> str:
+        """Remove all <script> and <style> tags using BeautifulSoup for maximum robustness."""
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+        return str(soup)
         self.config = config or HygieneConfig()
         self._boilerplate_patterns = self._compile_boilerplate_patterns()
     
@@ -68,7 +76,7 @@ class ContentCleaner:
             
             # Common UI elements
             re.compile(r'<form[^>]*>.*?</form>', re.DOTALL | re.IGNORECASE),
-            re.compile(r'<script[^>]*>.*?</script>', re.DOTALL | re.IGNORECASE),
+            # Script and style tags are removed using BeautifulSoup, see below.
             re.compile(r'<style[^>]*>.*?</style>', re.DOTALL | re.IGNORECASE),
             
             # Social media/sharing
