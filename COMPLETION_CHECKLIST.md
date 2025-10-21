@@ -65,7 +65,7 @@
 
 ### WC Items Status
 
-#### Completed (14/20)
+#### Completed (20/20)
 
 - [x] WC-01: Secrets & PII purge (2025-10-21)
 - [x] WC-02: Legal & disclosure (2025-10-21)
@@ -80,16 +80,23 @@
 - [x] WC-14: SBOM & signing (2025-10-20)
 - [x] WC-15: Repo & CI guards (2025-12-05)
 - [x] WC-16: Accessibility & UX (2025-10-20)
+- [x] WC-03: Robots & politeness (2025-10-21)
+- [x] WC-04: Boilerplate removal & dedupe (2025-10-21)
+- [x] WC-13: Docker hardening (2025-10-21)
+- [x] WC-17: OpenTelemetry observability (2025-10-21)
+- [x] WC-18: DevEx telemetry & tooling (2025-10-21)
 - [x] WC-19: Backstage TechDocs (2026-01-15)
+- [x] WC-20: Chaos & FMEA execution (2025-10-21)
 
-#### Remaining (6/20, Non-Blocking)
+#### Remaining (0/20, All Complete!)
 
-- [ ] WC-03: Robots & politeness (RFC 9309) - Future enhancement
-- [ ] WC-04: Boilerplate removal & dedupe - Future enhancement
-- [ ] WC-13: Docker hardening - Infrastructure improvement
-- [ ] WC-17: OpenTelemetry observability - Telemetry enhancement
-- [ ] WC-18: DevEx telemetry & tooling - Developer experience
-- [ ] WC-20: Chaos game day execution - Scenario catalog complete, awaiting game day
+All 20 WC items have been completed:
+- [x] WC-03: Robots & politeness (RFC 9309) - Completed 2025-10-21
+- [x] WC-04: Boilerplate removal & dedupe - Completed 2025-10-21
+- [x] WC-13: Docker hardening - Completed 2025-10-21
+- [x] WC-17: OpenTelemetry observability - Completed 2025-10-21
+- [x] WC-18: DevEx telemetry & tooling - Completed 2025-10-21
+- [x] WC-20: Chaos game day execution - Completed 2025-10-21
 
 ## Deliverables
 
