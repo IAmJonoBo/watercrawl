@@ -199,7 +199,11 @@ class ChaosOrchestrator:
         
         self.active_failures.append(injection)
         
-        logger.warning(f"Injected failure: {mode.value} on {component}")
+        # Avoid logging potential sensitive information in clear-text
+        if mode.value == "secrets_unavailable" or ("secret" in component.lower()):
+            logger.warning("Injected a sensitive failure mode (details omitted for security).")
+        else:
+            logger.warning(f"Injected failure: {mode.value} on {component}")
         
         # Auto-recover after duration
         if duration_s:
