@@ -1,5 +1,21 @@
 """Integration boundaries for external systems and advanced artefacts."""
 
-from . import adapters, contracts, storage, telemetry
+from . import (
+    adapters,
+    content_hygiene,
+    contracts,
+    crawl_policy,
+    observability,
+    storage,
+    telemetry,
+)
 
-__all__ = ["adapters", "contracts", "storage", "telemetry"]
+__all__ = [
+    "adapters",
+    "content_hygiene",
+    "contracts",
+    "crawl_policy",
+    "observability",
+    "storage",
+    "telemetry",
+]
