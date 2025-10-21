@@ -200,7 +200,10 @@ class ChaosOrchestrator:
         self.active_failures.append(injection)
         
         # Avoid logging potential sensitive information in clear-text
-        if mode.value == "secrets_unavailable" or ("secret" in component.lower()):
+        sensitive_keywords = ["secret", "credential", "token", "key", "password"]
+        is_sensitive_mode = mode == FailureMode.SECRETS_UNAVAILABLE
+        is_sensitive_component = any(kw in component.lower() for kw in sensitive_keywords)
+        if is_sensitive_mode or is_sensitive_component:
             logger.warning("Injected a sensitive failure mode (details omitted for security).")
         else:
             logger.warning(f"Injected failure: {mode.value} on {component}")
