@@ -17,3 +17,4 @@ ignores:
   - analytics/target/**
   - node_modules/**
   - docs-starlight/**
+  - .trunk/**

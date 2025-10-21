@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T09:29:50.606939+00:00",
+  "generated_at": "2025-10-21T09:33:51.748012+00:00",
   "summary": {
     "issue_count": 4,
     "note_count": 14,
@@ -191,7 +191,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T09:29:37Z\",",
+          "  \"generated_at\": \"2025-10-21T09:33:37Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 3,",
@@ -276,18 +276,12 @@
     {
       "tool": "trunk",
       "status": "completed",
-      "returncode": 1,
+      "returncode": 0,
       "issues": [],
       "summary": {
         "issue_count": 0,
         "severity_counts": {}
-      },
-      "notes": [
-        {
-          "message": "Tool exited with a non-zero status but reported no issues.",
-          "severity": "info"
-        }
-      ]
+      }
     },
     {
       "tool": "biome",

@@ -4,7 +4,7 @@ This template seeds new services that integrate with the ACES Aerodynamics Enric
 
 ## Contents
 
-```
+```text
 .
 ├── catalog-info.yaml      # Backstage System/Component skeleton
 ├── docs/                  # MkDocs/TechDocs starter content
