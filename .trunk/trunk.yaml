@@ -65,18 +65,18 @@ lint:
         - trufflehog
         - yamllint
       paths:
-        - "stubs/third_party/**/*"
-        - "./**/node_modules/**/*"
-        - "./**/dist/**/*"
-        - "docs-starlight/dist/**/*"
-        - "docs-starlight/node_modules/**/*"
-        - ".astro/**/*"
-        - ".cache/**/*"
-        - "data/**/*"
-        - "artifacts/**/*"
-        - "tmp/**/*"
-        - ".venv/**/*"
-        - ".pytest_cache/**/*"
+        - "stubs/third_party"
+        - "node_modules"
+        - "dist"
+        - "docs-starlight/dist"
+        - "docs-starlight/node_modules"
+        - ".astro"
+        - ".cache"
+        - "data"
+        - "artifacts"
+        - "tmp"
+        - ".venv"
+        - ".pytest_cache"
 actions:
   enabled:
     - trunk-announce

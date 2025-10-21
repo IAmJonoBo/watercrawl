@@ -1,0 +1,22 @@
+# Pre-installation steps Copilot coding agent can run in its ephemeral environment
+# so it can build, test, and validate changes faster.
+
+setup_steps:
+  - name: Enable corepack and prepare pnpm
+    run: |
+      corepack enable || true
+      corepack prepare pnpm@latest --activate || true
+  - name: Install Node deps (docs/frontend)
+    run: |
+      pnpm install --frozen-lockfile || true
+  - name: Install Python deps via Poetry
+    run: |
+      # install Poetry if not present (standard installer)
+      if ! command -v poetry >/dev/null 2>&1; then
+        python -c "import sys, subprocess; subprocess.run([sys.executable, '-m', 'pip', 'install', 'poetry'])"
+      fi
+      poetry install --no-root --with dev || true
+  - name: "Quick smoke: run unit tests and mypy"
+    run: |
+      ./scripts/run_with_stubs.sh -- poetry run pytest -q || true
+      ./scripts/run_with_stubs.sh -- poetry run mypy . --show-error-codes || true
