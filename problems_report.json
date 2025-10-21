@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T12:58:11.751270+00:00",
+  "generated_at": "2025-10-21T13:06:12.939627+00:00",
   "summary": {
     "issue_count": 0,
     "note_count": 14,
@@ -192,7 +192,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T12:57:59Z\",",
+          "  \"generated_at\": \"2025-10-21T13:06:03Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 1,",
@@ -285,12 +285,18 @@
     {
       "tool": "trunk",
       "status": "completed",
-      "returncode": 0,
+      "returncode": 1,
       "issues": [],
       "summary": {
         "issue_count": 0,
         "severity_counts": {}
       },
+      "notes": [
+        {
+          "message": "Tool exited with a non-zero status but reported no issues.",
+          "severity": "info"
+        }
+      ],
       "autofix_commands": [
         "trunk fmt"
       ]

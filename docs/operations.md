@@ -325,6 +325,7 @@ The `problems_report.json` file follows this schema:
     - Optional fields: `stderr_preview`, `notes`, `raw_preview` (for parsing failures).
       Each preview stores chunked text to keep lines below shell output limits and includes truncation metadata when applicable.
 - `summary.configured_tools`: Mirrors QA configuration (Trunk enabled linters, Biome presence) and flags tools that should be executed but were missing from the run. Use this to spot configuration drift early and wire new linters into the automation pipeline.
+- `summary.actions`: Ordered list of next-step recommendations (autofix commands, warning reviews, missing linters). Surface these directly to contributors or agents so remediation is one copy/paste away.
 
 ### Wiring and Integration
 

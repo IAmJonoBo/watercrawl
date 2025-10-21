@@ -52,12 +52,14 @@ def _make_spec(
     parser: Callable[[subprocess.CompletedProcess[str]], dict[str, Any]],
     *,
     optional: bool = False,
+    autofix: tuple[tuple[str, ...], ...] | None = None,
 ):
     return collect_problems.ToolSpec(
         name=name,
         command=_StubSpec(name, parser).command,
         parser=parser,
         optional=optional,
+        autofix=autofix or (),
     )
 
 
@@ -170,7 +172,11 @@ def test_collect_aggregates_and_truncates_outputs(
     runner = _Runner(outputs)
 
     tools = [
-        _make_spec("ruff", collect_problems.parse_ruff_output),
+        _make_spec(
+            "ruff",
+            collect_problems.parse_ruff_output,
+            autofix=(("ruff", "check", ".", "--fix"),),
+        ),
         _make_spec("mypy", collect_problems.parse_mypy_output),
         _make_spec("pylint", collect_problems.parse_pylint_output, optional=True),
         _make_spec("bandit", collect_problems.parse_bandit_output),
@@ -248,6 +254,12 @@ def test_collect_aggregates_and_truncates_outputs(
     configured = overall.get("configured_tools")
     if configured:
         assert "trunk_enabled" in configured
+    actions = overall.get("actions") or []
+    assert any(
+        action.get("type") == "autofix" and action.get("tool") == "ruff"
+        for action in actions
+    )
+    assert any(action.get("type") == "warnings" for action in actions)
 
 
 def test_collect_default_registry_includes_autofix(

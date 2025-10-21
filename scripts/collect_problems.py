@@ -1241,6 +1241,8 @@ def _split_trunk_entry(entry: Mapping[str, Any]) -> list[dict[str, Any]]:
             expanded_entry["notes"] = list(base_notes)
         if entry.get("stderr_preview"):
             expanded_entry["stderr_preview"] = entry["stderr_preview"]
+        if entry.get("autofix_commands"):
+            expanded_entry["autofix_commands"] = entry["autofix_commands"]
         expanded_entries.append(expanded_entry)
     return expanded_entries
 
@@ -1396,6 +1398,11 @@ def build_overall_summary(
     highlight_insights: list[dict[str, Any]] = []
     warning_total = 0
     warning_highlights: list[dict[str, Any]] = []
+    actions: list[dict[str, Any]] = []
+
+    def _add_action(action: dict[str, Any]) -> None:
+        if action not in actions:
+            actions.append(action)
 
     for entry in results:
         tool = entry.get("tool")
@@ -1427,6 +1434,18 @@ def build_overall_summary(
                         "insight": insight,
                     }
                 )
+        if summary.get("issue_count", 0) > 0 and tool:
+            autofix_cmds = entry.get("autofix_commands") or []
+            if autofix_cmds:
+                _add_action(
+                    {
+                        "type": "autofix",
+                        "tool": tool,
+                        "command": autofix_cmds[0],
+                    }
+                )
+            else:
+                _add_action({"type": "review", "tool": tool})
 
         warnings = entry.get("warnings") or []
         if isinstance(declared_warning_count, int):
@@ -1459,17 +1478,23 @@ def build_overall_summary(
         "warning_count": warning_total,
         "warning_insights": warning_highlights,
     }
+    if warning_total:
+        _add_action({"type": "warnings", "count": warning_total})
+    for missing_tool in tools_missing:
+        _add_action({"type": "missing_tool", "tool": missing_tool})
     configured_tools: dict[str, Any] = {}
     trunk_linters = _discover_trunk_linters()
     if trunk_linters:
         configured_tools["trunk_enabled"] = trunk_linters
         if "trunk" not in tools_run:
             configured_tools.setdefault("missing", []).append("trunk")
+            _add_action({"type": "run_tool", "tool": "trunk"})
     biome_present = _discover_biome_presence()
     if biome_present:
         configured_tools["biome_present"] = True
         if "biome" not in tools_run:
             configured_tools.setdefault("missing", []).append("biome")
+            _add_action({"type": "run_tool", "tool": "biome"})
     if configured_tools:
         summary_payload["configured_tools"] = configured_tools
     if autofixes:
@@ -1485,6 +1510,18 @@ def build_overall_summary(
             "failed": failed,
             "unsupported": unsupported,
         }
+        if failed:
+            for entry in autofixes:
+                if entry.get("status") == "failed":
+                    _add_action(
+                        {
+                            "type": "autofix_failed",
+                            "tool": entry.get("tool"),
+                            "command": " ".join(entry.get("command", [])),
+                        }
+                    )
+    if actions:
+        summary_payload["actions"] = actions
     return summary_payload
 
 
