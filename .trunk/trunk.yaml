@@ -66,9 +66,9 @@ lint:
         - yamllint
       paths:
         - "stubs/third_party"
-        - "node_modules"
-        - "dist"
-        - "docs-starlight/dist"
+        - "**/node_modules/**"
+        - "dist/**"
+        - "**/dist/**"
         - "docs-starlight/node_modules"
         - ".astro"
         - ".cache"
