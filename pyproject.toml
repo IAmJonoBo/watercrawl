@@ -138,6 +138,7 @@ filterwarnings = [
 [tool.mypy]
 python_version = "3.13"
 show_error_codes = true
+mypy_path = ["stubs/third_party", "stubs"]
 exclude = ["^stubs/third_party/"]
 
 [[tool.mypy.overrides]]
