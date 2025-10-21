@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T08:32:26.802070+00:00",
+  "generated_at": "2025-10-21T08:50:49.930659+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -18,20 +18,6 @@
       "returncode": 0,
       "issues": [],
       "notes": [
-        {
-          "path": "tests/test_compliance.py",
-          "line": 186,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 208,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -63,6 +49,20 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 186,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 208,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -173,7 +173,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T08:32:18Z\",",
+          "  \"generated_at\": \"2025-10-21T08:50:41Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 3,",
