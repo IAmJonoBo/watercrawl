@@ -24,9 +24,9 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreter
 from urllib.parse import unquote, urlparse
 
 try:  # pragma: no cover - optional dependency
-    import yaml
+    import yaml as YAML
 except ModuleNotFoundError:  # pragma: no cover
-    yaml = None  # type: ignore
+    YAML = None  # type: ignore
 
 SQLFLUFF_AVAILABLE = sys.version_info < (3, 14)
 if SQLFLUFF_AVAILABLE:
@@ -159,11 +159,11 @@ def _coerce_int(value: Any) -> int | None:
 
 
 def _read_yaml(path: Path) -> dict[str, Any] | None:
-    if yaml is None or not path.exists():
+    if YAML is None or not path.exists():
         return None
     try:
         with path.open("r", encoding="utf-8") as fh:
-            data = yaml.safe_load(fh)
+            data = YAML.safe_load(fh)
             if isinstance(data, dict):
                 return data
     except Exception:  # pragma: no cover - best effort
