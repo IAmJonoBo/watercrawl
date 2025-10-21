@@ -59,7 +59,10 @@ def test_bootstrap_functions():
         hadolint_path = ensure_hadolint()
         print(f"  hadolint path: {hadolint_path}")
 
-        if BUNDLED_BIN_ROOT in hadolint_path.parents or hadolint_path.parent == BUNDLED_BIN_ROOT:
+        if (
+            BUNDLED_BIN_ROOT in hadolint_path.parents
+            or hadolint_path.parent == BUNDLED_BIN_ROOT
+        ):
             print("  ✓ hadolint using bundled binary")
         else:
             print(f"  ✗ hadolint NOT using bundled binary (using {hadolint_path})")
@@ -68,7 +71,10 @@ def test_bootstrap_functions():
         actionlint_path = ensure_actionlint()
         print(f"  actionlint path: {actionlint_path}")
 
-        if BUNDLED_BIN_ROOT in actionlint_path.parents or actionlint_path.parent == BUNDLED_BIN_ROOT:
+        if (
+            BUNDLED_BIN_ROOT in actionlint_path.parents
+            or actionlint_path.parent == BUNDLED_BIN_ROOT
+        ):
             print("  ✓ actionlint using bundled binary")
         else:
             print(f"  ✗ actionlint NOT using bundled binary (using {actionlint_path})")
@@ -111,7 +117,7 @@ def test_binaries_work():
         )
 
         if result.returncode == 0:
-            version = result.stdout.strip().split('\n')[0]
+            version = result.stdout.strip().split("\n")[0]
             print(f"  ✓ actionlint works: {version}")
         else:
             print(f"  ✗ actionlint failed: {result.stderr}")

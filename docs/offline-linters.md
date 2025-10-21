@@ -7,6 +7,7 @@ This document describes how `hadolint` and `actionlint` binaries are bundled in 
 ## Problem Statement
 
 Previously, the repository relied on downloading linter binaries at runtime:
+
 - CI workflows downloaded binaries during each run
 - Pre-commit hooks downloaded binaries on first use
 - This approach failed in environments without internet access (air-gapped environments, restricted networks, ephemeral runners)
@@ -18,12 +19,14 @@ Linter binaries are now bundled directly in the repository under `tools/bin/`:
 ### Bundled Binaries
 
 **hadolint v2.14.0** (Dockerfile linter)
+
 - `hadolint-linux-x86_64` (53MB)
 - `hadolint-linux-arm64` (57MB)
 - `hadolint-macos-x86_64` (22MB)
 - `hadolint-macos-arm64` (97MB)
 
 **actionlint v1.7.1** (GitHub Actions workflow linter)
+
 - `actionlint-linux-x86_64` (4.9MB)
 - `actionlint-linux-arm64` (4.8MB)
 - `actionlint-macos-x86_64` (5.0MB)
@@ -115,7 +118,7 @@ Always verify checksums when updating binaries:
 
 ```bash
 # For hadolint
-wget https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64.sha256
+wget <https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64.sha256>
 sha256sum -c hadolint-Linux-x86_64.sha256
 
 # For actionlint (checksums in release notes)
@@ -145,6 +148,6 @@ sha256sum tools/bin/actionlint-linux-x86_64
 
 ## References
 
-- hadolint: https://github.com/hadolint/hadolint
-- actionlint: https://github.com/rhysd/actionlint
+- hadolint: <https://github.com/hadolint/hadolint>
+- actionlint: <https://github.com/rhysd/actionlint>
 - Next Steps tracking: [Next_Steps.md](../Next_Steps.md)

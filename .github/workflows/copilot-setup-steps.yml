@@ -63,10 +63,10 @@ jobs:
 
       - name: Verify basic tools
         run: |
-          echo "Python:" $(python --version)
-          echo "Poetry:" $(poetry --version || true)
-          echo "Node:" $(node --version || true)
-          echo "npm:" $(npm --version || true)
+          echo "Python: $(python --version)"
+          echo "Poetry: $(poetry --version || true)"
+          echo "Node: $(node --version || true)"
+          echo "npm: $(npm --version || true)"
 
       - name: Verify bundled linter binaries
         run: |

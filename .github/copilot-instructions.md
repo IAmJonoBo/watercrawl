@@ -45,4 +45,3 @@ Watercrawl is a modular toolkit for validating and enriching South African fligh
 - Check problems: Read `problems_report.json` after running `scripts/collect_problems.py`
 
 Reference: `docs/architecture.md`, `docs/cli.md`, `AGENTS.md` for analyst workflows.
-

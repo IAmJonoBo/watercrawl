@@ -32,6 +32,7 @@ Added two critical CI steps that block on failure:
 ```
 
 **Behavior**:
+
 - CI runs Great Expectations and dbt contracts on sample dataset
 - CI verifies coverage meets 95% threshold
 - Build fails if any checks fail or coverage is insufficient
@@ -40,16 +41,19 @@ Added two critical CI steps that block on failure:
 ### 2. Deequ Integration Stub
 
 **New Files**:
+
 - `firecrawl_demo/integrations/contracts/deequ_runner.py`
 - `data_contracts/deequ/README.md` (updated)
 
 **Features**:
+
 - PySpark availability detection via `DEEQU_AVAILABLE` flag
 - Stub implementation that returns success when PySpark not available
 - Ready for future Spark-based processing
 - Compatible with existing GX/dbt pipeline
 
 **Usage**:
+
 ```python
 from firecrawl_demo.integrations.contracts import run_deequ_checks
 
@@ -63,16 +67,19 @@ if result.success:
 **New File**: `firecrawl_demo/integrations/contracts/coverage.py`
 
 **Features**:
+
 - Discovers all curated tables in `data/` and `data/processed/`
 - Checks for Great Expectations, dbt, and Deequ coverage
 - Calculates coverage percentage with 95% threshold
 - Generates JSON reports for automation
 
 **Functions**:
+
 - `calculate_contract_coverage()` - Returns `ContractCoverage` object
 - `report_coverage(output_path)` - Generates JSON report to file
 
 **Coverage Calculation**:
+
 - Table considered "covered" if it has at least one contract tool (GX, dbt, or Deequ)
 - Coverage % = (covered tables / total tables) × 100
 - Threshold: 95%
@@ -80,21 +87,25 @@ if result.success:
 ### 4. Coverage CLI Command
 
 **Files Modified**:
+
 - `firecrawl_demo/interfaces/analyst_cli.py`
 - `apps/analyst/cli.py`
 
 **New Command**: `poetry run python -m apps.analyst.cli coverage`
 
 **Options**:
+
 - `--format [text|json]` - Output format (default: text)
 - `--output PATH` - Write JSON report to file
 
 **Exit Codes**:
+
 - 0: Coverage meets 95% threshold
 - 1: Coverage below threshold
 
 **Text Output Example**:
-```
+
+```text
 Contract Coverage Report
 ========================
 Total tables: 1
@@ -110,6 +121,7 @@ Coverage by tool:
 ```
 
 **JSON Output Example**:
+
 ```json
 {
   "covered_tables": 1,
@@ -129,10 +141,12 @@ Coverage by tool:
 ### 5. Test Coverage
 
 **New Test Files**:
+
 - `tests/test_contract_coverage.py` - Coverage tracking tests
 - `tests/test_deequ.py` - Deequ runner tests
 
 **Test Coverage**:
+
 - Coverage calculation correctness
 - Great Expectations detection
 - dbt model detection
@@ -144,6 +158,7 @@ Coverage by tool:
 ### 6. Documentation Updates
 
 **Updated Files**:
+
 - `docs/data-quality.md` - Added Phase 1.3 section
 - `docs/operations.md` - Added coverage command to Data Quality section
 - `Next_Steps.md` - Marked Phase 1 as complete
@@ -151,6 +166,7 @@ Coverage by tool:
 - `data_contracts/deequ/README.md` - Updated with usage and configuration
 
 **Key Documentation Additions**:
+
 - Phase 1.3 section documenting Deequ stub, CI enforcement, and coverage
 - Coverage command usage in operations guide
 - Deequ integration guide with future roadmap
@@ -160,7 +176,7 @@ Coverage by tool:
 
 ### Module Organization
 
-```
+```text
 firecrawl_demo/integrations/contracts/
 ├── __init__.py              # Updated with new exports
 ├── coverage.py              # NEW: Coverage tracking
@@ -173,7 +189,7 @@ firecrawl_demo/integrations/contracts/
 
 ### Data Flow
 
-```
+```text
                  ┌─────────────┐
                  │   Dataset   │
                  └──────┬──────┘
@@ -264,6 +280,7 @@ print(f"Deequ checks: {result.check_count} executed, {result.failures} failed")
 While Phase 1 is complete, the following enhancements are planned for future phases:
 
 ### Full Deequ Implementation (Future)
+
 - PySpark integration with Deequ JVM library
 - Completeness checks on required fields
 - Uniqueness constraints for key columns
@@ -272,12 +289,14 @@ While Phase 1 is complete, the following enhancements are planned for future pha
 - Configuration files per table in `data_contracts/deequ/`
 
 ### Coverage Expansion (Future)
+
 - Support for multiple data sources (S3, databases, APIs)
 - Coverage tracking for intermediate pipeline stages
 - Historical coverage trends and dashboards
 - Automated coverage reports in PR comments
 
 ### CI/CD Enhancements (Future)
+
 - Contract diff reports showing what changed
 - Automatic suggestion of contract rules based on data profiling
 - Performance profiling of contract execution

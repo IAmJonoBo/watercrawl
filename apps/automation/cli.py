@@ -481,6 +481,15 @@ if sys.version_info < (3, 14):
         ),
     )
 
+# Skip SQLFluff and dbt contracts automatically on interpreters where dbt's
+# mashumaro dependency is incompatible (Python 3.14+). Analysts can still run
+# these checks manually from a Python 3.13 environment when required.
+if sys.version_info >= (3, 14):
+    _QA_GROUPS["lint"] = [
+        spec for spec in _QA_GROUPS["lint"] if spec.name != "SQLFluff"
+    ]
+    _QA_GROUPS["contracts"] = []
+
 
 _QA_DEFAULT_SEQUENCE = (
     "cleanup",

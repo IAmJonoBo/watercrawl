@@ -101,6 +101,26 @@
       ]
     },
     {
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Lakehouse Delta snapshots require upstream cp314/cp315 wheels before enabling newer interpreters.",
+      "owner": "Data Engineering",
+      "package": "deltalake",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
       "issue": "Missing wheels for Python 3.15",
       "notes": "Networking stacks remain blocked on cp315 wheels; align with upstream 3.14+ rollout.",
       "owner": "Platform",
@@ -214,6 +234,20 @@
     },
     {
       "issue": "Missing wheels for Python 3.15",
+      "notes": "Scientific computing stack needs cp315 wheels to avoid slow source builds.",
+      "owner": "Data Engineering",
+      "package": "scipy",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
       "notes": "Image pipelines require cp315 wheels; monitor upstream builds.",
       "owner": "Platform",
       "package": "pillow",
@@ -309,34 +343,43 @@
           "status": "present"
         }
       ]
+    },
+    {
+      "issue": "Python version unsupported",
+      "notes": "Great Expectations 1.7.1 currently pins Python <3.14; defer interpreter bumps until upstream releases cp314/cp315 compatibility.",
+      "owner": "Data Engineering",
+      "package": "great-expectations",
+      "targets": [
+        {
+          "details": "Requires python '<3.14,>=3.9'",
+          "python": "3.14",
+          "reason": "python-spec",
+          "status": "present"
+        },
+        {
+          "details": "Requires python '<3.14,>=3.9'",
+          "python": "3.15",
+          "reason": "python-spec",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "YAML tooling relies on ruamel-yaml-clib wheels; track cp315 builds before enabling Python 3.15.",
+      "owner": "Platform",
+      "package": "ruamel-yaml-clib",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
     }
   ],
   "cleared": [],
-  "generated_at": "2025-10-19T20:46:00.612600+00:00",
-  "unexpected": [
-    {
-      "details": "Requires python '<3.14,>=3.9'",
-      "groups": "dev",
-      "package": "great-expectations",
-      "python": "3.14",
-      "reason": "python-spec",
-      "version": "1.7.1"
-    },
-    {
-      "details": "Requires python '<3.14,>=3.9'",
-      "groups": "dev",
-      "package": "great-expectations",
-      "python": "3.15",
-      "reason": "python-spec",
-      "version": "1.7.1"
-    },
-    {
-      "details": "No wheel compatible with Python 3.15",
-      "groups": "dev",
-      "package": "scipy",
-      "python": "3.15",
-      "reason": "missing-wheel",
-      "version": "1.16.2"
-    }
-  ]
+  "generated_at": "2025-10-20T12:37:26.201198+00:00",
+  "unexpected": []
 }

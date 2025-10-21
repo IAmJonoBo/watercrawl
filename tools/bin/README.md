@@ -5,12 +5,14 @@ This directory contains pre-downloaded binaries for `hadolint` and `actionlint` 
 ## Contents
 
 ### hadolint v2.14.0
+
 - `hadolint-linux-x86_64` - Linux x86_64 (53MB)
 - `hadolint-linux-arm64` - Linux ARM64 (57MB)
 - `hadolint-macos-x86_64` - macOS x86_64 (22MB)
 - `hadolint-macos-arm64` - macOS ARM64 (97MB)
 
 ### actionlint v1.7.1
+
 - `actionlint-linux-x86_64` - Linux x86_64 (4.9MB)
 - `actionlint-linux-arm64` - Linux ARM64 (4.8MB)
 - `actionlint-macos-x86_64` - macOS x86_64 (5.0MB)
@@ -36,7 +38,8 @@ To update to a new version:
 ## Security
 
 All binaries are downloaded from official GitHub releases:
-- hadolint: https://github.com/hadolint/hadolint/releases
-- actionlint: https://github.com/rhysd/actionlint/releases
+
+- hadolint: <https://github.com/hadolint/hadolint/releases>
+- actionlint: <https://github.com/rhysd/actionlint/releases>
 
 Verify checksums against the official releases when updating.

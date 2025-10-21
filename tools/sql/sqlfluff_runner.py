@@ -43,6 +43,13 @@ def ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
 def run_sqlfluff(
     project_dir: Path, duckdb_path: Path, extra_args: Sequence[str]
 ) -> int:
+    if sys.version_info >= (3, 14):
+        print(
+            "Skipping SQLFluff lint: dbt templater is incompatible with Python >= 3.14. "
+            "Run this command from a Python 3.13 environment when SQL checks are required."
+        )
+        return 0
+
     materialised_path = ensure_duckdb(project_dir, duckdb_path)
     env = os.environ.copy()
     env.setdefault("DBT_DUCKDB_PATH", materialised_path.as_posix())

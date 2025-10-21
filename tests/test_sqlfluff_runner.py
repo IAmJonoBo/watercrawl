@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -53,8 +54,12 @@ def test_run_sqlfluff_uses_resolved_duckdb_path(monkeypatch, tmp_path: Path) -> 
     exit_code = sqlfluff_runner.run_sqlfluff(project_dir, relative_path, ["--version"])
 
     assert exit_code == 0
-    expected_path = (project_dir / relative_path).resolve()
-    assert captured["cmd"][:3] == ["sqlfluff", "lint", str(project_dir)]
-    env = captured["env"]
-    assert isinstance(env, dict)
-    assert env["DBT_DUCKDB_PATH"] == expected_path.as_posix()
+    if sys.version_info >= (3, 14):
+        # SQLFluff is skipped on Python 3.14+ due to dbt/mashumaro incompatibility.
+        assert captured == {}
+    else:
+        expected_path = (project_dir / relative_path).resolve()
+        assert captured["cmd"][:3] == ["sqlfluff", "lint", str(project_dir)]
+        env = captured["env"]
+        assert isinstance(env, dict)
+        assert env["DBT_DUCKDB_PATH"] == expected_path.as_posix()

@@ -72,4 +72,3 @@ def test_plan_includes_python_and_node(tmp_path: Path) -> None:
 
     assert "Install Poetry environment" in step_descriptions
     assert any("docs-starlight" in step.description for step in plan)
-

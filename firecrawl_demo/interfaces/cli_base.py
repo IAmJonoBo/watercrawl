@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.core import config
@@ -69,10 +70,8 @@ class PlanCommitGuard:
         resolved_plans = self._normalise_paths(plan_paths)
         if not resolved_plans and self.contract.require_plan and not force:
             raise PlanCommitError(
-                (
-                    f"Command '{command}' requires at least one *.plan artefact. "
-                    "Provide --plan <path> or use --force when policy allows it."
-                )
+                f"Command '{command}' requires at least one *.plan artefact. "
+                "Provide --plan <path> or use --force when policy allows it."
             )
 
         plan_payloads = self._load_plan_payloads(resolved_plans, force=force)
@@ -80,10 +79,8 @@ class PlanCommitGuard:
         resolved_commits = self._normalise_paths(commit_paths)
         if self.contract.require_commit and not resolved_commits and not force:
             raise PlanCommitError(
-                (
-                    f"Command '{command}' requires at least one *.commit artefact. "
-                    "Provide --commit <path> or use --force when policy allows it."
-                )
+                f"Command '{command}' requires at least one *.commit artefact. "
+                "Provide --commit <path> or use --force when policy allows it."
             )
 
         commit_payloads = self._load_commit_payloads(resolved_commits, force=force)

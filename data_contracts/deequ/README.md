@@ -35,6 +35,7 @@ one per curated table:
 - `enriched.json` - Deequ checks for enriched datasets
 
 Each configuration file will specify:
+
 - Completeness checks
 - Uniqueness constraints
 - Numeric range validations
@@ -43,6 +44,7 @@ Each configuration file will specify:
 ## Dependencies
 
 Deequ requires:
+
 - PySpark >= 3.0
 - Amazon Deequ JVM library (via Maven coordinates)
 

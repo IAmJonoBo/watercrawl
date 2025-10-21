@@ -23,6 +23,7 @@ Completed comprehensive code hardening sprint addressing all quality gate violat
 ## Improvements
 
 ### Warnings Reduction: 87.5% ⬇️
+
 - **Before**: 40 warnings across test suite
 - **After**: 5 warnings (only external dependencies: dbt/click)
 - **Eliminated**: 35 warnings (7 datetime, 2 pandas, 3 pytest, 23 others suppressed)
@@ -30,9 +31,11 @@ Completed comprehensive code hardening sprint addressing all quality gate violat
 ### Code Quality Fixes
 
 #### 1. Deprecated API Usage (7 fixes)
+
 **Issue**: `datetime.utcnow()` deprecated in Python 3.13+  
 **Solution**: Replaced with `datetime.now(UTC)` for timezone-aware timestamps  
 **Files**:
+
 - `firecrawl_demo/domain/models.py`
 - `firecrawl_demo/domain/compliance.py` (2 instances)
 - `firecrawl_demo/interfaces/analyst_ui.py`
@@ -41,38 +44,49 @@ Completed comprehensive code hardening sprint addressing all quality gate violat
 - `firecrawl_demo/integrations/storage/lakehouse.py` (2 instances)
 
 #### 2. Pandas Future Compatibility (2 fixes)
+
 **Issue**: Setting incompatible dtypes raises FutureWarning  
 **Solution**: Explicit `astype("object")` conversion before assignment  
 **Files**:
+
 - `firecrawl_demo/application/pipeline.py` (2 instances in `_apply_record` and main loop)
 
 #### 3. Test Best Practices (3 fixes)
+
 **Issue**: Test functions returning values instead of using assertions  
 **Solution**: Converted returns to assertions for pytest compatibility  
 **Files**:
+
 - `scripts/test_offline_linters.py` (3 test functions)
 
 #### 4. Security Test Gap (1 fix)
+
 **Issue**: Path traversal test bypassed by bundled binary check  
 **Solution**: Added `WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED=1` to force extraction path  
 **Files**:
+
 - `tests/test_bootstrap.py::test_actionlint_rejects_path_traversal`
 
 #### 5. CI/CD Configuration (1 fix)
+
 **Issue**: Yamllint line-length violation (122 > 120 chars)  
 **Solution**: Split long URL into two lines with bash variable  
 **Files**:
+
 - `.github/workflows/ci.yml`
 
 #### 6. Code Style (9 fixes)
+
 **Issue**: Trailing whitespace, import ordering  
 **Solution**: Auto-fixed with `ruff check --fix`, added noqa comment  
 **Files**:
+
 - `scripts/test_offline_linters.py` (E402 import order, W293 whitespace)
 
 ### Repository Hygiene
 
 #### Removed Tracked Ignored Files (47 files)
+
 - `.hypothesis/` cache directory (44 files)
 - `data/interim/evidence_log.csv` (3 instances)
 
@@ -81,17 +95,20 @@ These files were previously tracked despite being in `.gitignore`. Now properly 
 ## Security Analysis
 
 ### CodeQL Results
+
 - **Languages Scanned**: Python, GitHub Actions
 - **Alerts**: 0
 - **Risk Level**: ✅ LOW
 
 ### Bandit Static Analysis
+
 - **Lines Scanned**: 7,262
 - **Issues Found**: 0
 - **Confidence**: HIGH
 - **Nosec Overrides**: 0
 
 ### Dependency Security
+
 - **Known Vulnerabilities**: None in production dependencies
 - **Python Version**: 3.13.8 (current, supported)
 - **Blocked Upgrades**: Python 3.14+ (awaiting wheel availability for pyarrow, duckdb, etc.)
@@ -99,11 +116,13 @@ These files were previously tracked despite being in `.gitignore`. Now properly 
 ## Outstanding Items (Non-Blocking)
 
 ### Minor Improvements Available
+
 1. **Type Annotations**: 14 test functions without type hints (mypy notes, not errors)
 2. **SQLFluff**: DBT project path configuration (non-critical, tests pass)
 3. **External Deprecations**: dbt/click warnings (upstream dependencies)
 
 ### Future Hardening Opportunities
+
 - Add mutation testing for pipeline hotspots (WC-15, due 2025-12-05)
 - Implement chaos engineering exercises (WC-20, due 2026-01-31)
 - Complete Python 3.14/3.15 wheel remediation (due 2025-11-08)
@@ -111,6 +130,7 @@ These files were previously tracked despite being in `.gitignore`. Now properly 
 ## Testing Coverage Details
 
 ### High Coverage Modules (>95%)
+
 - `firecrawl_demo/domain/compliance.py`: 99%
 - `firecrawl_demo/domain/models.py`: 98%
 - `firecrawl_demo/infrastructure/evidence.py`: 97%
@@ -118,6 +138,7 @@ These files were previously tracked despite being in `.gitignore`. Now properly 
 - `firecrawl_demo/core/config.py`: 95%
 
 ### Areas for Coverage Improvement (<75%)
+
 - `firecrawl_demo/integrations/adapters/research/__init__.py`: 45%
 - `firecrawl_demo/integrations/contracts/shared_config.py`: 44%
 - `firecrawl_demo/integrations/contracts/__init__.py`: 67%

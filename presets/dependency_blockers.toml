@@ -34,6 +34,13 @@ issue = "Missing wheels for Python 3.14+"
 notes = "Needed for Streamlit/Jupyter developer surfaces; ensure Renovate PRs capture blocker context."
 
 [[blockers]]
+package = "deltalake"
+targets = ["3.14", "3.15"]
+owner = "Data Engineering"
+issue = "Missing wheels for Python 3.14+"
+notes = "Lakehouse Delta snapshots require upstream cp314/cp315 wheels before enabling newer interpreters."
+
+[[blockers]]
 package = "aiohttp"
 targets = ["3.15"]
 owner = "Platform"
@@ -90,6 +97,13 @@ issue = "Missing wheels for Python 3.15"
 notes = "Dataframe tooling depends on cp315 wheels; align with upstream release notes."
 
 [[blockers]]
+package = "scipy"
+targets = ["3.15"]
+owner = "Data Engineering"
+issue = "Missing wheels for Python 3.15"
+notes = "Scientific computing stack needs cp315 wheels to avoid slow source builds."
+
+[[blockers]]
 package = "pillow"
 targets = ["3.15"]
 owner = "Platform"
@@ -137,3 +151,17 @@ targets = ["3.15"]
 owner = "Platform"
 issue = "Missing wheels for Python 3.15"
 notes = "Pydantic core dependency; ensure cp315 wheels exist before enabling Python 3.15."
+
+[[blockers]]
+package = "great-expectations"
+targets = ["3.14", "3.15"]
+owner = "Data Engineering"
+issue = "Python version unsupported"
+notes = "Great Expectations 1.7.1 currently pins Python <3.14; defer interpreter bumps until upstream releases cp314/cp315 compatibility."
+
+[[blockers]]
+package = "ruamel-yaml-clib"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "YAML tooling relies on ruamel-yaml-clib wheels; track cp315 builds before enabling Python 3.15."

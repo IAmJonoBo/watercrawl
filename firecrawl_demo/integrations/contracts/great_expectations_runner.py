@@ -81,7 +81,7 @@ except (ImportError, TypeError, AttributeError):
             self.kwargs = kwargs or {}
             self.meta = meta
 
-        def to_domain_obj(self) -> "_FallbackExpectationConfiguration":
+        def to_domain_obj(self) -> _FallbackExpectationConfiguration:
             return self
 
     @dataclass
