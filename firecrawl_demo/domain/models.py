@@ -221,3 +221,128 @@ def _clean_value(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+# Adapter functions for contract migration
+def school_record_to_contract(record: SchoolRecord):
+    """Convert legacy SchoolRecord dataclass to contract model."""
+    from firecrawl_demo.domain.contracts import SchoolRecordContract
+
+    return SchoolRecordContract(
+        name=record.name,
+        province=record.province,
+        status=record.status,
+        website_url=record.website_url,
+        contact_person=record.contact_person,
+        contact_number=record.contact_number,
+        contact_email=record.contact_email,
+    )
+
+
+def school_record_from_contract(contract):
+    """Convert contract model to legacy SchoolRecord dataclass."""
+    from firecrawl_demo.domain.contracts import SchoolRecordContract
+
+    if not isinstance(contract, SchoolRecordContract):
+        raise TypeError(f"Expected SchoolRecordContract, got {type(contract)}")
+
+    return SchoolRecord(
+        name=contract.name,
+        province=contract.province,
+        status=contract.status,
+        website_url=contract.website_url,
+        contact_person=contract.contact_person,
+        contact_number=contract.contact_number,
+        contact_email=contract.contact_email,
+    )
+
+
+def evidence_record_to_contract(record: EvidenceRecord):
+    """Convert legacy EvidenceRecord dataclass to contract model."""
+    from firecrawl_demo.domain.contracts import EvidenceRecordContract
+
+    return EvidenceRecordContract(
+        row_id=record.row_id,
+        organisation=record.organisation,
+        changes=record.changes,
+        sources=list(record.sources),
+        notes=record.notes,
+        confidence=record.confidence,
+        timestamp=record.timestamp,
+    )
+
+
+def evidence_record_from_contract(contract):
+    """Convert contract model to legacy EvidenceRecord dataclass."""
+    from firecrawl_demo.domain.contracts import EvidenceRecordContract
+
+    if not isinstance(contract, EvidenceRecordContract):
+        raise TypeError(f"Expected EvidenceRecordContract, got {type(contract)}")
+
+    return EvidenceRecord(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        changes=contract.changes,
+        sources=contract.sources,
+        notes=contract.notes,
+        confidence=contract.confidence,
+        timestamp=contract.timestamp,
+    )
+
+
+def quality_issue_to_contract(issue: QualityIssue):
+    """Convert legacy QualityIssue dataclass to contract model."""
+    from firecrawl_demo.domain.contracts import QualityIssueContract
+
+    return QualityIssueContract(
+        row_id=issue.row_id,
+        organisation=issue.organisation,
+        code=issue.code,
+        severity=issue.severity,
+        message=issue.message,
+        remediation=issue.remediation,
+    )
+
+
+def quality_issue_from_contract(contract):
+    """Convert contract model to legacy QualityIssue dataclass."""
+    from firecrawl_demo.domain.contracts import QualityIssueContract
+
+    if not isinstance(contract, QualityIssueContract):
+        raise TypeError(f"Expected QualityIssueContract, got {type(contract)}")
+
+    return QualityIssue(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        code=contract.code,
+        severity=contract.severity,
+        message=contract.message,
+        remediation=contract.remediation,
+    )
+
+
+def validation_issue_to_contract(issue: ValidationIssue):
+    """Convert legacy ValidationIssue dataclass to contract model."""
+    from firecrawl_demo.domain.contracts import ValidationIssueContract
+
+    return ValidationIssueContract(
+        code=issue.code,
+        message=issue.message,
+        row=issue.row,
+        column=issue.column,
+    )
+
+
+def validation_issue_from_contract(contract):
+    """Convert contract model to legacy ValidationIssue dataclass."""
+    from firecrawl_demo.domain.contracts import ValidationIssueContract
+
+    if not isinstance(contract, ValidationIssueContract):
+        raise TypeError(f"Expected ValidationIssueContract, got {type(contract)}")
+
+    return ValidationIssue(
+        code=contract.code,
+        message=contract.message,
+        row=contract.row,
+        column=contract.column,
+    )

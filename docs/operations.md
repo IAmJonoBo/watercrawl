@@ -84,6 +84,35 @@ The `coverage` command reports contract coverage across all curated tables and
 exits with code 1 if coverage is below 95%. This ensures that all curated
 datasets have quality checks defined before they are published.
 
+### Data Contracts & Schema Validation
+
+The project uses **Pydantic-based data contracts** (v1.0.0) for all domain models. To validate data against contracts:
+
+```bash
+# Run contract tests to verify schema compliance
+poetry run pytest tests/test_contract_schemas.py -v
+
+# Export all contract schemas for documentation
+poetry run python -c "from firecrawl_demo.domain.contracts import export_all_schemas; import json; print(json.dumps(export_all_schemas(), indent=2))"
+```
+
+**Contract guarantees:**
+- All domain models have versioned Pydantic equivalents in `firecrawl_demo/domain/contracts.py`
+- JSON Schema export available for integration testing and API docs
+- Backward compatibility adapters in `firecrawl_demo/domain/models.py`
+- Schema stability enforced via regression tests
+
+**When to update contract versions:**
+- Increment **patch** (1.0.x) for documentation or non-breaking clarifications
+- Increment **minor** (1.x.0) for backward-compatible additions (new optional fields)
+- Increment **major** (x.0.0) for breaking changes (removing fields, changing validation rules)
+
+After bumping the contract version, regenerate schema snapshots:
+
+```bash
+poetry run pytest tests/test_contract_schemas.py::TestSchemaExport::test_schema_stability_regression --snapshot-update
+```
+
 ### Supply chain artifacts
 
 - CI builds distribution artifacts via `poetry build`, produces a CycloneDX SBOM at `artifacts/sbom/cyclonedx.json`, and signs the wheel/sdist with Sigstore (bundles stored under `artifacts/signatures/`).
