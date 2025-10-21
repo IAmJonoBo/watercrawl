@@ -42,7 +42,10 @@ def test_normalize_helpers_cover_edge_cases():
 
     foreign_phone, foreign_issues = compliance.normalize_phone("+44 73 123 4567")
     assert foreign_phone is None
-    assert any("South African" in issue for issue in foreign_issues)
+    assert any(
+        project_config.PHONE_COUNTRY_CODE in issue or "prefix" in issue
+        for issue in foreign_issues
+    )
 
     invalid_phone, invalid_issues = compliance.normalize_phone("123")
     assert invalid_phone is None

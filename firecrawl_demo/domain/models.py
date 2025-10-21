@@ -15,20 +15,12 @@ if TYPE_CHECKING:
     )
     from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
 
-EXPECTED_COLUMNS = [
-    "Name of Organisation",
-    "Province",
-    "Status",
-    "Website URL",
-    "Contact Person",
-    "Contact Number",
-    "Contact Email Address",
-]
+EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
 
 _CANONICAL_PROVINCES = {province.lower(): province for province in config.PROVINCES}
 _UNKNOWN_PROVINCE = "Unknown"
 _CANONICAL_STATUSES = {status.lower(): status for status in config.CANONICAL_STATUSES}
-_STATUS_FALLBACK = "Needs Review"
+_STATUS_FALLBACK = config.DEFAULT_STATUS
 
 
 def normalize_province(value: Any) -> str:

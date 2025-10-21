@@ -34,9 +34,17 @@ else:  # pragma: no cover - optional dependency
     # ``resolver.NXDOMAIN`` under newer dnspython releases.
     dns_resolver = dns.resolver
 
-_PHONE_RE = re.compile(r"^\+27\d{9}$")
-_EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
-_ROLE_INBOX_RE = re.compile(r"^(?:info|sales|contact|enquiries|admin|support)@", re.I)
+
+_PHONE_RE = re.compile(config.PHONE_E164_REGEX)
+_EMAIL_RE = re.compile(config.EMAIL_REGEX)
+_ROLE_INBOX_RE = (
+    re.compile(
+        rf"^(?:{'|'.join(re.escape(prefix) for prefix in config.ROLE_INBOX_PREFIXES)})@",
+        re.I,
+    )
+    if config.ROLE_INBOX_PREFIXES
+    else None
+)
 
 
 def normalize_province(province: str | None) -> str:
@@ -71,30 +79,44 @@ def normalize_phone(raw_phone: str | None) -> tuple[str | None, list[str]]:
     digits = re.sub(r"\D", "", raw_phone)
     normalized: str | None = None
     stripped = raw_phone.strip()
-    has_sa_prefix = False
+    country_code = config.PHONE_COUNTRY_CODE
+    country_digits = country_code.lstrip("+")
+    national_length = config.PHONE_NATIONAL_NUMBER_LENGTH
+    prefixes = [str(prefix).lstrip("+") for prefix in config.PHONE_NATIONAL_PREFIXES]
 
-    def _normalize_global(local_digits: str) -> str | None:
-        trimmed = local_digits.lstrip("0")
-        if len(trimmed) == 9:
-            return "+27" + trimmed
-        return None
+    def _normalize_local(local_digits: str) -> str | None:
+        candidate = local_digits
+        if national_length is not None:
+            candidate = candidate[-national_length:]
+            if len(candidate) != national_length:
+                return None
+        candidate = candidate.lstrip("0") if not national_length else candidate
+        if national_length is None and not candidate:
+            return None
+        return f"+{country_digits}{candidate}"
 
-    if stripped.startswith("+27") and digits.startswith("27"):
-        has_sa_prefix = True
-        normalized = _normalize_global(digits[2:])
-    elif digits.startswith("27"):
-        has_sa_prefix = True
-        normalized = _normalize_global(digits[2:])
-    elif digits.startswith("0"):
-        has_sa_prefix = True
-        if len(digits) == 10:
-            normalized = "+27" + digits[1:]
+    has_profile_prefix = False
+
+    if stripped.startswith(country_code) and digits.startswith(country_digits):
+        has_profile_prefix = True
+        normalized = _normalize_local(digits[len(country_digits) :])
+    elif digits.startswith(country_digits):
+        has_profile_prefix = True
+        normalized = _normalize_local(digits[len(country_digits) :])
+    else:
+        for prefix in prefixes:
+            if digits.startswith(prefix):
+                has_profile_prefix = True
+                normalized = _normalize_local(digits[len(prefix) :])
+                break
 
     issues: list[str] = []
     if not normalized or not _PHONE_RE.fullmatch(normalized):
-        if not has_sa_prefix:
-            issues.append("Phone must use a South African prefix (+27/27/0)")
-        issues.append("Phone is not in +27 E.164 format")
+        if not has_profile_prefix:
+            issues.append(
+                f"Phone must use the {country_code} country prefix or configured national prefixes"
+            )
+        issues.append(f"Phone is not in {country_code} E.164 format")
         return None, issues
     return normalized, issues
 
@@ -110,12 +132,16 @@ def validate_email(
         issues.append("Email format invalid")
         return None, issues
     domain = cleaned.split("@", 1)[-1].lower()
-    if organisation_domain and not domain.endswith(organisation_domain):
+    if (
+        config.EMAIL_REQUIRE_DOMAIN_MATCH
+        and organisation_domain
+        and not domain.endswith(organisation_domain.lower())
+    ):
         issues.append("Email domain does not match official domain")
     mx_issue = _check_mx_records(domain)
     if mx_issue:
         issues.append(mx_issue)
-    if _ROLE_INBOX_RE.match(cleaned):
+    if _ROLE_INBOX_RE and _ROLE_INBOX_RE.match(cleaned):
         issues.append("Role inbox used")
     return cleaned.lower(), issues
 
@@ -196,7 +222,7 @@ def evidence_entry(
 ) -> dict[str, str]:
     timestamp = datetime.now(UTC).isoformat(timespec="seconds")
     # Enforce ≥2 sources and at least one official
-    official_keywords = [".gov.za", "caa.co.za", "ac.za", "org.za"]
+    official_keywords = config.OFFICIAL_SOURCE_KEYWORDS or (".gov.za", "ac.za")
     official_present = any(any(k in s for k in official_keywords) for s in sources)
     if len(sources) < 2 or not official_present:
         notes = (

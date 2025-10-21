@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from firecrawl_demo.core.profiles import (
+    NumericUnitRule,
+    ProfileError,
+    RefinementProfile,
+    discover_profile,
+    load_profile,
+)
 from firecrawl_demo.governance.secrets import (
     SecretsProvider,
     build_provider_from_environment,
@@ -38,6 +46,25 @@ CACHE_DIR = DATA_DIR / "cache"
 LOGS_DIR = DATA_DIR / "logs"
 
 
+# Profile loading -----------------------------------------------------------
+PROFILE: RefinementProfile
+PROFILE_PATH: Path
+
+
+def _resolve_profile_from_env() -> tuple[RefinementProfile, Path]:
+    profile_id = os.environ.get("REFINEMENT_PROFILE", "za_flight_schools")
+    profile_path_env = os.environ.get("REFINEMENT_PROFILE_PATH")
+    try:
+        if profile_path_env:
+            resolved_path = Path(profile_path_env).expanduser().resolve()
+        else:
+            resolved_path = discover_profile(PROJECT_ROOT, profile_id)
+        profile = load_profile(resolved_path)
+        return profile, resolved_path
+    except ProfileError as exc:  # pragma: no cover - configuration failure
+        raise RuntimeError(f"Failed to load refinement profile: {exc}") from exc
+
+
 # Input / output artefacts ---------------------------------------------------
 SOURCE_XLSX = PROJECT_ROOT / "SACAA Flight Schools - FINAL copy.xlsx"
 ENRICHED_XLSX = PROCESSED_DIR / "SACAA Flight Schools - ENRICHED.xlsx"
@@ -55,40 +82,111 @@ LISTS_SHEET = "Lists"
 
 
 # Compliance constants -----------------------------------------------------
-PROVINCES = [
-    "Eastern Cape",
-    "Free State",
-    "Gauteng",
-    "KwaZulu-Natal",
-    "Limpopo",
-    "Mpumalanga",
-    "Northern Cape",
-    "North West",
-    "Western Cape",
-]
+EXPECTED_COLUMNS: list[str]
+PROVINCES: list[str]
+CANONICAL_STATUSES: list[str]
+DEFAULT_STATUS: str
 
-CANONICAL_STATUSES = [
-    "Verified",
-    "Candidate",
-    "Needs Review",
-    "Duplicate",
-    "Do Not Contact (Compliance)",
-]
+MIN_EVIDENCE_SOURCES: int
+DEFAULT_CONFIDENCE_BY_STATUS: dict[str, int]
+OFFICIAL_SOURCE_KEYWORDS: tuple[str, ...]
+EVIDENCE_QUERIES: list[str]
 
-MIN_EVIDENCE_SOURCES = 2
-DEFAULT_CONFIDENCE_BY_STATUS = {
-    "Verified": 95,
-    "Candidate": 70,
-    "Needs Review": 40,
-    "Duplicate": 0,
-    "Do Not Contact (Compliance)": 0,
-}
+PHONE_COUNTRY_CODE: str
+PHONE_E164_REGEX: str
+PHONE_NATIONAL_PREFIXES: tuple[str, ...]
+PHONE_NATIONAL_NUMBER_LENGTH: int | None
 
-EVIDENCE_QUERIES = [
-    "{name} {province} Civil Aviation Authority",
-    "{name} training accreditation",
-    "{name} SACAA site:.za",
-]
+EMAIL_REGEX: str
+ROLE_INBOX_PREFIXES: tuple[str, ...]
+EMAIL_REQUIRE_DOMAIN_MATCH: bool
+
+RESEARCH_QUERIES: list[str]
+
+NUMERIC_UNIT_RULES: tuple[NumericUnitRule, ...]
+
+
+def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
+    global PROFILE, PROFILE_PATH
+    global EXPECTED_COLUMNS, PROVINCES, CANONICAL_STATUSES, DEFAULT_STATUS
+    global MIN_EVIDENCE_SOURCES, DEFAULT_CONFIDENCE_BY_STATUS, OFFICIAL_SOURCE_KEYWORDS
+    global EVIDENCE_QUERIES, PHONE_COUNTRY_CODE, PHONE_E164_REGEX
+    global PHONE_NATIONAL_PREFIXES, PHONE_NATIONAL_NUMBER_LENGTH
+    global EMAIL_REGEX, ROLE_INBOX_PREFIXES, EMAIL_REQUIRE_DOMAIN_MATCH
+    global RESEARCH_QUERIES, NUMERIC_UNIT_RULES
+
+    PROFILE = profile
+    PROFILE_PATH = profile_path
+
+    EXPECTED_COLUMNS = list(profile.dataset.expected_columns)
+    PROVINCES = list(profile.provinces)
+    CANONICAL_STATUSES = list(profile.statuses)
+    DEFAULT_STATUS = profile.default_status
+
+    MIN_EVIDENCE_SOURCES = profile.compliance.min_evidence_sources
+    DEFAULT_CONFIDENCE_BY_STATUS = dict(profile.compliance.default_confidence)
+    OFFICIAL_SOURCE_KEYWORDS = tuple(profile.compliance.official_source_keywords)
+    EVIDENCE_QUERIES = list(profile.compliance.evidence_queries)
+
+    PHONE_COUNTRY_CODE = profile.contact.phone.country_code
+    PHONE_E164_REGEX = profile.contact.phone.e164_regex
+    PHONE_NATIONAL_PREFIXES = tuple(profile.contact.phone.national_prefixes)
+    PHONE_NATIONAL_NUMBER_LENGTH = profile.contact.phone.national_number_length
+
+    EMAIL_REGEX = profile.contact.email.regex
+    ROLE_INBOX_PREFIXES = tuple(profile.contact.email.role_prefixes)
+    EMAIL_REQUIRE_DOMAIN_MATCH = profile.contact.email.require_domain_match
+
+    RESEARCH_QUERIES = list(profile.research.queries)
+    NUMERIC_UNIT_RULES = tuple(profile.dataset.numeric_units)
+
+
+_profile_init, _profile_path_init = _resolve_profile_from_env()
+_apply_profile(_profile_init, _profile_path_init)
+
+
+def switch_profile(
+    *,
+    profile_id: str | None = None,
+    profile_path: Path | None = None,
+) -> RefinementProfile:
+    """Switch the active refinement profile at runtime."""
+
+    if profile_path:
+        resolved = Path(profile_path).expanduser().resolve()
+        profile = load_profile(resolved)
+        _apply_profile(profile, resolved)
+        return profile
+    if profile_id:
+        resolved = discover_profile(PROJECT_ROOT, profile_id)
+        profile = load_profile(resolved)
+        _apply_profile(profile, resolved)
+        return profile
+    raise ProfileError("switch_profile requires either profile_id or profile_path")
+
+
+def list_profiles() -> list[dict[str, object]]:
+    """Return available profiles with metadata."""
+
+    profiles: list[dict[str, object]] = []
+    profiles_dir = PROJECT_ROOT / "profiles"
+    if not profiles_dir.exists():
+        return profiles
+    for path in sorted(profiles_dir.glob("*.y*ml")):
+        try:
+            profile = load_profile(path)
+        except ProfileError:
+            continue
+        profiles.append(
+            {
+                "id": profile.identifier,
+                "name": profile.name,
+                "description": profile.description,
+                "path": str(path),
+                "active": path.resolve() == PROFILE_PATH.resolve(),
+            }
+        )
+    return profiles
 
 
 # Dataclasses for richer configuration --------------------------------------

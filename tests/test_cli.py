@@ -376,7 +376,7 @@ def test_mcp_server_stdio_invokes_async_loop():
     server_instances: list[object] = []
 
     class DummyServer:
-        def __init__(self, pipeline, *, plan_guard):
+        def __init__(self, pipeline, *, plan_guard, pipeline_builder):
             self.pipeline = pipeline
             self.called = False
             server_instances.append(self)
@@ -417,7 +417,7 @@ def test_mcp_server_stdio_invokes_async_loop():
 def test_mcp_server_rejects_non_stdio():
     runner = CliRunner()
     with cli.override_cli_dependencies(
-        CopilotMCPServer=lambda pipeline, *, plan_guard: pipeline,
+        CopilotMCPServer=lambda pipeline, *, plan_guard, pipeline_builder: pipeline,
         Pipeline=lambda *_, **__: "pipeline",
         build_evidence_sink=lambda: "sink",
         plan_guard=cli.plan_guard,

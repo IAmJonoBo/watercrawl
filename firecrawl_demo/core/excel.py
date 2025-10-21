@@ -12,7 +12,6 @@ import pandas as pd
 from pint import UnitRegistry
 from pint.errors import DimensionalityError, RedefinitionError, UndefinedUnitError
 
-from firecrawl_demo.domain.models import EXPECTED_COLUMNS as DOMAIN_EXPECTED_COLUMNS
 from firecrawl_demo.domain.models import (
     EnrichmentResult,
     SchoolRecord,
@@ -22,7 +21,7 @@ from firecrawl_demo.domain.models import (
 
 from . import config  # type: ignore
 
-EXPECTED_COLUMNS = list(DOMAIN_EXPECTED_COLUMNS)
+EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
 
 
 UNIT_REGISTRY = UnitRegistry()
@@ -36,21 +35,12 @@ for definition in ("count = []", "plane = count", "planes = count", "aircraft = 
 
 
 NUMERIC_UNIT_RULES: dict[str, dict[str, Any]] = {
-    "Fleet Size": {
-        "canonical_unit": "count",
-        "cast": int,
-        "allowed_units": {"count", "plane", "planes", "aircraft"},
-    },
-    "Runway Length": {
-        "canonical_unit": "meter",
-        "cast": float,
-        "allowed_units": {"meter", "metre", "m", "foot", "feet", "ft"},
-    },
-    "Runway Length (m)": {
-        "canonical_unit": "meter",
-        "cast": float,
-        "allowed_units": {"meter", "metre", "m"},
-    },
+    rule.column: {
+        "canonical_unit": rule.canonical_unit,
+        "cast": rule.cast,
+        "allowed_units": set(rule.allowed_units),
+    }
+    for rule in config.NUMERIC_UNIT_RULES
 }
 
 

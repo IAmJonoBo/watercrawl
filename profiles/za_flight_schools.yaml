@@ -1,0 +1,77 @@
+id: za-flight-schools
+name: South Africa Flight Schools
+description: Canonical profile for ACES Aerodynamics enrichment of South African flight schools.
+dataset:
+  expected_columns:
+    - Name of Organisation
+    - Province
+    - Status
+    - Website URL
+    - Contact Person
+    - Contact Number
+    - Contact Email Address
+  numeric_units:
+    - column: Fleet Size
+      canonical_unit: count
+      cast: int
+      allowed_units: [count, plane, planes, aircraft]
+    - column: Runway Length
+      canonical_unit: meter
+      cast: float
+      allowed_units: [meter, metre, m, foot, feet, ft]
+    - column: Runway Length (m)
+      canonical_unit: meter
+      cast: float
+      allowed_units: [meter, metre, m]
+geography:
+  provinces:
+    - Eastern Cape
+    - Free State
+    - Gauteng
+    - KwaZulu-Natal
+    - Limpopo
+    - Mpumalanga
+    - Northern Cape
+    - North West
+    - Western Cape
+statuses:
+  allowed:
+    - Verified
+    - Candidate
+    - Needs Review
+    - Duplicate
+    - Do Not Contact (Compliance)
+  default: Needs Review
+compliance:
+  default_confidence:
+    Verified: 95
+    Candidate: 70
+    Needs Review: 40
+    Duplicate: 0
+    Do Not Contact (Compliance): 0
+  min_evidence_sources: 2
+  official_source_keywords:
+    - .gov.za
+    - caa.co.za
+    - .ac.za
+    - .org.za
+    - .mil.za
+  evidence_queries:
+    - "{name} {province} Civil Aviation Authority"
+    - "{name} training accreditation"
+    - "{name} SACAA site:.za"
+contact:
+  phone:
+    country_code: "+27"
+    e164_regex: "^\\+27\\d{9}$"
+    national_prefixes: [0, 27]
+    national_number_length: 9
+  email:
+    regex: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    role_prefixes: [info, sales, contact, enquiries, admin, support]
+    require_domain_match: true
+research:
+  queries:
+    - "{name} {province} civil aviation"
+    - "{name} flight school"
+    - "{name} aviation South Africa"

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
+import yaml
+
 from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.core import config
 from firecrawl_demo.domain.models import EvidenceRecord
 from firecrawl_demo.infrastructure.planning import PlanCommitContract
 from firecrawl_demo.integrations.adapters.research import (
@@ -19,6 +23,27 @@ from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 class DummyPipeline(Pipeline):
     def __init__(self) -> None:  # pragma: no cover - base init
         super().__init__()
+
+
+@pytest.fixture(autouse=True)
+def reset_profile() -> Iterable[None]:
+    original_path = config.PROFILE_PATH
+    yield
+    config.switch_profile(profile_path=original_path)
+
+
+def _make_server(
+    pipeline: Pipeline | None = None,
+    guard: PlanCommitGuard | None = None,
+    builder: Callable[[], Pipeline] | None = None,
+) -> CopilotMCPServer:
+    active_pipeline = pipeline or DummyPipeline()
+    pipeline_builder = builder or active_pipeline.__class__
+    return CopilotMCPServer(
+        pipeline=active_pipeline,
+        plan_guard=guard,
+        pipeline_builder=pipeline_builder,
+    )
 
 
 def _write_plan(tmp_path: Path, name: str = "change") -> Path:
@@ -90,7 +115,7 @@ def _make_guard(tmp_path: Path) -> PlanCommitGuard:
 
 
 def test_mcp_lists_tasks() -> None:
-    server = CopilotMCPServer(pipeline=DummyPipeline())
+    server = _make_server()
     response = server.process_request(
         {"jsonrpc": "2.0", "id": 1, "method": "list_tasks", "params": {}}
     )
@@ -102,7 +127,7 @@ def test_mcp_lists_tasks() -> None:
 
 
 def test_mcp_runs_validation_task() -> None:
-    server = CopilotMCPServer(pipeline=DummyPipeline())
+    server = _make_server()
     response = server.process_request(
         {
             "jsonrpc": "2.0",
@@ -115,7 +140,7 @@ def test_mcp_runs_validation_task() -> None:
 
 
 def test_mcp_handles_unknown_task() -> None:
-    server = CopilotMCPServer(pipeline=DummyPipeline())
+    server = _make_server()
     response = server.process_request(
         {
             "jsonrpc": "2.0",
@@ -128,7 +153,7 @@ def test_mcp_handles_unknown_task() -> None:
 
 
 def test_mcp_summarize_last_run_handles_empty_history() -> None:
-    server = CopilotMCPServer(pipeline=DummyPipeline())
+    server = _make_server()
     response = server.process_request(
         {
             "jsonrpc": "2.0",
@@ -140,6 +165,52 @@ def test_mcp_summarize_last_run_handles_empty_history() -> None:
 
     assert response["result"]["status"] == "empty"
     assert "message" in response["result"]
+
+
+def test_mcp_initialize_reports_profile() -> None:
+    server = _make_server()
+    response = server.process_request(
+        {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}}
+    )
+    assert response["result"]["profile"]["id"] == config.PROFILE.identifier
+
+
+def test_mcp_list_profiles_marks_active() -> None:
+    server = _make_server()
+    response = server.process_request(
+        {"jsonrpc": "2.0", "id": 99, "method": "list_profiles", "params": {}}
+    )
+    profiles = response["result"]["profiles"]
+    assert profiles, "Expected at least one profile"
+    active = [entry for entry in profiles if entry["active"]]
+    assert active and active[0]["id"] == config.PROFILE.identifier
+
+
+def test_mcp_select_profile_by_path(tmp_path: Path) -> None:
+    server = _make_server()
+    original_path = config.PROFILE_PATH
+    target_path = config.PROJECT_ROOT / "profiles" / "unit_test_profile.yaml"
+    definition = yaml.safe_load(original_path.read_text(encoding="utf-8"))
+    definition["id"] = "unit-test-profile"
+    definition["name"] = "Unit Test Profile"
+    definition["description"] = "Temporary profile for MCP tests"
+    target_path.write_text(yaml.safe_dump(definition), encoding="utf-8")
+
+    try:
+        response = server.process_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 77,
+                "method": "select_profile",
+                "params": {"profile_path": str(target_path)},
+            }
+        )
+        assert response["result"]["profile"]["id"] == "unit-test-profile"
+        assert config.PROFILE.identifier == "unit-test-profile"
+        assert server.pipeline is not None
+    finally:
+        config.switch_profile(profile_path=original_path)
+        target_path.unlink(missing_ok=True)
 
 
 @dataclass
@@ -169,7 +240,11 @@ def test_mcp_enrich_task_uses_injected_sink(tmp_path: Path) -> None:
     sink = RecordingSink(calls=[])
     pipeline = Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink)
     guard = _make_guard(tmp_path)
-    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+    server = _make_server(
+        pipeline=pipeline,
+        guard=guard,
+        builder=lambda: Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink),
+    )
 
     rows = [
         {
@@ -205,7 +280,11 @@ def test_mcp_enrich_task_uses_injected_sink(tmp_path: Path) -> None:
 def test_mcp_enrich_rejects_missing_plan(tmp_path: Path) -> None:
     pipeline = Pipeline(research_adapter=SimpleAdapter())
     guard = _make_guard(tmp_path)
-    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+    server = _make_server(
+        pipeline=pipeline,
+        guard=guard,
+        builder=lambda: Pipeline(research_adapter=SimpleAdapter()),
+    )
 
     rows = [
         {
@@ -241,7 +320,11 @@ def test_mcp_enrich_rejects_missing_plan(tmp_path: Path) -> None:
 def test_mcp_enrich_rejects_missing_commit(tmp_path: Path) -> None:
     pipeline = Pipeline(research_adapter=SimpleAdapter())
     guard = _make_guard(tmp_path)
-    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+    server = _make_server(
+        pipeline=pipeline,
+        guard=guard,
+        builder=lambda: Pipeline(research_adapter=SimpleAdapter()),
+    )
 
     rows = [
         {
@@ -277,7 +360,11 @@ def test_mcp_enrich_rejects_missing_commit(tmp_path: Path) -> None:
 def test_mcp_enrich_logs_audit_entry(tmp_path: Path) -> None:
     guard = _make_guard(tmp_path)
     pipeline = Pipeline(research_adapter=SimpleAdapter())
-    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+    server = _make_server(
+        pipeline=pipeline,
+        guard=guard,
+        builder=lambda: Pipeline(research_adapter=SimpleAdapter()),
+    )
 
     response = server.process_request(
         {
@@ -305,7 +392,11 @@ def test_mcp_enrich_logs_audit_entry(tmp_path: Path) -> None:
 def test_mcp_enrich_rejects_low_rag_metrics(tmp_path: Path) -> None:
     guard = _make_guard(tmp_path)
     pipeline = Pipeline(research_adapter=SimpleAdapter())
-    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+    server = _make_server(
+        pipeline=pipeline,
+        guard=guard,
+        builder=lambda: Pipeline(research_adapter=SimpleAdapter()),
+    )
 
     low_rag = {"faithfulness": 0.5, "context_precision": 0.9, "answer_relevancy": 0.9}
     response = server.process_request(
@@ -338,7 +429,11 @@ def test_mcp_reports_last_run_metrics_and_sanity_findings(tmp_path: Path) -> Non
     sink = RecordingSink(calls=[])
     pipeline = Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink)
     guard = _make_guard(tmp_path)
-    server = CopilotMCPServer(pipeline=pipeline, plan_guard=guard)
+    server = _make_server(
+        pipeline=pipeline,
+        guard=guard,
+        builder=lambda: Pipeline(research_adapter=SimpleAdapter(), evidence_sink=sink),
+    )
 
     rows = [
         {

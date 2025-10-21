@@ -79,6 +79,7 @@ The exported requirements files include pinned versions with SHA256 hashes for r
 - **Feature-flagged Firecrawl integration** guarded by `FEATURE_ENABLE_FIRECRAWL_SDK` and `ALLOW_NETWORK_RESEARCH` so offline QA stays deterministic.
 - **Triangulated intelligence** that merges regulator, press, and directory evidence to spot rebrands or ownership changes.
 - **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.application.pipeline`).
+- **Configurable refinement profiles** living under `profiles/` to capture geography, taxonomy, evidence, and contact rules for any white-labeled deployment.
 - **CLI** commands for analysts and automation runs (`firecrawl_demo.interfaces.cli`).
 - **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
   remediation guidance into the evidence log and MCP.
@@ -98,6 +99,8 @@ The exported requirements files include pinned versions with SHA256 hashes for r
 - `ALLOW_NETWORK_RESEARCH=1` — permit live network lookups (default: offline-only triangulation).
 - `FEATURE_ENABLE_PRESS_RESEARCH=0` or `FEATURE_ENABLE_REGULATOR_LOOKUP=0` — disable specific intelligence sources.
 - `FEATURE_INVESTIGATE_REBRANDS=0` — skip rename/ownership heuristics.
+- `REFINEMENT_PROFILE=za_flight_schools` — select the profile identifier to load (defaults to the South African flight school profile).
+- `REFINEMENT_PROFILE_PATH=/abs/path/to/profile.yaml` — override the profile file path explicitly; takes precedence over `REFINEMENT_PROFILE`.
 
 When offline, the pipeline still records reminders in the evidence log so analysts can follow up manually.
 
@@ -126,6 +129,8 @@ poetry run python apps/analyst/accessibility/axe_smoke.py
 > The offline Safety runner relies on the vendored `safety-db` snapshot so QA can execute without network connectivity. Update the dependency periodically to refresh advisories.
 
 > The `scripts/run_pytest.sh` wrapper discovers the Poetry-managed Python 3.13 interpreter (or provisions one via `uv`) so `pytest` never falls back to a stale system binary.
+
+The analyst CLI now accepts `--profile`/`--profile-path` switches on `validate`, `enrich`, and `contracts` so white-labeled profiles can be selected per run. The MCP server exposes matching `list_profiles` and `select_profile` actions for GitHub Copilot and local LLM copilots.
 
 ## Supply Chain Hardening
 

@@ -19,6 +19,7 @@ from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.application.progress import PipelineProgressListener
 from firecrawl_demo.core import config
 from firecrawl_demo.core.excel import read_dataset
+from firecrawl_demo.core.profiles import ProfileError
 from firecrawl_demo.domain.models import SchoolRecord
 from firecrawl_demo.infrastructure.evidence import build_evidence_sink
 from firecrawl_demo.integrations.contracts import (
@@ -67,6 +68,17 @@ def override_cli_dependencies(**overrides: Any) -> Iterator[None]:
         yield
     finally:
         _CLI_OVERRIDE_STACK.pop()
+
+
+def _select_profile(profile_id: str | None, profile_path: Path | None) -> None:
+    """Switch the active profile when requested."""
+
+    if not profile_id and not profile_path:
+        return
+    try:
+        config.switch_profile(profile_id=profile_id, profile_path=profile_path)
+    except ProfileError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 class RichPipelineProgress(PipelineProgressListener):
@@ -149,9 +161,27 @@ def cli() -> None:
     default=None,
     help="Display a progress bar while validating (defaults to off).",
 )
-def validate(input_path: Path, output_format: str, progress: bool | None) -> None:
+@click.option(
+    "--profile",
+    "profile_id",
+    type=str,
+    help="Refinement profile identifier to load before validation.",
+)
+@click.option(
+    "--profile-path",
+    type=click.Path(path_type=Path),
+    help="Path to a refinement profile YAML file.",
+)
+def validate(
+    input_path: Path,
+    output_format: str,
+    progress: bool | None,
+    profile_id: str | None,
+    profile_path: Path | None,
+) -> None:
     """Validate a CSV/XLSX dataset and report any quality issues."""
 
+    _select_profile(profile_id, profile_path)
     pipeline_factory = _get_cli_override("Pipeline", Pipeline)
     reader = _get_cli_override("read_dataset", read_dataset)
     pipeline = pipeline_factory()
@@ -215,6 +245,17 @@ def validate(input_path: Path, output_format: str, progress: bool | None) -> Non
     help="Display a progress bar during enrichment (defaults to on for text output).",
 )
 @click.option(
+    "--profile",
+    "profile_id",
+    type=str,
+    help="Refinement profile identifier to load before enrichment.",
+)
+@click.option(
+    "--profile-path",
+    type=click.Path(path_type=Path),
+    help="Path to a refinement profile YAML file.",
+)
+@click.option(
     "--plan",
     "plans",
     type=click.Path(path_type=Path),
@@ -238,12 +279,15 @@ def enrich(
     output_path: Path | None,
     output_format: str,
     progress: bool | None,
+    profile_id: str | None,
+    profile_path: Path | None,
     plans: Sequence[Path],
     commits: Sequence[Path],
     force: bool,
 ) -> None:
     """Validate, enrich, and export a dataset."""
 
+    _select_profile(profile_id, profile_path)
     evidence_sink_factory = _get_cli_override(
         "build_evidence_sink", build_evidence_sink
     )
@@ -363,9 +407,26 @@ def enrich(
 @click.option(
     "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
 )
-def contracts(input_path: Path, output_format: str) -> None:
+@click.option(
+    "--profile",
+    "profile_id",
+    type=str,
+    help="Refinement profile identifier to load before contract checks.",
+)
+@click.option(
+    "--profile-path",
+    type=click.Path(path_type=Path),
+    help="Path to a refinement profile YAML file.",
+)
+def contracts(
+    input_path: Path,
+    output_format: str,
+    profile_id: str | None,
+    profile_path: Path | None,
+) -> None:
     """Run Great Expectations contracts against a curated dataset."""
 
+    _select_profile(profile_id, profile_path)
     sink_factory = _get_cli_override("build_evidence_sink", build_evidence_sink)
     evidence_sink = sink_factory()
 
@@ -522,9 +583,14 @@ def mcp_server(stdio: bool) -> None:
     sink_factory = _get_cli_override("build_evidence_sink", build_evidence_sink)
     server_factory = _get_cli_override("CopilotMCPServer", CopilotMCPServer)
     plan_guard = _get_cli_override("plan_guard", CLI_ENVIRONMENT.plan_guard)
+
+    def _build_pipeline() -> Pipeline:
+        return pipeline_factory(evidence_sink=sink_factory())
+
     server = server_factory(
-        pipeline=pipeline_factory(evidence_sink=sink_factory()),
+        pipeline=_build_pipeline(),
         plan_guard=plan_guard,
+        pipeline_builder=_build_pipeline,
     )
     if stdio:
         asyncio_run = _get_cli_override("asyncio_run", asyncio.run)

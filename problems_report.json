@@ -1,22 +1,52 @@
 {
-  "generated_at": "2025-10-20T12:04:16.289756+00:00",
+  "generated_at": "2025-10-21T08:11:08.662549+00:00",
   "tools": [
     {
       "tool": "ruff",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "issues": [
+        {
+          "path": "/Users/jonathanbotha/GitHub/watercrawl/tests/test_alerts.py",
+          "line": 5,
+          "column": 8,
+          "code": "F401",
+          "message": "`pytest` imported but unused"
+        }
+      ],
       "summary": {
-        "issue_count": 0,
-        "fixable": 0
+        "issue_count": 1,
+        "fixable": 1
       }
     },
     {
       "tool": "mypy",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "issues": [
+        {
+          "path": "tools/testing/mutation_runner.py",
+          "line": 79,
+          "message": "Dict entry 2 has incompatible type \"str\": \"int\"; expected \"str\": \"Sequence[str]\" ",
+          "severity": "error",
+          "code": "dict-item"
+        }
+      ],
       "notes": [
+        {
+          "path": "tests/test_compliance.py",
+          "line": 186,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 208,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -48,20 +78,6 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 183,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 205,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -117,7 +133,7 @@
         }
       ],
       "summary": {
-        "issue_count": 0,
+        "issue_count": 1,
         "note_count": 14
       }
     },
@@ -125,9 +141,126 @@
       "tool": "yamllint",
       "status": "completed",
       "returncode": 0,
+      "issues": [
+        {
+          "path": "./catalog-info.yaml",
+          "line": 14,
+          "column": 1,
+          "severity": "warning",
+          "message": "found forbidden document start \"---\" (document-start)"
+        },
+        {
+          "path": "./catalog-info.yaml",
+          "line": 34,
+          "column": 1,
+          "severity": "warning",
+          "message": "found forbidden document start \"---\" (document-start)"
+        },
+        {
+          "path": "./templates/golden-path/catalog-info.yaml",
+          "line": 8,
+          "column": 1,
+          "severity": "warning",
+          "message": "found forbidden document start \"---\" (document-start)"
+        },
+        {
+          "path": "./templates/golden-path/catalog-info.yaml",
+          "line": 19,
+          "column": 1,
+          "severity": "warning",
+          "message": "found forbidden document start \"---\" (document-start)"
+        }
+      ],
+      "summary": {
+        "issue_count": 4
+      }
+    },
+    {
+      "tool": "bandit",
+      "status": "completed_with_exit_code",
+      "returncode": 1,
       "issues": [],
       "summary": {
         "issue_count": 0
+      },
+      "raw_preview": {
+        "chunks": [
+          "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
+          "{",
+          "  \"errors\": [],",
+          "  \"generated_at\": \"2025-10-21T08:11:04Z\",",
+          "  \"metrics\": {",
+          "    \"_totals\": {",
+          "      \"CONFIDENCE.HIGH\": 3,",
+          "      \"CONFIDENCE.LOW\": 0,",
+          "      \"CONFIDENCE.MEDIUM\": 0,",
+          "      \"CONFIDENCE.UNDEFINED\": 0,",
+          "      \"SEVERITY.HIGH\": 0,",
+          "      \"SEVERITY.LOW\": 3,",
+          "      \"SEVERITY.MEDIUM\": 0,",
+          "      \"SEVERITY.UNDEFINED\": 0,",
+          "      \"loc\": 9704,",
+          "      \"nosec\": 0,",
+          "      \"skipped_tests\": 0",
+          "    },",
+          "    \"firecrawl_demo/__init__.py\": {",
+          "      \"CONFIDENCE.HIGH\": 0,",
+          "      \"CONFIDENCE.LOW\": 0,",
+          "      \"CONFIDENCE.MEDIUM\": 0,",
+          "      \"CONFIDENCE.UNDEFINED\": 0,",
+          "      \"SEVERITY.HIGH\": 0,",
+          "      \"SEVERITY.LOW\": 0,",
+          "      \"SEVERITY.MEDIUM\": 0,",
+          "      \"SEVERITY.UNDEFINED\": 0,",
+          "      \"loc\": 15,",
+          "      \"nosec\": 0,",
+          "      \"skipped_tests\": 0",
+          "    },",
+          "    \"firecrawl_demo/application/__init__.py\": {",
+          "      \"CONFIDENCE.HIGH\": 0,",
+          "      \"CONFIDENCE.LOW\": 0,",
+          "      \"CONFIDENCE.MEDIUM\": 0,",
+          "      \"CONFIDENCE.UNDEFINED\": 0,",
+          "      \"SEVERITY.HIGH\": 0,",
+          "      \"SEVERITY.LOW\": 0,",
+          "      \"SEVERITY.MEDIUM\": 0,",
+          "      \"SEVERITY.UNDEFINED\": 0,\u2026"
+        ],
+        "truncated": true,
+        "omitted_characters": 20810,
+        "omitted_chunks": 36
+      },
+      "stderr_preview": {
+        "chunks": [
+          "[main]\tINFO\tprofile include tests: None",
+          "[main]\tINFO\tprofile exclude tests: None",
+          "[main]\tINFO\tcli include tests: None",
+          "[main]\tINFO\tcli exclude tests: None",
+          ""
+        ]
+      }
+    },
+    {
+      "tool": "sqlfluff",
+      "status": "completed_with_exit_code",
+      "returncode": 2,
+      "issues": [],
+      "summary": {
+        "issue_count": 0,
+        "files_with_issues": 0
+      },
+      "stderr_preview": {
+        "chunks": [
+          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt_common.exceptions.base.CompilationError: Compilation Error in t",
+          "est contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
+          "  CONTRACTS_CANONICAL_JSON must be set before running contracts macros.",
+          "  ",
+          "  > in macro _contracts_canonical_payload (macros/contracts_shared.sql)",
+          "  > called by macro contracts_evidence_min_confidence (macros/contracts_shared.sql)",
+          "  > called by macro test_contracts_min_confidence (macros/contracts_shared.sql)",
+          "  > called by test contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
+          ""
+        ]
       }
     }
   ]
