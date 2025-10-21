@@ -786,9 +786,62 @@ def collect(
     return aggregated
 
 
+def build_overall_summary(results: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    issue_total = 0
+    note_total = 0
+    fixable_total = 0
+    dead_code_total = 0
+    severity_total: Counter[str] = Counter()
+    tools_run: list[str] = []
+    tools_missing: list[str] = []
+    highlight_insights: list[dict[str, Any]] = []
+
+    for entry in results:
+        tool = entry.get("tool")
+        status = entry.get("status")
+        if status == "not_installed" and tool:
+            tools_missing.append(tool)
+            continue
+        if tool:
+            tools_run.append(tool)
+        summary = entry.get("summary") or {}
+        issue_total += summary.get("issue_count", 0)
+        note_total += summary.get("note_count", 0)
+        dead_code_total += summary.get("potential_dead_code", 0)
+        severity_total.update(summary.get("severity_counts", {}))
+
+        issues = entry.get("issues") or []
+        for issue in issues:
+            if issue.get("fixable"):
+                fixable_total += 1
+            insight = issue.get("insight")
+            if insight and len(highlight_insights) < 10:
+                highlight_insights.append(
+                    {
+                        "tool": tool,
+                        "path": issue.get("path"),
+                        "line": issue.get("line"),
+                        "code": issue.get("code"),
+                        "insight": insight,
+                    }
+                )
+
+    return {
+        "issue_count": issue_total,
+        "note_count": note_total,
+        "fixable_count": fixable_total,
+        "potential_dead_code": dead_code_total,
+        "severity_counts": dict(severity_total),
+        "tools_run": tools_run,
+        "tools_missing": tools_missing,
+        "insights": highlight_insights,
+    }
+
+
 def write_report(results: Sequence[dict[str, Any]]) -> None:
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": build_overall_summary(results),
         "tools": list(results),
     }
     REPORT_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")

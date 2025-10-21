@@ -211,6 +211,12 @@ def test_collect_aggregates_and_truncates_outputs(
         "Biome detected unused symbols"
     )
 
+    overall = collect_problems.build_overall_summary(results)
+    assert overall["issue_count"] == 8
+    assert overall["fixable_count"] == 1
+    assert overall["potential_dead_code"] >= 2
+    assert "ruff" in overall["tools_run"]
+
 
 def test_preview_handles_multiline_chunks() -> None:
     payload = "line-" + "a" * 210 + "\nsecond-line"
