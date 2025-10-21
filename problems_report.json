@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T23:35:39.055594+00:00",
+  "generated_at": "2025-10-21T23:43:46.396834+00:00",
   "summary": {
     "issue_count": 47,
     "note_count": 15,
@@ -94,27 +94,27 @@
     "warning_count": 0,
     "warning_insights": [],
     "performance": {
-      "total_duration_seconds": 50.524,
+      "total_duration_seconds": 13.659,
       "slowest_tools": [
         {
           "tool": "mypy",
-          "duration_seconds": 30.49
-        },
-        {
-          "tool": "biome",
-          "duration_seconds": 12.999
+          "duration_seconds": 5.443
         },
         {
           "tool": "sqlfluff",
-          "duration_seconds": 5.183
+          "duration_seconds": 4.904
+        },
+        {
+          "tool": "biome",
+          "duration_seconds": 1.556
         },
         {
           "tool": "bandit",
-          "duration_seconds": 1.326
+          "duration_seconds": 1.276
         },
         {
           "tool": "yamllint",
-          "duration_seconds": 0.495
+          "duration_seconds": 0.465
         }
       ]
     },
@@ -187,7 +187,7 @@
       "tool": "ruff",
       "status": "completed_with_exit_code",
       "returncode": 1,
-      "duration_seconds": 0.031,
+      "duration_seconds": 0.015,
       "issues": [
         {
           "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
@@ -315,7 +315,7 @@
       "tool": "mypy",
       "status": "completed_with_exit_code",
       "returncode": 1,
-      "duration_seconds": 30.49,
+      "duration_seconds": 5.443,
       "issues": [
         {
           "path": "firecrawl_demo/testing/chaos.py",
@@ -587,7 +587,7 @@
       "tool": "yamllint",
       "status": "completed_with_exit_code",
       "returncode": 1,
-      "duration_seconds": 0.495,
+      "duration_seconds": 0.465,
       "issues": [
         {
           "path": "./docker-compose.yml",
@@ -661,7 +661,7 @@
       "tool": "bandit",
       "status": "completed_with_exit_code",
       "returncode": 1,
-      "duration_seconds": 1.326,
+      "duration_seconds": 1.276,
       "issues": [
         {
           "message": "bandit exited with status 1 but did not report any findings.",
@@ -681,7 +681,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:01",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T23:35:20Z\",",
+          "  \"generated_at\": \"2025-10-21T23:43:39Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 2,",
@@ -692,7 +692,7 @@
           "      \"SEVERITY.LOW\": 0,",
           "      \"SEVERITY.MEDIUM\": 0,",
           "      \"SEVERITY.UNDEFINED\": 0,",
-          "      \"loc\": 11530,",
+          "      \"loc\": 11798,",
           "      \"nosec\": 0,",
           "      \"skipped_tests\": 3",
           "    },",
@@ -720,7 +720,7 @@
           "      \"SEVERITY.UNDEFINED\": 0,\u2026"
         ],
         "truncated": true,
-        "omitted_characters": 21619,
+        "omitted_characters": 21959,
         "omitted_chunks": 36
       },
       "stderr_preview": {
@@ -737,7 +737,7 @@
       "tool": "sqlfluff",
       "status": "completed_with_exit_code",
       "returncode": 2,
-      "duration_seconds": 5.183,
+      "duration_seconds": 4.904,
       "issues": [
         {
           "message": "sqlfluff exited with status 2 but did not report any findings.",
@@ -780,28 +780,10 @@
       "tool": "biome",
       "status": "completed",
       "returncode": 0,
-      "duration_seconds": 12.999,
+      "duration_seconds": 1.556,
       "issues": [],
       "summary": {
         "issue_count": 0
-      },
-      "stderr_preview": {
-        "chunks": [
-          "npm warn exec The following package was not found and will be installed: biome@0.3.3",
-          "npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported",
-          "npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, whic",
-          "h is much more comprehensive and powerful.",
-          "npm warn deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-",
-          "random for details.",
-          "npm warn deprecated har-validator@5.1.5: this library is no longer supported",
-          "npm warn deprecated request@2.88.2: request has been deprecated, see https://github.com/request/request/issues/3142",
-          "npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported",
-          "npm warn deprecated request-promise@3.0.0: request-promise has been deprecated because it extends the now deprecated request package, see https://github.com/request/request/issues/3142",
-          "npm warn deprecated fs-promise@0.5.0: Use mz or fs-extra^3.0 with Promise Support",
-          "npm warn deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js ",
-          "versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.",
-          ""
-        ]
       },
       "autofix_commands": [
         "npx biome check --apply --reporter json"

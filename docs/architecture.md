@@ -27,6 +27,63 @@ description: System design, layered architecture, and component relationships
 
 > **Package boundaries.** `firecrawl_demo.domain` captures business invariants, `firecrawl_demo.application` orchestrates workflows against those invariants, `firecrawl_demo.infrastructure` persists artefacts, and `firecrawl_demo.integrations` houses optional systems (lineage, lakehouse, contracts, research). Production wheels still exclude workspace directories (`codex/`, `apps/`, `platform/`, `tools/`) so deployments remain lean.
 
+## Data Contracts
+
+The `firecrawl_demo.domain.contracts` module provides **versioned Pydantic contracts** for all domain models, enabling:
+
+- **JSON Schema export** for contract testing and API documentation
+- **Runtime validation** with detailed error messages
+- **Semantic versioning** (currently v1.0.0) to track breaking changes
+- **Schema URIs** for registry integration and backward compatibility tracking
+
+### Contract Models
+
+All core domain dataclasses have corresponding Pydantic contract equivalents:
+
+- `SchoolRecordContract` - Organisation enrichment records with field validation
+- `EvidenceRecordContract` - Audit log entries with confidence scoring
+- `QualityIssueContract` - Quality gate findings with severity levels
+- `ValidationIssueContract` - Schema validation errors
+- `ValidationReportContract` - Aggregated validation results
+- `SanityCheckFindingContract` - Data consistency checks
+- `PipelineReportContract` - Complete pipeline execution reports
+
+### Adapter Functions
+
+Bidirectional adapters in `firecrawl_demo.domain.models` convert between legacy dataclasses and contract models:
+
+```python
+# Convert legacy to contract
+contract = school_record_to_contract(legacy_record)
+
+# Convert contract to legacy
+legacy = school_record_from_contract(contract)
+```
+
+This ensures **backward compatibility** during migration while new code can use contracts for validation.
+
+### Schema Export
+
+```python
+from firecrawl_demo.domain.contracts import export_all_schemas
+
+# Export all schemas for documentation/testing
+schemas = export_all_schemas()
+# Returns: {"SchoolRecord": {...}, "EvidenceRecord": {...}, ...}
+```
+
+### Contract Registry
+
+All contracts include metadata for schema registry integration:
+
+- **Version**: Semantic version (e.g., "1.0.0")
+- **Schema URI**: Canonical identifier (e.g., "https://watercrawl.acesaero.co.za/schemas/v1/school-record")
+
+Future integration points:
+- MCP responses will embed contract versions and schema URIs
+- Evidence sinks will validate entries against contracts before persistence
+- Plan→commit artefacts will reference contract versions for compatibility checking
+
 ## Data Flow
 
 ```mermaid
