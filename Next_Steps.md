@@ -18,6 +18,7 @@
 - [x] **Validate Poetry exclude list in release pipeline** — _Owner: Platform · Due: 2025‑10‑31_
 - [ ] **Wheel remediation — Python 3.13/3.14/3.15 blockers** — _Owner: Platform/Data/Security · Due: 2025‑11‑08_
   - Gates: cp314/cp315 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, and other tracked packages; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
+  - Progress: `scripts/wheel_status.py` now reports blocker status to `tools/dependency_matrix/wheel_status.json`; remains blocked pending upstream wheel releases.
 - [x] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
 - [x] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
 - [x] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
@@ -47,6 +48,7 @@
 - [x] 2025-10-20 — MCP plan→commit enforcement hardening: Sigstore-style audit log JSONL now records MCP executions; guard rejects missing `*.commit`, `If-Match`, or low RAG metrics, and tests cover audit logging paths.
 - [x] 2025-10-20 — Accessibility baseline: Added axe-core smoke tests for the Streamlit analyst UI, documented heuristic review steps, and wired the smoke test into CI.
 - [x] 2025-10-21 — Added Sigstore verification policy (scripts.verify_artifact_signatures) and wheel audit tooling (scripts.wheel_status) to automate supply-chain and Python 3.14/3.15 remediation tracking.
+- [ ] 2025-10-21 — Chaos/FMEA exercise prep: draft scenario catalog, identify telemetry needed for failure injection, assign owners for MCP vs pipeline game days.
 - [x] 2025-10-21 — Drift telemetry upgrade: Pipeline writes whylogs alert history (`alerts.json`) and Prometheus textfile metrics (`metrics.prom`) with configuration via `DRIFT_ALERT_OUTPUT` / `DRIFT_PROMETHEUS_OUTPUT`; docs updated, baseline seeding utility + sample Prometheus rules committed, and tests cover log/metric emission.
 - [x] 2025-10-21 — QA automation upgrade: Added format/problems commands with plan auto-generation, integrated mypy into Trunk linting, and documented new CQ workflows to minimise manual triage.
 

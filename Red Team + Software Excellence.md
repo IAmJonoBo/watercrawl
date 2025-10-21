@@ -152,7 +152,7 @@ _Last updated: 2025-10-17_
 
 ### 4.1 Executive Summary
 
-1. Supply-chain provenance (SBOM + signing) missing → blocks SLSA progress → quick win: add CycloneDX & Sigstore workflow.
+1. Supply-chain provenance guardrails live (CycloneDX SBOM + Sigstore signing/verification) → remaining blocker: upstream cp314/cp315 wheels → quick win: drive escalations using `scripts.wheel_status` outputs until all owners clear blockers.
 2. MCP plan→commit auditing incomplete → risk of agent overreach → quick win: enforce read-only defaults, add audit log stub.
 3. Threat modeling documentation absent → risk of blind spots across adapters/secrets → quick win: create ADR + tabletop.
 4. Accessibility baseline lacking → risk to UX/ISO 9241 alignment → quick win: axe CI check + heuristic report.
@@ -164,7 +164,7 @@ _Maturity snapshot_: `{SSDF: PS/PW/RV ~1.5 → target 3; SAMM: ~1.5 → 2; ASVS:
 
 Use the format below for each tracked issue (examples appended in this revision):
 
-1. **Missing supply-chain attestations • High • Confidence: Medium • Evidence: `.github/workflows/ci.yml` lacks SBOM/provenance steps • Assets: build artefacts** — `{SSDF:PW.6 | SLSA:L2.Build.1 | Scorecard:Binary-Artifacts | 5055:Security}` — Fix: add CycloneDX + Sigstore job; trade-off: marginal CI time increase; residual risk: dependency review accuracy.
+1. **Dependency wheel blockers • High • Confidence: Medium • Evidence: `tools/dependency_matrix/status.json`, `tools/dependency_matrix/wheel_status.json` show cp314/cp315 gaps for duckdb/argon2/etc. • Assets: Python supply chain** — `{SSDF:PW.6 | SLSA:L2.Dependency.1}` — Fix: coordinate with owners flagged in `presets/dependency_blockers.toml`, track escalations via `scripts.wheel_status` output, explore interim vendored wheels; residual risk: delayed interpreter upgrades.
 2. **MCP audit gaps • High • Confidence: Medium • Evidence: `firecrawl_demo/interfaces/mcp/server.py` only enforces basic tool allowlist • Assets: MCP runtime** — `{SSDF:RV.4 | SAMM:Governance 1.2 | OWASP ASVS V2}` — Fix: implement audit log + plan→commit gating; trade-off: additional storage/ops overhead.
 3. **Accessibility blind spot • Medium • Confidence: Low • Evidence: `app/` Streamlit UI lacks WCAG testing** — `{ISO 25010:Usability | WCAG 2.2 AA}` — Fix: run axe CI, create component checklist; trade-off: design bandwidth.
 
@@ -172,9 +172,9 @@ Log additional findings in Next_Steps as they arise.
 
 ### 4.3 Supply-Chain Posture
 
-- Current level: SLSA 1 (scripted build). No SBOM/provenance/signatures yet.
-- Actions: implement Scorecard workflow, CycloneDX export, Sigstore signing, dependency review gating, Renovate auto-PRs.
-- Evidence log should capture SBOM & provenance artefact paths for each release.
+- Current level: SLSA 1 (scripted build) with SBOM + Sigstore signing/verification enforced in CI.
+- Actions: maintain Scorecard workflow, keep `scripts.verify_artifact_signatures` green, use `scripts.wheel_status` to drive cp314/cp315 wheel remediation, expand dependency review gating, ensure Renovate auto-PRs reference blocker IDs.
+- Evidence log should capture SBOM & provenance artefact paths for each release alongside wheel-status reports.
 
 ### 4.4 Delivery, DX & UX
 
