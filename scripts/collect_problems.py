@@ -27,9 +27,15 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreter
 
 from urllib.parse import unquote, urlparse
 
-from firecrawl_demo.integrations.contracts.shared_config import (
-    environment_payload as contracts_environment_payload,
-)
+# Optional dependency on firecrawl_demo for contract environment - graceful fallback
+try:
+    from firecrawl_demo.integrations.contracts.shared_config import (
+        environment_payload as contracts_environment_payload,
+    )
+except (ModuleNotFoundError, ImportError):  # pragma: no cover - ephemeral runners
+    def contracts_environment_payload() -> dict[str, str]:
+        """Fallback when firecrawl_demo is not available (e.g., ephemeral runners)."""
+        return {}
 
 try:  # pragma: no cover - optional dependency
     import yaml as YAML  # type: ignore[import-untyped]
@@ -899,6 +905,39 @@ def _trunk_command() -> tuple[list[str], Mapping[str, str] | None, Path | None]:
     return cmd, None, None
 
 
+def _mypy_command() -> tuple[list[str], Mapping[str, str] | None, Path | None]:
+    """Build mypy command with proper stub paths for ephemeral runners."""
+    repo_root = Path(__file__).resolve().parents[1]
+    stubs_path = repo_root / "stubs"
+    third_party_path = stubs_path / "third_party"
+    
+    # Build MYPYPATH to include stubs
+    mypypath_parts = []
+    if third_party_path.exists():
+        mypypath_parts.append(str(third_party_path))
+    if stubs_path.exists():
+        mypypath_parts.append(str(stubs_path))
+    
+    env_override = None
+    if mypypath_parts:
+        env = os.environ.copy()
+        existing_mypypath = env.get("MYPYPATH", "")
+        if existing_mypypath:
+            mypypath_parts.append(existing_mypypath)
+        env["MYPYPATH"] = ":".join(mypypath_parts)
+        env_override = env
+    
+    cmd = [
+        "mypy",
+        ".",
+        "--no-pretty",
+        "--show-error-codes",
+        "--hide-error-context",
+        "--no-error-summary",
+    ]
+    return cmd, env_override, None
+
+
 def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
     yield ToolSpec(
         name="ruff",
@@ -908,14 +947,7 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
     )
     yield ToolSpec(
         name="mypy",
-        command=_static_command(
-            "mypy",
-            ".",
-            "--no-pretty",
-            "--show-error-codes",
-            "--hide-error-context",
-            "--no-error-summary",
-        ),
+        command=_mypy_command,
         parser=parse_mypy_output,
     )
     yield ToolSpec(
@@ -1093,7 +1125,12 @@ def collect(
         specs = list(tools)
     run = runner or _run_subprocess
     aggregated: list[dict[str, Any]] = []
+    
+    # Track tool execution times for performance diagnostics
+    from datetime import datetime, timezone
+    
     for spec in specs:
+        start_time = datetime.now(timezone.utc)
         try:
             cmd, env, cwd = spec.command()
         except (
@@ -1129,6 +1166,10 @@ def collect(
                 }
             )
             continue
+        
+        end_time = datetime.now(timezone.utc)
+        duration_seconds = (end_time - start_time).total_seconds()
+        
         parsed = spec.parser(completed)
         status = (
             "completed" if completed.returncode == 0 else "completed_with_exit_code"
@@ -1137,6 +1178,7 @@ def collect(
             "tool": spec.name,
             "status": status,
             "returncode": completed.returncode,
+            "duration_seconds": round(duration_seconds, 3),
         }
         entry.update(parsed)
         entry.setdefault("issues", [])
@@ -1417,6 +1459,10 @@ def build_overall_summary(
     warning_total = 0
     warning_highlights: list[dict[str, Any]] = []
     actions: list[dict[str, Any]] = []
+    
+    # Track ephemeral runner compatibility
+    repo_root = Path(__file__).resolve().parents[1]
+    stubs_available = (repo_root / "stubs").exists()
 
     def _add_action(action: dict[str, Any]) -> None:
         if action not in actions:
@@ -1497,6 +1543,26 @@ def build_overall_summary(
         "warning_count": warning_total,
         "warning_insights": warning_highlights,
     }
+    
+    # Add performance diagnostics for ephemeral runner optimization
+    tool_durations = {
+        entry["tool"]: entry.get("duration_seconds", 0)
+        for entry in results
+        if entry.get("duration_seconds") is not None
+    }
+    if tool_durations:
+        total_duration = sum(tool_durations.values())
+        slowest_tools = sorted(
+            tool_durations.items(), key=lambda x: x[1], reverse=True
+        )[:5]
+        summary_payload["performance"] = {
+            "total_duration_seconds": round(total_duration, 3),
+            "slowest_tools": [
+                {"tool": tool, "duration_seconds": duration}
+                for tool, duration in slowest_tools
+            ],
+        }
+    
     if warning_total:
         _add_action({"type": "warnings", "count": warning_total})
     for missing_tool in tools_missing:
@@ -1516,6 +1582,23 @@ def build_overall_summary(
             _add_action({"type": "run_tool", "tool": "biome"})
     if configured_tools:
         summary_payload["configured_tools"] = configured_tools
+    
+    # Add ephemeral runner guidance
+    if stubs_available:
+        summary_payload["stubs_available"] = True
+        if "mypy" in tools_run:
+            summary_payload.setdefault("ephemeral_runner_notes", []).append(
+                "Type stubs are properly configured for mypy via MYPYPATH"
+            )
+    else:
+        summary_payload["stubs_available"] = False
+        _add_action(
+            {
+                "type": "warning",
+                "message": "Type stubs directory not found; mypy may report false positives",
+            }
+        )
+    
     if autofixes:
         attempted = len(autofixes)
         succeeded = sum(1 for entry in autofixes if entry.get("status") == "succeeded")

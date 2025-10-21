@@ -330,6 +330,9 @@ The `problems_report.json` file follows this schema:
     - Optional fields: `stderr_preview`, `notes`, `raw_preview` (for parsing failures).
       Each preview stores chunked text to keep lines below shell output limits and includes truncation metadata when applicable.
 - `summary.configured_tools`: Mirrors QA configuration (Trunk enabled linters, Biome presence) and flags tools that should be executed but were missing from the run. Use this to spot configuration drift early and wire new linters into the automation pipeline.
+- `summary.performance`: Tracks tool execution times for diagnosing slow QA tools on ephemeral runners. Includes:
+  - `total_duration_seconds`: Combined runtime of all tools
+  - `slowest_tools`: Array of the 5 slowest tools with their execution times
 - `summary.actions`: Ordered list of next-step recommendations (autofix commands, warning reviews, missing linters). Surface these directly to contributors or agents so remediation is one copy/paste away.
 
 ### Wiring and Integration
@@ -363,6 +366,67 @@ poetry run python scripts/collect_problems.py
 ```
 
 This mirrors the CI sequence and ensures the report reflects the latest code state.
+
+### Ephemeral Runner Support
+
+The problems reporter is designed to work reliably on ephemeral runners (GitHub Actions, containerized environments, Copilot sandboxes) where full project dependencies may not be installed. Key features:
+
+#### Automatic Stub Configuration
+
+The mypy runner automatically configures `MYPYPATH` to include the repository's type stubs:
+- `stubs/third_party/` - vendored third-party type stubs (boto3, pandas, requests, etc.)
+- `stubs/` - project-specific type stubs
+
+This eliminates the need to manually invoke mypy via `scripts/run_with_stubs.sh` when running the problems collector. The stubs are automatically discovered and configured.
+
+#### Graceful Dependency Fallback
+
+When full project dependencies are unavailable (e.g., `firecrawl_demo` module cannot be imported), the collector:
+1. Falls back to a no-op implementation for optional features
+2. Continues executing all available QA tools
+3. Reports which tools couldn't run and why
+
+This means the problems reporter can run with minimal dependencies—only the QA tools themselves (mypy, ruff, etc.) need to be available.
+
+#### Summary Metadata
+
+The generated `problems_report.json` includes ephemeral runner diagnostics:
+
+```json
+{
+  "summary": {
+    "stubs_available": true,
+    "ephemeral_runner_notes": [
+      "Type stubs are properly configured for mypy via MYPYPATH"
+    ],
+    "configured_tools": {
+      "trunk_enabled": ["mypy", "ruff", "shellcheck"],
+      "biome_present": true
+    }
+  }
+}
+```
+
+These fields help diagnose why certain tools may not have run and confirm that type checking will use the correct stub files.
+
+#### Minimal Setup for Ephemeral Runners
+
+To run the problems collector on a fresh runner with minimal dependencies:
+
+```bash
+# Install only QA tools (via pip, pipx, or system package manager)
+pip install mypy ruff yamllint
+
+# Run collector - works without project dependencies
+python scripts/collect_problems.py --output problems_report.json
+
+# Check for issues
+jq '.summary' problems_report.json
+```
+
+The collector will skip tools that aren't installed (marking them as "not_installed" in the report) and run everything that's available. This allows Copilot agents and CI systems to get partial QA results even when the full environment isn't set up.
+
+**💡 For a comprehensive guide on running QA with minimal dependencies, see [Ephemeral QA Guide](ephemeral-qa-guide.md).**
 
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command

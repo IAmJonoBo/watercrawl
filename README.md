@@ -146,6 +146,8 @@ poetry run python apps/analyst/accessibility/axe_smoke.py
 poetry run python scripts/collect_problems.py --output problems_report.json
 ```
 
+> **Ephemeral Runner Support:** The problems reporter (`scripts/collect_problems.py`) is designed to work on ephemeral runners (GitHub Actions, Copilot sandboxes) with minimal dependencies. It automatically configures type stubs for mypy via MYPYPATH and gracefully handles missing project dependencies, allowing partial QA results even when the full environment isn't available. See [docs/operations.md](docs/operations.md#ephemeral-runner-support) for details.
+
 > Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.
 
 > The offline Safety runner relies on the vendored `safety-db` snapshot so QA can execute without network connectivity. Update the dependency periodically to refresh advisories.
@@ -204,6 +206,7 @@ The documentation follows the **Diátaxis framework** for systematic technical d
   - [Data Quality](/data-quality/)
   - [Lineage & Lakehouse](/lineage-lakehouse/)
   - [Operations](/operations/)
+  - [Ephemeral QA Guide](/ephemeral-qa-guide/) - Quick-start for Copilot agents
   - [Architecture Decision Records (ADRs)](/adr/)
 
 ### Preview Documentation Locally
