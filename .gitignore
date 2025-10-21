@@ -66,3 +66,4 @@ artifacts/
 data/interim/evidence_log.csv
 data/lakehouse/
 data/versioning/
+.mutmut-cache/

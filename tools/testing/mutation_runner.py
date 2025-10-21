@@ -33,7 +33,6 @@ def _build_mutmut_command(
         ",".join(targets),
         "--runner",
         runner,
-        "--suppress-mutants",
     ]
 
 
@@ -66,7 +65,7 @@ def run_mutation_tests(
     run_proc = subprocess.run(command, check=False)  # nosec B603
 
     results_proc = subprocess.run(
-        ["mutmut", "results", "--all"],
+        ["mutmut", "results"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=False,
