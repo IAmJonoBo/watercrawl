@@ -106,7 +106,7 @@ export default defineConfig({
           label: "Architecture Decisions",
           collapsed: true,
           items: [
-            { label: "Overview", slug: "adr/index" },
+            { label: "Overview", slug: "adr/overview" },
             { label: "ADR 0001: Architecture Boundaries", slug: "adr/0001-architecture-boundaries" },
             { label: "ADR 0002: Domain/Application Separation", slug: "adr/0002-domain-application-separation" },
             { label: "ADR 0003: Threat Model & STRIDE/MITRE", slug: "adr/0003-threat-model-stride-mitre" },
