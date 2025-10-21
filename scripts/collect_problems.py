@@ -1,4 +1,5 @@
 """Aggregate QA findings into a compact ``problems_report.json`` artefact."""
+# pylint: disable=missing-function-docstring,too-many-lines,line-too-long
 
 from __future__ import annotations
 
@@ -18,13 +19,19 @@ from typing import Any
 
 try:
     import tomllib  # Python 3.11+
+    from tomllib import TOMLDecodeError
 except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreters
     import tomli as tomllib  # type: ignore[no-redef]
+    from tomli import TOMLDecodeError  # type: ignore
 
 from urllib.parse import unquote, urlparse
 
+from firecrawl_demo.integrations.contracts.shared_config import (
+    environment_payload as contracts_environment_payload,
+)
+
 try:  # pragma: no cover - optional dependency
-    import yaml as YAML
+    import yaml as YAML  # type: ignore[import-untyped]
 except ModuleNotFoundError:  # pragma: no cover
     YAML = None  # type: ignore
 
@@ -166,7 +173,7 @@ def _read_yaml(path: Path) -> dict[str, Any] | None:
             data = YAML.safe_load(fh)
             if isinstance(data, dict):
                 return data
-    except Exception:  # pragma: no cover - best effort
+    except (OSError, UnicodeDecodeError, YAML.YAMLError):  # type: ignore[union-attr]
         return None
     return None
 
@@ -191,7 +198,7 @@ def _discover_trunk_linters(path: Path = TRUNK_CONFIG_PATH) -> list[str]:
         return []
     enabled = lint_section.get("enabled")
     if isinstance(enabled, list):
-        return [str(item).split("@")[0] for item in enabled]
+        return [str(item).split("@", maxsplit=1)[0] for item in enabled]
     return []
 
 
@@ -202,7 +209,7 @@ def _discover_biome_presence() -> bool:
     if PACKAGE_JSON.exists():
         try:
             data = json.loads(PACKAGE_JSON.read_text(encoding="utf-8"))
-        except Exception:  # pragma: no cover - best effort
+        except (OSError, json.JSONDecodeError):  # pragma: no cover - best effort
             return False
         for section in ("dependencies", "devDependencies", "peerDependencies"):
             deps = data.get(section)
@@ -401,11 +408,9 @@ def _configured_command(
 
 
 def _sqlfluff_command() -> tuple[list[str], Mapping[str, str], None]:
-    from firecrawl_demo.integrations.contracts.shared_config import environment_payload
-
     duckdb_path = ensure_duckdb(DEFAULT_DBT_PROJECT, DEFAULT_DUCKDB)
     env = os.environ.copy()
-    env.update(environment_payload())
+    env.update(contracts_environment_payload())
     env.setdefault("DBT_DUCKDB_PATH", duckdb_path.as_posix())
     cmd = [
         "sqlfluff",
@@ -999,7 +1004,7 @@ def _iter_configured_tool_specs(
         return
     try:
         payload = tomllib.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:  # pragma: no cover - config parse issues
+    except (OSError, TOMLDecodeError) as exc:  # pragma: no cover - config parse issues
         print(f"Warning: failed to parse {path}: {exc}", file=sys.stderr)
         return
     tools = payload.get("tools")
@@ -1085,7 +1090,7 @@ def collect(
     for spec in specs:
         try:
             cmd, env, cwd = spec.command()
-        except Exception as exc:  # pragma: no cover - defensive guard
+        except Exception as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
             aggregated.append(
                 {
                     "tool": spec.name,
@@ -1105,7 +1110,7 @@ def collect(
                 }
             )
             continue
-        except Exception as exc:  # pragma: no cover - defensive guard
+        except Exception as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
             aggregated.append(
                 {
                     "tool": spec.name,
