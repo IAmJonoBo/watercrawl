@@ -260,14 +260,14 @@ This document tracks abandoned code, potential technical debt, and implementatio
 
 This document should be updated as issues are resolved:
 
-- [ ] Remove template example files
-- [ ] Create Data Contracts reference
-- [ ] Create Advanced Configuration guide
-- [ ] Add hero image or remove reference
-- [ ] Audit and update all import paths
-- [ ] Add frontmatter to legacy docs
-- [ ] Bundle frontend dependencies
-- [ ] Deprecate MkDocs configuration
+- [x] Remove template example files - **COMPLETED 2025-10-21**
+- [x] Create Data Contracts reference - **COMPLETED 2025-10-21**
+- [x] Create Advanced Configuration guide - **COMPLETED 2025-10-21**
+- [x] Add hero image or remove reference - **COMPLETED 2025-10-21** (removed reference)
+- [x] Audit and update all import paths - **COMPLETED 2025-10-21** (verified examples are accurate)
+- [x] Add frontmatter to legacy docs - **COMPLETED 2025-10-21**
+- [x] Bundle frontend dependencies - **COMPLETED 2025-10-21** (Mermaid & Primer CSS)
+- [x] Deprecate MkDocs configuration - **COMPLETED 2025-10-21** (added deprecation notice)
 - [ ] Create terminology glossary
 - [ ] Enhance CI workflow
 

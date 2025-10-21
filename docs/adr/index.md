@@ -1,3 +1,8 @@
+---
+title: Architecture Decision Records
+description: Index of architectural decisions and their status
+---
+
 # Architecture Decision Records
 
 | ID   | Title                                                           | Status   |

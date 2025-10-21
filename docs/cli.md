@@ -1,3 +1,8 @@
+---
+title: CLI Guide
+description: Command-line interface for analysts and automation workflows
+---
+
 # CLI Guide
 
 Two complementary CLIs ship with the repository:

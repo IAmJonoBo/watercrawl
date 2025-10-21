@@ -1,3 +1,8 @@
+---
+title: Operations & Quality Gates
+description: Baseline checks, testing procedures, and operational workflows
+---
+
 # Operations & Quality Gates
 
 ## Baseline Checks

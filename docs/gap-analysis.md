@@ -1,3 +1,8 @@
+---
+title: Gap Analysis
+description: Current-state findings and improvement areas
+---
+
 # Gap Analysis
 
 ## Current-State Findings

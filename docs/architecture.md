@@ -1,3 +1,8 @@
+---
+title: Architecture Overview
+description: System design, layered architecture, and component relationships
+---
+
 # Architecture Overview
 
 ## Layered Design
