@@ -417,7 +417,7 @@ def execute_game_day_scenario(
     orch = orchestrator or ChaosOrchestrator()
     
     with orch.game_day(scenario_id) as result:
-        logger.info(f"Executing: {scenario['name']}")
+        logger.info(f"Executing scenario {scenario_id}")
         
         # Inject failure
         with orch.inject_transient_failure(
