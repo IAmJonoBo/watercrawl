@@ -30,7 +30,7 @@ FROM python:3.13-slim@sha256:2ec5a4a5c3e919570f57675471f081d6299668d909feabd8d48
 # Install minimal runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates=20230311 && \
+        ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and group with explicit UID/GID
