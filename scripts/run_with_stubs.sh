@@ -7,8 +7,8 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STUBS_PATH="${REPO_ROOT}/stubs"
 
-if [[ ! -d $STUBS_PATH ]]; then
-	echo "No stubs directory found at $STUBS_PATH" >&2
+if [[ ! -d ${STUBS_PATH} ]]; then
+	echo "No stubs directory found at ${STUBS_PATH}" >&2
 	exit 1
 fi
 
@@ -29,24 +29,24 @@ USAGE
 }
 
 # Print usage on -h/--help
-if [ "${1-}" = "-h" ] || [ "${1-}" = "--help" ]; then
+if [[ ${1-} == "-h" ]] || [[ ${1-} == "--help" ]]; then
 	usage
 	exit 0
 fi
 
 # allow an explicit `--` to separate flags from the command
-if [ "${1-}" = "--" ]; then
+if [[ ${1-} == "--" ]]; then
 	shift
 fi
 
 # Prepend stubs to MYPYPATH so type-checkers and language servers can find them
-export MYPYPATH="$STUBS_PATH${MYPYPATH:+:$MYPYPATH}"
+export MYPYPATH="${STUBS_PATH}${MYPYPATH:+:${MYPYPATH}}"
 
-if [ "$#" -eq 0 ]; then
+if [[ $# -eq 0 ]]; then
 	# default: run mypy via poetry
-	echo "Running: poetry run mypy . (with MYPYPATH=$MYPYPATH)"
+	echo "Running: poetry run mypy . (with MYPYPATH=${MYPYPATH})"
 	exec poetry run mypy . --show-error-codes --no-error-summary
 else
-	echo "Running: $* (with MYPYPATH=$MYPYPATH)"
+	echo "Running: $* (with MYPYPATH=${MYPYPATH})"
 	exec "$@"
 fi
