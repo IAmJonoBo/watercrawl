@@ -94,20 +94,23 @@ CI enforcement active, and coverage tracking in place.
 
 Phase 1.3 introduces Deequ integration and enforces contracts as CI gates.
 
-- ✅ **Deequ stub integration**
-  - `firecrawl_demo.integrations.contracts.deequ_runner` provides a stub implementation
-    that returns success when PySpark is not available, allowing the contracts
-    pipeline to continue with Great Expectations and dbt.
-  - Full Deequ integration with PySpark-based quality checks is deferred to when
-    Spark-based processing is added to the pipeline.
+- ✅ **Deterministic Deequ integration**
+  - `firecrawl_demo.integrations.contracts.deequ_runner` now executes
+    Deequ-inspired checks even when PySpark is unavailable. The runner enforces
+    HTTPS requirements, duplicate detection, verified-contact completeness, and
+    canonical confidence thresholds using pandas, while still surfacing
+    PySpark availability for future JVM-backed execution.
+  - Failures in any Deequ check now cause the contracts CLI and CI workflows to
+    exit non-zero alongside Great Expectations and dbt.
 - ✅ **CI enforcement**
   - Contracts command added to CI workflow that blocks on failure
   - CI runs `poetry run python -m apps.analyst.cli contracts data/sample.csv --format json`
-  - Pipeline fails if any Great Expectations or dbt checks fail
+  - Pipeline fails if any Great Expectations, dbt, or Deequ checks fail
 - ✅ **Coverage tracking**
   - New `coverage` CLI command reports contract coverage across curated tables
   - Coverage must meet 95% threshold or CI fails
   - Tracks coverage by tool (Great Expectations, dbt, Deequ)
 
-Exit criteria for Phase 1.3 are complete: Deequ stub shipped, CI enforcement
-active, and coverage tracking ensures ≥95% of curated tables are covered.
+Exit criteria for Phase 1.3 are complete: deterministic Deequ checks ship with
+evidence logging, CI enforcement is active, and coverage tracking ensures ≥95%
+of curated tables are covered.

@@ -153,7 +153,7 @@ Coverage by tool:
 - Deequ availability checking
 - JSON report generation
 - Threshold enforcement
-- Stub behavior when PySpark unavailable
+- Fallback behavior when PySpark unavailable
 
 ### 6. Documentation Updates
 
@@ -167,7 +167,7 @@ Coverage by tool:
 
 **Key Documentation Additions**:
 
-- Phase 1.3 section documenting Deequ stub, CI enforcement, and coverage
+- Phase 1.3 section documenting deterministic Deequ checks, CI enforcement, and coverage
 - Coverage command usage in operations guide
 - Deequ integration guide with future roadmap
 - Complete changelog for Phase 1 deliverables
@@ -180,7 +180,7 @@ Coverage by tool:
 firecrawl_demo/integrations/contracts/
 ├── __init__.py              # Updated with new exports
 ├── coverage.py              # NEW: Coverage tracking
-├── deequ_runner.py          # NEW: Deequ stub integration
+├── deequ_runner.py          # NEW: Deterministic Deequ integration
 ├── dbt_runner.py            # Existing: dbt execution
 ├── great_expectations_runner.py  # Existing: GX execution
 ├── operations.py            # Existing: Artifact persistence

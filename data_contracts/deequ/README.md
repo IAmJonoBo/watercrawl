@@ -5,16 +5,16 @@ via PySpark. Deequ is optional and requires PySpark to be installed.
 
 ## Status
 
-**Phase 1 (Current)**: Stub integration that returns success when PySpark is
-not available, allowing the contracts pipeline to continue with Great
-Expectations and dbt.
+**Phase 1 (Current)**: Deterministic Deequ integration that enforces HTTPS,
+duplicate detection, verified-contact completeness, and confidence thresholds
+using pandas so contracts fail fast even without PySpark.
 
 **Future**: Full Deequ integration with PySpark-based quality checks for
 large-scale data validation.
 
 ## Usage
 
-The Deequ runner is automatically invoked when available:
+The Deequ runner executes automatically:
 
 ```python
 from firecrawl_demo.integrations.contracts import run_deequ_checks
@@ -24,6 +24,9 @@ if result.success:
     print(f"All {result.check_count} Deequ checks passed")
 else:
     print(f"{result.failures} checks failed")
+    for outcome in result.results:
+        if not outcome["success"]:
+            print(outcome["check"], outcome["details"])
 ```
 
 ## Configuration

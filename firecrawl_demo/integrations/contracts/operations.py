@@ -14,6 +14,7 @@ from firecrawl_demo.core import config
 from firecrawl_demo.domain.compliance import append_evidence_log
 
 from .dbt_runner import DbtContractResult
+from .deequ_runner import DeequContractResult
 
 try:
     from .great_expectations_runner import CuratedDatasetContractResult
@@ -36,6 +37,7 @@ def persist_contract_artifacts(
     dataset_path: Path,
     ge_payload: dict[str, Any],
     dbt_result: DbtContractResult,
+    deequ_result: DeequContractResult,
 ) -> Path:
     """Write contract run artefacts to a timestamped directory."""
 
@@ -46,6 +48,20 @@ def persist_contract_artifacts(
     (target_dir / "dataset_path.txt").write_text(str(dataset_path))
     (target_dir / "great_expectations_result.json").write_text(
         json.dumps(ge_payload, indent=2, sort_keys=True)
+    )
+
+    (target_dir / "deequ_result.json").write_text(
+        json.dumps(
+            {
+                "success": deequ_result.success,
+                "check_count": deequ_result.check_count,
+                "failures": deequ_result.failures,
+                "metrics": deequ_result.metrics,
+                "results": deequ_result.results,
+            },
+            indent=2,
+            sort_keys=True,
+        )
     )
 
     if dbt_result.run_results_path and dbt_result.run_results_path.exists():
@@ -65,6 +81,7 @@ def record_contracts_evidence(
     dataset_path: Path,
     ge_result: Any,
     dbt_result: DbtContractResult,
+    deequ_result: DeequContractResult,
     artifact_dir: Path,
     sink: EvidenceSink,
 ) -> None:
@@ -80,6 +97,10 @@ def record_contracts_evidence(
         f"dbt tests {dbt_result.total - dbt_result.failures}/{dbt_result.total}"
     )
     ge_summary = f"Great Expectations {successful}/{evaluated}"
+    deequ_summary = (
+        f"Deequ {deequ_result.check_count - deequ_result.failures}/"
+        f"{deequ_result.check_count}"
+    )
 
     sources = [
         str(
@@ -91,6 +112,7 @@ def record_contracts_evidence(
         ),
         str(artifact_dir / "great_expectations_result.json"),
         str(artifact_dir / "dbt_run_results.json"),
+        str(artifact_dir / "deequ_result.json"),
     ]
 
     append_evidence_log(
@@ -98,9 +120,9 @@ def record_contracts_evidence(
             {
                 "RowID": "0",
                 "Organisation": dataset_path.name,
-                "What changed": "Contracts executed (Great Expectations + dbt)",
+                "What changed": "Contracts executed (Great Expectations + dbt + Deequ)",
                 "Sources": "; ".join(sources),
-                "Notes": f"{ge_summary}; {dbt_summary}",
+                "Notes": f"{ge_summary}; {dbt_summary}; {deequ_summary}",
                 "Timestamp": datetime.now(tz=timezone.utc).isoformat(),
                 "Confidence": "100",
             }

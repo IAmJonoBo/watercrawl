@@ -14,11 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Pipeline fails if any Great Expectations or dbt checks fail
   - Added coverage check step to ensure ≥95% threshold is met
 
-- **Deequ Integration Stub**: Created Deequ contract runner with PySpark availability check
-  - `firecrawl_demo.integrations.contracts.deequ_runner` module provides stub implementation
-  - Returns success when PySpark not available, allowing GX/dbt pipeline to continue
-  - Ready for future Spark-based processing when full Deequ integration is needed
-  - Updated `data_contracts/deequ/README.md` with usage and configuration guidance
+- **Deequ Quality Checks**: Implemented deterministic Deequ enforcement with PySpark fallback
+  - `firecrawl_demo.integrations.contracts.deequ_runner` now enforces HTTPS, duplicate detection,
+    verified-contact completeness, and confidence thresholds even without PySpark
+  - CLI and CI fail when any Deequ check fails, aligning release blockers across GX/dbt/Deequ
+  - PySpark availability is still surfaced for future JVM-backed processing
+  - Updated `data_contracts/deequ/README.md` with usage, fallback behaviour, and troubleshooting guidance
 
 - **Contract Coverage Tracking**: Implemented coverage tracking to ensure ≥95% of curated tables covered
   - `firecrawl_demo.integrations.contracts.coverage` module calculates coverage metrics
@@ -35,7 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Tests**: Added comprehensive test coverage for new functionality
   - `tests/test_contract_coverage.py`: Tests for coverage tracking and reporting
-  - `tests/test_deequ.py`: Tests for Deequ runner stub and result dataclass
+  - `tests/test_deequ.py`: Tests for deterministic Deequ checks and failure reporting
+  - `tests/test_contracts.py`: Extended CLI coverage to assert Deequ evidence logging and failure messaging
   - All tests validate expected behavior for Phase 1 gates
 
 - **Documentation**: Updated documentation to reflect Phase 1 completion
@@ -79,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Phase 1 Exit Criteria Met
 
-✅ GX/dbt/Deequ block publish: Contracts enforced in CI, Deequ stub integrated
+✅ GX/dbt/Deequ block publish: Contracts enforced in CI, deterministic Deequ checks integrated
 ✅ Pint/Hypothesis enforced in CI: Tests run as part of pytest suite  
 ✅ ≥95% curated tables covered: Coverage tracking ensures threshold is met
 

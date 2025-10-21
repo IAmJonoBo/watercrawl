@@ -154,6 +154,7 @@ class ContractsToolkit:
     validate_dataframe: Callable[..., CuratedDatasetContractResult]
     validate_file: Callable[..., CuratedDatasetContractResult]
     run_dbt_contracts: Callable[..., DbtContractResult]
+    run_deequ_contracts: Callable[..., DeequContractResult]
     persist_artifacts: Callable[..., Path]
     record_evidence: Callable[..., None]
 
@@ -191,6 +192,7 @@ def _build_contracts_toolkit(context: PluginContext) -> ContractsToolkit:
             validate_dataframe=validate_curated_dataframe,  # type: ignore
             validate_file=validate_curated_file,  # type: ignore
             run_dbt_contracts=run_dbt_contract_tests,  # type: ignore
+            run_deequ_contracts=run_deequ_checks,
             persist_artifacts=persist_contract_artifacts,
             record_evidence=record_contracts_evidence,
         )
@@ -210,6 +212,7 @@ def _build_contracts_toolkit(context: PluginContext) -> ContractsToolkit:
             validate_dataframe=dummy_validate_dataframe,
             validate_file=dummy_validate_file,
             run_dbt_contracts=run_dbt_contract_tests,  # type: ignore
+            run_deequ_contracts=run_deequ_checks,
             persist_artifacts=persist_contract_artifacts,
             record_evidence=record_contracts_evidence,
         )
@@ -229,10 +232,12 @@ register_plugin(
                 "CONTRACTS_CANONICAL_JSON",
             ),
             optional_dependencies=("great_expectations", "dbt"),
-            description="Execute Great Expectations and dbt contracts for curated datasets.",
+            description=(
+                "Execute Great Expectations, dbt, and Deequ contracts for curated datasets."
+            ),
         ),
         health_probe=_contracts_health_probe,
-        summary="Great Expectations and dbt contract orchestrator",
+        summary="Great Expectations, dbt, and Deequ contract orchestrator",
     )
 )
 
