@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import re
@@ -482,10 +481,10 @@ def parse_biome_output(result: CompletedProcess) -> dict[str, Any]:
             severity_counts[severity] += 1
             span = diag.get("span") or diag.get("location") or {}
             start = span.get("start") if isinstance(span, Mapping) else {}
-            line = _coerce_int(
+            line_number = _coerce_int(
                 start.get("line") if isinstance(start, Mapping) else None
             )
-            column = _coerce_int(
+            column_number = _coerce_int(
                 start.get("column") if isinstance(start, Mapping) else None
             )
             code = diag.get("code") or diag.get("rule")
@@ -500,8 +499,8 @@ def parse_biome_output(result: CompletedProcess) -> dict[str, Any]:
 
             record: dict[str, Any] = {
                 "path": path,
-                "line": line,
-                "column": column,
+                "line": line_number,
+                "column": column_number,
                 "code": code,
                 "message": message,
                 "severity": severity,

@@ -1,10 +1,10 @@
 {
-  "generated_at": "2025-10-21T09:12:54.094642+00:00",
+  "generated_at": "2025-10-21T09:17:34.008076+00:00",
   "summary": {
-    "issue_count": 6,
+    "issue_count": 4,
     "note_count": 14,
     "fixable_count": 0,
-    "potential_dead_code": 1,
+    "potential_dead_code": 0,
     "severity_counts": {},
     "tools_run": [
       "ruff",
@@ -16,51 +16,40 @@
       "biome"
     ],
     "tools_missing": [],
-    "insights": [
-      {
-        "tool": "ruff",
-        "path": "/Users/jonathanbotha/GitHub/watercrawl/scripts/collect_problems.py",
-        "line": 5,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      }
-    ]
+    "insights": []
   },
   "tools": [
     {
       "tool": "ruff",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "issues": [
-        {
-          "path": "/Users/jonathanbotha/GitHub/watercrawl/scripts/collect_problems.py",
-          "line": 5,
-          "column": 8,
-          "code": "F401",
-          "message": "`argparse` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        }
-      ],
+      "status": "completed",
+      "returncode": 0,
+      "issues": [],
       "summary": {
-        "issue_count": 1,
-        "fixable": 1,
-        "potential_dead_code": 1
+        "issue_count": 0,
+        "fixable": 0,
+        "potential_dead_code": 0
       }
     },
     {
       "tool": "mypy",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "issues": [
-        {
-          "path": "scripts/collect_problems.py",
-          "line": 485,
-          "message": "Incompatible types in assignment (expression has type \"int | None\", variable has type \"str\") ",
-          "severity": "error",
-          "code": "assignment"
-        }
-      ],
+      "status": "completed",
+      "returncode": 0,
+      "issues": [],
       "notes": [
+        {
+          "path": "tests/test_compliance.py",
+          "line": 186,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 208,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -92,20 +81,6 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 186,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 208,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -161,7 +136,7 @@
         }
       ],
       "summary": {
-        "issue_count": 1,
+        "issue_count": 0,
         "note_count": 14
       }
     },
@@ -216,7 +191,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T09:12:40Z\",",
+          "  \"generated_at\": \"2025-10-21T09:17:19Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 3,",
@@ -304,8 +279,23 @@
       "returncode": 1,
       "issues": [],
       "summary": {
-        "issue_count": 0,
-        "severity_counts": {}
+        "issue_count": 0
+      },
+      "raw_preview": {
+        "chunks": [
+          "{\"issues\":[{\"file\":\"scripts/collect_problems.py\",\"line\":\"5\",\"column\":\"8\",\"message\":\"`argparse` imported but unused\",\"code\":\"F401\",\"level\":\"LEVEL_HIGH\",\"issueClass\":\"ISSUE_CLASS_FIXED\",\"linter\":\"ruff\",",
+          "\"autofixOptions\":[{\"message\":\"Remove unused import: `argparse`\",\"replacements\":[{\"filePath\":\"scripts/collect_problems.py\",\"length\":\"16\",\"offset\":\"115\"}]}],\"ranges\":[{\"offset\":\"122\",\"filePath\":\"scripts",
+          "/collect_problems.py\",\"length\":\"8\"}],\"issueUrl\":\"https://docs.astral.sh/ruff/rules/#F401\",\"targetType\":\"python\",\"targetPath\":\"scripts/collect_problems.py\"},{\"file\":\"scripts/collect_problems.py\",\"line\"",
+          ":\"175\",\"message\":\"subprocess call - check for execution of untrusted input.\",\"code\":\"B603\",\"level\":\"LEVEL_LOW\",\"issueClass\":\"ISSUE_CLASS_EXISTING\",\"linter\":\"bandit\",\"issueUrl\":\"https://pypi.org/projec",
+          "t/bandit/\",\"targetType\":\"python\",\"isSecurity\":true,\"targetPath\":\"scripts/collect_problems.py\"},{\"file\":\"scripts/collect_problems.py\",\"line\":\"485\",\"column\":\"20\",\"message\":\"Incompatible types in assignm",
+          "ent (expression has type \\\"int | None\\\", variable has type \\\"str\\\")\",\"code\":\"assignment\",\"level\":\"LEVEL_HIGH\",\"issueClass\":\"ISSUE_CLASS_FIXED\",\"linter\":\"mypy\",\"issueUrl\":\"https://mypy.readthedocs.io/e",
+          "n/stable/error_code_list.html\",\"targetType\":\"python\",\"targetPath\":\"scripts/collect_problems.py\"}],\"unformattedFiles\":[{\"file\":\"scripts/collect_problems.py\",\"line\":\"1\",\"column\":\"1\",\"message\":\"Incorrect",
+          " formatting, autoformat by running 'trunk fmt'\",\"level\":\"LEVEL_HIGH\",\"issueClass\":\"ISSUE_CLASS_UNFORMATTED\",\"linter\":\"isort\",\"targetPath\":\"scripts/collect_problems.py\"}],\"compareToUpstream\":true,\"lint",
+          "Actions\":[{\"paths\":[\"problems_report.json\"],\"linter\":\"git-diff-check\",\"fileGroupName\":\"ALL\",\"command\":\"lint\",\"verb\":\"TRUNK_VERB_CHECK\",\"actionDurationMs\":\"21\",\"cacheHit\":\"CACHE_HIT_NONE\"},{\"paths\":[\"s",
+          "cripts/collect_problems.py\"],\"linter\":\"git-diff-check\",\"fileGroupName\":\"ALL\",\"command\":\"lint\",\"verb\":\"TRUNK_VERB_CHECK\",\"actionDurationMs\":\"21\",\"cacheHit\":\"CACHE_HIT_NONE\"},{\"paths\":[\"problems_report.\u2026"
+        ],
+        "truncated": true,
+        "omitted_characters": 3238
       },
       "notes": [
         {
