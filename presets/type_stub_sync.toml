@@ -1,0 +1,50 @@
+# Configuration for syncing vendored type stubs used by QA tooling.
+#
+# Each entry under [[package]] defines a stub package that will be copied into
+# the repository-local cache so linting and type-checking succeed without
+# network access. Versions are resolved from `poetry.lock` unless explicitly
+# provided.
+#
+# The cache is consumed by scripts/run_with_stubs.sh, the QA automation CLI,
+# and future standalone tools such as problems_reporter.
+
+target = "stubs/third_party"
+
+[[package]]
+name = "pandas-stubs"
+
+[[package]]
+name = "types-pytz"
+
+[[package]]
+name = "types-python-dateutil"
+
+[[package]]
+name = "types-requests"
+
+[[package]]
+name = "types-urllib3"
+
+[[package]]
+name = "types-setuptools"
+
+[[package]]
+name = "types-pyyaml"
+
+[[package]]
+name = "types-pillow"
+
+[[package]]
+name = "botocore-stubs"
+
+[[package]]
+name = "types-botocore"
+
+[[package]]
+name = "types-boto3"
+
+[[package]]
+name = "types-s3transfer"
+
+[[package]]
+name = "types-awscrt"

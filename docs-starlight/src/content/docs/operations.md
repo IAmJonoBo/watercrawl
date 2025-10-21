@@ -78,6 +78,28 @@ The stack now resolves credentials and feature flags through `firecrawl_demo.gov
 The toolchain includes first-party type stubs for `pandas` and `requests`, so remove per-file `type: ignore` directives instead
 of silencing mypy regressions.
 
+### Vendored type stubs (offline QA)
+
+QA relies on a vendored cache of third-party type stubs so that mypy, Ruff, and
+the problems reporter can run without network access. Refresh the cache when
+stub versions change:
+
+```bash
+poetry run python -m scripts.sync_type_stubs --sync
+```
+
+The script resolves versions from `poetry.lock`, installs the stubs into
+`stubs/third_party`, and writes a manifest for deterministic syncs. Ephemeral or
+air-gapped runners only need the verification step (executed automatically by
+`qa dependencies`):
+
+```bash
+poetry run python -m scripts.sync_type_stubs
+```
+
+If verification fails, regenerate the cache on a connected workstation with
+`--sync`, commit the updated stubs/manifest, and rerun QA.
+
 ## Acceptance Criteria
 
 | Gate          | Threshold/Expectation                                                                |

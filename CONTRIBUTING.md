@@ -51,26 +51,18 @@ This guide outlines our conventions and standards. By contributing, you agree to
 
 ## Development Workflow
 
-### Editor / typing fallback for YAML
-
-If your editor or language server cannot find installed typing stubs for `PyYAML`, we've added a minimal fallback under `stubs/yaml/__init__.pyi`.
+### Editor / typing stubs
 
 Options to ensure your editor picks up stubs:
 
 - Preferable: configure the editor to use the project's Poetry virtualenv (Command Palette → Python: Select Interpreter → choose the path from `poetry env info --path`). Then reload the window.
-- Alternative: add the repository `stubs/` directory to `MYPYPATH` so type-checkers find it regardless of interpreter. Example (bash):
+- When the virtualenv is not available (for example, on ephemeral runners), refresh the vendored stub cache and expose it via `MYPYPATH`:
 
 ```bash
-export MYPYPATH="$PWD/stubs"
-# then run mypy or start your editor from this shell
+poetry run python -m scripts.sync_type_stubs --sync  # once per dependency bump
+export MYPYPATH="$PWD/stubs/third_party:$PWD/stubs"
+# then run mypy or launch your editor from this shell
 poetry run mypy .
-```
-
-The `stubs/` fallback is intentionally small; prefer installing `types-pyyaml` into your dev environment for full typing coverage:
-
-```bash
-poetry add --group dev types-pyyaml
-poetry install
 ```
 
 ### Branching

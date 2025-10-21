@@ -17,6 +17,9 @@ python -m scripts.bootstrap_env
 python -m scripts.bootstrap_python --install-uv --poetry
 poetry install --no-root
 
+# Refresh vendored type stubs for offline QA tooling
+poetry run python -m scripts.sync_type_stubs --sync
+
 # Refresh the dependency compatibility report and confirm only allow-listed
 # wheel blockers remain before kicking off QA
 python -m scripts.dependency_matrix survey --config presets/dependency_targets.toml --output tools/dependency_matrix/report.json

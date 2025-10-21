@@ -6,6 +6,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STUBS_PATH="${REPO_ROOT}/stubs"
+THIRD_PARTY_PATH="${STUBS_PATH}/third_party"
 
 if [[ ! -d ${STUBS_PATH} ]]; then
 	echo "No stubs directory found at ${STUBS_PATH}" >&2
@@ -39,8 +40,12 @@ if [[ ${1-} == "--" ]]; then
 	shift
 fi
 
-# Prepend stubs to MYPYPATH so type-checkers and language servers can find them
-export MYPYPATH="${STUBS_PATH}${MYPYPATH:+:${MYPYPATH}}"
+# Prepend vendored stubs (if available) followed by the base stubs directory.
+if [[ -d ${THIRD_PARTY_PATH} ]]; then
+	export MYPYPATH="${THIRD_PARTY_PATH}:${STUBS_PATH}${MYPYPATH:+:${MYPYPATH}}"
+else
+	export MYPYPATH="${STUBS_PATH}${MYPYPATH:+:${MYPYPATH}}"
+fi
 
 if [[ $# -eq 0 ]]; then
 	# default: run mypy via poetry

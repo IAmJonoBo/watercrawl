@@ -92,6 +92,12 @@ def build_bootstrap_plan(
                 command=("poetry", "run", "pre-commit", "install"),
             )
         )
+        steps.append(
+            BootstrapStep(
+                description="Verify vendored type stubs",
+                command=("poetry", "run", "python", "-m", "scripts.sync_type_stubs"),
+            )
+        )
 
     if enable_node:
         root_package = repo_root / "package.json"

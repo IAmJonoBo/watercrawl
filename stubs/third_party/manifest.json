@@ -1,0 +1,71 @@
+{
+  "generated_at": "2025-10-21T14:34:46.641506+00:00",
+  "installer": "uv",
+  "packages": [
+    {
+      "name": "pandas-stubs",
+      "version": "2.3.2.250926",
+      "extras": []
+    },
+    {
+      "name": "types-pytz",
+      "version": "2025.2.0.20250809",
+      "extras": []
+    },
+    {
+      "name": "types-python-dateutil",
+      "version": "2.9.0.20251008",
+      "extras": []
+    },
+    {
+      "name": "types-requests",
+      "version": "2.32.4.20250913",
+      "extras": []
+    },
+    {
+      "name": "types-urllib3",
+      "version": "1.26.25.14",
+      "extras": []
+    },
+    {
+      "name": "types-setuptools",
+      "version": "80.9.0.20250822",
+      "extras": []
+    },
+    {
+      "name": "types-pyyaml",
+      "version": "6.0.12.20250915",
+      "extras": []
+    },
+    {
+      "name": "types-pillow",
+      "version": "10.2.0.20240822",
+      "extras": []
+    },
+    {
+      "name": "botocore-stubs",
+      "version": "1.40.55",
+      "extras": []
+    },
+    {
+      "name": "types-botocore",
+      "version": "1.0.2",
+      "extras": []
+    },
+    {
+      "name": "types-boto3",
+      "version": "1.40.55",
+      "extras": []
+    },
+    {
+      "name": "types-s3transfer",
+      "version": "0.14.0",
+      "extras": []
+    },
+    {
+      "name": "types-awscrt",
+      "version": "0.28.1",
+      "extras": []
+    }
+  ]
+}

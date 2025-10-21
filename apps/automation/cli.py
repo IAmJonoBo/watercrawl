@@ -413,6 +413,13 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
             tags=("python", "poetry"),
         ),
         CommandSpec(
+            name="Verify type stubs",
+            args=("poetry", "run", "python", "-m", "scripts.sync_type_stubs"),
+            description=(
+                "Verify vendored type stubs are in sync with poetry.lock for offline QA."
+            ),
+        ),
+        CommandSpec(
             name="Dependency survey",
             args=(
                 "python",

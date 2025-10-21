@@ -114,6 +114,7 @@ skip_glob = [".trunk/plugins/**/*"]
 line-length = 88
 target-version = "py312"
 src = ["apps", "firecrawl_demo", "scripts", "tests"]
+extend-exclude = ["stubs/third_party"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W"]
@@ -137,6 +138,7 @@ filterwarnings = [
 [tool.mypy]
 python_version = "3.13"
 show_error_codes = true
+exclude = ["^stubs/third_party/"]
 
 [[tool.mypy.overrides]]
 module = [

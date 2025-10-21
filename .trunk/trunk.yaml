@@ -41,6 +41,31 @@ lint:
     - yamllint@1.37.1
   disabled:
     - prettier
+  ignore:
+    - linters:
+        - mypy
+        - shellcheck
+        - shfmt
+        - svgo
+        - markdownlint-cli2
+        - sqlfluff
+        - actionlint
+        - hadolint
+        - taplo
+        - bandit
+        - black
+        - checkov
+        - dotenv-linter
+        - git-diff-check
+        - isort
+        - markdownlint
+        - osv-scanner
+        - renovate
+        - ruff
+        - trufflehog
+        - yamllint
+      paths:
+        - stubs/third_party/**
 actions:
   enabled:
     - trunk-announce
