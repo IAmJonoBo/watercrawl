@@ -43,4 +43,42 @@ Useful commands (for Copilot's ephemeral environment)
 - Run mypy: `./scripts/run_with_stubs.sh -- poetry run mypy . --show-error-codes`
 - Run collector (regenerate problems report): `poetry run python scripts/collect_problems.py`
 
+Copilot-specific workflow: run-and-triage the problems reporter
+- Run the problems reporter at the start of any fresh session and before opening or updating a PR. This keeps the Problems pane and `problems_report.json` up to date and avoids noisy or surprise failures in CI.
+- Recommended cadence:
+  - At session start: `poetry run python scripts/collect_problems.py` (or `./scripts/collect_problems.sh` if available).
+  - Before creating/updating a PR: run the collector and address any new or bumped issues shown in `problems_report.json`.
+  - After making a set of edits locally (especially to workflows, linters, type stubs, or packaging): re-run the collector and ensure the report does not introduce new high-severity items.
+
+Triage steps for issues returned by the collector
+- Classify each issue in `problems_report.json` as one of: ` blocker ` (must fix before PR), ` fix-later ` (documented technical debt), or ` informational ` (low/no action).
+- For `blocker` items, create a short plan in the PR description and either fix them in the same branch or open a follow-up PR referencing the blocker and why it was deferred.
+- For `fix-later` items, add an entry to the repository problems tracker (or an issue) with a short justification, an owner, and ETA.
+- Record triage decisions in the PR description and append the relevant evidence to `data/interim/evidence_log.csv` where applicable.
+
+Commands and quick workflow
+- Regenerate problems and show a compact summary on the terminal:
+
+```bash
+poetry run python scripts/collect_problems.py --output problems_report.json && jq '.summary' problems_report.json || true
+```
+
+- Open the full report locally (pretty JSON):
+
+```bash
+python -m json.tool problems_report.json | less -R
+```
+
+- If a session or CI run reports a previously unseen `blocker`, stop and either fix the blocker locally or create an explicit follow-up `*.plan`/`*.commit` artefact before proceeding (see `AGENTS.md` for Plan→Commit workflow).
+
+Notes
+- The collector is the canonical source of repo QA state for Copilot sessions. Copilot must not make large cross-cutting changes without first running and triaging the collector results.
+- If the collector cannot run locally because of environment constraints (missing system deps, network, etc.), document the blocker in the PR and escalate to a maintainer for guidance.
+  - Troubleshooting: if `scripts/collect_problems.py` fails with import errors like "No module named 'firecrawl_demo'", ensure dev dependencies are installed in the local environment and the command is run from the repository root. Example:
+
+```bash
+poetry install --no-root --with dev
+poetry run python scripts/collect_problems.py --output problems_report.json
+```
+
 If you need to run interactive iterations on a PR, a human reviewer with write access can `@copilot` in PR comments to request follow-ups.
