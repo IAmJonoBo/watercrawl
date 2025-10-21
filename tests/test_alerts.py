@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
 import requests
 
 from firecrawl_demo.integrations.telemetry.alerts import send_slack_alert

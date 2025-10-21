@@ -1,37 +1,22 @@
 {
-  "generated_at": "2025-10-21T08:11:08.662549+00:00",
+  "generated_at": "2025-10-21T08:32:26.802070+00:00",
   "tools": [
     {
       "tool": "ruff",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "issues": [
-        {
-          "path": "/Users/jonathanbotha/GitHub/watercrawl/tests/test_alerts.py",
-          "line": 5,
-          "column": 8,
-          "code": "F401",
-          "message": "`pytest` imported but unused"
-        }
-      ],
+      "status": "completed",
+      "returncode": 0,
+      "issues": [],
       "summary": {
-        "issue_count": 1,
-        "fixable": 1
+        "issue_count": 0,
+        "fixable": 0,
+        "potential_dead_code": 0
       }
     },
     {
       "tool": "mypy",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "issues": [
-        {
-          "path": "tools/testing/mutation_runner.py",
-          "line": 79,
-          "message": "Dict entry 2 has incompatible type \"str\": \"int\"; expected \"str\": \"Sequence[str]\" ",
-          "severity": "error",
-          "code": "dict-item"
-        }
-      ],
+      "status": "completed",
+      "returncode": 0,
+      "issues": [],
       "notes": [
         {
           "path": "tests/test_compliance.py",
@@ -133,7 +118,7 @@
         }
       ],
       "summary": {
-        "issue_count": 1,
+        "issue_count": 0,
         "note_count": 14
       }
     },
@@ -177,7 +162,7 @@
     },
     {
       "tool": "bandit",
-      "status": "completed_with_exit_code",
+      "status": "completed",
       "returncode": 1,
       "issues": [],
       "summary": {
@@ -188,7 +173,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T08:11:04Z\",",
+          "  \"generated_at\": \"2025-10-21T08:32:18Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 3,",
@@ -199,7 +184,7 @@
           "      \"SEVERITY.LOW\": 3,",
           "      \"SEVERITY.MEDIUM\": 0,",
           "      \"SEVERITY.UNDEFINED\": 0,",
-          "      \"loc\": 9704,",
+          "      \"loc\": 9713,",
           "      \"nosec\": 0,",
           "      \"skipped_tests\": 0",
           "    },",
@@ -230,6 +215,12 @@
         "omitted_characters": 20810,
         "omitted_chunks": 36
       },
+      "notes": [
+        {
+          "message": "Tool exited with a non-zero status but reported no issues.",
+          "severity": "info"
+        }
+      ],
       "stderr_preview": {
         "chunks": [
           "[main]\tINFO\tprofile include tests: None",
@@ -242,8 +233,8 @@
     },
     {
       "tool": "sqlfluff",
-      "status": "completed_with_exit_code",
-      "returncode": 2,
+      "status": "completed",
+      "returncode": 0,
       "issues": [],
       "summary": {
         "issue_count": 0,
@@ -251,14 +242,15 @@
       },
       "stderr_preview": {
         "chunks": [
-          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt_common.exceptions.base.CompilationError: Compilation Error in t",
-          "est contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
-          "  CONTRACTS_CANONICAL_JSON must be set before running contracts macros.",
-          "  ",
-          "  > in macro _contracts_canonical_payload (macros/contracts_shared.sql)",
-          "  > called by macro contracts_evidence_min_confidence (macros/contracts_shared.sql)",
-          "  > called by macro test_contracts_min_confidence (macros/contracts_shared.sql)",
-          "  > called by test contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
+          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/macros/contracts_shared.sql because it is a macro ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/email_domain_matches_website.sql because it is a macro ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/https_prefix.sql because it is a macro ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/south_african_phone.sql because it is a macro ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
           ""
         ]
       }

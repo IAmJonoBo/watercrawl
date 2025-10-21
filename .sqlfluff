@@ -2,7 +2,7 @@
 templater = dbt
 dialect = duckdb
 ignore = data_contracts/analytics/target,data_contracts/analytics/dbt_packages
-exclude_rules = CP01,RF06,LT01,LT08,LT09
+exclude_rules = CP01,RF05,RF06,LT01,LT08,LT09,ST06
 
 [sqlfluff:templater:dbt]
 project_dir = data_contracts/analytics

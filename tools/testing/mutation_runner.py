@@ -7,7 +7,7 @@ import json
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 DEFAULT_TARGETS = (
     "firecrawl_demo/application/pipeline.py",
@@ -49,7 +49,7 @@ def run_mutation_tests(
     results_path = output_dir / f"mutmut_results_{timestamp}.txt"
 
     if dry_run:
-        summary = {
+        dry_run_summary: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "status": "skipped",
             "message": "Dry-run mode; mutation tests not executed.",
@@ -57,7 +57,7 @@ def run_mutation_tests(
             "tests": list(tests),
         }
         summary_path.write_text(
-            json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
+            json.dumps(dry_run_summary, indent=2, sort_keys=True), encoding="utf-8"
         )
         return 0
 
@@ -73,7 +73,7 @@ def run_mutation_tests(
     )  # nosec B603
     results_path.write_text(results_proc.stdout, encoding="utf-8")
 
-    summary = {
+    summary_payload: dict[str, Any] = {
         "timestamp": datetime.now(UTC).isoformat(),
         "command": command,
         "exit_code": run_proc.returncode,
@@ -82,7 +82,7 @@ def run_mutation_tests(
         "tests": list(tests),
     }
     summary_path.write_text(
-        json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
+        json.dumps(summary_payload, indent=2, sort_keys=True), encoding="utf-8"
     )
 
     latest_symlink = output_dir / "latest.txt"

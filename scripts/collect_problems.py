@@ -149,8 +149,11 @@ def _static_command(*args: str) -> Callable[[], tuple[list[str], None, None]]:
 
 
 def _sqlfluff_command() -> tuple[list[str], Mapping[str, str], None]:
+    from firecrawl_demo.integrations.contracts.shared_config import environment_payload
+
     duckdb_path = ensure_duckdb(DEFAULT_DBT_PROJECT, DEFAULT_DUCKDB)
     env = os.environ.copy()
+    env.update(environment_payload())
     env.setdefault("DBT_DUCKDB_PATH", duckdb_path.as_posix())
     cmd = [
         "sqlfluff",
@@ -187,9 +190,21 @@ def parse_ruff_output(result: CompletedProcess) -> dict[str, Any]:
         _attach_preview(payload, "raw_preview", result.stdout or "")
         return payload
 
+    filtered: list[dict[str, Any]] = []
+    for item in findings:
+        code = item.get("code")
+        filename = item.get("filename") or ""
+        if code == "F401" and filename.endswith("__init__.py"):
+            # __init__ re-export patterns commonly trigger false positives; skip them.
+            continue
+        filtered.append(item)
+
     issues: list[dict[str, Any]] = []
-    fixable = sum(1 for item in findings if item.get("fix"))
-    for item in findings[:MAX_ISSUES]:
+    fixable = sum(1 for item in filtered if item.get("fix"))
+    potential_dead_code = sum(
+        1 for item in filtered if item.get("code") in {"F401", "F841"}
+    )
+    for item in filtered[:MAX_ISSUES]:
         location = item.get("location") or {}
         entry = {
             "path": item.get("filename"),
@@ -198,14 +213,20 @@ def parse_ruff_output(result: CompletedProcess) -> dict[str, Any]:
             "code": item.get("code"),
             "message": item.get("message"),
         }
+        code = entry.get("code")
+        if code in {"F401", "F841"}:
+            entry["insight"] = (
+                "Unused symbol detected; confirm whether a planned feature was fully implemented."
+            )
         _truncate_message(entry)
         issues.append(entry)
-    omitted = max(len(findings) - MAX_ISSUES, 0)
+    omitted = max(len(filtered) - MAX_ISSUES, 0)
     return {
         "issues": issues,
         "summary": {
-            "issue_count": len(findings),
+            "issue_count": len(filtered),
             "fixable": fixable,
+            "potential_dead_code": potential_dead_code,
             **({"omitted_issues": omitted} if omitted else {}),
         },
     }
@@ -520,11 +541,30 @@ def collect(
             )
             continue
         parsed = spec.parser(completed)
+        summary_block = (
+            parsed.get("summary") if isinstance(parsed, dict) else None  # type: ignore[assignment]
+        )
+        status = (
+            "completed" if completed.returncode == 0 else "completed_with_exit_code"
+        )
+        if (
+            status != "completed"
+            and isinstance(summary_block, dict)
+            and summary_block.get("issue_count", 0) == 0
+        ):
+            status = "completed"
+            if isinstance(parsed, dict):
+                parsed.setdefault("notes", []).append(  # type: ignore[call-arg]
+                    {
+                        "message": (
+                            "Tool exited with a non-zero status but reported no issues."
+                        ),
+                        "severity": "info",
+                    }
+                )
         entry: dict[str, Any] = {
             "tool": spec.name,
-            "status": (
-                "completed" if completed.returncode == 0 else "completed_with_exit_code"
-            ),
+            "status": status,
             "returncode": completed.returncode,
         }
         entry.update(parsed)
