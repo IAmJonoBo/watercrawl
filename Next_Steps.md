@@ -55,6 +55,7 @@
 - [x] 2025-10-21 — Drift telemetry upgrade: Pipeline writes whylogs alert history (`alerts.json`) and Prometheus textfile metrics (`metrics.prom`) with configuration via `DRIFT_ALERT_OUTPUT` / `DRIFT_PROMETHEUS_OUTPUT`; docs updated, baseline seeding utility + sample Prometheus rules committed, and tests cover log/metric emission.
 - [x] 2025-10-21 — QA automation upgrade: Added format/problems commands with plan auto-generation, integrated mypy into Trunk linting, and documented new CQ workflows to minimise manual triage.
 - [x] 2025-10-21 — QA pipeline dry run (agent): pytest ✅ (293 passed, 86% cover), sqlfluff ✅ after seeding `CONTRACTS_CANONICAL_JSON`, yamllint ✅ (fixed `.venv/` ignore), markdownlint ❌ (nodeenv TLS - remains blocked), mypy ✅ (fixed return annotations, `tomli` confirmed in deps), bandit ⚠️ (subprocess warnings - expected/nosec'd), axe smoke ✅ (fixed temp profile), collect_problems ⚠️ (markdownlint dependency remains blocked by nodeenv TLS). ⏳ Remaining: vendor/cert-pin node toolchain for offline markdownlint.
+- [x] 2025-10-22 — Deequ enforcement: Implemented deterministic Deequ checks with pandas fallback, wired CLI/evidence logging to include Deequ results, added failure messaging, refreshed docs/CHANGELOG to note release blocker now hard-gated.
 
 ---
 

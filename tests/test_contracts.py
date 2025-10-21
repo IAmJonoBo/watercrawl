@@ -141,6 +141,7 @@ def test_contracts_cli_reports_failures(
 
     assert response.exit_code != 0
     assert "Failing expectations" in response.output
+    assert "Deequ checks:" in response.output
     dbt_line = next(
         (
             line
@@ -174,7 +175,10 @@ def test_contracts_cli_runs_both_suites_and_logs_evidence(
     payload = json.loads(raw_output[json_start:])
     assert payload["success"] is True
     assert payload["dbt"]["success"] is True
+    assert payload["deequ"]["success"] is True
+    assert payload["deequ"]["check_count"] > 0
     assert Path(payload["artifact_dir"]).exists()
+    assert (Path(payload["artifact_dir"]) / "deequ_result.json").exists()
 
     evidence_log = contracts_runtime["evidence_log"]
     assert evidence_log.exists()
@@ -186,6 +190,27 @@ def test_contracts_cli_runs_both_suites_and_logs_evidence(
     assert latest["Organisation"] == dataset_path.name
     assert "Great Expectations" in latest["Notes"]
     assert "dbt tests" in latest["Notes"]
+    assert "Deequ" in latest["Notes"]
+
+
+@pytest.mark.skipif(
+    not DBT_AVAILABLE,
+    reason="dbt-core not available in this environment",
+)
+def test_contracts_cli_reports_deequ_failures(
+    tmp_path: Path, contracts_runtime: dict[str, Path]
+) -> None:
+    invalid_row = _valid_row()
+    invalid_row["Contact Email Address"] = ""
+    dataset_path = tmp_path / "invalid_deequ.csv"
+    pd.DataFrame([invalid_row]).to_csv(dataset_path, index=False)
+
+    runner = CliRunner()
+    response = runner.invoke(cli, ["contracts", str(dataset_path)])
+
+    assert response.exit_code != 0
+    assert "Failing Deequ checks" in response.output
+    assert "verified_email_present" in response.output
 
 
 def test_contracts_cli_persists_artifacts(

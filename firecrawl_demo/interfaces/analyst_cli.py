@@ -8,7 +8,7 @@ import sys
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from uuid import uuid4
 
 import click
@@ -24,12 +24,14 @@ from firecrawl_demo.domain.models import SchoolRecord
 from firecrawl_demo.infrastructure.evidence import build_evidence_sink
 from firecrawl_demo.integrations.contracts import (
     CuratedDatasetContractResult,
+    DeequContractResult,
     DbtContractResult,
     calculate_contract_coverage,
     persist_contract_artifacts,
     record_contracts_evidence,
     report_coverage,
     run_dbt_contract_tests,
+    run_deequ_checks,
     validate_curated_file,
 )
 from firecrawl_demo.integrations.storage.lakehouse import build_lakehouse_writer
@@ -44,6 +46,12 @@ from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
 CLI_ENVIRONMENT: CliEnvironment = load_cli_environment()
 
 T = TypeVar("T")
+
+
+if TYPE_CHECKING:
+    from firecrawl_demo.integrations.contracts.dbt_runner import (
+        DbtContractResult as RealDbtContractResult,
+    )
 
 
 _CLI_OVERRIDE_STACK: list[dict[str, Any]] = []
@@ -444,6 +452,7 @@ def contracts(
         )
 
     dbt_result: DbtContractResult = run_dbt_contract_tests(input_path)  # type: ignore
+    deequ_result: DeequContractResult = run_deequ_checks(input_path)
 
     ge_payload: dict[str, Any] = {
         "success": ge_result.success,
@@ -475,15 +484,36 @@ def contracts(
         "results": dbt_result.results,
     }
 
-    artifact_dir = persist_contract_artifacts(input_path, ge_payload, dbt_result)  # type: ignore
+    deequ_payload: dict[str, Any] = {
+        "success": deequ_result.success,
+        "check_count": deequ_result.check_count,
+        "failures": deequ_result.failures,
+        "metrics": deequ_result.metrics,
+        "results": deequ_result.results,
+    }
+
+    dbt_runner_result = cast("RealDbtContractResult", dbt_result)
+
+    artifact_dir = persist_contract_artifacts(
+        input_path,
+        ge_payload,
+        dbt_runner_result,
+        deequ_result,
+    )
     record_contracts_evidence(
-        input_path, ge_result, dbt_result, artifact_dir, evidence_sink  # type: ignore
+        input_path,
+        ge_result,
+        dbt_runner_result,
+        deequ_result,
+        artifact_dir,
+        evidence_sink,
     )
 
     payload: dict[str, Any] = {
-        "success": ge_result.success and dbt_result.success,
+        "success": ge_result.success and dbt_result.success and deequ_result.success,
         "great_expectations": ge_payload,
         "dbt": dbt_payload,
+        "deequ": deequ_payload,
         "artifact_dir": str(artifact_dir),
     }
 
@@ -517,6 +547,29 @@ def contracts(
                     click.echo(
                         f" - {record.get('unique_id', record.get('name', 'unknown'))}: {status}"
                     )
+        click.echo(
+            "Deequ checks: "
+            + f"{deequ_payload['check_count'] - deequ_payload['failures']} passed / "
+            + f"{deequ_payload['check_count']} executed"
+        )
+        if deequ_payload["failures"]:
+            click.echo("Failing Deequ checks:")
+            for entry in deequ_payload["results"]:
+                if entry.get("success", True):
+                    continue
+                check_name = entry.get("check", "unknown")
+                click.echo(f" - {check_name}")
+                details = entry.get("details", {})
+                if isinstance(details, Mapping):
+                    for key, value in details.items():
+                        if isinstance(value, list):
+                            if not value:
+                                continue
+                            preview = value[:3]
+                            suffix = "…" if len(value) > len(preview) else ""
+                            click.echo(f"   {key}: {preview}{suffix}")
+                        else:
+                            click.echo(f"   {key}: {value}")
 
     if not payload["success"]:
         raise click.exceptions.Exit(1)
