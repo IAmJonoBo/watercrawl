@@ -260,6 +260,7 @@ poetry run python scripts/collect_problems.py
 - Follow ADR pattern for architectural decisions
 - Include code examples and CLI usage
 - Update docs for any behavioral changes
+- Register TechDocs in Backstage by updating `catalog-info.yaml` and ensuring `.github/workflows/techdocs.yml` runs cleanly. New services should start from `templates/golden-path/`, which supplies Backstage metadata, TechDocs scaffolding, and plan→commit guardrails.
 
 ### Code Documentation
 

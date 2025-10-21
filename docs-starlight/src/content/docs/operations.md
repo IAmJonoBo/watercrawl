@@ -37,6 +37,7 @@ poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_
 ```
 
 - Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
+- TechDocs publishing runs via `.github/workflows/techdocs.yml`; the job uses `techdocs-cli generate --no-docker` and uploads a `techdocs-site` artifact for Backstage ingestion. New services should copy the `templates/golden-path/` scaffold to inherit plan→commit guardrails and documentation structure.
 
 Run the `contracts` command against the latest curated export (swap in the
 appropriate path if you are validating a non-sample dataset). The command exits

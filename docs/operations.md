@@ -211,6 +211,13 @@ poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3
 - Use `--dry-run` when sanity checking CI wiring; the summary file is generated without invoking mutmut so integration tests remain deterministic.
 - Configure dashboards or QA checks to enforce the desired mutation score. Mutmut returns a non-zero exit code when surviving mutants remain, allowing CI to fail until gaps are addressed.
 
+### Backstage TechDocs & Golden Path
+
+- Backstage metadata lives in `catalog-info.yaml` and tracks the system/component/resources for the enrichment stack. Register this file in your Backstage instance to surface the service, TechDocs, and ownership.
+- CI publishes TechDocs through `.github/workflows/techdocs.yml`. The workflow generates the static site with `techdocs-cli generate --no-docker` and uploads it as an artifact (`techdocs-site`). Consume it directly or attach a publish step compatible with your TechDocs backend (S3, GCS, etc.).
+- New services should start from `templates/golden-path/`, which encodes plan→commit guardrails, TechDocs scaffolding, and bootstrap scripts that call `python -m scripts.bootstrap_env`. Update placeholders in `catalog-info.yaml` and `docs/index.md` before registering new components.
+- Onboarding docs (`CONTRIBUTING.md`, `README.md`) reference the golden-path template; ensure new projects either use the template or document deviations in their ADRs.
+
 ### Graph semantics metrics
 
 - CSVW and R2RML outputs now enforce configurable bounds via `GRAPH_SEMANTICS_ENABLED=1` and the `GRAPH_MIN_*` / `GRAPH_MAX_*` environment variables.

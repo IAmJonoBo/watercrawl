@@ -51,6 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `poetry run python -m apps.automation.cli qa mutation` orchestrates the pilot with curated targets/tests
   - Artefacts written to `artifacts/testing/mutation/` (summary JSON and raw results)
   - Dry-run mode supported for CI validation and documentation updates in `docs/operations.md`
+- **Backstage TechDocs Integration**: Catalog metadata, CI publishing, and golden-path template established
+  - `catalog-info.yaml` registers the system/component/resource for Backstage
+  - `.github/workflows/techdocs.yml` generates TechDocs artifacts using `techdocs-cli`
+  - `templates/golden-path/` scaffolds new services with plan→commit guardrails, TechDocs docs, and bootstrap scripts
+  - Documentation updated (`README.md`, `docs/operations.md`, `CONTRIBUTING.md`) to reference Backstage onboarding
 
 ### Changed
 

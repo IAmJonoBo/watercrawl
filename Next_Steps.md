@@ -24,7 +24,7 @@
 - [x] **MCP plan→commit audit logging + policy enforcement** — _Owner: Platform/Security · Due: 2025‑12‑05_ (WC‑05/06)
 - [x] **whylogs drift dashboards + alert routing** — _Owner: Platform/Data · Due: 2025‑12‑05_ (WC‑11) — _Progress: Slack webhook routing, Grafana starter dashboard, and Prometheus metrics template published (`docs/observability/whylogs-dashboard.json`)_
 - [x] **Mutation testing pilot for pipeline hotspots** — _Owner: QA/Platform · Due: 2025‑12‑05_ (WC‑15) — _Progress: mutmut integration via `qa mutation`, artefacts stored under `artifacts/testing/mutation/`, targeted pytest runner configured_
-- [ ] **Backstage TechDocs + golden‑path template** — _Owner: Platform/DevEx · Due: 2026‑01‑15_ (WC‑19)
+- [x] **Backstage TechDocs + golden‑path template** — _Owner: Platform/DevEx · Due: 2026‑01‑15_ (WC‑19) — _Progress: catalog-info.yaml added, TechDocs workflow publishes site artifact, golden-path scaffold available under templates/golden-path/_
 - [ ] **Signed artefact promotion with policy‑as‑code** — _Owner: Platform/Security · Due: 2026‑01‑31_ (WC‑13/14)
 - [ ] **Chaos/FMEA exercise for pipeline & MCP** — _Owner: SRE/Security · Due: 2026‑01‑31_ (WC‑20)
 

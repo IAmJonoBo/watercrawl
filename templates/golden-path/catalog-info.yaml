@@ -1,0 +1,28 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: SAMPLE_REPLACE_system
+  title: Replace with system name
+spec:
+  owner: SAMPLE_REPLACE_owner
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: SAMPLE_REPLACE_component
+  title: Replace with component name
+spec:
+  type: service
+  lifecycle: experimental
+  owner: SAMPLE_REPLACE_owner
+  system: SAMPLE_REPLACE_system
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: SAMPLE_REPLACE_docs
+  description: TechDocs reference for this service.
+spec:
+  type: docs
+  owner: SAMPLE_REPLACE_owner
+  system: SAMPLE_REPLACE_system

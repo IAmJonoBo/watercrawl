@@ -1,0 +1,43 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: aces-enrichment-system
+  title: ACES Aerodynamics Enrichment System
+  description: Evidence-backed data enrichment pipeline for South African flight schools.
+  tags:
+    - enrichment
+    - compliance
+    - python
+spec:
+  owner: platform-team
+  domain: aces-aerodynamics
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: aces-enrichment-service
+  title: ACES Enrichment Service
+  description: CLI and pipeline responsible for dataset validation, enrichment, and compliance evidence logging.
+  tags:
+    - cli
+    - pipeline
+    - mcp
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: aces-enrichment-system
+  providesApis:
+    - aces-enrichment-api
+  consumesApis:
+    - aces-data-contracts
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: aces-enrichment-techdocs
+  description: Backstage TechDocs source for the ACES Aerodynamics Enrichment Stack.
+spec:
+  type: docs
+  owner: platform-team
+  system: aces-enrichment-system

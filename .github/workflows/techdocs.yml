@@ -1,0 +1,32 @@
+name: techdocs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install TechDocs CLI
+        run: npm install -g @techdocs/cli@1.10.3
+
+      - name: Generate TechDocs site
+        run: |
+          techdocs-cli generate --no-docker --source-dir . --output-dir site/techdocs
+
+      - name: Upload TechDocs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: techdocs-site
+          path: site/techdocs
+          retention-days: 7
