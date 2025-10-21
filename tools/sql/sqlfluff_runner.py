@@ -53,6 +53,16 @@ def run_sqlfluff(
     materialised_path = ensure_duckdb(project_dir, duckdb_path)
     env = os.environ.copy()
     env.setdefault("DBT_DUCKDB_PATH", materialised_path.as_posix())
+    # Seed CONTRACTS_CANONICAL_JSON if a canonical file is present to help
+    # dbt macros compile during SQLFluff runs in offline CI.
+    canonical_path = project_dir / "contracts_canonical.json"
+    if canonical_path.exists():
+        try:
+            with canonical_path.open("r", encoding="utf-8") as fh:
+                env["CONTRACTS_CANONICAL_JSON"] = fh.read()
+        except OSError:
+            # Best-effort; leave env unchanged if reading fails
+            pass
     cmd = ["sqlfluff", "lint", str(project_dir), *extra_args]
     print("Executing:", " ".join(cmd))
     completed = subprocess.run(cmd, env=env, check=False)  # nosec B603

@@ -1,0 +1,15 @@
+{
+  "provinces": [
+    "Eastern Cape",
+    "Free State",
+    "Gauteng",
+    "KwaZulu-Natal",
+    "Limpopo",
+    "Mpumalanga",
+    "Northern Cape",
+    "North West",
+    "Western Cape"
+  ],
+  "statuses": ["Verified", "Candidate", "Needs Review", "Duplicate", "Do Not Contact (Compliance)"],
+  "evidence": { "minimum_confidence": 70 }
+}
