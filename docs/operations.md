@@ -202,6 +202,14 @@ poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3
 - Generate or refresh baselines with `python -m tools.observability.seed_drift_baseline` (defaults to `data/sample.csv` and writes artifacts to `data/observability/whylogs/`). Run the same command against production datasets to recalibrate after confirmed distribution shifts.
 - Set `DRIFT_REQUIRE_BASELINE=1` and `DRIFT_REQUIRE_WHYLOGS_METADATA=1` to raise `drift_baseline_missing` and `whylogs_baseline_missing` sanity findings when either artefact is absent, ensuring analysts remediate missing baselines before promoting a run.
 
+### Mutation testing pilot
+
+- Install the mutation tooling with `poetry install --with dev` (mutmut ships in the default development profile).
+- Execute `poetry run python -m apps.automation.cli qa mutation` to launch the pilot. The command runs mutmut against pipeline hotspots (`firecrawl_demo/application/pipeline.py`, `firecrawl_demo/integrations/research/core.py`) using the focused pytest suite (`tests/test_pipeline.py`, `tests/test_research_logic.py`).
+- Artefacts are written to `artifacts/testing/mutation/` including the raw `mutmut_results_<timestamp>.txt` output and a JSON summary with the exit code, targets, and test selection. A `latest.txt` symlink is maintained for dashboards that tail the newest run.
+- Use `--dry-run` when sanity checking CI wiring; the summary file is generated without invoking mutmut so integration tests remain deterministic.
+- Configure dashboards or QA checks to enforce the desired mutation score. Mutmut returns a non-zero exit code when surviving mutants remain, allowing CI to fail until gaps are addressed.
+
 ### Graph semantics metrics
 
 - CSVW and R2RML outputs now enforce configurable bounds via `GRAPH_SEMANTICS_ENABLED=1` and the `GRAPH_MIN_*` / `GRAPH_MAX_*` environment variables.

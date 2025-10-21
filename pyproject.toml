@@ -73,6 +73,7 @@ narwhals = "2.8.0"
 streamlit = "^1.50.0"
 axe-selenium-python = "^2.1.6"
 selenium = "^4.37.0"
+mutmut = "2.4.4"
 
 [tool.poetry.group.ui]
 optional = true
@@ -153,3 +154,11 @@ module = [
   "dns.*",
 ]
 ignore_missing_imports = true
+
+[tool.mutmut]
+paths_to_mutate = [
+  "firecrawl_demo/application/pipeline.py",
+  "firecrawl_demo/integrations/research/core.py",
+]
+tests_dir = "tests"
+runner = "python -m pytest tests/test_pipeline.py tests/test_research_logic.py"

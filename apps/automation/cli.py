@@ -336,6 +336,20 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
             tags=("ci",),
         ),
     ],
+    "mutation": [
+        CommandSpec(
+            name="Mutation testing",
+            args=(
+                "poetry",
+                "run",
+                "python",
+                "-m",
+                "tools.testing.mutation_runner",
+            ),
+            description="Run mutmut over pipeline hotspots to measure mutation score.",
+            tags=("mutation", "testing"),
+        )
+    ],
     "format": [
         CommandSpec(
             name="Ruff (fix)",
@@ -908,6 +922,48 @@ def qa_tests(dry_run: bool, auto_bootstrap: bool) -> None:
     _maybe_bootstrap_python(auto_bootstrap=auto_bootstrap)
     specs = _collect_specs(["tests"])
     exit_code = _invoke_specs(specs, dry_run=dry_run)
+    raise SystemExit(exit_code)
+
+
+@qa.command("mutation")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Skip execution and record placeholder mutation artefacts.",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path),
+    help="Directory for mutation artefacts (overrides default).",
+)
+def qa_mutation(dry_run: bool, output_dir: Path | None) -> None:
+    """Run the mutation testing pilot across pipeline hotspots."""
+
+    specs = _collect_specs(["mutation"])
+    if not specs:
+        raise click.ClickException("Mutation testing commands are not configured.")
+
+    base_spec = specs[0]
+    args = list(base_spec.args)
+    if dry_run:
+        args.append("--dry-run")
+    if output_dir is not None:
+        args.extend(["--output-dir", output_dir.as_posix()])
+
+    mutated_spec = CommandSpec(
+        name=base_spec.name,
+        args=tuple(args),
+        description=base_spec.description,
+        env=base_spec.env,
+        tags=base_spec.tags,
+        requires_plan=base_spec.requires_plan,
+    )
+
+    exit_code = _invoke_specs(
+        [mutated_spec],
+        dry_run=dry_run,
+        plan_guard=CLI_ENVIRONMENT.plan_guard,
+    )
     raise SystemExit(exit_code)
 
 

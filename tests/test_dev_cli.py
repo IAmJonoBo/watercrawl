@@ -315,6 +315,24 @@ def test_qa_fmt_generates_plan(tmp_path: Path) -> None:
     assert fmt_commit["if_match"] == '"fmt-token"'
 
 
+def test_qa_mutation_supports_dry_run(monkeypatch) -> None:
+    """Ensure the mutation QA command injects the --dry-run flag when requested."""
+
+    captured: dict[str, Any] = {}
+    with automation_cli.override_command_runner(_RecordingRunner(captured)):
+        runner = CliRunner()
+        result = runner.invoke(
+            automation_cli.cli,
+            ["qa", "mutation", "--dry-run"],
+        )
+
+    assert result.exit_code == 0
+    specs = captured.get("specs")
+    assert specs, "mutation command should dispatch specs"
+    args = list(specs[0].args)
+    assert "--dry-run" in args
+
+
 def test_qa_problems_summarises_results(monkeypatch, tmp_path: Path) -> None:
     """Test that the 'qa problems' command summarises results and handles issue reporting correctly."""
     fake_results = [

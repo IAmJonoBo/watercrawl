@@ -47,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Prometheus/Grafana starter dashboard published at `docs/observability/whylogs-dashboard.json`
   - Operations guide updated with routing instructions and environment variables (`DRIFT_DASHBOARD_URL`, webhook guidance)
   - Added tests covering Slack notifier success/failure paths and pipeline integration
+- **Mutation Testing Pilot**: Added mutmut workflow for pipeline hotspots
+  - `poetry run python -m apps.automation.cli qa mutation` orchestrates the pilot with curated targets/tests
+  - Artefacts written to `artifacts/testing/mutation/` (summary JSON and raw results)
+  - Dry-run mode supported for CI validation and documentation updates in `docs/operations.md`
 
 ### Changed
 
