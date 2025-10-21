@@ -179,19 +179,49 @@ The analyst CLI now accepts `--profile`/`--profile-path` switches on `validate`,
 
 ## Documentation
 
-MkDocs site configuration lives in `mkdocs.yml`. Preview locally with:
+**📚 Full documentation is available at [https://iamjonobo.github.io/watercrawl/](https://iamjonobo.github.io/watercrawl/)**
+
+The documentation follows the **Diátaxis framework** for systematic technical documentation:
+
+- **Tutorials** (Learning-Oriented): Step-by-step guides for new users
+  - [Getting Started](/guides/getting-started/)
+  - [First Enrichment Tutorial](/guides/tutorials/first-enrichment/)
+  - [Working with Profiles](/guides/tutorials/profiles/)
+  - [MCP Setup](/guides/tutorials/mcp-setup/)
+
+- **How-To Guides** (Problem-Oriented): Practical solutions
+  - [CLI Commands](/cli/)
+  - [MCP Integration](/mcp/)
+  - [Troubleshooting](/guides/troubleshooting/)
+
+- **Reference** (Information-Oriented): Technical specifications
+  - [API Reference](/reference/api/)
+  - [Configuration](/reference/configuration/)
+  - [Data Contracts](/reference/data-contracts/)
+
+- **Explanation** (Understanding-Oriented): Conceptual deep-dives
+  - [Architecture](/architecture/)
+  - [Data Quality](/data-quality/)
+  - [Lineage & Lakehouse](/lineage-lakehouse/)
+  - [Operations](/operations/)
+  - [Architecture Decision Records (ADRs)](/adr/)
+
+### Preview Documentation Locally
 
 ```bash
-poetry run mkdocs serve
+cd docs-starlight
+pnpm install
+pnpm run dev
+# Open http://localhost:4321
 ```
 
-Key pages:
+### Build Documentation
 
-- `docs/gap-analysis.md`: current vs target architecture.
-- `docs/architecture.md`: layered design and flow diagrams.
-- `docs/cli.md`: command usage and examples.
-- `docs/mcp.md`: MCP contract for Copilot.
-- `docs/operations.md`: QA gates and release process.
+```bash
+cd docs-starlight
+pnpm run build
+# Output: docs-starlight/dist/
+```
 
 ## Repository layout
 
