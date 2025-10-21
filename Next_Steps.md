@@ -19,6 +19,9 @@
 - [ ] **Wheel remediation — Python 3.13/3.14/3.15 blockers** — _Owner: Platform/Data/Security · Due: 2025‑11‑08_
   - Gates: cp314/cp315 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, and other tracked packages; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
   - Progress: `scripts/wheel_status.py` now reports blocker status to `tools/dependency_matrix/wheel_status.json`; remains blocked pending upstream wheel releases.
+- [ ] **QA baseline remediation — nodeenv + typing gaps** — _Owner: QA/Platform · Due: 2025‑10‑28_
+  - Gates: markdownlint CLI cached offline; mypy clean with `tomli` dependency resolved; axe smoke test launches with unique Chrome profile; yamllint limited to tracked sources; problems collector completes.
+  - Status: Baseline run 2025‑10‑21 blocked by TLS failure when nodeenv fetched Node index, missing `tomli` for `scripts/collect_problems.py`, Chrome profile contention, and yamllint scanning `.venv/`.
 - [x] **Threat model ADR + STRIDE/MITRE mapping** — _Owner: Security · Due: 2025‑11‑14_
 - [x] **Scorecard/SBOM/Sigstore/Gitsign workflow** — _Owner: Platform/Security · Due: 2025‑11‑30_ (WC‑14)
 - [x] **Streamlit accessibility baseline (heuristic + axe CI)** — _Owner: Product/UX · Due: 2025‑11‑21_ (WC‑16)
@@ -51,6 +54,7 @@
 - [ ] 2025-10-21 — Chaos/FMEA exercise prep: draft scenario catalog, identify telemetry needed for failure injection, assign owners for MCP vs pipeline game days.
 - [x] 2025-10-21 — Drift telemetry upgrade: Pipeline writes whylogs alert history (`alerts.json`) and Prometheus textfile metrics (`metrics.prom`) with configuration via `DRIFT_ALERT_OUTPUT` / `DRIFT_PROMETHEUS_OUTPUT`; docs updated, baseline seeding utility + sample Prometheus rules committed, and tests cover log/metric emission.
 - [x] 2025-10-21 — QA automation upgrade: Added format/problems commands with plan auto-generation, integrated mypy into Trunk linting, and documented new CQ workflows to minimise manual triage.
+- [ ] 2025-10-21 — QA pipeline dry run (agent): pytest ✅ (293 passed, 86% cover), sqlfluff ✅ after seeding `CONTRACTS_CANONICAL_JSON`, yamllint ❌ against `.venv/`, markdownlint ❌ (nodeenv TLS), mypy ❌ (`tomli` missing, strict return annotations), bandit ⚠️ (subprocess warnings), axe smoke ❌ (Chrome profile reuse), collect_problems ⚠️ (blocked by nodeenv TLS). Next: vendor/cert-pin node toolchain, add runtime dependency for `tomli`, harden subprocess wrappers, parameterise Chrome user data dir, and scope yamllint to tracked files.
 
 ---
 
@@ -109,6 +113,7 @@ Execute in this order; each item must meet its gate before promotion.
 - **Ragas** scores below thresholds (AT‑31).
 - **OWASP LLM Top‑10** red‑team failure (AT‑32).
 - MCP **plan→diff→commit** audit trail missing or `If‑Match` not enforced (AT‑33).
+- **QA baseline 2025-10-21** unresolved: markdownlint CLI blocked on nodeenv TLS, mypy errors in `scripts/collect_problems.py`, axe smoke Chrome profile collision, yamllint scanning `.venv/`, and `collect_problems` aborting; treat as red until mitigated.
 
 ---
 
@@ -138,3 +143,7 @@ Execute in this order; each item must meet its gate before promotion.
 - Regenerate `requirements-dev.txt` hashes so transitive dependencies like `narwhals` resolve under `--require-hashes` installs.
 - Python 3.15 compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, `tornado`, and other tracked packages; track expectations via `presets/dependency_blockers.toml`, ongoing findings in `tools/dependency_matrix/report.json`, and guard outputs in `tools/dependency_matrix/status.json`.
 - [x] 2025-10-21 — Implemented Sigstore signing guardrail: CI now signs artifacts in the build job and enforces `scripts.verify_artifact_signatures` to validate bundle identity before upload; supply-chain plan→commit gate updated accordingly.
+- Node tooling requires certificate pinning/offline cache: `pre-commit run markdownlint-cli2` and `scripts/collect_problems.py` fail under SSL `Missing Authority Key Identifier` when nodeenv resolves `index.json`; bundle cached Node tarballs or configure trusted CAs before treating markdownlint as blocking.
+- `apps/analyst/accessibility/axe_smoke.py` reuses the default Chrome user data dir in shared runners, triggering `SessionNotCreatedException`; inject per-run temp profiles to unblock accessibility smoke in CI and local QA.
+- Mypy strict mode now errors on `scripts/collect_problems.py` (missing `tomli`, `No return value expected`, strict Optional handling); align dependencies and refactor functions to return `None` explicitly before enabling gate.
+- Yamllint traverses `.venv/` during repo-root scans; tighten ignore globs or run against `git ls-files` to avoid virtualenv noise during gated runs.
