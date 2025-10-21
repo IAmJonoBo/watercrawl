@@ -1,3 +1,6 @@
+/* Import Primer CSS bundled dependency */
+@import "@primer/css/dist/primer.css";
+
 /* Custom styles for Watercrawl Documentation with Primer CSS integration */
 
 :root {
