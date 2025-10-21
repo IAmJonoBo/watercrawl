@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T12:51:26.827543+00:00",
+  "generated_at": "2025-10-21T12:58:11.751270+00:00",
   "summary": {
     "issue_count": 0,
     "note_count": 14,
@@ -17,89 +17,8 @@
     ],
     "tools_missing": [],
     "insights": [],
-    "warning_count": 34,
-    "warning_insights": [
-      {
-        "tool": "sqlfluff",
-        "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/macros/contracts_shared.sql because it is a macro",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5b1fe5b79c32541d0161.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_99713e71b09547d2a51c231cf4108cee.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/contracts_min_confidence_stg_curated_dataset_confidence.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_domain_matches_website_s_9607215f04e2c1009e14956c658c9249.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/https_prefix_stg_curated_dataset_website_url.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_confidence.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_email_address.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      },
-      {
-        "tool": "sqlfluff",
-        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_number.sql was not found in dbt project",
-        "category": "Warning",
-        "kind": "general",
-        "path": null,
-        "source": null
-      }
-    ],
+    "warning_count": 0,
+    "warning_insights": [],
     "configured_tools": {
       "trunk_enabled": [
         "mypy",
@@ -273,7 +192,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T12:51:14Z\",",
+          "  \"generated_at\": \"2025-10-21T12:57:59Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 1,",
@@ -338,8 +257,7 @@
       "issues": [],
       "summary": {
         "issue_count": 0,
-        "files_with_issues": 0,
-        "warning_count": 34
+        "files_with_issues": 0
       },
       "stderr_preview": {
         "chunks": [
@@ -362,263 +280,17 @@
         ],
         "truncated": true,
         "omitted_characters": 5583
-      },
-      "warnings": [
-        {
-          "category": "Warning",
-          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/macros/contracts_shared.sql because it is a macro",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5b1fe5b79c32541d0161.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_99713e71b09547d2a51c231cf4108cee.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/contracts_min_confidence_stg_curated_dataset_confidence.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_domain_matches_website_s_9607215f04e2c1009e14956c658c9249.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/https_prefix_stg_curated_dataset_website_url.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_confidence.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_email_address.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_number.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_person.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_organisation_name.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_province.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_status.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_website_url.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/south_african_phone_stg_curated_dataset_contact_number.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5b1fe5b79c32541d0161.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_99713e71b09547d2a51c231cf4108cee.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/contracts_min_confidence_stg_curated_dataset_confidence.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_domain_matches_website_s_9607215f04e2c1009e14956c658c9249.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/https_prefix_stg_curated_dataset_website_url.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_confidence.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_email_address.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_number.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_person.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_organisation_name.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_province.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_status.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_website_url.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/south_african_phone_stg_curated_dataset_contact_number.sql was not found in dbt project",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/email_domain_matches_website.sql because it is a macro",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/https_prefix.sql because it is a macro",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        },
-        {
-          "category": "Warning",
-          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/south_african_phone.sql because it is a macro",
-          "kind": "general",
-          "severity": "warning",
-          "stream": "stderr"
-        }
-      ]
+      }
     },
     {
       "tool": "trunk",
       "status": "completed",
-      "returncode": 1,
+      "returncode": 0,
       "issues": [],
       "summary": {
         "issue_count": 0,
         "severity_counts": {}
       },
-      "notes": [
-        {
-          "message": "Tool exited with a non-zero status but reported no issues.",
-          "severity": "info"
-        }
-      ],
       "autofix_commands": [
         "trunk fmt"
       ]

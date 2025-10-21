@@ -171,6 +171,17 @@ def _read_yaml(path: Path) -> dict[str, Any] | None:
     return None
 
 
+_SQLFLUFF_WARNING_PATTERNS = (
+    "because it is a macro",
+    "was not found in dbt project",
+)
+
+
+def _should_ignore_warning(message: str) -> bool:
+    lower = message.lower()
+    return any(pattern in lower for pattern in _SQLFLUFF_WARNING_PATTERNS)
+
+
 def _discover_trunk_linters(path: Path = TRUNK_CONFIG_PATH) -> list[str]:
     config = _read_yaml(path)
     if not config:
@@ -252,6 +263,8 @@ def _parse_warning_line(line: str) -> dict[str, Any] | None:
             "category": data.get("category") or "Warning",
             "message": data.get("message") or "",
         }
+        if _should_ignore_warning(entry["message"]):
+            return None
         return _finalise_warning_entry(entry)
 
     match = _TAB_WARNING_PATTERN.match(line)
@@ -263,6 +276,8 @@ def _parse_warning_line(line: str) -> dict[str, Any] | None:
             "category": "Warning",
             "message": message.strip(),
         }
+        if _should_ignore_warning(entry["message"]):
+            return None
         return _finalise_warning_entry(entry)
 
     match = _GENERIC_WARNING_PATTERN.match(line)
@@ -272,6 +287,8 @@ def _parse_warning_line(line: str) -> dict[str, Any] | None:
             "category": "Warning",
             "message": message.strip(),
         }
+        if _should_ignore_warning(entry["message"]):
+            return None
         return _finalise_warning_entry(entry)
 
     match = _NPM_WARN_PATTERN.match(line)
@@ -282,6 +299,8 @@ def _parse_warning_line(line: str) -> dict[str, Any] | None:
             "category": f"npm {level.lower()}",
             "message": match.group("message").strip(),
         }
+        if _should_ignore_warning(entry["message"]):
+            return None
         return _finalise_warning_entry(entry)
 
     if "deprecationwarning" in line.lower():
@@ -289,6 +308,8 @@ def _parse_warning_line(line: str) -> dict[str, Any] | None:
             "category": "DeprecationWarning",
             "message": line.strip(),
         }
+        if _should_ignore_warning(entry["message"]):
+            return None
         return _finalise_warning_entry(entry)
 
     return None

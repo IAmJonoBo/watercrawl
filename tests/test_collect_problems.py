@@ -211,8 +211,8 @@ def test_collect_aggregates_and_truncates_outputs(
     sqlfluff_entry = by_tool["sqlfluff"]
     assert sqlfluff_entry["issues"][0]["code"] == "L001"
     assert sqlfluff_entry["summary"]["issue_count"] == 1
-    assert sqlfluff_entry["summary"]["warning_count"] == 1
-    assert sqlfluff_entry["warnings"][0]["message"].startswith("Skipped file")
+    assert sqlfluff_entry["summary"].get("warning_count", 0) == 0
+    assert not sqlfluff_entry.get("warnings")
 
     yamllint_entry = by_tool["yamllint"]
     assert yamllint_entry["issues"][0]["severity"] == "warning"
@@ -241,7 +241,7 @@ def test_collect_aggregates_and_truncates_outputs(
     assert overall["potential_dead_code"] >= 2
     assert "ruff" in overall["tools_run"]
     assert "trunk:ruff" in overall["tools_run"]
-    assert overall["warning_count"] == 3
+    assert overall["warning_count"] == 2
     assert any(
         insight.get("kind") == "deprecation" for insight in overall["warning_insights"]
     )
