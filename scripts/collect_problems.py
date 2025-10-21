@@ -1125,7 +1125,12 @@ def collect(
         specs = list(tools)
     run = runner or _run_subprocess
     aggregated: list[dict[str, Any]] = []
+    
+    # Track tool execution times for performance diagnostics
+    from datetime import datetime, timezone
+    
     for spec in specs:
+        start_time = datetime.now(timezone.utc)
         try:
             cmd, env, cwd = spec.command()
         except (
@@ -1161,6 +1166,10 @@ def collect(
                 }
             )
             continue
+        
+        end_time = datetime.now(timezone.utc)
+        duration_seconds = (end_time - start_time).total_seconds()
+        
         parsed = spec.parser(completed)
         status = (
             "completed" if completed.returncode == 0 else "completed_with_exit_code"
@@ -1169,6 +1178,7 @@ def collect(
             "tool": spec.name,
             "status": status,
             "returncode": completed.returncode,
+            "duration_seconds": round(duration_seconds, 3),
         }
         entry.update(parsed)
         entry.setdefault("issues", [])
@@ -1533,6 +1543,26 @@ def build_overall_summary(
         "warning_count": warning_total,
         "warning_insights": warning_highlights,
     }
+    
+    # Add performance diagnostics for ephemeral runner optimization
+    tool_durations = {
+        entry["tool"]: entry.get("duration_seconds", 0)
+        for entry in results
+        if entry.get("duration_seconds") is not None
+    }
+    if tool_durations:
+        total_duration = sum(tool_durations.values())
+        slowest_tools = sorted(
+            tool_durations.items(), key=lambda x: x[1], reverse=True
+        )[:5]
+        summary_payload["performance"] = {
+            "total_duration_seconds": round(total_duration, 3),
+            "slowest_tools": [
+                {"tool": tool, "duration_seconds": duration}
+                for tool, duration in slowest_tools
+            ],
+        }
+    
     if warning_total:
         _add_action({"type": "warnings", "count": warning_total})
     for missing_tool in tools_missing:

@@ -485,3 +485,33 @@ def test_contracts_environment_fallback_graceful() -> None:
     result = collect_problems.contracts_environment_payload()
     assert isinstance(result, dict)
 
+
+def test_collect_tracks_tool_execution_duration() -> None:
+    """Test that the collector tracks and reports tool execution times."""
+    outputs = {
+        "ruff": {"stdout": "[]", "returncode": 0},
+        "mypy": {"stdout": "Success: no issues found\n", "returncode": 0},
+    }
+    runner = _Runner(outputs)
+    
+    tools = [
+        _make_spec("ruff", collect_problems.parse_ruff_output),
+        _make_spec("mypy", collect_problems.parse_mypy_output),
+    ]
+    
+    results = collect_problems.collect(tools=tools, runner=runner.__call__)
+    
+    # All tools should have duration tracking
+    for entry in results:
+        assert "duration_seconds" in entry
+        assert isinstance(entry["duration_seconds"], (int, float))
+        assert entry["duration_seconds"] >= 0
+    
+    # Summary should include performance metrics
+    summary = collect_problems.build_overall_summary(results)
+    assert "performance" in summary
+    assert "total_duration_seconds" in summary["performance"]
+    assert "slowest_tools" in summary["performance"]
+    assert isinstance(summary["performance"]["slowest_tools"], list)
+
+
