@@ -31,10 +31,10 @@ jobs:
           python-version: '3.13'
 
       - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+        run: python -m pip install --upgrade pip --timeout 60 --retries 5
 
       - name: Install Poetry
-        run: python -m pip install poetry==1.9.6
+        run: python -m pip install poetry==1.9.6 --timeout 60 --retries 5
 
       - name: Install Python dependencies (Poetry)
         run: |
@@ -46,6 +46,12 @@ jobs:
           else
             echo "No pyproject.toml found - skipping Poetry install"
           fi
+        env:
+          # Increase Poetry installer timeout
+          POETRY_INSTALLER_MAX_WORKERS: 10
+          # Set pip timeout for Poetry's use
+          PIP_TIMEOUT: 60
+          PIP_RETRIES: 5
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -64,6 +70,12 @@ jobs:
           else
             echo "No package.json found - skipping pnpm install"
           fi
+        env:
+          # Set network timeout and retry for pnpm
+          PNPM_NETWORK_TIMEOUT: 60000
+          PNPM_FETCH_RETRIES: 5
+          PNPM_FETCH_RETRY_MINTIMEOUT: 10000
+          PNPM_FETCH_RETRY_MAXTIMEOUT: 60000
 
       - name: Verify basic tools
         run: |

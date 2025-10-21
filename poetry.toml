@@ -1,3 +1,11 @@
 [virtualenvs]
 create = true
 in-project = true
+
+[installer]
+# Increase max-workers for faster parallel downloads
+max-workers = 10
+
+[repositories.pypi]
+# Configure PyPI with timeout settings
+# Poetry uses requests which respects these environment variables

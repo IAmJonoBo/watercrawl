@@ -25,6 +25,12 @@ jobs:
           corepack prepare pnpm@latest --activate
           pnpm install --frozen-lockfile || pnpm install
           pnpm run build
+        env:
+          # Set network timeout and retry for pnpm
+          PNPM_NETWORK_TIMEOUT: 60000
+          PNPM_FETCH_RETRIES: 5
+          PNPM_FETCH_RETRY_MINTIMEOUT: 10000
+          PNPM_FETCH_RETRY_MAXTIMEOUT: 60000
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
