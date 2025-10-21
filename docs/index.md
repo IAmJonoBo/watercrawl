@@ -1,3 +1,8 @@
+---
+title: ACES Aerodynamics Enrichment Stack
+description: Consolidated intelligence and enrichment toolkit for flight school data
+---
+
 # ACES Aerodynamics Enrichment Stack
 
 Welcome to the consolidated intelligence and enrichment toolkit for ACES Aerodynamics. This stack transforms raw flight-school datasets into fully validated, evidence-backed records aligned with POPIA and SACAA expectations.

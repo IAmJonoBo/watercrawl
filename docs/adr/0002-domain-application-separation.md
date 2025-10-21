@@ -1,3 +1,8 @@
+---
+title: ADR 0002 - Promote Domain/Application Boundaries
+description: Domain entity separation from orchestration code
+---
+
 # ADR 0002: Promote Domain/Application Boundaries
 
 - **Status:** Accepted

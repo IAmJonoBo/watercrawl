@@ -1,3 +1,8 @@
+---
+title: Data Quality & Research Methodology
+description: Validation rules, enrichment heuristics, and quality gates
+---
+
 # Data Quality & Research Methodology
 
 ## Validation Rules

@@ -1,4 +1,11 @@
-site_name: ACES Aerodynamics Enrichment Stack
+# DEPRECATED: This MkDocs configuration is obsolete
+# The project now uses Starlight (Astro-based) for documentation
+# Please refer to docs-starlight/ for the current documentation
+# 
+# This file is kept for reference only and will be removed in a future version
+# Visit https://IAmJonoBo.github.io/watercrawl for the live documentation
+
+site_name: ACES Aerodynamics Enrichment Stack (DEPRECATED)
 site_description: "Data enrichment, validation, and automation toolkit for South African flight school intelligence."
 site_author: ACES Aerodynamics Analyst
 repo_url: https://github.com/acesaero/watercrawl

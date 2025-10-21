@@ -1,3 +1,8 @@
+---
+title: Surface Taxonomy
+description: Code organization, ownership boundaries, and CODEOWNERS mapping
+---
+
 # Surface Taxonomy
 
 The enrichment stack is organised into clearly owned surfaces. Each directory

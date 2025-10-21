@@ -1,3 +1,8 @@
+---
+title: Phase 2 - Lineage & Lakehouse Implementation Plan
+description: OpenLineage, PROV-O metadata, and Delta Lake integration
+---
+
 # Phase 2 — Lineage & Lakehouse Implementation Plan
 
 ## Objectives

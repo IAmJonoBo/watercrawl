@@ -1,3 +1,8 @@
+---
+title: ADR 0001 - Segmented Package Boundaries
+description: Package organization and sdist bundling strategy
+---
+
 # ADR 0001: Segmented Package Boundaries
 
 - **Status:** Accepted

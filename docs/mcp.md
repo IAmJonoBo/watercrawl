@@ -1,3 +1,8 @@
+---
+title: MCP Integration
+description: Model Context Protocol bridge for GitHub Copilot and automation agents
+---
+
 # MCP Integration
 
 The Model Context Protocol (MCP) bridge enables GitHub Copilot or other automation agents to drive the enrichment pipeline.

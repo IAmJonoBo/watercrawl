@@ -1,3 +1,8 @@
+---
+title: ADR 0003 - Threat Model & STRIDE/MITRE Mapping
+description: Security threat analysis and mitigation strategy
+---
+
 # ADR 0003: Threat Model & STRIDE/MITRE Mapping
 
 - **Status:** Accepted
