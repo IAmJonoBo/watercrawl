@@ -31,7 +31,12 @@ def _download(url: str, destination: Path) -> None:
         raise BootstrapError(f"Refusing to download from non-HTTPS URL: {url}")
 
     contexts: list[ssl.SSLContext | None] = [None]
-    unverified: ssl.SSLContext | None = ssl._create_unverified_context()  # nosec B323
+    # Use public API to create a context; when skipping SSL verification we
+    # create a context with hostname checks disabled. This avoids accessing
+    # private members like ssl._create_unverified_context.
+    unverified = ssl.create_default_context()
+    unverified.check_hostname = False
+    unverified.verify_mode = ssl.CERT_NONE
     if os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_SSL"):
         contexts.insert(0, unverified)
     else:
@@ -199,3 +204,99 @@ def ensure_actionlint(version: str = "v1.7.1") -> Path:
     except OSError as exc:  # pragma: no cover - network/runtime failures
         raise BootstrapError(f"Failed to download actionlint: {exc}") from exc
     return binary_path
+
+
+def ensure_nodejs(version: str = "v20.10.0") -> Path:
+    """Ensure a Node.js binary is available and return its path.
+
+    The function will prefer a bundled binary in `tools/bin/` (for offline use)
+    unless `WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED` is set. It caches downloads under
+    `~/.cache/watercrawl/bin/node-<version>-<system>-<machine>/bin/node`.
+    """
+
+    override = os.getenv("NODEJS_PATH")
+    if override:
+        return Path(override)
+
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    # Map machine to Node distribution arch labels
+    if machine in ("x86_64", "amd64"):
+        arch = "x64"
+    elif machine in ("arm64", "aarch64"):
+        arch = "arm64"
+    else:
+        raise BootstrapError(f"Unsupported architecture for NodeJS: {machine}")
+
+    if system == "darwin":
+        platform_label = "darwin"
+    elif system == "linux":
+        platform_label = "linux"
+    else:
+        raise BootstrapError(f"Unsupported platform for NodeJS: {system} {machine}")
+
+    # Check for bundled binary first (for offline/ephemeral environments)
+    skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
+    bundled_dir = BUNDLED_BIN_ROOT
+    bundled_node = bundled_dir / f"node-{platform_label}-{arch}"
+    # Some projects may include a pre-extracted node binary location
+    if not skip_bundled and bundled_node.exists():
+        node_path = bundled_node / "bin" / "node"
+        if node_path.exists():
+            return node_path
+
+    ver = version.lstrip("v")
+    archive_name = f"node-v{ver}-{platform_label}-{arch}.tar.xz"
+    url = f"https://nodejs.org/dist/v{ver}/{archive_name}"
+
+    target_dir = CACHE_ROOT / f"node-v{ver}-{platform_label}-{arch}"
+    node_target = target_dir / "bin" / "node"
+    if node_target.exists():
+        return node_target
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".tar.xz", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+        _download(url, tmp_path)
+        try:
+            # Extract only the node binary from the archive
+            with tarfile.open(tmp_path) as archive:
+                member = next(
+                    (
+                        entry
+                        for entry in archive.getmembers()
+                        if entry.isfile() and entry.name.endswith("/bin/node")
+                    ),
+                    None,
+                )
+                if member is None:
+                    raise BootstrapError("Node archive did not contain a node binary")
+
+                member_path = Path(member.name)
+                if member_path.is_absolute() or any(
+                    part == ".." for part in member_path.parts
+                ):
+                    raise BootstrapError(
+                        "Node archive member resolves outside extraction directory"
+                    )
+
+                # Extract the member into a temporary location then move into place
+                with tempfile.TemporaryDirectory() as td:
+                    archive.extract(member, path=td)
+                    extracted = Path(td) / member_path
+                    final_bin_dir = target_dir / "bin"
+                    final_bin_dir.mkdir(parents=True, exist_ok=True)
+                    # Some archives include a prefix directory, so ensure correct rename
+                    extracted.rename(final_bin_dir / "node")
+                    (final_bin_dir / "node").chmod(
+                        (final_bin_dir / "node").stat().st_mode | stat.S_IEXEC
+                    )
+        finally:
+            tmp_path.unlink(missing_ok=True)
+    except OSError as exc:  # pragma: no cover - network/runtime failures
+        raise BootstrapError(f"Failed to download or extract Node.js: {exc}") from exc
+
+    return node_target
