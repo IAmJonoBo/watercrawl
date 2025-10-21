@@ -118,6 +118,9 @@ poetry run python -m apps.automation.cli qa problems --fail-on-issues
 - Runs the consolidated problems collector and prints a per-tool summary table.
 - Writes `problems_report.json` with previews to share in PRs or CI artefacts.
 - Return code is non-zero only when `--fail-on-issues` is supplied and issues are detected, making it safe to wire into optional QA hooks.
+- Tool execution is now registry-driven: the collector inspects `presets/problems_tools.toml` and merges those definitions with built-ins (Ruff, Mypy, Bandit, SQLFluff, Trunk, Biome) so new linters can be enabled declaratively or swapped out without code changes.
+- Trunk findings are expanded per underlying linter (`trunk:ruff`, `trunk:markdownlint`, etc.), ensuring problems from newly added plugins surface automatically with accurate severity counts.
+- When `VSCODE_PROBLEMS_EXPORT=/path/to/problems.json` is set, the collector ingests exported VS Code problem markers as a safety net for editors or extensions that do not yet report via Trunk or dedicated CLI invocations.
 
 ### Targeted QA commands
 

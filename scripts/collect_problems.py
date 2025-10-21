@@ -8,12 +8,19 @@ import os
 import re
 import subprocess  # nosec B404 - subprocess usage is for controlled QA tool execution
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreters
+    import tomli as tomllib  # type: ignore[no-redef]
+
+from urllib.parse import unquote, urlparse
 
 SQLFLUFF_AVAILABLE = sys.version_info < (3, 14)
 if SQLFLUFF_AVAILABLE:
@@ -55,8 +62,11 @@ else:  # pragma: no cover - placeholders for type checking when disabled
 BANDIT_AVAILABLE = sys.version_info < (3, 14)
 
 REPORT_PATH = Path("problems_report.json")
+TOOLS_CONFIG_PATH = Path("presets/problems_tools.toml")
+VSCODE_PROBLEMS_ENV = "VSCODE_PROBLEMS_EXPORT"
+PROBLEMS_MAX_ISSUES_ENV = "PROBLEMS_MAX_ISSUES"
 MAX_TEXT = 2000
-MAX_ISSUES = 100
+MAX_ISSUES = int(os.getenv(PROBLEMS_MAX_ISSUES_ENV, "100") or "100")
 PREVIEW_CHUNK = 200
 MAX_PREVIEW_CHUNKS = 40
 TRUNK_ENV_VAR = "TRUNK_CHECK_OPTS"
@@ -148,9 +158,56 @@ class ToolSpec:
     optional: bool = False
 
 
+class ToolRegistry:
+    """Registry providing deduplicated tool specs with optional overrides."""
+
+    def __init__(self) -> None:
+        self._tools: dict[str, ToolSpec] = {}
+
+    def register(self, spec: ToolSpec, *, replace: bool = False) -> None:
+        existing = self._tools.get(spec.name)
+        if existing is not None and not replace:
+            return
+        self._tools[spec.name] = spec
+
+    def extend(self, specs: Iterable[ToolSpec], *, replace: bool = False) -> None:
+        for spec in specs:
+            self.register(spec, replace=replace)
+
+    def values(self) -> list[ToolSpec]:
+        return list(self._tools.values())
+
+
+def _truthy(value: str | None) -> bool:
+    if value is None:
+        return False
+    normalised = value.strip().lower()
+    if not normalised:
+        return False
+    return normalised not in {"0", "false", "no", "off"}
+
+
 def _static_command(*args: str) -> Callable[[], tuple[list[str], None, None]]:
     def _factory() -> tuple[list[str], None, None]:
         return list(args), None, None
+
+    return _factory
+
+
+def _configured_command(
+    args: Sequence[str],
+    *,
+    env: Mapping[str, str] | None = None,
+    cwd: str | Path | None = None,
+) -> Callable[[], tuple[list[str], Mapping[str, str] | None, Path | None]]:
+    def _factory() -> tuple[list[str], Mapping[str, str] | None, Path | None]:
+        env_copy: Mapping[str, str] | None = None
+        if env:
+            env_copy = {str(key): str(value) for key, value in env.items()}
+        resolved_cwd: Path | None = None
+        if cwd is not None:
+            resolved_cwd = Path(cwd)
+        return list(args), env_copy, resolved_cwd
 
     return _factory
 
@@ -597,6 +654,7 @@ def parse_trunk_output(result: CompletedProcess) -> dict[str, Any]:
             "column": _coerce_int(column),
             "code": code,
             "message": message,
+            "severity": severity,
         }
         if source:
             record["source"] = str(source)
@@ -622,13 +680,33 @@ def parse_trunk_output(result: CompletedProcess) -> dict[str, Any]:
     return {"issues": issues, "summary": summary}
 
 
-TOOL_SPECS: list[ToolSpec] = [
-    ToolSpec(
+PARSER_REGISTRY: dict[str, Callable[[CompletedProcess], dict[str, Any]]] = {
+    "ruff": parse_ruff_output,
+    "mypy": parse_mypy_output,
+    "pylint": parse_pylint_output,
+    "bandit": parse_bandit_output,
+    "yamllint": parse_yamllint_output,
+    "sqlfluff": parse_sqlfluff_output,
+    "trunk": parse_trunk_output,
+    "biome": parse_biome_output,
+}
+
+
+def _trunk_command() -> tuple[list[str], Mapping[str, str] | None, Path | None]:
+    cmd = ["trunk", "check", "--no-progress", "--output=json"]
+    extra = os.getenv(TRUNK_ENV_VAR)
+    if extra:
+        cmd.extend(extra.split())
+    return cmd, None, None
+
+
+def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
+    yield ToolSpec(
         name="ruff",
         command=_static_command("ruff", "check", ".", "--output-format", "json"),
         parser=parse_ruff_output,
-    ),
-    ToolSpec(
+    )
+    yield ToolSpec(
         name="mypy",
         command=_static_command(
             "mypy",
@@ -639,17 +717,14 @@ TOOL_SPECS: list[ToolSpec] = [
             "--no-error-summary",
         ),
         parser=parse_mypy_output,
-    ),
-    ToolSpec(
+    )
+    yield ToolSpec(
         name="yamllint",
         command=_static_command("yamllint", "--format", "parsable", "."),
         parser=parse_yamllint_output,
-    ),
-]
-
-if os.getenv("ENABLE_PYLINT", "0") == "1":
-    TOOL_SPECS.append(
-        ToolSpec(
+    )
+    if _truthy(env.get("ENABLE_PYLINT")):
+        yield ToolSpec(
             name="pylint",
             command=_static_command(
                 "pylint",
@@ -663,51 +738,114 @@ if os.getenv("ENABLE_PYLINT", "0") == "1":
             parser=parse_pylint_output,
             optional=True,
         )
+    if BANDIT_AVAILABLE:
+        yield ToolSpec(
+            name="bandit",
+            command=_static_command("bandit", "-r", "firecrawl_demo", "-f", "json"),
+            parser=parse_bandit_output,
+        )
+    if SQLFLUFF_AVAILABLE:
+        yield ToolSpec(
+            name="sqlfluff",
+            command=_sqlfluff_command,
+            parser=parse_sqlfluff_output,
+        )
+    yield ToolSpec(
+        name="trunk",
+        command=_trunk_command,
+        parser=parse_trunk_output,
+        optional=True,
+    )
+    yield ToolSpec(
+        name="biome",
+        command=_static_command("npx", "biome", "check", "--reporter", "json"),
+        parser=parse_biome_output,
+        optional=True,
     )
 
-BANDIT_TOOL: ToolSpec | None = None
-if BANDIT_AVAILABLE:
-    BANDIT_TOOL = ToolSpec(
-        name="bandit",
-        command=_static_command("bandit", "-r", "firecrawl_demo", "-f", "json"),
-        parser=parse_bandit_output,
-    )
-    TOOL_SPECS.append(BANDIT_TOOL)
 
-SQLFLUFF_TOOL: ToolSpec | None = None
-if SQLFLUFF_AVAILABLE:
-    SQLFLUFF_TOOL = ToolSpec(
-        name="sqlfluff",
-        command=_sqlfluff_command,
-        parser=parse_sqlfluff_output,
-    )
-    TOOL_SPECS.append(SQLFLUFF_TOOL)
+def _coerce_command(value: Any) -> list[str]:
+    if isinstance(value, (list, tuple)):
+        return [str(part) for part in value]
+    if isinstance(value, str):
+        return [value]
+    raise ValueError(f"Unsupported command specification: {value!r}")
 
 
-def _trunk_command() -> tuple[list[str], Mapping[str, str] | None, Path | None]:
-    cmd = ["trunk", "check", "--no-progress", "--output=json"]
-    extra = os.getenv(TRUNK_ENV_VAR)
-    if extra:
-        cmd.extend(extra.split())
-    return cmd, None, None
+def _enable_from_config(entry: Mapping[str, Any], env: Mapping[str, str]) -> bool:
+    if not entry.get("enabled", True):
+        return False
+    enable_vars = entry.get("enable_if_env") or []
+    disable_vars = entry.get("disable_if_env") or []
+    if not isinstance(enable_vars, Iterable) or isinstance(enable_vars, (str, bytes)):
+        enable_vars = [enable_vars]  # type: ignore[list-item]
+    if not isinstance(disable_vars, Iterable) or isinstance(disable_vars, (str, bytes)):
+        disable_vars = [disable_vars]  # type: ignore[list-item]
+    for var in enable_vars:
+        if isinstance(var, str):
+            if not _truthy(env.get(var)):
+                return False
+    for var in disable_vars:
+        if isinstance(var, str):
+            if _truthy(env.get(var)):
+                return False
+    return True
 
 
-TRUNK_TOOL = ToolSpec(
-    name="trunk",
-    command=_trunk_command,
-    parser=parse_trunk_output,
-    optional=True,
-)
-TOOL_SPECS.append(TRUNK_TOOL)
+def _iter_configured_tool_specs(
+    path: Path, env: Mapping[str, str]
+) -> Iterable[ToolSpec]:
+    if not path.exists():
+        return []
+    try:
+        payload = tomllib.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover - config parse issues
+        print(f"Warning: failed to parse {path}: {exc}", file=sys.stderr)
+        return []
+    tools = payload.get("tools")
+    if not isinstance(tools, list):
+        return []
+    for entry in tools:
+        if not isinstance(entry, Mapping):
+            continue
+        name = entry.get("name")
+        parser_key = entry.get("parser")
+        command_value = entry.get("command")
+        if not name or not parser_key or not command_value:
+            continue
+        if not _enable_from_config(entry, env):
+            continue
+        parser = PARSER_REGISTRY.get(str(parser_key))
+        if parser is None:
+            continue
+        try:
+            command = _coerce_command(command_value)
+        except ValueError:
+            continue
+        env_override = entry.get("env")
+        env_mapping: Mapping[str, str] | None = None
+        if isinstance(env_override, Mapping):
+            env_mapping = {str(key): str(value) for key, value in env_override.items()}
+        cwd = entry.get("cwd")
+        spec = ToolSpec(
+            name=str(name),
+            command=_configured_command(command, env=env_mapping, cwd=cwd),
+            parser=parser,
+            optional=bool(entry.get("optional", False)),
+        )
+        yield spec
 
 
-BIOME_TOOL = ToolSpec(
-    name="biome",
-    command=_static_command("npx", "biome", "check", "--reporter", "json"),
-    parser=parse_biome_output,
-    optional=True,
-)
-TOOL_SPECS.append(BIOME_TOOL)
+def build_tool_registry(
+    *,
+    env: Mapping[str, str] | None = None,
+    config_path: Path = TOOLS_CONFIG_PATH,
+) -> ToolRegistry:
+    env_mapping = dict(env) if env is not None else dict(os.environ)
+    registry = ToolRegistry()
+    registry.extend(_iter_builtin_tool_specs(env_mapping))
+    registry.extend(_iter_configured_tool_specs(config_path, env_mapping), replace=True)
+    return registry
 
 
 def collect(
@@ -721,7 +859,10 @@ def collect(
         | None
     ) = None,
 ) -> list[dict[str, Any]]:
-    specs = list(tools or TOOL_SPECS)
+    if tools is None:
+        specs = build_tool_registry().values()
+    else:
+        specs = list(tools)
     run = runner or _run_subprocess
     aggregated: list[dict[str, Any]] = []
     for spec in specs:
@@ -788,7 +929,203 @@ def collect(
         if completed.stderr:
             _attach_preview(entry, "stderr_preview", completed.stderr)
         aggregated.append(entry)
+    aggregated = _expand_trunk_results(aggregated)
+    if tools is None:
+        aggregated.extend(_collect_vscode_problems_fallback(dict(os.environ)))
     return aggregated
+
+
+def _expand_trunk_results(results: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    expanded: list[dict[str, Any]] = []
+    for entry in results:
+        if entry.get("tool") != "trunk":
+            expanded.append(dict(entry))
+            continue
+        expanded.extend(_split_trunk_entry(entry))
+    return expanded
+
+
+def _split_trunk_entry(entry: Mapping[str, Any]) -> list[dict[str, Any]]:
+    issues = entry.get("issues") or []
+    if not isinstance(issues, list):
+        issues = []
+    grouped: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in issues:
+        if not isinstance(item, Mapping):
+            continue
+        source = str(item.get("source") or "unknown")
+        grouped[source].append(dict(item))
+    if not grouped:
+        clean_entry = dict(entry)
+        clean_entry["tool"] = "trunk"
+        clean_entry.setdefault("summary", {"issue_count": 0})
+        clean_entry.setdefault("issues", [])
+        return [clean_entry]
+    omitted = entry.get("summary", {}).get("omitted_issues")
+    base_notes = list(entry.get("notes") or [])
+    if omitted:
+        base_notes = list(base_notes)
+        base_notes.append(
+            {
+                "message": f"Trunk reported {omitted} additional issues beyond the first {MAX_ISSUES}.",
+                "severity": "info",
+            }
+        )
+    expanded_entries: list[dict[str, Any]] = []
+    for source, items in sorted(grouped.items()):
+        severity_counts = Counter(
+            str(item.get("severity") or "unknown")
+            for item in items
+            if item.get("severity")
+        )
+        summary: dict[str, Any] = {"issue_count": len(items)}
+        if severity_counts:
+            summary["severity_counts"] = dict(severity_counts)
+        expanded_entry: dict[str, Any] = {
+            "tool": f"trunk:{source}",
+            "status": entry.get("status", "completed"),
+            "returncode": entry.get("returncode", 0),
+            "issues": items,
+            "summary": summary,
+        }
+        if base_notes:
+            expanded_entry["notes"] = list(base_notes)
+        if entry.get("stderr_preview"):
+            expanded_entry["stderr_preview"] = entry["stderr_preview"]
+        expanded_entries.append(expanded_entry)
+    return expanded_entries
+
+
+_VSCODE_SEVERITY_MAP = {
+    1: "error",
+    2: "warning",
+    4: "info",
+    8: "hint",
+}
+
+
+def _collect_vscode_problems_fallback(env: Mapping[str, str]) -> list[dict[str, Any]]:
+    path_value = env.get(VSCODE_PROBLEMS_ENV)
+    if not path_value:
+        return []
+    path = Path(path_value).expanduser()
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover - fallback for parse errors
+        print(
+            f"Warning: failed to parse VS Code problems export {path}: {exc}",
+            file=sys.stderr,
+        )
+        return []
+    markers = _extract_vscode_markers(payload)
+    if not markers:
+        return []
+    grouped: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+    for marker in markers:
+        issue = _marker_to_issue(marker)
+        source = str(issue.pop("source") or "vscode")
+        issue["source"] = source
+        grouped[source].append(issue)
+    entries: list[dict[str, Any]] = []
+    for source, issues in sorted(grouped.items()):
+        severity_counts = Counter(
+            str(issue.get("severity")) for issue in issues if issue.get("severity")
+        )
+        summary: dict[str, Any] = {"issue_count": len(issues)}
+        if severity_counts:
+            summary["severity_counts"] = dict(severity_counts)
+        entries.append(
+            {
+                "tool": f"vscode:{source}",
+                "status": "collected",
+                "returncode": 0,
+                "issues": issues,
+                "summary": summary,
+            }
+        )
+    return entries
+
+
+def _extract_vscode_markers(payload: Any) -> list[Mapping[str, Any]]:
+    candidates: list[Mapping[str, Any]] = []
+    if isinstance(payload, list):
+        candidates = [item for item in payload if isinstance(item, Mapping)]
+    elif isinstance(payload, Mapping):
+        for key in ("problems", "markers", "items", "diagnostics"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                candidates = [item for item in value if isinstance(item, Mapping)]
+                if candidates:
+                    break
+        else:
+            if payload.get("message"):
+                candidates = [payload]
+    return candidates
+
+
+def _marker_to_issue(marker: Mapping[str, Any]) -> dict[str, Any]:
+    severity = marker.get("severity")
+    if isinstance(severity, int):
+        severity_label = _VSCODE_SEVERITY_MAP.get(severity, str(severity))
+    else:
+        severity_label = str(severity).lower() if severity else None
+    path, line, column = _parse_vscode_location(marker)
+    code = marker.get("code")
+    if isinstance(code, Mapping):
+        code = code.get("value") or code.get("id") or code.get("name")
+    issue: dict[str, Any] = {
+        "path": path,
+        "line": _coerce_int(line),
+        "column": _coerce_int(column),
+        "code": code,
+        "message": marker.get("message"),
+        "severity": severity_label,
+        "source": marker.get("source") or marker.get("owner") or "vscode",
+    }
+    _truncate_message(issue)
+    return issue
+
+
+def _parse_vscode_location(
+    marker: Mapping[str, Any],
+) -> tuple[str | None, int | None, int | None]:
+    location = marker.get("location") or marker.get("resource")
+    path: str | None = None
+    line: int | None = None
+    column: int | None = None
+    if isinstance(location, Mapping):
+        uri = location.get("uri") or location.get("url")
+        path = location.get("path") or location.get("file") or location.get("fsPath")
+        if isinstance(uri, str) and uri.startswith("file:"):
+            parsed = urlparse(uri)
+            path = unquote(parsed.path)
+        elif isinstance(uri, str) and not path:
+            path = uri
+        if not path:
+            resource = location.get("path") or location.get("fsPath")
+            if isinstance(resource, str):
+                path = resource
+        range_block = location.get("range")
+        if isinstance(range_block, Mapping):
+            start = range_block.get("start") or range_block.get("startLineNumber")
+            if isinstance(start, Mapping):
+                line = start.get("line") or start.get("lineNumber")
+                column = start.get("character") or start.get("column")
+            else:
+                line = range_block.get("startLineNumber") or range_block.get(
+                    "startLine"
+                )
+                column = range_block.get("startColumn")
+        else:
+            line = location.get("line") or location.get("lineNumber")
+            column = location.get("character") or location.get("column")
+    elif isinstance(location, str):
+        path = location
+    if path:
+        path = Path(path).as_posix()
+    return path, _coerce_int(line), _coerce_int(column)
 
 
 def build_overall_summary(

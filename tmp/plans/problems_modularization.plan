@@ -1,0 +1,21 @@
+{
+  "generated_at": "2025-10-21T10:02:57Z",
+  "instructions": "Refactor problems collector for modular discovery and aggregator support.",
+  "changes": [
+    {
+      "type": "code_refactor",
+      "step": 1,
+      "summary": "Refine scripts/collect_problems.py to use a registry-driven tool discovery flow, split Trunk results per linter, and add optional VS Code export ingestion."
+    },
+    {
+      "type": "configuration",
+      "step": 2,
+      "summary": "Introduce presets/problems_tools.toml for declarative tool registration and environment toggles."
+    },
+    {
+      "type": "tests_docs",
+      "step": 3,
+      "summary": "Update tests/docs to reflect modular collector behaviour and new configuration/env options."
+    }
+  ]
+}

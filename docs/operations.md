@@ -252,16 +252,15 @@ The `problems_report.json` artefact aggregates findings from multiple QA tools i
 
 ### Pipeline Overview
 
-The aggregation is performed by `scripts/collect_problems.py`, which executes a suite of QA tools in parallel and parses their outputs into a standardized JSON structure. The script is designed to be fast, with output truncation for large reports (max 2000 characters per message, 100 issues per tool) to prevent context overflow.
+The aggregation is performed by `scripts/collect_problems.py`, which executes a suite of QA tools in parallel and parses their outputs into a standardized JSON structure. The script is designed to be fast, with output truncation for large reports (max 2000 characters per message, 100 issues per tool by default—override with `PROBLEMS_MAX_ISSUES`) to prevent context overflow.
 
-Supported QA tools include:
+Supported QA tools are now registry-driven:
 
-- **Ruff**: Python linter and formatter.
-- **Mypy**: Static type checker.
-- **Yamllint**: YAML file linter.
-- **Bandit** (Python < 3.14): security linter for Python code. The script skips Bandit automatically on interpreters where the upstream project has not restored Python 3.14 support.
-- **SQLFluff** (Python < 3.14): SQL linter for dbt models (DuckDB dialect). See the compatibility note below for running it under an older interpreter when required.
-- **Pylint** (opt-in): advanced Python linter. Set `ENABLE_PYLINT=1` when invoking `scripts/collect_problems.py` to include it in the aggregated report.
+- **Built-ins**: Ruff, Mypy, Yamllint, Bandit (Python < 3.14), SQLFluff (Python < 3.14), Trunk, and Biome are registered automatically.
+- **Declarative extensions**: add or override tools in `presets/problems_tools.toml`. Each entry defines the command, parser, and optional environment gating, eliminating the need to edit `collect_problems.py` when onboarding new linters or changing invocation flags.
+- **Pylint** (opt-in): shipped via the registry config. Set `ENABLE_PYLINT=1` when invoking `scripts/collect_problems.py` (or exporting the env var in CI) to activate the declarative Pylint entry.
+- **Trunk expansion**: Trunk results are split per underlying linter (`trunk:ruff`, `trunk:markdownlint-cli2`, etc.) so new plugins appear automatically with accurate severity counts—even when added via `trunk.yaml` upgrades.
+- **VS Code fallback**: set `VSCODE_PROBLEMS_EXPORT=/path/to/problems.json` after exporting the editor Problems pane to ingest diagnostics from extensions that are not yet wired into Trunk or a standalone CLI.
 
 > **Python 3.14 compatibility:** dbt 1.10.x currently pulls in a `mashumaro` release that breaks SQLFluff's dbt templater on Python ≥3.14. The problems collector therefore skips SQLFluff by default on those interpreters. When you need SQL linting, install Python 3.13 alongside the default toolchain (e.g., `uv python install 3.13.0`), switch Poetry to that interpreter temporarily, and run:
 >

@@ -7,7 +7,7 @@ import subprocess  # nosec B404
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import pytest
 
@@ -198,11 +198,16 @@ def test_collect_aggregates_and_truncates_outputs(
     yamllint_entry = by_tool["yamllint"]
     assert yamllint_entry["issues"][0]["severity"] == "warning"
 
-    trunk_entry = by_tool["trunk"]
-    assert trunk_entry["summary"]["issue_count"] == 2
-    assert trunk_entry["summary"]["severity_counts"]["error"] == 1
-    assert trunk_entry["issues"][0]["path"] == "firecrawl_demo/core/example.py"
-    assert trunk_entry["issues"][0]["insight"].startswith("Unused symbol")
+    trunk_ruff_entry = by_tool["trunk:ruff"]
+    assert trunk_ruff_entry["summary"]["issue_count"] == 1
+    assert trunk_ruff_entry["issues"][0]["path"] == "firecrawl_demo/core/example.py"
+    assert trunk_ruff_entry["issues"][0]["insight"].startswith("Unused symbol")
+    assert trunk_ruff_entry["issues"][0]["severity"] == "error"
+
+    trunk_yaml_entry = by_tool["trunk:yamllint"]
+    assert trunk_yaml_entry["summary"]["issue_count"] == 1
+    assert trunk_yaml_entry["issues"][0]["path"] == "docs/example.yaml"
+    assert trunk_yaml_entry["issues"][0]["severity"] == "warning"
 
     biome_entry = by_tool["biome"]
     assert biome_entry["summary"]["issue_count"] == 1
@@ -216,6 +221,48 @@ def test_collect_aggregates_and_truncates_outputs(
     assert overall["fixable_count"] == 1
     assert overall["potential_dead_code"] >= 2
     assert "ruff" in overall["tools_run"]
+    assert "trunk:ruff" in overall["tools_run"]
+
+
+def test_vscode_fallback_parses_markers(tmp_path: Path) -> None:
+    payload = {
+        "problems": [
+            {
+                "message": "Example lint error",
+                "severity": 1,
+                "source": "pylint",
+                "code": {"value": "E0001"},
+                "location": {
+                    "uri": "file:///repo/module.py",
+                    "range": {"start": {"line": 10, "character": 4}},
+                },
+            },
+            {
+                "message": "Trailing whitespace",
+                "severity": "warning",
+                "source": "markdownlint",
+                "location": {
+                    "path": "/repo/docs/example.md",
+                    "lineNumber": 5,
+                    "column": 1,
+                },
+            },
+        ]
+    }
+    export_path = tmp_path / "vscode_problems.json"
+    export_path.write_text(json.dumps(payload), encoding="utf-8")
+    entries = collect_problems._collect_vscode_problems_fallback(
+        {collect_problems.VSCODE_PROBLEMS_ENV: str(export_path)}
+    )
+    by_tool = {entry["tool"]: entry for entry in entries}
+    pylint_entry = by_tool["vscode:pylint"]
+    assert pylint_entry["summary"]["issue_count"] == 1
+    pylint_issue = pylint_entry["issues"][0]
+    assert pylint_issue["path"].endswith("module.py")
+    assert pylint_issue["line"] == 10
+    assert pylint_issue["severity"] == "error"
+    markdown_entry = by_tool["vscode:markdownlint"]
+    assert markdown_entry["issues"][0]["severity"] == "warning"
 
 
 def test_preview_handles_multiline_chunks() -> None:
@@ -236,11 +283,12 @@ def test_preview_handles_multiline_chunks() -> None:
 def test_sqlfluff_command_sets_duckdb_env(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    if collect_problems.SQLFLUFF_TOOL is None:
+    registry = collect_problems.build_tool_registry()
+    sqlfluff_specs = [spec for spec in registry.values() if spec.name == "sqlfluff"]
+    if not sqlfluff_specs:
         pytest.skip("sqlfluff support not available")
 
-    # After the None check, mypy knows SQLFLUFF_TOOL is not None
-    tool = cast(collect_problems.ToolSpec, collect_problems.SQLFLUFF_TOOL)
+    tool = sqlfluff_specs[0]
 
     expected = tmp_path / "contracts.duckdb"
 
