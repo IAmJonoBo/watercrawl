@@ -21,3 +21,11 @@
 18. Introduce performance smoke tests (e.g., pytest markers that record wall-clock throughput) with thresholds enforced via CI gating to guard the new concurrency work.
 19. Update `.github/workflows/ci.yml`, `docs/operations.md`, and `Next_Steps.md` with the new SIT/contract gate descriptions, and surface coverage deltas in the CI summary.
 20. Publish runbooks for regenerating fixtures and diagnosing gate failures in `docs/qa.md`.
+
+Publish versioned data contracts – Highest ROI: aligns all surfaces around verifiable schemas, reducing integration regressions and enabling contract testing downstream.
+
+Introduce asynchronous research scheduling with caching – High ROI: immediate throughput/cost gains while lowering adapter latency variance; caching also cuts redundant lookups.
+
+Expand SIT/E2E/contract CI gates – High ROI but dependent on contract work; turns new guarantees into enforceable quality gates and exposes regressions quickly.
+
+Refactor row mutation into pure transformations – Medium ROI: primarily a maintainability and correctness play that unlocks safer concurrency and future pipeline extensions
