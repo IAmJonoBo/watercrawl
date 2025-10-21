@@ -99,10 +99,11 @@ class ContentCleaner:
         Returns:
             Plain text content
         """
-        # Remove script and style elements first
-        text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
-        
+        # Remove script and style elements robustly using BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+        text = str(soup)
         # Remove HTML tags
         text = re.sub(r'<[^>]+>', ' ', text)
         
