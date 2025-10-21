@@ -25,7 +25,8 @@ What the included workflow does
 - Sets up Python 3.13 and installs `poetry` and project dependencies (when
   `pyproject.toml` exists).
 
-- Sets up Node.js 20 and runs `npm ci` when `package.json` exists.
+- Sets up Node.js 20 and runs `pnpm install --frozen-lockfile` (falls back to
+  `pnpm install`) when `package.json` exists.
 
 - Prints basic version info so failures are easier to debug in the Actions UI.
 

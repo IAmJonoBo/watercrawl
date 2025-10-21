@@ -128,12 +128,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - name: Install markdownlint-cli2
-        run: npm install --no-save markdownlint-cli2@^0.9.0
-      - name: Install yaml (dependency for markdownlint-cli2)
-        run: npm install yaml
+      - name: Install pnpm and markdownlint-cli2
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+          pnpm add -w --no-frozen-lockfile --no-save markdownlint-cli2@^0.9.0 yaml
       - name: Lint Markdown
-        run: npx markdownlint-cli2 '**/*.md' '#node_modules' || true
+        run: pnpm dlx markdownlint-cli2 '**/*.md' '#node_modules' || true
       - name: Lint Dockerfiles with Hadolint
         run: |
           # Use bundled hadolint binary for offline environments

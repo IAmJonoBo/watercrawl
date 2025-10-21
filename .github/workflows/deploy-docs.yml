@@ -12,14 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Setup Node.js
+      - name: Setup Node.js and pnpm
         uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - name: Install dependencies
-        run: cd docs-starlight && npm ci
-      - name: Build docs
-        run: cd docs-starlight && npm run build
+      - name: Install and build docs (pnpm)
+        run: |
+          cd docs-starlight
+          corepack enable
+          corepack prepare pnpm@latest --activate
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
