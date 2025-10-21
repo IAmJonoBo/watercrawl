@@ -65,11 +65,11 @@ lint:
         - trufflehog
         - yamllint
       paths:
-        - "stubs/third_party"
-        - "**/node_modules/**"
-        - "dist/**"
-        - "**/dist/**"
-        - "docs-starlight/node_modules"
+        - 'stubs/third_party'
+        - '**/node_modules/**'
+        - 'dist/**'
+        - '**/dist/**'
+        - 'docs-starlight/node_modules'
         - ".astro"
         - ".cache"
         - "data"
