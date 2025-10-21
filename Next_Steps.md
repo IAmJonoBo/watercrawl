@@ -25,7 +25,7 @@
 - [x] **whylogs drift dashboards + alert routing** — _Owner: Platform/Data · Due: 2025‑12‑05_ (WC‑11) — _Progress: Slack webhook routing, Grafana starter dashboard, and Prometheus metrics template published (`docs/observability/whylogs-dashboard.json`)_
 - [x] **Mutation testing pilot for pipeline hotspots** — _Owner: QA/Platform · Due: 2025‑12‑05_ (WC‑15) — _Progress: mutmut integration via `qa mutation`, artefacts stored under `artifacts/testing/mutation/`, targeted pytest runner configured_
 - [x] **Backstage TechDocs + golden‑path template** — _Owner: Platform/DevEx · Due: 2026‑01‑15_ (WC‑19) — _Progress: catalog-info.yaml added, TechDocs workflow publishes site artifact, golden-path scaffold available under templates/golden-path/_
-- [ ] **Signed artefact promotion with policy‑as‑code** — _Owner: Platform/Security · Due: 2026‑01‑31_ (WC‑13/14)
+- [x] **Signed artefact promotion with policy‑as‑code** — _Owner: Platform/Security · Due: 2026‑01‑31_ (WC‑13/14)
 - [ ] **Chaos/FMEA exercise for pipeline & MCP** — _Owner: SRE/Security · Due: 2026‑01‑31_ (WC‑20)
 
 > Completed items are tracked in the CHANGELOG; they are intentionally omitted here to keep focus.
@@ -134,3 +134,4 @@ Execute in this order; each item must meet its gate before promotion.
 - **[RESOLVED]** ~~Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments.~~ `actionlint` and `hadolint` binaries are now bundled in `tools/bin/` for all platforms (Linux x86_64/arm64, macOS x86_64/arm64) to support ephemeral runners without internet access. Bootstrap utilities check for bundled binaries first. `markdownlint-cli2` still requires Node hooks via `pre-commit`'s bundled `nodeenv`.
 - Regenerate `requirements-dev.txt` hashes so transitive dependencies like `narwhals` resolve under `--require-hashes` installs.
 - Python 3.15 compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, `tornado`, and other tracked packages; track expectations via `presets/dependency_blockers.toml`, ongoing findings in `tools/dependency_matrix/report.json`, and guard outputs in `tools/dependency_matrix/status.json`.
+- [x] 2025-10-21 — Implemented Sigstore signing guardrail: CI now signs artifacts in the build job and enforces `scripts.verify_artifact_signatures` to validate bundle identity before upload; supply-chain plan→commit gate updated accordingly.

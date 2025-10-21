@@ -145,6 +145,7 @@ The analyst CLI now accepts `--profile`/`--profile-path` switches on `validate`,
     --bundle artifacts/signatures/bundles/dist/firecrawl_demo-*.whl.sigstore \
     dist/firecrawl_demo-*.whl
   ```
+- CI enforces policy-as-code verification via `scripts.verify_artifact_signatures`, blocking uploads when Sigstore bundles are missing or bound to the wrong GitHub workflow identity.
 
 - Developers should configure [gitsign](https://github.com/sigstore/gitsign) locally (`gitsign init && git config --global commit.gpgsign true`) so every commit is OIDC-signed by default.
 

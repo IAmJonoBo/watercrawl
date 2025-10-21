@@ -85,13 +85,16 @@ jobs:
           mkdir -p artifacts/sbom
           cyclonedx-bom --poetry pyproject.toml --format json --output artifacts/sbom/cyclonedx.json
       - name: Sign distribution artifacts with Sigstore
-        if: matrix.python-version == '3.14'
+        if: matrix.python-version == '3.13'
         run: |
           sigstore sign dist/*.whl dist/*.tar.gz
           if [ -d ".sigstore" ]; then
             mkdir -p artifacts/signatures
             mv .sigstore artifacts/signatures/bundles
           fi
+      - name: Verify signatures policy
+        if: matrix.python-version == '3.13'
+        run: poetry run python -m scripts.verify_artifact_signatures dist artifacts/signatures/bundles
       - name: Validate wheel contents
         run: poetry run python -m scripts.validate_wheel
       - name: Aggregate Problems Report
