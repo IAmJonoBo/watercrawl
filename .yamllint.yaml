@@ -17,3 +17,5 @@ ignore: |
   docs-starlight/**/pnpm-lock.yaml
   catalog-info.yaml
   templates/golden-path/catalog-info.yaml
+  .venv/**
+  **/.venv/**

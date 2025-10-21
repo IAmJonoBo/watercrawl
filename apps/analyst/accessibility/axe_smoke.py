@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from urllib import error, request
@@ -76,33 +77,36 @@ def run_axe_audit(url: str) -> None:
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--no-sandbox")
-    with webdriver.Chrome(options=chrome_options) as driver:
-        driver.get(url)
-        # Allow Streamlit to render the page
-        time.sleep(5)
-        axe = axe_selenium_python.Axe(driver)
-        axe.inject()
-        results = axe.run()
-        ignored_rules = {
-            "page-has-heading-one",  # Streamlit layout does not expose h1 by default
-            "button-name",  # Streamlit widget chrome introduces icon-only buttons
-            "landmark-one-main",
-            "region",
-        }
-        violations = [
-            violation
-            for violation in results["violations"]
-            if violation.get("id") not in ignored_rules
-        ]
-        if violations:
-            results["violations"] = violations
-            axe.write_results(results, "axe-results.json")
-            summary = "\n".join(
-                f"- {item['id']}: {item['description']}" for item in violations
-            )
-            raise AssertionError(
-                f"axe-core detected {len(violations)} accessibility issues\n{summary}"
-            )
+    # Use a unique temporary profile directory to avoid conflicts in shared environments
+    with tempfile.TemporaryDirectory(prefix="chrome-profile-") as temp_profile:
+        chrome_options.add_argument(f"--user-data-dir={temp_profile}")
+        with webdriver.Chrome(options=chrome_options) as driver:
+            driver.get(url)
+            # Allow Streamlit to render the page
+            time.sleep(5)
+            axe = axe_selenium_python.Axe(driver)
+            axe.inject()
+            results = axe.run()
+            ignored_rules = {
+                "page-has-heading-one",  # Streamlit layout does not expose h1 by default
+                "button-name",  # Streamlit widget chrome introduces icon-only buttons
+                "landmark-one-main",
+                "region",
+            }
+            violations = [
+                violation
+                for violation in results["violations"]
+                if violation.get("id") not in ignored_rules
+            ]
+            if violations:
+                results["violations"] = violations
+                axe.write_results(results, "axe-results.json")
+                summary = "\n".join(
+                    f"- {item['id']}: {item['description']}" for item in violations
+                )
+                raise AssertionError(
+                    f"axe-core detected {len(violations)} accessibility issues\n{summary}"
+                )
 
 
 def main() -> None:

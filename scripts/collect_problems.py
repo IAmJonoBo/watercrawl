@@ -148,14 +148,16 @@ def build_preview(
 
 def _attach_preview(entry: dict[str, Any], key: str, value: str | None) -> None:
     if not value:
-        return
+        return None
     entry[key] = build_preview(value)
+    return None
 
 
 def _truncate_message(entry: dict[str, Any]) -> None:
     message = entry.get("message")
     if isinstance(message, str):
         entry["message"] = _truncate(message)
+    return None
 
 
 def _coerce_int(value: Any) -> int | None:
@@ -362,12 +364,14 @@ class ToolRegistry:
     def register(self, spec: ToolSpec, *, replace: bool = False) -> None:
         existing = self._tools.get(spec.name)
         if existing is not None and not replace:
-            return
+            return None
         self._tools[spec.name] = spec
+        return None
 
     def extend(self, specs: Iterable[ToolSpec], *, replace: bool = False) -> None:
         for spec in specs:
             self.register(spec, replace=replace)
+        return None
 
     def values(self) -> list[ToolSpec]:
         return list(self._tools.values())
@@ -1411,6 +1415,7 @@ def build_overall_summary(
     def _add_action(action: dict[str, Any]) -> None:
         if action not in actions:
             actions.append(action)
+        return None
 
     for entry in results:
         tool = entry.get("tool")
@@ -1546,6 +1551,7 @@ def write_report(
         "autofixes": list(autofixes or []),
     }
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return None
 
 
 def _run_autofix_command(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
@@ -1628,6 +1634,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     results = collect()
     write_report(results, autofixes=autofix_results, output_path=args.output)
     print(f"Problems report written to {args.output}")
+    return None
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entrypoint
