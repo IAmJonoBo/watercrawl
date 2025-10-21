@@ -35,6 +35,10 @@ dist/
 node_modules/
 **/node_modules/
 
+# NPM lockfiles (migrating to pnpm)
+package-lock.json
+**/package-lock.json
+
 # Coverage, test, and QA artefacts
 .coverage*
 coverage.xml

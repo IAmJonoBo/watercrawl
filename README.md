@@ -48,6 +48,23 @@ poetry run python -m apps.automation.cli qa problems --fail-on-issues
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
 
+## Node & pnpm (developer note)
+
+This repository uses pnpm for Node dependency management. The repo includes `pnpm-lock.yaml` files at the root and the docs site (`docs-starlight/`).
+
+To prepare your environment:
+
+```bash
+corepack enable
+corepack prepare pnpm@latest --activate
+pnpm install --frozen-lockfile
+cd docs-starlight && pnpm install --frozen-lockfile
+```
+
+If you don't want to pin the lockfile locally during development, omit `--frozen-lockfile`.
+
+We include `pnpm-workspace.yaml` to manage the root project and the docs subproject as a workspace so you can run cross-package scripts with `pnpm -w`.
+
 **Firecrawl SDK integration:**
 
 - The [official Firecrawl Python SDK](https://docs.firecrawl.dev/sdks/python) is available as an optional dependency.
