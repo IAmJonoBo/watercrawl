@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -13,9 +17,10 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: Setup pnpm
         uses: ./.github/actions/setup-pnpm
@@ -25,6 +30,12 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
           pnpm dlx @techdocs/cli@1.10.3 generate --no-docker --source-dir . --output-dir site/techdocs
+        env:
+          # Set network timeout and retry for pnpm
+          PNPM_NETWORK_TIMEOUT: 60000
+          PNPM_FETCH_RETRIES: 5
+          PNPM_FETCH_RETRY_MINTIMEOUT: 10000
+          PNPM_FETCH_RETRY_MAXTIMEOUT: 60000
 
       - name: Upload TechDocs artifact
         uses: actions/upload-artifact@v4

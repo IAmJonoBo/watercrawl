@@ -26,15 +26,26 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
       - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+        run: python -m pip install --upgrade pip --timeout 60 --retries 5
 
       - name: Install Poetry
-        run: python -m pip install poetry==1.9.6
+        run: python -m pip install poetry==1.9.6 --timeout 60 --retries 5
+
+      - name: Cache Poetry environments
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry/virtualenvs
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-3.13-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-3.13-
+
 
       - name: Install Python dependencies (Poetry)
         run: |
@@ -46,11 +57,18 @@ jobs:
           else
             echo "No pyproject.toml found - skipping Poetry install"
           fi
+        env:
+          # Increase Poetry installer timeout
+          POETRY_INSTALLER_MAX_WORKERS: 10
+          # Set pip timeout for Poetry's use
+          PIP_TIMEOUT: 60
+          PIP_RETRIES: 5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: Setup pnpm
         uses: ./.github/actions/setup-pnpm
@@ -64,6 +82,12 @@ jobs:
           else
             echo "No package.json found - skipping pnpm install"
           fi
+        env:
+          # Set network timeout and retry for pnpm
+          PNPM_NETWORK_TIMEOUT: 60000
+          PNPM_FETCH_RETRIES: 5
+          PNPM_FETCH_RETRY_MINTIMEOUT: 10000
+          PNPM_FETCH_RETRY_MAXTIMEOUT: 60000
 
       - name: Verify basic tools
         run: |

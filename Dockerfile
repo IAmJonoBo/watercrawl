@@ -8,8 +8,8 @@ RUN apt-get update && \
         curl=7.88.1-10+deb12u8 && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN python -m pip install --no-cache-dir "poetry==1.9.6"
+# Install Poetry with retry configuration
+RUN python -m pip install --no-cache-dir --timeout 60 --retries 5 "poetry==1.9.6"
 
 WORKDIR /build
 COPY pyproject.toml poetry.lock poetry.toml ./
@@ -20,7 +20,9 @@ COPY data ./data
 COPY profiles ./profiles
 COPY README.md LICENSE ./
 
-# Install dependencies in a virtual environment
+# Install dependencies in a virtual environment with timeout/retry configuration
+ENV PIP_TIMEOUT=60 \
+    PIP_RETRIES=5
 RUN poetry config virtualenvs.in-project true && \
     poetry install --no-root --no-dev --no-interaction --no-ansi
 

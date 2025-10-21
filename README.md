@@ -92,6 +92,21 @@ uv pip sync requirements.txt
 
 The exported requirements files include pinned versions with SHA256 hashes for reproducible, secure installations.
 
+**Dependency download resilience:**
+
+The repository includes comprehensive timeout and retry configurations for all dependency managers to ensure reliable installations even with network issues:
+
+- **pip**: Configured via `.config/pip/pip.conf` with 60-second timeout and 5 retries
+- **Poetry**: Environment variables set in workflows and justfile recipes (`PIP_TIMEOUT=60`, `PIP_RETRIES=5`, `POETRY_INSTALLER_MAX_WORKERS=10`)
+- **pnpm**: Configured via `.npmrc` with 60-second timeout and 5 retries with exponential backoff
+
+To verify all configurations are correct:
+```bash
+./scripts/test_dependency_config.sh
+```
+
+See [docs/dependency-resilience.md](docs/dependency-resilience.md) for complete details.
+
 ## Features
 
 - **Dataset validation** with detailed issue reporting (`firecrawl_demo.domain.validation`).

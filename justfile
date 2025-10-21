@@ -12,13 +12,13 @@ bootstrap:
 
 # Install dependencies with Poetry
 install:
-    @echo "Installing dependencies..."
-    poetry install --no-root
+    @echo "Installing dependencies with timeout/retry protection..."
+    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 && poetry install --no-root
 
 # Install with development dependencies
 install-dev:
-    @echo "Installing with dev dependencies..."
-    poetry install --no-root --with dev
+    @echo "Installing with dev dependencies and timeout/retry protection..."
+    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 && poetry install --no-root --with dev
 
 # Run all tests
 test:
@@ -216,3 +216,18 @@ metrics:
     @echo ""
     @echo "Test size:"
     @find tests -name "*.py" | xargs wc -l | tail -1
+
+# Test dependency download configuration
+test-deps:
+    @echo "Testing dependency download configuration..."
+    @echo "=== Pip Configuration ==="
+    @python -m pip config list || echo "No pip config found"
+    @echo ""
+    @echo "=== Poetry Configuration ==="
+    @poetry config --list | grep -E "(installer|timeout|retries)" || echo "No Poetry timeout/retry config"
+    @echo ""
+    @echo "=== pnpm Configuration ==="
+    @cat .npmrc | grep -E "(timeout|retries)" || echo "No pnpm timeout/retry config"
+    @echo ""
+    @echo "=== Environment Variables ==="
+    @env | grep -E "(PIP_|POETRY_|PNPM_)" || echo "No relevant env vars set"

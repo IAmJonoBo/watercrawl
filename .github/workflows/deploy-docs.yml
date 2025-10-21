@@ -7,6 +7,10 @@ on:
     branches: [main]
     paths: ["docs-starlight/**", "docs/**"]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,6 +20,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "22"
+          cache: 'pnpm'
+          cache-dependency-path: 'docs-starlight/pnpm-lock.yaml'
       - name: Setup pnpm
         uses: ./.github/actions/setup-pnpm
       - name: Install and build docs (pnpm)
@@ -25,6 +31,12 @@ jobs:
           corepack prepare pnpm@latest --activate
           pnpm install --frozen-lockfile || pnpm install
           pnpm run build
+        env:
+          # Set network timeout and retry for pnpm
+          PNPM_NETWORK_TIMEOUT: 60000
+          PNPM_FETCH_RETRIES: 5
+          PNPM_FETCH_RETRY_MINTIMEOUT: 10000
+          PNPM_FETCH_RETRY_MAXTIMEOUT: 60000
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
