@@ -13,5 +13,7 @@ ignore: |
   .mypy_cache/**
   .pytest_cache/**
   **/node_modules/**
+  **/pnpm-lock.yaml
+  docs-starlight/**/pnpm-lock.yaml
   catalog-info.yaml
   templates/golden-path/catalog-info.yaml

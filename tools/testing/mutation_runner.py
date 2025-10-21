@@ -5,9 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 DEFAULT_TARGETS = (
     "firecrawl_demo/application/pipeline.py",

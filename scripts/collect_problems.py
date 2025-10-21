@@ -230,7 +230,7 @@ def _sqlfluff_command() -> tuple[list[str], Mapping[str, str], None]:
 
 
 def _run_subprocess(
-    spec: ToolSpec,
+    _spec: ToolSpec,
     cmd: Sequence[str],
     env: Mapping[str, str] | None = None,
     cwd: Path | None = None,
@@ -796,15 +796,15 @@ def _iter_configured_tool_specs(
     path: Path, env: Mapping[str, str]
 ) -> Iterable[ToolSpec]:
     if not path.exists():
-        return []
+        return
     try:
         payload = tomllib.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:  # pragma: no cover - config parse issues
         print(f"Warning: failed to parse {path}: {exc}", file=sys.stderr)
-        return []
+        return
     tools = payload.get("tools")
     if not isinstance(tools, list):
-        return []
+        return
     for entry in tools:
         if not isinstance(entry, Mapping):
             continue
@@ -1067,8 +1067,13 @@ def _extract_vscode_markers(payload: Any) -> list[Mapping[str, Any]]:
 
 def _marker_to_issue(marker: Mapping[str, Any]) -> dict[str, Any]:
     severity = marker.get("severity")
+    severity_label: str | None = None
     if isinstance(severity, int):
-        severity_label = _VSCODE_SEVERITY_MAP.get(severity, str(severity))
+        mapped = _VSCODE_SEVERITY_MAP.get(severity)
+        if mapped is not None:
+            severity_label = mapped
+        else:
+            severity_label = str(severity)
     else:
         severity_label = str(severity).lower() if severity else None
     path, line, column = _parse_vscode_location(marker)
@@ -1081,7 +1086,7 @@ def _marker_to_issue(marker: Mapping[str, Any]) -> dict[str, Any]:
         "column": _coerce_int(column),
         "code": code,
         "message": marker.get("message"),
-        "severity": severity_label,
+        "severity": str(severity_label) if severity_label is not None else None,
         "source": marker.get("source") or marker.get("owner") or "vscode",
     }
     _truncate_message(issue)
@@ -1216,8 +1221,7 @@ def _run_autofix_command(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]
     return subprocess.run(  # nosec B603 - commands are predefined tool invocations
         cmd,
         check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
     )
 
