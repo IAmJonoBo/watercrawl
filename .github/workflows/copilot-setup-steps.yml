@@ -85,3 +85,14 @@ jobs:
           else
             echo "✗ actionlint (Linux x86_64) missing"
           fi
+
+      - name: Discover and report environment for agents
+        run: |
+          echo "=========================================="
+          echo "ENVIRONMENT DISCOVERY FOR COPILOT AGENTS"
+          echo "=========================================="
+          echo ""
+          poetry run python scripts/discover_environment.py
+          echo ""
+          echo "For comprehensive environment documentation, see ENVIRONMENT.md"
+          echo "For task tracking and implementation status, see SCRATCH.md"
