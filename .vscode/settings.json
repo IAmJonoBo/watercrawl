@@ -1,5 +1,7 @@
 {
   "python-envs.defaultEnvManager": "ms-python.python:poetry",
   "python-envs.defaultPackageManager": "ms-python.python:poetry",
-  "python-envs.pythonProjects": []
+  "python-envs.pythonProjects": [],
+  // Use pnpm as the default package manager for Node.js projects
+  "npm.packageManager": "pnpm"
 }
