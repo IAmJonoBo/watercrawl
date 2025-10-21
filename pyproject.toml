@@ -3,6 +3,8 @@ name = "firecrawl-demo"
 version = "0.1.0"
 description = "Modular, async-ready, compliance-driven enrichment pipeline for Firecrawl."
 authors = ["ACES Aerodynamics Analyst <info@acesaero.co.za>"]
+license = "MIT"
+readme = "README.md"
 packages = [{ include = "firecrawl_demo" }]
 exclude = [
   "apps",

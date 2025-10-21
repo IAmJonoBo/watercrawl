@@ -56,6 +56,8 @@
 - [x] 2025-10-21 — QA automation upgrade: Added format/problems commands with plan auto-generation, integrated mypy into Trunk linting, and documented new CQ workflows to minimise manual triage.
 - [x] 2025-10-21 — QA pipeline dry run (agent): pytest ✅ (293 passed, 86% cover), sqlfluff ✅ after seeding `CONTRACTS_CANONICAL_JSON`, yamllint ✅ (fixed `.venv/` ignore), markdownlint ❌ (nodeenv TLS - remains blocked), mypy ✅ (fixed return annotations, `tomli` confirmed in deps), bandit ⚠️ (subprocess warnings - expected/nosec'd), axe smoke ✅ (fixed temp profile), collect_problems ⚠️ (markdownlint dependency remains blocked by nodeenv TLS). ⏳ Remaining: vendor/cert-pin node toolchain for offline markdownlint.
 - [x] 2025-10-22 — Deequ enforcement: Implemented deterministic Deequ checks with pandas fallback, wired CLI/evidence logging to include Deequ results, added failure messaging, refreshed docs/CHANGELOG to note release blocker now hard-gated.
+- [x] 2025-10-21 — Legal & disclosure baseline: Added MIT LICENSE file and comprehensive SECURITY.md with VDP, security controls, compliance frameworks (NIST SSDF, OWASP ASVS L2, POPIA), and responsible disclosure process. Updated pyproject.toml to declare MIT license. Completes WC-01 and WC-02 acceptance criteria.
+- [x] 2025-10-21 — Documentation completion audit: Marked `docs/data-quality.md` and `codex/` artefacts as complete in Next_Steps.md; updated Red Team doc to reflect completion status for WC-07 through WC-12, WC-14, WC-15, WC-16, and WC-19 based on iteration log evidence.
 
 ---
 
@@ -129,8 +131,8 @@ Execute in this order; each item must meet its gate before promotion.
 - [x] MCP audit log policy — Owner, storage, retention → `docs/mcp-audit-policy.md`
 - [x] MCP promptfoo gate policy — Evaluation thresholds, rollout phases → `docs/mcp-promptfoo-gate.md`
 - [x] Chaos/FMEA scenario catalog — Failure modes, game day procedures → `docs/chaos-fmea-scenarios.md`
-- [ ] Data quality suites (GX/dbt/Deequ) → `docs/data-quality.md`
-- [ ] Codex DX bundle & evals → `codex/README.md`, `codex/evals/promptfooconfig.yaml`
+- [x] Data quality suites (GX/dbt/Deequ) → `docs/data-quality.md`
+- [x] Codex DX bundle & evals → `codex/README.md`, `codex/evals/promptfooconfig.yaml`
 
 ---
 
