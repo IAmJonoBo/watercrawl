@@ -1,0 +1,10 @@
+{
+  "if_match": "\"qa-baseline-20251021\"",
+  "diff_format": "markdown",
+  "diff_summary": "Updated Next_Steps.md with 2025-10-21 QA dry-run outcomes, added remediation tasking, and logged new risks around nodeenv TLS, mypy deps, axe smoke Chrome profiles, and yamllint scope. Seeded matching plan artefact at tmp/plans/qa_baseline.plan.",
+  "rag": {
+    "faithfulness": 0.97,
+    "context_precision": 0.96,
+    "answer_relevancy": 0.97
+  }
+}
