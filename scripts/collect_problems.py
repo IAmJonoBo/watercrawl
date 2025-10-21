@@ -1,4 +1,5 @@
 """Aggregate QA findings into a compact ``problems_report.json`` artefact."""
+
 # pylint: disable=missing-function-docstring,too-many-lines,line-too-long
 
 from __future__ import annotations
@@ -175,7 +176,8 @@ def _read_yaml(path: Path) -> dict[str, Any] | None:
             data = YAML.safe_load(fh)
             if isinstance(data, dict):
                 return data
-    except (OSError, UnicodeDecodeError, YAML.YAMLError):  # type: ignore[union-attr]
+    # type: ignore[union-attr]
+    except (OSError, UnicodeDecodeError, YAML.YAMLError):
         return None
     return None
 
@@ -1094,7 +1096,9 @@ def collect(
     for spec in specs:
         try:
             cmd, env, cwd = spec.command()
-        except Exception as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
             aggregated.append(
                 {
                     "tool": spec.name,
@@ -1114,7 +1118,9 @@ def collect(
                 }
             )
             continue
-        except Exception as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
             aggregated.append(
                 {
                     "tool": spec.name,
