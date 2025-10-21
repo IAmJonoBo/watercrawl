@@ -426,6 +426,8 @@ jq '.summary' problems_report.json
 
 The collector will skip tools that aren't installed (marking them as "not_installed" in the report) and run everything that's available. This allows Copilot agents and CI systems to get partial QA results even when the full environment isn't set up.
 
+**💡 For a comprehensive guide on running QA with minimal dependencies, see [Ephemeral QA Guide](ephemeral-qa-guide.md).**
+
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command
 > exits non-zero when variables are duplicated, unexported, or malformed, so run

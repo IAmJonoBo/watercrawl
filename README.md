@@ -206,6 +206,7 @@ The documentation follows the **Diátaxis framework** for systematic technical d
   - [Data Quality](/data-quality/)
   - [Lineage & Lakehouse](/lineage-lakehouse/)
   - [Operations](/operations/)
+  - [Ephemeral QA Guide](/ephemeral-qa-guide/) - Quick-start for Copilot agents
   - [Architecture Decision Records (ADRs)](/adr/)
 
 ### Preview Documentation Locally
