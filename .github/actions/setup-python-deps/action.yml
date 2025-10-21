@@ -1,0 +1,44 @@
+name: "Setup Python Dependencies"
+description: "Install Poetry and project dependencies with retry logic and proper timeout handling"
+inputs:
+  python-version:
+    description: "Python version to use"
+    required: false
+    default: "3.13"
+  install-dev:
+    description: "Whether to install dev dependencies"
+    required: false
+    default: "true"
+runs:
+  using: "composite"
+  steps:
+    - name: Install Poetry with retries
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip --timeout 60 --retries 5
+        python -m pip install poetry --timeout 60 --retries 5
+
+    - name: Cache Poetry environments
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pypoetry/virtualenvs
+          ~/.cache/pip
+        key: ${{ runner.os }}-poetry-${{ inputs.python-version }}-${{ hashFiles('poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-poetry-${{ inputs.python-version }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        if [ "${{ inputs.install-dev }}" = "true" ]; then
+          poetry install --no-root --with dev
+        else
+          poetry install --no-root
+        fi
+      env:
+        # Increase Poetry installer timeout
+        POETRY_INSTALLER_MAX_WORKERS: 10
+        # Set pip timeout for Poetry's use
+        PIP_TIMEOUT: 60
+        PIP_RETRIES: 5

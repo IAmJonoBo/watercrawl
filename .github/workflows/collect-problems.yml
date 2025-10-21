@@ -25,6 +25,17 @@ jobs:
           python -m pip install --upgrade pip --timeout 60 --retries 5
           python -m pip install poetry --timeout 60 --retries 5
 
+      - name: Cache Poetry environments
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry/virtualenvs
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-3.13-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-3.13-
+
+
       - name: Install dependencies (dev)
         run: |
           # Install project dependencies so the collector can import project modules
