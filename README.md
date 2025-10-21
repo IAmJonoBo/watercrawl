@@ -4,7 +4,7 @@ Modular toolkit for validating and enriching South African flight-school dataset
 
 ## Getting Started
 
-**Python version required:** `>=3.13,<3.15` (recommended: 3.14.0)
+**Python version required:** `>=3.13,<3.15` (baseline: 3.13.x)
 
 **Environment setup:**
 
@@ -31,7 +31,7 @@ poetry run python -m apps.analyst.cli contracts data/sample_enriched.csv --forma
 # Developer DX helpers mirroring CI
 poetry run python -m apps.automation.cli qa plan  # add --write-plan/--write-commit to emit artefacts
 poetry run python -m apps.automation.cli qa all --dry-run
-poetry run python -m apps.automation.cli qa all  # auto-installs Python 3.14 via uv when needed; add --generate-plan to materialise plan/commit artefacts
+poetry run python -m apps.automation.cli qa all  # auto-installs Python 3.13 via uv when needed; add --generate-plan to materialise plan/commit artefacts
 poetry run python -m apps.automation.cli qa fmt --generate-plan --plan-dir tmp/plans
 poetry run python -m apps.automation.cli qa problems --fail-on-issues
 ```
@@ -50,14 +50,14 @@ The repository now ships a ready-to-run sample dataset at `data/sample.csv` so a
 - Set `FEATURE_ENABLE_FIRECRAWL_SDK=1`, `ALLOW_NETWORK_RESEARCH=1`, and your `FIRECRAWL_API_KEY` (via `.env` or the environment)
   when you are ready to exercise the live SDK.
 
-**Automation CLI auto-bootstrap:** `apps.automation.cli` now provisions Python 3.14 with uv whenever the active interpreter is older than 3.13. This keeps ephemeral runners and fresh shells aligned with the minimum supported version while installing project dependencies before QA commands run.
+**Automation CLI auto-bootstrap:** `apps.automation.cli` now provisions Python 3.13 with uv whenever the active interpreter is older than 3.13. This keeps ephemeral runners and fresh shells aligned with the minimum supported version while installing project dependencies before QA commands run.
 
 **No requirements.txt needed:** Poetry is the single source of dependency management. Use `pyproject.toml` for all dependencies.
 
 **Offline installation (for air-gapped environments):**
 
 ```bash
-# Provision the 3.14 interpreter and sync dependencies with uv
+# Provision the 3.13 interpreter and sync dependencies with uv
 python -m scripts.bootstrap_python --install-uv --poetry
 uv pip sync requirements-dev.txt
 
@@ -120,7 +120,7 @@ poetry run python apps/analyst/accessibility/axe_smoke.py
 
 > The offline Safety runner relies on the vendored `safety-db` snapshot so QA can execute without network connectivity. Update the dependency periodically to refresh advisories.
 
-> The `scripts/run_pytest.sh` wrapper discovers the Poetry-managed Python 3.14 interpreter (or provisions one via `uv`) so `pytest` never falls back to a stale system binary.
+> The `scripts/run_pytest.sh` wrapper discovers the Poetry-managed Python 3.13 interpreter (or provisions one via `uv`) so `pytest` never falls back to a stale system binary.
 
 ## Supply Chain Hardening
 

@@ -12,6 +12,8 @@ poetry run python -m scripts.cleanup --dry-run
 poetry run python -m scripts.cleanup
 ```
 
+> Baseline interpreter: Python 3.13. Use `scripts/bootstrap_env` to provision the uv-managed toolchain; dependency matrix checks track wheel gaps for Python 3.14 and 3.15.
+
 > The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
 
 Then execute the quality gates:

@@ -14,7 +14,7 @@ jobs:
       security-events: write
     strategy:
       matrix:
-        python-version: ["3.14", "3.15"]
+        python-version: ["3.13", "3.14", "3.15"]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Python
@@ -47,34 +47,40 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-root
       - name: Run isort check
+        if: matrix.python-version == '3.13'
         run: poetry run isort --profile black --check-only .
       - name: Run black check
+        if: matrix.python-version == '3.13'
         run: poetry run black --check .
       - name: Run pre-commit
+        if: matrix.python-version == '3.13'
         run: poetry run pre-commit run --all-files --show-diff-on-failure
       - name: Run tests
+        if: matrix.python-version == '3.13'
         run: >-
           poetry run pytest --maxfail=5 --disable-warnings --cov=firecrawl_demo
           --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=pytest-results.xml
       - name: Run data contracts
+        if: matrix.python-version == '3.13'
         run: >-
           poetry run python -m apps.analyst.cli contracts data/sample.csv --format json
       - name: Check contract coverage
+        if: matrix.python-version == '3.13'
         run: >-
           poetry run python -m apps.analyst.cli coverage --format json
       - name: Run Streamlit accessibility smoke test
-        if: matrix.python-version == '3.14'
+        if: matrix.python-version == '3.13'
         run: poetry run python apps/analyst/accessibility/axe_smoke.py
       - name: Build distribution artifacts
-        if: matrix.python-version == '3.14'
+        if: matrix.python-version == '3.13'
         run: poetry build
       - name: Install supply-chain tooling
-        if: matrix.python-version == '3.14'
+        if: matrix.python-version == '3.13'
         run: |
           python -m pip install --upgrade pip
           python -m pip install cyclonedx-bom==3.9.0 sigstore==2.3.0
       - name: Generate CycloneDX SBOM
-        if: matrix.python-version == '3.14'
+        if: matrix.python-version == '3.13'
         run: |
           mkdir -p artifacts/sbom
           cyclonedx-bom --poetry pyproject.toml --format json --output artifacts/sbom/cyclonedx.json

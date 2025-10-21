@@ -17,11 +17,11 @@ poetry run python -m scripts.cleanup
 
 > The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
 
-> Python 3.14 is the project baseline. `scripts/bootstrap_env` provisions the correct interpreter automatically, and helper wrappers like `scripts/run_pytest.sh` guard against accidental use of stale global Pythons.
+> Python 3.13 is the project baseline. `scripts/bootstrap_env` provisions the correct interpreter automatically, and helper wrappers like `scripts/run_pytest.sh` guard against accidental use of stale global Pythons.
 
 Before executing the rest of the suite, confirm the pinned dependencies ship
 compatible wheels for every Python target tracked in `presets/dependency_targets.toml`
-(Python 3.13 as the stable baseline, Python 3.14 as the current, Python 3.15 as the next candidate).
+(Python 3.13 as the stable baseline, Python 3.14 and 3.15 tracked for upcoming upgrades).
 The guard command enforces that only the curated allow-list of wheel gaps remains
 and fails fast if new blockers appear or previously known issues clear without
 updating the configuration:
@@ -39,7 +39,7 @@ Renovate, CI summaries, and release checklists.
 
 > Tip: `poetry run python -m apps.automation.cli qa dependencies --dry-run`
 > invokes the same survey/guard pipeline but automatically installs the Poetry
-> environment and provisions Python 3.14 via uv when the active interpreter is older than 3.13.
+> environment and provisions Python 3.13 via uv when the active interpreter is older than 3.13.
 
 Then execute the quality gates:
 
@@ -64,7 +64,7 @@ poetry run pre-commit run --all-files
 ./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
 ```
 
-`scripts/run_pytest.sh` discovers the Poetry-managed Python 3.14 interpreter (or provisions one via `uv`) so local shells never fall back to an outdated `pytest` binary on the system PATH.
+`scripts/run_pytest.sh` discovers the Poetry-managed Python 3.13 interpreter (or provisions one via `uv`) so local shells never fall back to an outdated `pytest` binary on the system PATH.
 
 ### Data Quality
 
@@ -178,7 +178,7 @@ poetry run python -m firecrawl_demo.infrastructure.lakehouse snapshot --source d
 poetry run python -m firecrawl_demo.infrastructure.lineage capture --run-id $(date +%s) --input data/sample.csv --output data/processed/enriched.csv
 ```
 
-- The Streamlit analyst UI and the Parquet writer engine are packaged in the optional Poetry dependency group `ui`. Default installs on Python 3.14 skip these packages (PyArrow wheels are still pending); run `poetry install --with ui` from Python 3.12/3.13 when you need the UI or native Parquet snapshots. Without the group, lakehouse exports fall back to CSV with remediation guidance in the manifest.
+- The Streamlit analyst UI and the Parquet writer engine are packaged in the optional Poetry dependency group `ui`. On Python 3.14+ the PyArrow wheels are still pending, so default installs on those interpreters skip these packages; run `poetry install --with ui` from Python 3.12/3.13 when you need the UI or native Parquet snapshots. Without the group, lakehouse exports fall back to CSV with remediation guidance in the manifest.
 - The Delta Lake writer is provided by the optional dependency group `lakehouse`. Enable it alongside the UI group (`poetry install --with ui --with lakehouse`) on Python 3.12/3.13 to produce native Delta commits with time-travel support. When the group is absent, the writer automatically records filesystem snapshots and marks the manifest as degraded.
 - Restore any snapshot (or Delta version) with:
 
@@ -260,10 +260,9 @@ Supported QA tools include:
 > ```bash
 > poetry env use 3.13
 > poetry run python -m tools.sql.sqlfluff_runner --project-dir data_contracts/analytics
-> poetry env use 3.14
 > ```
 >
-> The `.sqlfluff` config already targets `data_contracts/analytics`, so the command above lints the golden-path dbt project while reusing the same DuckDB cache directory. Switch the environment back to Python 3.14 (or the repository default) once the lint step completes.
+> The `.sqlfluff` config already targets `data_contracts/analytics`, so the command above lints the golden-path dbt project while reusing the same DuckDB cache directory. Switch the environment back to your usual interpreter (3.13 for this repository) once the lint step completes.
 
 Each tool's results are captured with status, return code, parsed issues, and summary metrics. The report includes a generation timestamp for freshness tracking.
 
@@ -385,7 +384,7 @@ poetry cache clear --all .
 poetry install --no-root
 
 # Check Python version compatibility
-python --version  # Should be 3.14.x
+python --version  # Should be 3.13.x
 poetry env info
 ```
 

@@ -9,7 +9,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-DEFAULT_VERSION = "3.14.0"
+DEFAULT_VERSION = "3.13.0"
 
 
 class BootstrapError(RuntimeError):
