@@ -74,6 +74,7 @@ streamlit = "^1.50.0"
 axe-selenium-python = "^2.1.6"
 selenium = "^4.37.0"
 mutmut = "2.4.4"
+tomli = "^2.3.0"
 
 [tool.poetry.group.ui]
 optional = true
