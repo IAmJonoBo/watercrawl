@@ -1,0 +1,52 @@
+name: PNPM Validate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  validate:
+    name: Validate pnpm install and markdown
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js and pnpm
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Enable corepack and pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Approve pnpm build scripts
+        run: |
+          # Approve all build scripts in CI to allow esbuild/sharp and similar
+          # to run non-interactively. Consider scoping to known packages in
+          # stricter environments.
+          yes | pnpm approve-builds --all || true
+
+      - name: Install root dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Markdown (root)
+        run: pnpm dlx markdownlint-cli2 "**/*.md" "#node_modules" || true
+
+      - name: Install docs dependencies (pnpm)
+        run: |
+          if [ -d docs-starlight ]; then
+            cd docs-starlight
+            pnpm install --frozen-lockfile || pnpm install
+          fi
+
+      - name: Lint Markdown (docs)
+        run: |
+          if [ -d docs-starlight ]; then
+            cd docs-starlight
+            pnpm dlx markdownlint-cli2 "**/*.md" "#node_modules" || true
+          fi
