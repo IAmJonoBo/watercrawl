@@ -53,6 +53,9 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
+
       - name: Install Node dependencies (pnpm)
         run: |
           if [ -f package.json ]; then

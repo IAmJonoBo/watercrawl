@@ -16,6 +16,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "22"
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
       - name: Install and build docs (pnpm)
         run: |
           cd docs-starlight

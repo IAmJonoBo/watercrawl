@@ -17,6 +17,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
+
       - name: Install and run TechDocs CLI (pnpm dlx)
         run: |
           corepack enable

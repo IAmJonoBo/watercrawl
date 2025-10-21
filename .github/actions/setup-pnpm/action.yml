@@ -1,0 +1,19 @@
+name: "Setup pnpm"
+description: "Install pnpm globally and verify availability on PATH (composite action)."
+inputs: {}
+runs:
+  using: "composite"
+  steps:
+    - name: Install pnpm globally
+      shell: bash
+      run: |
+        echo "Installing pnpm globally"
+        npm install -g pnpm
+
+    - name: Verify pnpm is available
+      shell: bash
+      run: |
+        echo "Which pnpm:"
+        which pnpm || (echo "pnpm not found on PATH" >&2; exit 1)
+        echo "pnpm version:"
+        pnpm --version
