@@ -23,6 +23,11 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreter
 
 from urllib.parse import unquote, urlparse
 
+try:  # pragma: no cover - optional dependency
+    import yaml
+except ModuleNotFoundError:  # pragma: no cover
+    yaml = None  # type: ignore
+
 SQLFLUFF_AVAILABLE = sys.version_info < (3, 14)
 if SQLFLUFF_AVAILABLE:
     try:  # pragma: no branch - import guard for script execution
@@ -77,6 +82,9 @@ AUTOFIX_COMMANDS: dict[str, list[str]] = {
     "trunk": ["trunk", "fmt"],
 }
 WARNING_HIGHLIGHT_LIMIT = 10
+TRUNK_CONFIG_PATH = Path(".trunk/trunk.yaml")
+BIOME_CONFIG_FILES = (Path("biome.json"), Path("biome.jsonc"))
+PACKAGE_JSON = Path("package.json")
 
 CompletedProcess = subprocess.CompletedProcess[str]
 
@@ -148,6 +156,49 @@ def _coerce_int(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _read_yaml(path: Path) -> dict[str, Any] | None:
+    if yaml is None or not path.exists():
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            data = yaml.safe_load(fh)
+            if isinstance(data, dict):
+                return data
+    except Exception:  # pragma: no cover - best effort
+        return None
+    return None
+
+
+def _discover_trunk_linters(path: Path = TRUNK_CONFIG_PATH) -> list[str]:
+    config = _read_yaml(path)
+    if not config:
+        return []
+    lint_section = config.get("lint")
+    if not isinstance(lint_section, dict):
+        return []
+    enabled = lint_section.get("enabled")
+    if isinstance(enabled, list):
+        return [str(item).split("@")[0] for item in enabled]
+    return []
+
+
+def _discover_biome_presence() -> bool:
+    for candidate in BIOME_CONFIG_FILES:
+        if candidate.exists():
+            return True
+    if PACKAGE_JSON.exists():
+        try:
+            data = json.loads(PACKAGE_JSON.read_text(encoding="utf-8"))
+        except Exception:  # pragma: no cover - best effort
+            return False
+        for section in ("dependencies", "devDependencies", "peerDependencies"):
+            deps = data.get(section)
+            if isinstance(deps, dict):
+                if any("biome" in name.lower() for name in deps):
+                    return True
+    return False
 
 
 _PYTHON_WARNING_PATTERN = re.compile(
@@ -1387,6 +1438,19 @@ def build_overall_summary(
         "warning_count": warning_total,
         "warning_insights": warning_highlights,
     }
+    configured_tools: dict[str, Any] = {}
+    trunk_linters = _discover_trunk_linters()
+    if trunk_linters:
+        configured_tools["trunk_enabled"] = trunk_linters
+        if "trunk" not in tools_run:
+            configured_tools.setdefault("missing", []).append("trunk")
+    biome_present = _discover_biome_presence()
+    if biome_present:
+        configured_tools["biome_present"] = True
+        if "biome" not in tools_run:
+            configured_tools.setdefault("missing", []).append("biome")
+    if configured_tools:
+        summary_payload["configured_tools"] = configured_tools
     if autofixes:
         attempted = len(autofixes)
         succeeded = sum(1 for entry in autofixes if entry.get("status") == "succeeded")

@@ -245,6 +245,9 @@ def test_collect_aggregates_and_truncates_outputs(
     assert any(
         insight.get("kind") == "deprecation" for insight in overall["warning_insights"]
     )
+    configured = overall.get("configured_tools")
+    if configured:
+        assert "trunk_enabled" in configured
 
 
 def test_collect_default_registry_includes_autofix(

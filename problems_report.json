@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T12:37:36.196963+00:00",
+  "generated_at": "2025-10-21T12:51:26.827543+00:00",
   "summary": {
     "issue_count": 0,
     "note_count": 14,
@@ -99,7 +99,32 @@
         "path": null,
         "source": null
       }
-    ]
+    ],
+    "configured_tools": {
+      "trunk_enabled": [
+        "mypy",
+        "shellcheck",
+        "shfmt",
+        "svgo",
+        "markdownlint-cli2",
+        "sqlfluff",
+        "actionlint",
+        "hadolint",
+        "taplo",
+        "bandit",
+        "black",
+        "checkov",
+        "dotenv-linter",
+        "git-diff-check",
+        "isort",
+        "markdownlint",
+        "osv-scanner",
+        "renovate",
+        "ruff",
+        "trufflehog",
+        "yamllint"
+      ]
+    }
   },
   "tools": [
     {
@@ -248,7 +273,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T12:37:25Z\",",
+          "  \"generated_at\": \"2025-10-21T12:51:14Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 1,",

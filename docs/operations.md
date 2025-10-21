@@ -324,6 +324,7 @@ The `problems_report.json` file follows this schema:
     - Includes `warning_count` / `omitted_warnings` when warnings are captured so evergreen upgrades can be prioritised.
     - Optional fields: `stderr_preview`, `notes`, `raw_preview` (for parsing failures).
       Each preview stores chunked text to keep lines below shell output limits and includes truncation metadata when applicable.
+- `summary.configured_tools`: Mirrors QA configuration (Trunk enabled linters, Biome presence) and flags tools that should be executed but were missing from the run. Use this to spot configuration drift early and wire new linters into the automation pipeline.
 
 ### Wiring and Integration
 
