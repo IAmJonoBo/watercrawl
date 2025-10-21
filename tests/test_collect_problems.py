@@ -143,6 +143,8 @@ def test_collect_aggregates_and_truncates_outputs(
         }
     )
 
+    biome_output = '{"path":"app/main.ts","diagnostics":[{"code":"noUnusedVariables","message":"unused variable foo","severity":"error","span":{"start":{"line":4,"column":5}},"fixable":true}]}'
+
     outputs: dict[str, dict[str, Any]] = {
         "ruff": {"stdout": ruff_output},
         "mypy": {"stdout": mypy_output, "returncode": 1},
@@ -150,6 +152,7 @@ def test_collect_aggregates_and_truncates_outputs(
         "yamllint": {"stdout": yamllint_output},
         "sqlfluff": {"stdout": sqlfluff_output, "returncode": 65},
         "trunk": {"stdout": trunk_output},
+        "biome": {"stdout": biome_output},
     }
 
     runner = _Runner(outputs)
@@ -162,6 +165,7 @@ def test_collect_aggregates_and_truncates_outputs(
         _make_spec("yamllint", collect_problems.parse_yamllint_output),
         _make_spec("sqlfluff", collect_problems.parse_sqlfluff_output),
         _make_spec("trunk", collect_problems.parse_trunk_output, optional=True),
+        _make_spec("biome", collect_problems.parse_biome_output, optional=True),
     ]
 
     results = collect_problems.collect(tools=tools, runner=runner.__call__)
@@ -199,6 +203,13 @@ def test_collect_aggregates_and_truncates_outputs(
     assert trunk_entry["summary"]["severity_counts"]["error"] == 1
     assert trunk_entry["issues"][0]["path"] == "firecrawl_demo/core/example.py"
     assert trunk_entry["issues"][0]["insight"].startswith("Unused symbol")
+
+    biome_entry = by_tool["biome"]
+    assert biome_entry["summary"]["issue_count"] == 1
+    assert biome_entry["issues"][0]["path"] == "app/main.ts"
+    assert biome_entry["issues"][0]["insight"].startswith(
+        "Biome detected unused symbols"
+    )
 
 
 def test_preview_handles_multiline_chunks() -> None:

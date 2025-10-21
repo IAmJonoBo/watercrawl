@@ -434,6 +434,106 @@ def parse_sqlfluff_output(result: CompletedProcess) -> dict[str, Any]:
     }
 
 
+def parse_biome_output(result: CompletedProcess) -> dict[str, Any]:
+    raw_output = result.stdout or ""
+    chunks = [line for line in raw_output.splitlines() if line.strip()]
+    objects: list[Mapping[str, Any]] = []
+    for line in chunks:
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, Mapping):
+            objects.append(parsed)
+        elif isinstance(parsed, list):
+            objects.extend(item for item in parsed if isinstance(item, Mapping))
+    if not objects:
+        fallback = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(fallback, "raw_preview", raw_output)
+        return fallback
+
+    def iter_diagnostics(node: Mapping[str, Any], default_path: str | None = None):
+        diagnostics = node.get("diagnostics")
+        path = (
+            node.get("path")
+            or node.get("file_path")
+            or node.get("file")
+            or default_path
+        )
+        if isinstance(diagnostics, list):
+            for diag in diagnostics:
+                if isinstance(diag, Mapping):
+                    yield path, diag
+        files = node.get("files")
+        if isinstance(files, list):
+            for entry in files:
+                if isinstance(entry, Mapping):
+                    yield from iter_diagnostics(entry, entry.get("path") or path)
+
+    issues: list[dict[str, Any]] = []
+    severity_counts: Counter[str] = Counter()
+    potential_dead_code = 0
+
+    for obj in objects:
+        for path, diag in iter_diagnostics(obj):
+            severity = str(
+                diag.get("severity") or diag.get("category") or "unknown"
+            ).lower()
+            severity_counts[severity] += 1
+            span = diag.get("span") or diag.get("location") or {}
+            start = span.get("start") if isinstance(span, Mapping) else {}
+            line = _coerce_int(
+                start.get("line") if isinstance(start, Mapping) else None
+            )
+            column = _coerce_int(
+                start.get("column") if isinstance(start, Mapping) else None
+            )
+            code = diag.get("code") or diag.get("rule")
+            normalized_code = None
+            if isinstance(code, str):
+                normalized_code = code.split("/")[-1]
+            elif code is not None:
+                normalized_code = str(code)
+
+            message = diag.get("message") or diag.get("description") or ""
+            fixable = bool(diag.get("fixable") or diag.get("actions"))
+
+            record: dict[str, Any] = {
+                "path": path,
+                "line": line,
+                "column": column,
+                "code": code,
+                "message": message,
+                "severity": severity,
+            }
+            if fixable:
+                record["fixable"] = True
+
+            if normalized_code in {"noUnusedVariables", "noUnusedImports"}:
+                record["insight"] = (
+                    "Biome detected unused symbols; evaluate refactoring or removal to reduce dead code."
+                )
+                potential_dead_code += 1
+
+            _truncate_message(record)
+            issues.append(record)
+            if len(issues) >= MAX_ISSUES:
+                break
+        if len(issues) >= MAX_ISSUES:
+            break
+
+    omitted = max(len(issues) - MAX_ISSUES, 0)
+    summary: dict[str, Any] = {
+        "issue_count": len(issues),
+        "severity_counts": dict(severity_counts),
+    }
+    if omitted:
+        summary["omitted_issues"] = omitted
+    if potential_dead_code:
+        summary["potential_dead_code"] = potential_dead_code
+    return {"issues": issues[:MAX_ISSUES], "summary": summary}
+
+
 def parse_trunk_output(result: CompletedProcess) -> dict[str, Any]:
     raw_output = result.stdout or ""
     try:
@@ -594,6 +694,15 @@ TRUNK_TOOL = ToolSpec(
     optional=True,
 )
 TOOL_SPECS.append(TRUNK_TOOL)
+
+
+BIOME_TOOL = ToolSpec(
+    name="biome",
+    command=_static_command("npx", "biome", "check", "--reporter", "json"),
+    parser=parse_biome_output,
+    optional=True,
+)
+TOOL_SPECS.append(BIOME_TOOL)
 
 
 def collect(

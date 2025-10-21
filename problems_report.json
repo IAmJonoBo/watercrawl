@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T09:00:09.749021+00:00",
+  "generated_at": "2025-10-21T09:06:18.555672+00:00",
   "tools": [
     {
       "tool": "ruff",
@@ -23,24 +23,18 @@
     },
     {
       "tool": "mypy",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "issues": [
+        {
+          "path": "scripts/collect_problems.py",
+          "line": 483,
+          "message": "Incompatible types in assignment (expression has type \"int | None\", variable has type \"str\") ",
+          "severity": "error",
+          "code": "assignment"
+        }
+      ],
       "notes": [
-        {
-          "path": "tests/test_compliance.py",
-          "line": 186,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 208,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -72,6 +66,20 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 186,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 208,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -127,7 +135,7 @@
         }
       ],
       "summary": {
-        "issue_count": 0,
+        "issue_count": 1,
         "note_count": 14
       }
     },
@@ -182,7 +190,7 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T08:59:58Z\",",
+          "  \"generated_at\": \"2025-10-21T09:05:58Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 3,",
@@ -279,6 +287,33 @@
           "severity": "info"
         }
       ]
+    },
+    {
+      "tool": "biome",
+      "status": "completed",
+      "returncode": 0,
+      "issues": [],
+      "summary": {
+        "issue_count": 0
+      },
+      "stderr_preview": {
+        "chunks": [
+          "npm warn exec The following package was not found and will be installed: biome@0.3.3",
+          "npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, whic",
+          "h is much more comprehensive and powerful.",
+          "npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported",
+          "npm warn deprecated har-validator@5.1.5: this library is no longer supported",
+          "npm warn deprecated request@2.88.2: request has been deprecated, see https://github.com/request/request/issues/3142",
+          "npm warn deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-",
+          "random for details.",
+          "npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported",
+          "npm warn deprecated fs-promise@0.5.0: Use mz or fs-extra^3.0 with Promise Support",
+          "npm warn deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js ",
+          "versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.",
+          "npm warn deprecated request-promise@3.0.0: request-promise has been deprecated because it extends the now deprecated request package, see https://github.com/request/request/issues/3142",
+          ""
+        ]
+      }
     }
   ]
 }
