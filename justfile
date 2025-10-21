@@ -192,8 +192,10 @@ yamllint:
     poetry run yamllint --strict -c .yamllint.yaml .
 
 # Measure run timing (DevEx telemetry)
+# Requires the 'time' command to be available in PATH.
 time COMMAND:
     @echo "Timing: {{COMMAND}}"
+    @if ! command -v time >/dev/null 2>&1; then echo "'time' command not found. Please install 'time' to use this recipe."; exit 1; fi
     @time -p just {{COMMAND}}
 
 # Run CI simulation locally
