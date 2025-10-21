@@ -1,24 +1,123 @@
 {
-  "generated_at": "2025-10-21T14:53:12.131113+00:00",
+  "generated_at": "2025-10-21T23:35:39.055594+00:00",
   "summary": {
-    "issue_count": 0,
-    "note_count": 14,
+    "issue_count": 47,
+    "note_count": 15,
     "fixable_count": 0,
-    "potential_dead_code": 0,
-    "severity_counts": {},
+    "potential_dead_code": 14,
+    "severity_counts": {
+      "error": 2
+    },
     "tools_run": [
       "ruff",
       "mypy",
       "yamllint",
       "bandit",
       "sqlfluff",
-      "trunk",
       "biome"
     ],
-    "tools_missing": [],
-    "insights": [],
+    "tools_missing": [
+      "trunk"
+    ],
+    "insights": [
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
+        "line": 25,
+        "code": "F401",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
+        "line": 27,
+        "code": "F401",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/observability.py",
+        "line": 22,
+        "code": "F401",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
+        "line": 15,
+        "code": "F401",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
+        "line": 39,
+        "code": "F841",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
+        "line": 175,
+        "code": "F841",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_content_hygiene.py",
+        "line": 5,
+        "code": "F401",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
+        "line": 6,
+        "code": "F401",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
+        "line": 8,
+        "code": "F401",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      },
+      {
+        "tool": "ruff",
+        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
+        "line": 131,
+        "code": "F841",
+        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+      }
+    ],
     "warning_count": 0,
     "warning_insights": [],
+    "performance": {
+      "total_duration_seconds": 50.524,
+      "slowest_tools": [
+        {
+          "tool": "mypy",
+          "duration_seconds": 30.49
+        },
+        {
+          "tool": "biome",
+          "duration_seconds": 12.999
+        },
+        {
+          "tool": "sqlfluff",
+          "duration_seconds": 5.183
+        },
+        {
+          "tool": "bandit",
+          "duration_seconds": 1.326
+        },
+        {
+          "tool": "yamllint",
+          "duration_seconds": 0.495
+        }
+      ]
+    },
     "configured_tools": {
       "trunk_enabled": [
         "mypy",
@@ -42,19 +141,171 @@
         "ruff",
         "trufflehog",
         "yamllint"
+      ],
+      "missing": [
+        "trunk"
       ]
-    }
+    },
+    "stubs_available": true,
+    "ephemeral_runner_notes": [
+      "Type stubs are properly configured for mypy via MYPYPATH"
+    ],
+    "actions": [
+      {
+        "type": "autofix",
+        "tool": "ruff",
+        "command": "poetry run ruff check . --fix"
+      },
+      {
+        "type": "review",
+        "tool": "mypy"
+      },
+      {
+        "type": "review",
+        "tool": "yamllint"
+      },
+      {
+        "type": "review",
+        "tool": "bandit"
+      },
+      {
+        "type": "review",
+        "tool": "sqlfluff"
+      },
+      {
+        "type": "missing_tool",
+        "tool": "trunk"
+      },
+      {
+        "type": "run_tool",
+        "tool": "trunk"
+      }
+    ]
   },
   "tools": [
     {
       "tool": "ruff",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "duration_seconds": 0.031,
+      "issues": [
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
+          "line": 25,
+          "column": 21,
+          "code": "F401",
+          "message": "`pathlib.Path` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
+          "line": 27,
+          "column": 26,
+          "code": "F401",
+          "message": "`urllib.parse.urljoin` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/observability.py",
+          "line": 22,
+          "column": 22,
+          "code": "F401",
+          "message": "`datetime.datetime` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
+          "line": 15,
+          "column": 5,
+          "code": "F401",
+          "message": "`firecrawl_demo.testing.chaos.create_default_orchestrator` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
+          "line": 39,
+          "column": 9,
+          "code": "F841",
+          "message": "Local variable `injection` is assigned to but never used",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
+          "line": 175,
+          "column": 51,
+          "code": "F841",
+          "message": "Local variable `result` is assigned to but never used",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_content_hygiene.py",
+          "line": 5,
+          "column": 8,
+          "code": "F401",
+          "message": "`pytest` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
+          "line": 6,
+          "column": 22,
+          "code": "F401",
+          "message": "`datetime.timedelta` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
+          "line": 8,
+          "column": 8,
+          "code": "F401",
+          "message": "`pytest` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
+          "line": 131,
+          "column": 52,
+          "code": "F841",
+          "message": "Local variable `span` is assigned to but never used",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
+          "line": 167,
+          "column": 69,
+          "code": "F841",
+          "message": "Local variable `span` is assigned to but never used",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
+          "line": 259,
+          "column": 54,
+          "code": "F841",
+          "message": "Local variable `span` is assigned to but never used",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_telemetry.py",
+          "line": 11,
+          "column": 5,
+          "code": "F401",
+          "message": "`firecrawl_demo.interfaces.telemetry.DevExMetrics` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        },
+        {
+          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_telemetry.py",
+          "line": 13,
+          "column": 5,
+          "code": "F401",
+          "message": "`firecrawl_demo.interfaces.telemetry.create_default_collector` imported but unused",
+          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
+        }
+      ],
       "summary": {
-        "issue_count": 0,
-        "fixable": 0,
-        "potential_dead_code": 0
+        "issue_count": 14,
+        "fixable": 14,
+        "potential_dead_code": 14
       },
       "autofix_commands": [
         "poetry run ruff check . --fix"
@@ -62,10 +313,172 @@
     },
     {
       "tool": "mypy",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "duration_seconds": 30.49,
+      "issues": [
+        {
+          "path": "firecrawl_demo/testing/chaos.py",
+          "line": 439,
+          "message": "Argument 1 to \"inject_transient_failure\" of \"ChaosOrchestrator\" has incompatible type \"object\"; expected \"FailureMode\" ",
+          "severity": "error",
+          "code": "arg-type"
+        },
+        {
+          "path": "firecrawl_demo/testing/chaos.py",
+          "line": 439,
+          "message": "Argument 2 to \"inject_transient_failure\" of \"ChaosOrchestrator\" has incompatible type \"object\"; expected \"str\" ",
+          "severity": "error",
+          "code": "arg-type"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 29,
+          "message": "Cannot find implementation or library stub for module named \"opentelemetry\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 30,
+          "message": "Cannot find implementation or library stub for module named \"opentelemetry.exporter.otlp.proto.grpc.trace_exporter\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 31,
+          "message": "Cannot find implementation or library stub for module named \"opentelemetry.exporter.prometheus\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 32,
+          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.metrics\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 33,
+          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.resources\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 34,
+          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.trace\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 35,
+          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.trace.export\" ",
+          "severity": "error",
+          "code": "import-not-found"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 217,
+          "message": "\"None\" has no attribute \"create_counter\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 223,
+          "message": "\"None\" has no attribute \"create_histogram\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 229,
+          "message": "\"None\" has no attribute \"create_counter\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 233,
+          "message": "\"None\" has no attribute \"create_observable_gauge\" ",
+          "severity": "error",
+          "code": "attr-defined"
+        },
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 243,
+          "message": "The return type of a generator function should be \"Generator\" or one of its supertypes ",
+          "severity": "error",
+          "code": "misc"
+        },
+        {
+          "path": "firecrawl_demo/integrations/content_hygiene.py",
+          "line": 295,
+          "message": "Incompatible return value type (got \"list[float]\", expected \"list[int]\") ",
+          "severity": "error",
+          "code": "return-value"
+        },
+        {
+          "path": "firecrawl_demo/integrations/content_hygiene.py",
+          "line": 375,
+          "message": "Incompatible types in assignment (expression has type \"MinHash\", variable has type \"SimHash\") ",
+          "severity": "error",
+          "code": "assignment"
+        },
+        {
+          "path": "firecrawl_demo/integrations/content_hygiene.py",
+          "line": 376,
+          "message": "Argument 1 to \"is_duplicate\" of \"MinHash\" has incompatible type \"SimHash\"; expected \"MinHash\" ",
+          "severity": "error",
+          "code": "arg-type"
+        },
+        {
+          "path": "tests/test_chaos.py",
+          "line": 222,
+          "message": "Incompatible types in assignment (expression has type \"dict[Any, Any]\", variable has type \"GameDayResult\") ",
+          "severity": "error",
+          "code": "assignment"
+        },
+        {
+          "path": "tests/test_chaos.py",
+          "line": 224,
+          "message": "Value of type \"GameDayResult\" is not indexable ",
+          "severity": "error",
+          "code": "index"
+        },
+        {
+          "path": "tests/test_chaos.py",
+          "line": 225,
+          "message": "Value of type \"GameDayResult\" is not indexable ",
+          "severity": "error",
+          "code": "index"
+        },
+        {
+          "path": "tests/test_chaos.py",
+          "line": 226,
+          "message": "Unsupported right operand type for in (\"GameDayResult\") ",
+          "severity": "error",
+          "code": "operator"
+        },
+        {
+          "path": "tests/test_chaos.py",
+          "line": 227,
+          "message": "Value of type \"GameDayResult\" is not indexable ",
+          "severity": "error",
+          "code": "index"
+        }
+      ],
       "notes": [
+        {
+          "path": "firecrawl_demo/integrations/observability.py",
+          "line": 30,
+          "message": "See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports",
+          "severity": "note"
+        },
         {
           "path": "tests/test_cache.py",
           "line": 12,
@@ -166,44 +579,120 @@
         }
       ],
       "summary": {
-        "issue_count": 0,
-        "note_count": 14
+        "issue_count": 22,
+        "note_count": 15
       }
     },
     {
       "tool": "yamllint",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "duration_seconds": 0.495,
+      "issues": [
+        {
+          "path": "./docker-compose.yml",
+          "line": 10,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docker-compose.yml",
+          "line": 17,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docker-compose.yml",
+          "line": 22,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docker-compose.yml",
+          "line": 28,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docker-compose.yml",
+          "line": 33,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docker-compose.yml",
+          "line": 43,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docker-compose.yml",
+          "line": 51,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./docker-compose.yml",
+          "line": 55,
+          "column": 1,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        },
+        {
+          "path": "./mkdocs.yml",
+          "line": 4,
+          "column": 2,
+          "severity": "error",
+          "message": "trailing spaces (trailing-spaces)"
+        }
+      ],
       "summary": {
-        "issue_count": 0
+        "issue_count": 9
       }
     },
     {
       "tool": "bandit",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 1,
+      "duration_seconds": 1.326,
+      "issues": [
+        {
+          "message": "bandit exited with status 1 but did not report any findings.",
+          "severity": "error",
+          "code": "tool_exit_non_zero",
+          "tool": "bandit"
+        }
+      ],
       "summary": {
-        "issue_count": 0
+        "issue_count": 1,
+        "severity_counts": {
+          "error": 1
+        }
       },
       "raw_preview": {
         "chunks": [
-          "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
+          "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:01",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T14:52:57Z\",",
+          "  \"generated_at\": \"2025-10-21T23:35:20Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
-          "      \"CONFIDENCE.HIGH\": 0,",
+          "      \"CONFIDENCE.HIGH\": 2,",
           "      \"CONFIDENCE.LOW\": 0,",
           "      \"CONFIDENCE.MEDIUM\": 0,",
           "      \"CONFIDENCE.UNDEFINED\": 0,",
-          "      \"SEVERITY.HIGH\": 0,",
+          "      \"SEVERITY.HIGH\": 2,",
           "      \"SEVERITY.LOW\": 0,",
           "      \"SEVERITY.MEDIUM\": 0,",
           "      \"SEVERITY.UNDEFINED\": 0,",
-          "      \"loc\": 9714,",
+          "      \"loc\": 11530,",
           "      \"nosec\": 0,",
           "      \"skipped_tests\": 3",
           "    },",
@@ -231,7 +720,7 @@
           "      \"SEVERITY.UNDEFINED\": 0,\u2026"
         ],
         "truncated": true,
-        "omitted_characters": 17972,
+        "omitted_characters": 21619,
         "omitted_chunks": 36
       },
       "stderr_preview": {
@@ -246,63 +735,71 @@
     },
     {
       "tool": "sqlfluff",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "completed_with_exit_code",
+      "returncode": 2,
+      "duration_seconds": 5.183,
+      "issues": [
+        {
+          "message": "sqlfluff exited with status 2 but did not report any findings.",
+          "severity": "error",
+          "code": "tool_exit_non_zero",
+          "tool": "sqlfluff"
+        }
+      ],
       "summary": {
-        "issue_count": 0,
-        "files_with_issues": 0
+        "issue_count": 1,
+        "files_with_issues": 0,
+        "severity_counts": {
+          "error": 1
+        }
       },
       "stderr_preview": {
         "chunks": [
-          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/macros/contracts_shared.sql because it is a macro ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5",
-          "b1fe5b79c32541d0161.sql was not found in dbt project ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_99713e71b0954",
-          "7d2a51c231cf4108cee.sql was not found in dbt project ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/contracts_min_confidence_stg_curated_dataset",
-          "_confidence.sql was not found in dbt project ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_domain_matches_website_s_9607215f04e2c",
-          "1009e14956c658c9249.sql was not found in dbt project ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/https_prefix_stg_curated_dataset_website_url",
-          ".sql was not found in dbt project ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_confidence.sql ",
-          "was not found in dbt project ",
-          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_email_a",
-          "dd\u2026"
-        ],
-        "truncated": true,
-        "omitted_characters": 5583
+          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt_common.exceptions.base.CompilationError: Compilation Error in t",
+          "est contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
+          "  CONTRACTS_CANONICAL_JSON must be set before running contracts macros.",
+          "  ",
+          "  > in macro _contracts_canonical_payload (macros/contracts_shared.sql)",
+          "  > called by macro contracts_evidence_min_confidence (macros/contracts_shared.sql)",
+          "  > called by macro test_contracts_min_confidence (macros/contracts_shared.sql)",
+          "  > called by test contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
+          ""
+        ]
       }
     },
     {
       "tool": "trunk",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [],
+      "status": "not_installed",
+      "error": "[Errno 2] No such file or directory: 'trunk'",
       "summary": {
-        "issue_count": 0,
-        "severity_counts": {}
+        "issue_count": 0
       },
-      "autofix_commands": [
-        "trunk fmt"
-      ]
+      "issues": []
     },
     {
       "tool": "biome",
       "status": "completed",
       "returncode": 0,
+      "duration_seconds": 12.999,
       "issues": [],
       "summary": {
         "issue_count": 0
       },
       "stderr_preview": {
         "chunks": [
-          "npm warn Unknown project config \"node-linker\". This will stop working in the next major version of npm.",
-          "npm warn Unknown project config \"auto-install-peers\". This will stop working in the next major version of npm.",
-          "npm warn Unknown project config \"shamefully-hoist\". This will stop working in the next major version of npm.",
-          "npm warn Unknown project config \"shared-workspace-lockfile\". This will stop working in the next major version of npm.",
+          "npm warn exec The following package was not found and will be installed: biome@0.3.3",
+          "npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported",
+          "npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, whic",
+          "h is much more comprehensive and powerful.",
+          "npm warn deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-",
+          "random for details.",
+          "npm warn deprecated har-validator@5.1.5: this library is no longer supported",
+          "npm warn deprecated request@2.88.2: request has been deprecated, see https://github.com/request/request/issues/3142",
+          "npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported",
+          "npm warn deprecated request-promise@3.0.0: request-promise has been deprecated because it extends the now deprecated request package, see https://github.com/request/request/issues/3142",
+          "npm warn deprecated fs-promise@0.5.0: Use mz or fs-extra^3.0 with Promise Support",
+          "npm warn deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js ",
+          "versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.",
           ""
         ]
       },
