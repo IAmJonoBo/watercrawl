@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -58,6 +59,7 @@ MAX_TEXT = 2000
 MAX_ISSUES = 100
 PREVIEW_CHUNK = 200
 MAX_PREVIEW_CHUNKS = 40
+TRUNK_ENV_VAR = "TRUNK_CHECK_OPTS"
 
 CompletedProcess = subprocess.CompletedProcess[str]
 
@@ -432,6 +434,89 @@ def parse_sqlfluff_output(result: CompletedProcess) -> dict[str, Any]:
     }
 
 
+def parse_trunk_output(result: CompletedProcess) -> dict[str, Any]:
+    raw_output = result.stdout or ""
+    try:
+        parsed = json.loads(raw_output)
+    except json.JSONDecodeError:
+        fallback = {"issues": [], "summary": {"issue_count": 0}}
+        _attach_preview(fallback, "raw_preview", raw_output)
+        return fallback
+
+    if isinstance(parsed, dict):
+        findings = parsed.get("results")
+        if not isinstance(findings, list):
+            findings = []
+    elif isinstance(parsed, list):
+        findings = parsed
+    else:
+        findings = []
+
+    issues: list[dict[str, Any]] = []
+    severity_counts: Counter[str] = Counter()
+    potential_dead_code = 0
+
+    for entry in findings[:MAX_ISSUES]:
+        if not isinstance(entry, Mapping):
+            continue
+        severity = str(entry.get("severity") or entry.get("level") or "unknown").lower()
+        severity_counts[severity] += 1
+
+        location = entry.get("location")
+        path = None
+        line = None
+        column = None
+        if isinstance(location, Mapping):
+            path = location.get("path") or location.get("file")
+            line = location.get("line") or location.get("start_line")
+            column = location.get("column") or location.get("start_column")
+        if path is None:
+            path = entry.get("path") or entry.get("file")
+        if line is None:
+            line = entry.get("line")
+        if column is None:
+            column = entry.get("column")
+
+        code = entry.get("check_id") or entry.get("rule") or entry.get("code")
+        normalized_code = None
+        if isinstance(code, str):
+            normalized_code = code.split("/")[-1]
+        elif code is not None:
+            normalized_code = str(code)
+        message = entry.get("message") or entry.get("description") or ""
+        source = entry.get("linter") or entry.get("tool") or entry.get("origin")
+
+        record: dict[str, Any] = {
+            "path": path,
+            "line": _coerce_int(line),
+            "column": _coerce_int(column),
+            "code": code,
+            "message": message,
+        }
+        if source:
+            record["source"] = str(source)
+
+        if normalized_code in {"F401", "F841", "RUF100"}:
+            record["insight"] = (
+                "Unused symbol reported via Trunk; verify whether the related code should be refactored or removed."
+            )
+            potential_dead_code += 1
+
+        _truncate_message(record)
+        issues.append(record)
+
+    omitted = max(len(findings) - MAX_ISSUES, 0)
+    summary: dict[str, Any] = {
+        "issue_count": len(findings),
+        "severity_counts": dict(severity_counts),
+    }
+    if omitted:
+        summary["omitted_issues"] = omitted
+    if potential_dead_code:
+        summary["potential_dead_code"] = potential_dead_code
+    return {"issues": issues, "summary": summary}
+
+
 TOOL_SPECS: list[ToolSpec] = [
     ToolSpec(
         name="ruff",
@@ -492,6 +577,23 @@ if SQLFLUFF_AVAILABLE:
         parser=parse_sqlfluff_output,
     )
     TOOL_SPECS.append(SQLFLUFF_TOOL)
+
+
+def _trunk_command() -> tuple[list[str], Mapping[str, str] | None, Path | None]:
+    cmd = ["trunk", "check", "--no-progress", "--output=json"]
+    extra = os.getenv(TRUNK_ENV_VAR)
+    if extra:
+        cmd.extend(extra.split())
+    return cmd, None, None
+
+
+TRUNK_TOOL = ToolSpec(
+    name="trunk",
+    command=_trunk_command,
+    parser=parse_trunk_output,
+    optional=True,
+)
+TOOL_SPECS.append(TRUNK_TOOL)
 
 
 def collect(

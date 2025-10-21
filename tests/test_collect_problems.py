@@ -114,6 +114,34 @@ def test_collect_aggregates_and_truncates_outputs(
             }
         ]
     )
+    trunk_output = json.dumps(
+        {
+            "results": [
+                {
+                    "check_id": "Ruff/F401",
+                    "severity": "ERROR",
+                    "linter": "ruff",
+                    "message": "module imported but unused",
+                    "location": {
+                        "path": "firecrawl_demo/core/example.py",
+                        "line": 3,
+                        "column": 1,
+                    },
+                },
+                {
+                    "check_id": "YAML/L001",
+                    "severity": "WARNING",
+                    "linter": "yamllint",
+                    "message": "Trailing spaces",
+                    "location": {
+                        "path": "docs/example.yaml",
+                        "line": 5,
+                        "column": 1,
+                    },
+                },
+            ]
+        }
+    )
 
     outputs: dict[str, dict[str, Any]] = {
         "ruff": {"stdout": ruff_output},
@@ -121,6 +149,7 @@ def test_collect_aggregates_and_truncates_outputs(
         "bandit": {"stdout": bandit_output, "stderr": "x" * 6000},
         "yamllint": {"stdout": yamllint_output},
         "sqlfluff": {"stdout": sqlfluff_output, "returncode": 65},
+        "trunk": {"stdout": trunk_output},
     }
 
     runner = _Runner(outputs)
@@ -132,6 +161,7 @@ def test_collect_aggregates_and_truncates_outputs(
         _make_spec("bandit", collect_problems.parse_bandit_output),
         _make_spec("yamllint", collect_problems.parse_yamllint_output),
         _make_spec("sqlfluff", collect_problems.parse_sqlfluff_output),
+        _make_spec("trunk", collect_problems.parse_trunk_output, optional=True),
     ]
 
     results = collect_problems.collect(tools=tools, runner=runner.__call__)
@@ -163,6 +193,12 @@ def test_collect_aggregates_and_truncates_outputs(
 
     yamllint_entry = by_tool["yamllint"]
     assert yamllint_entry["issues"][0]["severity"] == "warning"
+
+    trunk_entry = by_tool["trunk"]
+    assert trunk_entry["summary"]["issue_count"] == 2
+    assert trunk_entry["summary"]["severity_counts"]["error"] == 1
+    assert trunk_entry["issues"][0]["path"] == "firecrawl_demo/core/example.py"
+    assert trunk_entry["issues"][0]["insight"].startswith("Unused symbol")
 
 
 def test_preview_handles_multiline_chunks() -> None:
