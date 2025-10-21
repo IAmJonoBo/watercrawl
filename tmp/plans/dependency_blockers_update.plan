@@ -1,0 +1,18 @@
+{
+  "generated_at": "2025-10-21T10:25:00Z",
+  "instructions": "Document new wheel blockers surfaced by dependency guard and update configuration accordingly.",
+  "changes": [
+    {
+      "type": "configuration",
+      "step": 1,
+      "task": "dependency_guard_allowlist",
+      "summary": "Add glob2 and mutmut Python 3.14/3.15 wheel blockers to presets/dependency_blockers.toml with owners and notes aligned to existing entries."
+    },
+    {
+      "type": "qa_followup",
+      "step": 2,
+      "task": "regenerate_dependency_guard",
+      "summary": "Re-run dependency guard via automation CLI to confirm the allowlist passes."
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-20T12:37:26.037626+00:00",
+  "generated_at": "2025-10-21T10:10:39.602604+00:00",
   "targets": [
     {
       "issues": [
@@ -25,11 +25,25 @@
           "version": "1.4.1"
         },
         {
+          "details": "No wheel compatible with Python 3.14",
+          "groups": "dev",
+          "package": "glob2",
+          "reason": "missing-wheel",
+          "version": "0.7"
+        },
+        {
           "details": "Requires python '<3.14,>=3.9'",
           "groups": "dev",
           "package": "great-expectations",
           "reason": "python-spec",
           "version": "1.7.1"
+        },
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "groups": "dev",
+          "package": "mutmut",
+          "reason": "missing-wheel",
+          "version": "2.4.4"
         },
         {
           "details": "No wheel compatible with Python 3.14",
@@ -109,6 +123,13 @@
           "version": "1.4.1"
         },
         {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "glob2",
+          "reason": "missing-wheel",
+          "version": "0.7"
+        },
+        {
           "details": "Requires python '<3.14,>=3.9'",
           "groups": "dev",
           "package": "great-expectations",
@@ -128,6 +149,13 @@
           "package": "msgpack",
           "reason": "missing-wheel",
           "version": "1.1.2"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "dev",
+          "package": "mutmut",
+          "reason": "missing-wheel",
+          "version": "2.4.4"
         },
         {
           "details": "No wheel compatible with Python 3.15",

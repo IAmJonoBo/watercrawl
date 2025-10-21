@@ -1,0 +1,18 @@
+{
+  "generated_at": "2025-10-21T10:35:00Z",
+  "instructions": "Adjust Yamllint configuration to permit Backstage multi-document manifests flagged during QA run.",
+  "changes": [
+    {
+      "type": "configuration",
+      "step": 1,
+      "task": "yamllint_ignore_multidoc",
+      "summary": "Update .yamllint.yaml to exclude catalog-info manifests that must retain document separators."
+    },
+    {
+      "type": "qa_followup",
+      "step": 2,
+      "task": "rerun_yamllint",
+      "summary": "Re-run relevant QA steps (yamllint and collector) to confirm warnings clear."
+    }
+  ]
+}

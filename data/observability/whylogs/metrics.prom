@@ -1,0 +1,12 @@
+# HELP whylogs_drift_alerts_total Total number of whylogs alerts for the run
+# TYPE whylogs_drift_alerts_total gauge
+whylogs_drift_alerts_total{run_id="20251021T101059",dataset="flight-schools"} 0
+# HELP whylogs_drift_exceeded_threshold Whether drift threshold was exceeded (1=yes)
+# TYPE whylogs_drift_exceeded_threshold gauge
+whylogs_drift_exceeded_threshold{run_id="20251021T101059",dataset="flight-schools"} 1
+whylogs_drift_ratio_difference{run_id="20251021T101059",dataset="flight-schools",dimension="status",category="Needs Review"} 1.0
+whylogs_drift_ratio_difference{run_id="20251021T101059",dataset="flight-schools",dimension="status",category="Candidate"} 1.0
+whylogs_drift_ratio_difference{run_id="20251021T101059",dataset="flight-schools",dimension="province",category="Gauteng"} 0.0
+# HELP whylogs_drift_report_generated_at Unix timestamp of latest drift report
+# TYPE whylogs_drift_report_generated_at gauge
+whylogs_drift_report_generated_at{dataset="flight-schools"} 1761041459.405228

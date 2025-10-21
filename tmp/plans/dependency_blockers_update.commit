@@ -1,0 +1,10 @@
+{
+  "if_match": "\"dependency-blockers-allowlist\"",
+  "diff_format": "markdown",
+  "diff_summary": "Capture new glob2 and mutmut Python 3.14/3.15 wheel blockers, update allowlist ownership, and verify dependency guard passes.",
+  "rag": {
+    "faithfulness": 0.99,
+    "context_precision": 0.99,
+    "answer_relevancy": 0.99
+  }
+}

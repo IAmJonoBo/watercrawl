@@ -13,6 +13,13 @@ issue = "Missing wheels for Python 3.14+"
 notes = "Required for SQLFluff/dbt smoke tests; coordinate with upstream release schedule."
 
 [[blockers]]
+package = "glob2"
+targets = ["3.14", "3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.14+"
+notes = "Legacy glob2 dependency lacks cp314/cp315 wheels; monitor upstream packaging or replace usage."
+
+[[blockers]]
 package = "psutil"
 targets = ["3.14", "3.15"]
 owner = "Platform"
@@ -39,6 +46,13 @@ targets = ["3.14", "3.15"]
 owner = "Data Engineering"
 issue = "Missing wheels for Python 3.14+"
 notes = "Lakehouse Delta snapshots require upstream cp314/cp315 wheels before enabling newer interpreters."
+
+[[blockers]]
+package = "mutmut"
+targets = ["3.14", "3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.14+"
+notes = "Mutation testing harness depends on mutmut wheels; track upstream packaging or revisit tooling."
 
 [[blockers]]
 package = "aiohttp"

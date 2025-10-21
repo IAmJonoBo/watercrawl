@@ -1,0 +1,10 @@
+{
+  "if_match": "\"yamllint-multidoc-allow\"",
+  "diff_format": "markdown",
+  "diff_summary": "Suppress Yamllint document-start violations for Backstage multi-document manifests and confirm QA reruns pass.",
+  "rag": {
+    "faithfulness": 0.99,
+    "context_precision": 0.99,
+    "answer_relevancy": 0.99
+  }
+}

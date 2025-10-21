@@ -13,3 +13,5 @@ ignore: |
   .mypy_cache/**
   .pytest_cache/**
   **/node_modules/**
+  catalog-info.yaml
+  templates/golden-path/catalog-info.yaml

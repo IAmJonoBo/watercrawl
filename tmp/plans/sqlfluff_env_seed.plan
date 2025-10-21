@@ -1,0 +1,24 @@
+{
+  "generated_at": "2025-10-21T10:42:00Z",
+  "instructions": "Ensure SQLFluff runner receives canonical contracts configuration to unblock QA pipeline.",
+  "changes": [
+    {
+      "type": "code_fix",
+      "step": 1,
+      "task": "sqlfluff_env_update",
+      "summary": "Update tools/sql/sqlfluff_runner.py to seed CONTRACTS_CANONICAL_JSON via shared config before invoking sqlfluff."
+    },
+    {
+      "type": "tests",
+      "step": 2,
+      "task": "sqlfluff_runner_tests",
+      "summary": "Extend tests/test_sqlfluff_runner.py to verify environment payload seeding."
+    },
+    {
+      "type": "qa_followup",
+      "step": 3,
+      "task": "rerun_sqlfluff",
+      "summary": "Re-run QA lint stage to confirm SQLFluff succeeds."
+    }
+  ]
+}
