@@ -29,6 +29,14 @@ This guide outlines our conventions and standards. By contributing, you agree to
    poetry install --no-root
    ```
 
+   > Node note: This repository uses pnpm for JavaScript tooling. Enable corepack and install dependencies with:
+
+   ```bash
+   corepack enable
+   corepack prepare pnpm@latest --activate
+   pnpm install --frozen-lockfile
+   ```
+
 3. Set up pre-commit hooks:
 
    ```bash
