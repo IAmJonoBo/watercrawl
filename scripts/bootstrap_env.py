@@ -77,7 +77,13 @@ def build_bootstrap_plan(
         steps.append(
             BootstrapStep(
                 description="Install Poetry environment",
-                command=("poetry", "install", "--no-root"),
+                command=("poetry", "install", "--no-root", "--sync"),
+            )
+        )
+        steps.append(
+            BootstrapStep(
+                description="Verify Poetry dependency graph",
+                command=("poetry", "check"),
             )
         )
         steps.append(

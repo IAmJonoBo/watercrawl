@@ -37,9 +37,14 @@ poetry run python -m apps.automation.cli qa problems --fail-on-issues
 ```
 
 > `scripts.bootstrap_env` provisions the uv-managed interpreter, installs the
-> Poetry environment, installs pre-commit hooks, and syncs Node.js dependencies
+> Poetry environment (using `poetry install --sync`), installs pre-commit hooks, and syncs Node.js dependencies
 > for both the repository root and the Starlight documentation site in a single
 > run.
+
+> The repository ships a `.python-version` (pyenv) and `poetry.toml` so that local
+> virtual environments are created in-project under `.venv/`, ensuring CLI tooling,
+> offline runners, and CI all share the same interpreter path without manual
+> switching.
 
 The repository now ships a ready-to-run sample dataset at `data/sample.csv` so analysts and Copilot can exercise the pipeline without additional setup.
 

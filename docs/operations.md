@@ -16,6 +16,7 @@ poetry run python -m scripts.cleanup
 ```
 
 > The offline Safety audit consumes the vendored `safety-db` snapshot; plan quarterly updates so advisories stay current.
+> The bootstrap flow provisions the uv-managed Python 3.13 interpreter, syncs the Poetry environment (`poetry install --sync --no-root`), and creates an in-project `.venv/` via `poetry.toml` so shells, CI, and offline runners use the same toolchain without additional configuration.
 
 > Python 3.13 is the project baseline. `scripts/bootstrap_env` provisions the correct interpreter automatically, and helper wrappers like `scripts/run_pytest.sh` guard against accidental use of stale global Pythons.
 
