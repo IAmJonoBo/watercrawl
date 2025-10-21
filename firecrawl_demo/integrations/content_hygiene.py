@@ -54,15 +54,16 @@ class ContentCleaner:
     Additionally, uses BeautifulSoup to robustly remove <script> and <style> tags.
     """
 
+    def __init__(self, config: Optional[HygieneConfig] = None):
+        self.config = config or HygieneConfig()
+        self._boilerplate_patterns = self._compile_boilerplate_patterns()
+
     def _remove_script_tags_with_bs4(self, html: str) -> str:
         """Remove all <script> and <style> tags using BeautifulSoup for maximum robustness."""
         soup = BeautifulSoup(html, "html.parser")
         for tag in soup(["script", "style"]):
             tag.decompose()
         return str(soup)
-        self.config = config or HygieneConfig()
-        self._boilerplate_patterns = self._compile_boilerplate_patterns()
-    
     def _compile_boilerplate_patterns(self) -> List[re.Pattern]:
         """Compile patterns for common boilerplate elements."""
         patterns = [
