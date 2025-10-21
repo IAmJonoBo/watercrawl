@@ -1,0 +1,12 @@
+{
+  "generated_at": "2025-10-21T11:00:00Z",
+  "instructions": "Address Bandit B404 warnings for controlled subprocess usage in versioning helpers.",
+  "changes": [
+    {
+      "type": "code_comment",
+      "step": 1,
+      "task": "bandit_annotation",
+      "summary": "Annotate firecrawl_demo/integrations/storage/versioning.py subprocess import with a scoped # nosece justification."
+    }
+  ]
+}

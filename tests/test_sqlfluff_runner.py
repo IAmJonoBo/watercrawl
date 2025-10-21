@@ -6,7 +6,11 @@ from types import SimpleNamespace
 from typing import Any
 
 import duckdb
+import pytest
 
+from firecrawl_demo.integrations.contracts.shared_config import (
+    environment_payload,
+)
 from tools.sql import sqlfluff_runner
 
 
@@ -63,3 +67,31 @@ def test_run_sqlfluff_uses_resolved_duckdb_path(monkeypatch, tmp_path: Path) -> 
         env = captured["env"]
         assert isinstance(env, dict)
         assert env["DBT_DUCKDB_PATH"] == expected_path.as_posix()
+        for key, value in environment_payload().items():
+            assert env[key] == value
+
+
+def test_run_sqlfluff_preserves_existing_contracts_env(
+    monkeypatch, tmp_path: Path
+) -> None:
+    if sys.version_info >= (3, 14):
+        pytest.skip("SQLFluff is skipped on Python >=3.14 environments.")
+
+    project_dir = tmp_path
+    relative_path = Path("target/contracts.duckdb")
+    sentinel = "custom-payload"
+    payload_key = next(iter(environment_payload()))
+    monkeypatch.setenv(payload_key, sentinel)
+
+    captured: dict[str, Any] = {}
+
+    def fake_run(cmd, env, check):
+        captured["env"] = env
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(sqlfluff_runner, "subprocess", SimpleNamespace(run=fake_run))
+
+    exit_code = sqlfluff_runner.run_sqlfluff(project_dir, relative_path, [])
+
+    assert exit_code == 0
+    assert captured["env"][payload_key] == sentinel

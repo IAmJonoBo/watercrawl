@@ -77,6 +77,7 @@ repos:
         additional_dependencies:
           - pandas-stubs
           - types-requests
+          - types-PyYAML
   - repo: https://github.com/pycqa/bandit
     rev: 1.8.6
     hooks:

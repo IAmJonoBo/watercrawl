@@ -88,5 +88,215 @@
     "threshold": 0.15,
     "timestamp": "2025-10-21T11:35:37.619027+00:00",
     "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T115135",
+    "status_drift": [
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      },
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T11:51:35.455030+00:00",
+    "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T115338",
+    "status_drift": [
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      },
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T11:53:38.916580+00:00",
+    "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T115546",
+    "status_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      },
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T11:55:46.545893+00:00",
+    "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T115816",
+    "status_drift": [
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      },
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T11:58:16.407202+00:00",
+    "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T120215",
+    "status_drift": [
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      },
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T12:02:15.350396+00:00",
+    "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T120513",
+    "status_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      },
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T12:05:13.982129+00:00",
+    "whylogs_alerts": []
+  },
+  {
+    "dataset": "flight-schools",
+    "exceeded_threshold": true,
+    "province_drift": [
+      {
+        "baseline_ratio": 1.0,
+        "category": "Gauteng",
+        "difference": 0.0,
+        "observed_ratio": 1.0
+      }
+    ],
+    "run_id": "20251021T120730",
+    "status_drift": [
+      {
+        "baseline_ratio": 0.0,
+        "category": "Needs Review",
+        "difference": 1.0,
+        "observed_ratio": 1.0
+      },
+      {
+        "baseline_ratio": 1.0,
+        "category": "Candidate",
+        "difference": 1.0,
+        "observed_ratio": 0.0
+      }
+    ],
+    "threshold": 0.15,
+    "timestamp": "2025-10-21T12:07:30.860222+00:00",
+    "whylogs_alerts": []
   }
 ]

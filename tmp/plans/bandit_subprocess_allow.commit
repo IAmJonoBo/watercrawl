@@ -1,0 +1,10 @@
+{
+  "if_match": "\"bandit-subprocess-nosec\"",
+  "diff_format": "markdown",
+  "diff_summary": "Document subprocess usage in versioning manager for Bandit B404 and maintain QA compliance.",
+  "rag": {
+    "faithfulness": 0.99,
+    "context_precision": 0.99,
+    "answer_relevancy": 0.99
+  }
+}

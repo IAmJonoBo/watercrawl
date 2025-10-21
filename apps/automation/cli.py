@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shlex
 import subprocess
 import sys
@@ -20,6 +21,9 @@ from rich.table import Table
 from rich.text import Text
 
 from firecrawl_demo.core import config
+from firecrawl_demo.integrations.contracts.shared_config import (
+    environment_payload as contracts_environment_payload,
+)
 from firecrawl_demo.interfaces.cli_base import (
     PlanCommitError,
     PlanCommitGuard,
@@ -480,6 +484,7 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
             ),
             description="Run dbt contracts aligned with CI expectations.",
             tags=("dbt",),
+            env=contracts_environment_payload(),
         ),
     ],
 }
@@ -650,7 +655,10 @@ def _run_command_specs(
                 raise click.ClickException(str(exc)) from exc
         console.print(Text.assemble(("→", "cyan"), " ", spec.name, ": ", command_str))
         start = time.perf_counter()
-        result = subprocess.run(spec.args, env=spec.env, check=False)
+        env = os.environ.copy()
+        if spec.env:
+            env.update(spec.env)
+        result = subprocess.run(spec.args, env=env, check=False)
         duration = f"{time.perf_counter() - start:.1f}s"
         if result.returncode == 0:
             status = Text("passed", style="green")

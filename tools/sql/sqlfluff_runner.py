@@ -14,6 +14,8 @@ from pathlib import Path
 
 import duckdb
 
+from firecrawl_demo.integrations.contracts.shared_config import environment_payload
+
 DEFAULT_DBT_PROJECT = Path("data_contracts/analytics")
 DEFAULT_DUCKDB = Path("target/contracts.duckdb")
 
@@ -53,6 +55,8 @@ def run_sqlfluff(
     materialised_path = ensure_duckdb(project_dir, duckdb_path)
     env = os.environ.copy()
     env.setdefault("DBT_DUCKDB_PATH", materialised_path.as_posix())
+    for key, value in environment_payload().items():
+        env.setdefault(key, value)
     # Seed CONTRACTS_CANONICAL_JSON if a canonical file is present to help
     # dbt macros compile during SQLFluff runs in offline CI.
     canonical_path = project_dir / "contracts_canonical.json"

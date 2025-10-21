@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 - controlled git/dvc invocations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -247,7 +247,8 @@ def _versioning_health_probe(context: PluginContext) -> PluginHealthStatus:
 
 def _capture_git_commit() -> str | None:
     try:
-        result = subprocess.run(
+        # Controlled git invocation; no user input reaches the command.
+        result = subprocess.run(  # nosec
             ["git", "rev-parse", "HEAD"],
             capture_output=True,
             text=True,

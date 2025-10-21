@@ -1,7 +1,7 @@
 {
-  "generated_at": "2025-10-21T09:48:28.989983+00:00",
+  "generated_at": "2025-10-21T12:09:25.028756+00:00",
   "summary": {
-    "issue_count": 4,
+    "issue_count": 0,
     "note_count": 14,
     "fixable_count": 0,
     "potential_dead_code": 0,
@@ -37,20 +37,6 @@
       "issues": [],
       "notes": [
         {
-          "path": "tests/test_compliance.py",
-          "line": 186,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 208,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
           "path": "tests/test_cache.py",
           "line": 12,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
@@ -81,6 +67,20 @@
         {
           "path": "tests/test_cache.py",
           "line": 47,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 186,
+          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
+          "severity": "note",
+          "code": "annotation-unchecked"
+        },
+        {
+          "path": "tests/test_compliance.py",
+          "line": 208,
           "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
           "severity": "note",
           "code": "annotation-unchecked"
@@ -144,44 +144,15 @@
       "tool": "yamllint",
       "status": "completed",
       "returncode": 0,
-      "issues": [
-        {
-          "path": "./catalog-info.yaml",
-          "line": 14,
-          "column": 1,
-          "severity": "warning",
-          "message": "found forbidden document start \"---\" (document-start)"
-        },
-        {
-          "path": "./catalog-info.yaml",
-          "line": 34,
-          "column": 1,
-          "severity": "warning",
-          "message": "found forbidden document start \"---\" (document-start)"
-        },
-        {
-          "path": "./templates/golden-path/catalog-info.yaml",
-          "line": 8,
-          "column": 1,
-          "severity": "warning",
-          "message": "found forbidden document start \"---\" (document-start)"
-        },
-        {
-          "path": "./templates/golden-path/catalog-info.yaml",
-          "line": 19,
-          "column": 1,
-          "severity": "warning",
-          "message": "found forbidden document start \"---\" (document-start)"
-        }
-      ],
+      "issues": [],
       "summary": {
-        "issue_count": 4
+        "issue_count": 0
       }
     },
     {
       "tool": "bandit",
       "status": "completed",
-      "returncode": 1,
+      "returncode": 0,
       "issues": [],
       "summary": {
         "issue_count": 0
@@ -191,20 +162,20 @@
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T09:48:16Z\",",
+          "  \"generated_at\": \"2025-10-21T12:09:10Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
-          "      \"CONFIDENCE.HIGH\": 3,",
+          "      \"CONFIDENCE.HIGH\": 0,",
           "      \"CONFIDENCE.LOW\": 0,",
           "      \"CONFIDENCE.MEDIUM\": 0,",
           "      \"CONFIDENCE.UNDEFINED\": 0,",
           "      \"SEVERITY.HIGH\": 0,",
-          "      \"SEVERITY.LOW\": 3,",
+          "      \"SEVERITY.LOW\": 0,",
           "      \"SEVERITY.MEDIUM\": 0,",
           "      \"SEVERITY.UNDEFINED\": 0,",
-          "      \"loc\": 9713,",
-          "      \"nosec\": 0,",
-          "      \"skipped_tests\": 0",
+          "      \"loc\": 9714,",
+          "      \"nosec\": 2,",
+          "      \"skipped_tests\": 1",
           "    },",
           "    \"firecrawl_demo/__init__.py\": {",
           "      \"CONFIDENCE.HIGH\": 0,",
@@ -230,21 +201,19 @@
           "      \"SEVERITY.UNDEFINED\": 0,\u2026"
         ],
         "truncated": true,
-        "omitted_characters": 20810,
+        "omitted_characters": 17972,
         "omitted_chunks": 36
       },
-      "notes": [
-        {
-          "message": "Tool exited with a non-zero status but reported no issues.",
-          "severity": "info"
-        }
-      ],
       "stderr_preview": {
         "chunks": [
           "[main]\tINFO\tprofile include tests: None",
           "[main]\tINFO\tprofile exclude tests: None",
           "[main]\tINFO\tcli include tests: None",
           "[main]\tINFO\tcli exclude tests: None",
+          "[manager]\tWARNING\tTest in comment: controlled is not a test name or id, ignoring",
+          "[manager]\tWARNING\tTest in comment: git is not a test name or id, ignoring",
+          "[manager]\tWARNING\tTest in comment: dvc is not a test name or id, ignoring",
+          "[manager]\tWARNING\tTest in comment: invocations is not a test name or id, ignoring",
           ""
         ]
       }
@@ -263,25 +232,38 @@
           "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/macros/contracts_shared.sql because it is a macro ",
           "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
           "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/email_domain_matches_website.sql because it is a macro ",
+          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project ",
           "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/https_prefix.sql because it is a macro ",
+          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5",
+          "b1fe5b79c32541d0161.sql was not found in dbt project ",
           "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          "WARNING    Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/south_african_phone.sql because it is a macro ",
+          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_99713e71b0954",
+          "7d2a51c231cf4108cee.sql was not found in dbt project ",
           "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
-          ""
-        ]
+          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/contracts_min_confidence_stg_curated_dataset",
+          "_confidence.sql was not found in dbt project ",
+          "WARNING    Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored. ",
+          "WARNING    File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_dom\u2026"
+        ],
+        "truncated": true,
+        "omitted_characters": 9993
       }
     },
     {
       "tool": "trunk",
       "status": "completed",
-      "returncode": 0,
+      "returncode": 1,
       "issues": [],
       "summary": {
         "issue_count": 0,
         "severity_counts": {}
-      }
+      },
+      "notes": [
+        {
+          "message": "Tool exited with a non-zero status but reported no issues.",
+          "severity": "info"
+        }
+      ]
     },
     {
       "tool": "biome",
@@ -290,6 +272,15 @@
       "issues": [],
       "summary": {
         "issue_count": 0
+      },
+      "stderr_preview": {
+        "chunks": [
+          "npm warn Unknown project config \"node-linker\". This will stop working in the next major version of npm.",
+          "npm warn Unknown project config \"auto-install-peers\". This will stop working in the next major version of npm.",
+          "npm warn Unknown project config \"shamefully-hoist\". This will stop working in the next major version of npm.",
+          "npm warn Unknown project config \"shared-workspace-lockfile\". This will stop working in the next major version of npm.",
+          ""
+        ]
       }
     }
   ],

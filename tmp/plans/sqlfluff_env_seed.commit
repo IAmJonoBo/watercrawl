@@ -1,0 +1,10 @@
+{
+  "if_match": "\"sqlfluff-env-seed\"",
+  "diff_format": "markdown",
+  "diff_summary": "Seed CONTRACTS_CANONICAL_JSON when running SQLFluff and extend tests/test_sqlfluff_runner.py to validate the environment payload and preservation of overrides.",
+  "rag": {
+    "faithfulness": 0.98,
+    "context_precision": 0.98,
+    "answer_relevancy": 0.98
+  }
+}
