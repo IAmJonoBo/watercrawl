@@ -261,6 +261,7 @@ Supported QA tools are now registry-driven:
 - **Pylint** (opt-in): shipped via the registry config. Set `ENABLE_PYLINT=1` when invoking `scripts/collect_problems.py` (or exporting the env var in CI) to activate the declarative Pylint entry.
 - **Trunk expansion**: Trunk results are split per underlying linter (`trunk:ruff`, `trunk:markdownlint-cli2`, etc.) so new plugins appear automatically with accurate severity counts—even when added via `trunk.yaml` upgrades.
 - **VS Code fallback**: set `VSCODE_PROBLEMS_EXPORT=/path/to/problems.json` after exporting the editor Problems pane to ingest diagnostics from extensions that are not yet wired into Trunk or a standalone CLI.
+- **Warning capture**: stdout/stderr warnings (Python `DeprecationWarning`, dbt/sqlfluff warnings, npm `warn`, Bandit manager notes, etc.) are captured per tool and surfaced in `warning_count` with upgrade guidance so dependency pivots can be scheduled proactively.
 
 > **Python 3.14 compatibility:** dbt 1.10.x currently pulls in a `mashumaro` release that breaks SQLFluff's dbt templater on Python ≥3.14. The problems collector therefore skips SQLFluff by default on those interpreters. When you need SQL linting, install Python 3.13 alongside the default toolchain (e.g., `uv python install 3.13.0`), switch Poetry to that interpreter temporarily, and run:
 >
@@ -294,9 +295,17 @@ The `problems_report.json` file follows this schema:
           "message": "Line too long"
         }
       ],
+      "warnings": [
+        {
+          "message": "path/to/lib.py: DeprecationWarning: distutils is deprecated",
+          "category": "DeprecationWarning",
+          "kind": "deprecation"
+        }
+      ],
       "summary": {
         "issue_count": 1,
-        "fixable": 1
+        "fixable": 1,
+        "warning_count": 1
       }
     }
   ]
@@ -309,7 +318,9 @@ The `problems_report.json` file follows this schema:
   - `status`: Execution status (e.g., "completed", "failed").
   - `returncode`: Exit code from the tool.
   - `issues`: Array of parsed issues (truncated if excessive).
+  - `warnings`: Optional array of captured warnings/deprecations with metadata (`category`, `kind`, `guidance`).
   - `summary`: Tool-specific metrics (e.g., issue counts, severity breakdowns).
+    - Includes `warning_count` / `omitted_warnings` when warnings are captured so evergreen upgrades can be prioritised.
     - Optional fields: `stderr_preview`, `notes`, `raw_preview` (for parsing failures).
       Each preview stores chunked text to keep lines below shell output limits and includes truncation metadata when applicable.
 

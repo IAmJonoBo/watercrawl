@@ -75,6 +75,7 @@ AUTOFIX_COMMANDS: dict[str, list[str]] = {
     "biome": ["npx", "biome", "check", "--apply", "--reporter", "json"],
     "trunk": ["trunk", "fmt"],
 }
+WARNING_HIGHLIGHT_LIMIT = 10
 
 CompletedProcess = subprocess.CompletedProcess[str]
 
@@ -146,6 +147,115 @@ def _coerce_int(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+_PYTHON_WARNING_PATTERN = re.compile(
+    r"^(?P<path>[^:]+):(?P<line>\d+): (?:(?P<category>[\w\.]+Warning): )?(?P<message>.*)$"
+)
+_TAB_WARNING_PATTERN = re.compile(
+    r"^(?P<prefix>\[[^\]]+\]|\w+|\S+?)\s*(?:\t+|\s{2,})WARNING\s*(?P<message>.+)$",
+    re.IGNORECASE,
+)
+_GENERIC_WARNING_PATTERN = re.compile(
+    r"^\s*WARNING[:\-\s]*(?P<message>.+)$", re.IGNORECASE
+)
+_NPM_WARN_PATTERN = re.compile(r"^\s*(npm)\s+warn\s+(?P<message>.+)$", re.IGNORECASE)
+
+
+def _derive_warning_kind(category: str | None, message: str) -> str:
+    category_lower = (category or "").lower()
+    message_lower = message.lower()
+    if "deprec" in category_lower or "deprec" in message_lower:
+        return "deprecation"
+    return "general"
+
+
+def _finalise_warning_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    _truncate_message(entry)
+    kind = _derive_warning_kind(entry.get("category"), entry.get("message", ""))
+    entry["kind"] = kind
+    entry.setdefault("severity", "warning")
+    if kind == "deprecation":
+        entry.setdefault(
+            "guidance",
+            "Plan dependency or API updates before the deprecated behaviour is removed.",
+        )
+    return entry
+
+
+def _parse_warning_line(line: str) -> dict[str, Any] | None:
+    if not line or (
+        "warning" not in line.lower() and "deprecationwarning" not in line.lower()
+    ):
+        return None
+    match = _PYTHON_WARNING_PATTERN.match(line)
+    if match:
+        data = match.groupdict()
+        entry: dict[str, Any] = {
+            "path": data.get("path"),
+            "line": _coerce_int(data.get("line")),
+            "category": data.get("category") or "Warning",
+            "message": data.get("message") or "",
+        }
+        return _finalise_warning_entry(entry)
+
+    match = _TAB_WARNING_PATTERN.match(line)
+    if match:
+        prefix = match.group("prefix") or ""
+        message = match.group("message") or ""
+        entry = {
+            "source": prefix.strip().strip("[]"),
+            "category": "Warning",
+            "message": message.strip(),
+        }
+        return _finalise_warning_entry(entry)
+
+    match = _GENERIC_WARNING_PATTERN.match(line)
+    if match:
+        message = match.group("message") or ""
+        entry = {
+            "category": "Warning",
+            "message": message.strip(),
+        }
+        return _finalise_warning_entry(entry)
+
+    match = _NPM_WARN_PATTERN.match(line)
+    if match:
+        entry = {
+            "source": "npm",
+            "category": "npm warn",
+            "message": match.group("message").strip(),
+        }
+        return _finalise_warning_entry(entry)
+
+    if "deprecationwarning" in line.lower():
+        entry = {
+            "category": "DeprecationWarning",
+            "message": line.strip(),
+        }
+        return _finalise_warning_entry(entry)
+
+    return None
+
+
+def _extract_warnings(
+    stdout: str | None, stderr: str | None
+) -> tuple[list[dict[str, Any]], int]:
+    warnings: list[dict[str, Any]] = []
+    omitted = 0
+    for stream_name, payload in (("stdout", stdout), ("stderr", stderr)):
+        if not payload:
+            continue
+        for raw_line in payload.splitlines():
+            entry = _parse_warning_line(raw_line)
+            if entry is None:
+                continue
+            entry["stream"] = stream_name
+            warnings.append(entry)
+    if len(warnings) > MAX_ISSUES:
+        omitted = len(warnings) - MAX_ISSUES
+        warnings = warnings[:MAX_ISSUES]
+    return warnings, omitted
 
 
 @dataclass
@@ -928,6 +1038,23 @@ def collect(
         entry.setdefault("issues", [])
         if completed.stderr:
             _attach_preview(entry, "stderr_preview", completed.stderr)
+        warnings, omitted_warnings = _extract_warnings(
+            completed.stdout, completed.stderr
+        )
+        if warnings:
+            entry["warnings"] = warnings
+        if warnings or omitted_warnings:
+            summary_block = entry.get("summary")
+            if not isinstance(summary_block, dict):
+                summary_block = {}
+                entry["summary"] = summary_block
+            summary_block["warning_count"] = (
+                summary_block.get("warning_count", 0) + len(warnings) + omitted_warnings
+            )
+            if omitted_warnings:
+                summary_block["omitted_warnings"] = (
+                    summary_block.get("omitted_warnings", 0) + omitted_warnings
+                )
         aggregated.append(entry)
     aggregated = _expand_trunk_results(aggregated)
     if tools is None:
@@ -1145,6 +1272,8 @@ def build_overall_summary(
     tools_run: list[str] = []
     tools_missing: list[str] = []
     highlight_insights: list[dict[str, Any]] = []
+    warning_total = 0
+    warning_highlights: list[dict[str, Any]] = []
 
     for entry in results:
         tool = entry.get("tool")
@@ -1159,6 +1288,7 @@ def build_overall_summary(
         note_total += summary.get("note_count", 0)
         dead_code_total += summary.get("potential_dead_code", 0)
         severity_total.update(summary.get("severity_counts", {}))
+        declared_warning_count = summary.get("warning_count")
 
         issues = entry.get("issues") or []
         for issue in issues:
@@ -1176,6 +1306,25 @@ def build_overall_summary(
                     }
                 )
 
+        warnings = entry.get("warnings") or []
+        if isinstance(declared_warning_count, int):
+            warning_total += declared_warning_count
+        else:
+            warning_total += len(warnings)
+        for warning in warnings:
+            if len(warning_highlights) >= WARNING_HIGHLIGHT_LIMIT:
+                break
+            warning_highlights.append(
+                {
+                    "tool": tool,
+                    "message": warning.get("message"),
+                    "category": warning.get("category"),
+                    "kind": warning.get("kind"),
+                    "path": warning.get("path"),
+                    "source": warning.get("source"),
+                }
+            )
+
     summary_payload: dict[str, Any] = {
         "issue_count": issue_total,
         "note_count": note_total,
@@ -1185,6 +1334,8 @@ def build_overall_summary(
         "tools_run": tools_run,
         "tools_missing": tools_missing,
         "insights": highlight_insights,
+        "warning_count": warning_total,
+        "warning_insights": warning_highlights,
     }
     if autofixes:
         attempted = len(autofixes)

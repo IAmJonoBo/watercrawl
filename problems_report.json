@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T12:09:25.028756+00:00",
+  "generated_at": "2025-10-21T12:23:08.937949+00:00",
   "summary": {
     "issue_count": 0,
     "note_count": 14,
@@ -16,7 +16,90 @@
       "biome"
     ],
     "tools_missing": [],
-    "insights": []
+    "insights": [],
+    "warning_count": 73,
+    "warning_insights": [
+      {
+        "tool": "bandit",
+        "message": "Test in comment: controlled is not a test name or id, ignoring",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": "manager"
+      },
+      {
+        "tool": "bandit",
+        "message": "Test in comment: git is not a test name or id, ignoring",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": "manager"
+      },
+      {
+        "tool": "bandit",
+        "message": "Test in comment: dvc is not a test name or id, ignoring",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": "manager"
+      },
+      {
+        "tool": "bandit",
+        "message": "Test in comment: invocations is not a test name or id, ignoring",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": "manager"
+      },
+      {
+        "tool": "sqlfluff",
+        "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/macros/contracts_shared.sql because it is a macro",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": null
+      },
+      {
+        "tool": "sqlfluff",
+        "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": null
+      },
+      {
+        "tool": "sqlfluff",
+        "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": null
+      },
+      {
+        "tool": "sqlfluff",
+        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": null
+      },
+      {
+        "tool": "sqlfluff",
+        "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": null
+      },
+      {
+        "tool": "sqlfluff",
+        "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5b1fe5b79c32541d0161.sql was not found in dbt project",
+        "category": "Warning",
+        "kind": "general",
+        "path": null,
+        "source": null
+      }
+    ]
   },
   "tools": [
     {
@@ -155,14 +238,15 @@
       "returncode": 0,
       "issues": [],
       "summary": {
-        "issue_count": 0
+        "issue_count": 0,
+        "warning_count": 4
       },
       "raw_preview": {
         "chunks": [
           "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:00",
           "{",
           "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T12:09:10Z\",",
+          "  \"generated_at\": \"2025-10-21T12:22:59Z\",",
           "  \"metrics\": {",
           "    \"_totals\": {",
           "      \"CONFIDENCE.HIGH\": 0,",
@@ -216,7 +300,41 @@
           "[manager]\tWARNING\tTest in comment: invocations is not a test name or id, ignoring",
           ""
         ]
-      }
+      },
+      "warnings": [
+        {
+          "source": "manager",
+          "category": "Warning",
+          "message": "Test in comment: controlled is not a test name or id, ignoring",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "source": "manager",
+          "category": "Warning",
+          "message": "Test in comment: git is not a test name or id, ignoring",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "source": "manager",
+          "category": "Warning",
+          "message": "Test in comment: dvc is not a test name or id, ignoring",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "source": "manager",
+          "category": "Warning",
+          "message": "Test in comment: invocations is not a test name or id, ignoring",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        }
+      ]
     },
     {
       "tool": "sqlfluff",
@@ -225,7 +343,8 @@
       "issues": [],
       "summary": {
         "issue_count": 0,
-        "files_with_issues": 0
+        "files_with_issues": 0,
+        "warning_count": 69
       },
       "stderr_preview": {
         "chunks": [
@@ -247,7 +366,492 @@
         ],
         "truncated": true,
         "omitted_characters": 9993
-      }
+      },
+      "warnings": [
+        {
+          "category": "Warning",
+          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/macros/contracts_shared.sql because it is a macro",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5b1fe5b79c32541d0161.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_99713e71b09547d2a51c231cf4108cee.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/contracts_min_confidence_stg_curated_dataset_confidence.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_domain_matches_website_s_9607215f04e2c1009e14956c658c9249.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/https_prefix_stg_curated_dataset_website_url.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_confidence.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_email_address.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_number.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_person.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_organisation_name.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_province.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_status.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_website_url.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/compiled/watercrawl_contracts/models/staging/stg_curated_dataset.yml/south_african_phone_stg_curated_dataset_contact_number.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_8d6f4b1f819e5b1fe5b79c32541d0161.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/accepted_values_stg_curated_da_99713e71b09547d2a51c231cf4108cee.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/contracts_min_confidence_stg_curated_dataset_confidence.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/email_domain_matches_website_s_9607215f04e2c1009e14956c658c9249.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/https_prefix_stg_curated_dataset_website_url.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_confidence.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_email_address.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_number.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_contact_person.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_organisation_name.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_province.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_status.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/not_null_stg_curated_dataset_website_url.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "File /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/target/run/watercrawl_contracts/models/staging/stg_curated_dataset.yml/south_african_phone_stg_curated_dataset_contact_number.sql was not found in dbt project",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/email_domain_matches_website.sql because it is a macro",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/https_prefix.sql because it is a macro",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Skipped file /Users/jonathanbotha/GitHub/watercrawl/data_contracts/analytics/tests/generic/south_african_phone.sql because it is a macro",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        },
+        {
+          "category": "Warning",
+          "message": "Rule configuration contain a section for unexpected rule 'structure.file_location'. These values will be ignored.",
+          "kind": "general",
+          "severity": "warning",
+          "stream": "stderr"
+        }
+      ]
     },
     {
       "tool": "trunk",

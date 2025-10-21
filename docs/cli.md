@@ -120,6 +120,7 @@ poetry run python -m apps.automation.cli qa problems --fail-on-issues
 - Return code is non-zero only when `--fail-on-issues` is supplied and issues are detected, making it safe to wire into optional QA hooks.
 - Tool execution is now registry-driven: the collector inspects `presets/problems_tools.toml` and merges those definitions with built-ins (Ruff, Mypy, Bandit, SQLFluff, Trunk, Biome) so new linters can be enabled declaratively or swapped out without code changes.
 - Trunk findings are expanded per underlying linter (`trunk:ruff`, `trunk:markdownlint`, etc.), ensuring problems from newly added plugins surface automatically with accurate severity counts.
+- Warning streams (including Python `DeprecationWarning` traces, sqlfluff/dbt warnings, npm `warn` lines, etc.) are captured per tool, summarised in `warning_count`, and highlighted with upgrade guidance so future deprecations can be planned before they break CI.
 - When `VSCODE_PROBLEMS_EXPORT=/path/to/problems.json` is set, the collector ingests exported VS Code problem markers as a safety net for editors or extensions that do not yet report via Trunk or dedicated CLI invocations.
 
 ### Targeted QA commands

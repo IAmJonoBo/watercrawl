@@ -147,10 +147,22 @@ def test_collect_aggregates_and_truncates_outputs(
 
     outputs: dict[str, dict[str, Any]] = {
         "ruff": {"stdout": ruff_output},
-        "mypy": {"stdout": mypy_output, "returncode": 1},
-        "bandit": {"stdout": bandit_output, "stderr": "x" * 6000},
+        "mypy": {
+            "stdout": mypy_output,
+            "stderr": "firecrawl_demo/core/example.py:1: DeprecationWarning: yaml.load is deprecated",
+            "returncode": 1,
+        },
+        "bandit": {
+            "stdout": bandit_output,
+            "stderr": "x" * 6000
+            + "\n[manager]\tWARNING\tTest in comment: controlled is not a test name or id, ignoring",
+        },
         "yamllint": {"stdout": yamllint_output},
-        "sqlfluff": {"stdout": sqlfluff_output, "returncode": 65},
+        "sqlfluff": {
+            "stdout": sqlfluff_output,
+            "stderr": "WARNING    Skipped file data_contracts/analytics/macros/contracts_shared.sql because it is a macro ",
+            "returncode": 65,
+        },
         "trunk": {"stdout": trunk_output},
         "biome": {"stdout": biome_output},
     }
@@ -177,9 +189,12 @@ def test_collect_aggregates_and_truncates_outputs(
     assert ruff_entry["issues"][0]["path"] == "firecrawl_demo/core/example.py"
 
     mypy_entry = by_tool["mypy"]
-    assert mypy_entry["summary"] == {"issue_count": 1, "note_count": 1}
+    assert mypy_entry["summary"]["issue_count"] == 1
+    assert mypy_entry["summary"]["note_count"] == 1
     assert mypy_entry["issues"][0]["code"] == "attr-defined"
     assert mypy_entry["notes"][0]["severity"] == "note"
+    assert mypy_entry["summary"]["warning_count"] == 1
+    assert mypy_entry["warnings"][0]["category"] == "DeprecationWarning"
 
     pylint_entry = by_tool["pylint"]
     assert pylint_entry["status"] == "not_installed"
@@ -189,11 +204,15 @@ def test_collect_aggregates_and_truncates_outputs(
     stderr_preview = bandit_entry["stderr_preview"]
     assert stderr_preview["chunks"][0] == "x" * 200
     assert stderr_preview["truncated"] is True
-    assert stderr_preview["omitted_characters"] == 4000
+    assert stderr_preview["omitted_characters"] >= 4000
+    assert bandit_entry["summary"]["warning_count"] == 1
+    assert bandit_entry["warnings"][0]["source"] == "manager"
 
     sqlfluff_entry = by_tool["sqlfluff"]
     assert sqlfluff_entry["issues"][0]["code"] == "L001"
     assert sqlfluff_entry["summary"]["issue_count"] == 1
+    assert sqlfluff_entry["summary"]["warning_count"] == 1
+    assert sqlfluff_entry["warnings"][0]["message"].startswith("Skipped file")
 
     yamllint_entry = by_tool["yamllint"]
     assert yamllint_entry["issues"][0]["severity"] == "warning"
@@ -222,6 +241,10 @@ def test_collect_aggregates_and_truncates_outputs(
     assert overall["potential_dead_code"] >= 2
     assert "ruff" in overall["tools_run"]
     assert "trunk:ruff" in overall["tools_run"]
+    assert overall["warning_count"] == 3
+    assert any(
+        insight.get("kind") == "deprecation" for insight in overall["warning_insights"]
+    )
 
 
 def test_vscode_fallback_parses_markers(tmp_path: Path) -> None:
