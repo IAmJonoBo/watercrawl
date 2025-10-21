@@ -319,6 +319,7 @@ The `problems_report.json` file follows this schema:
   - `returncode`: Exit code from the tool.
   - `issues`: Array of parsed issues (truncated if excessive).
   - `warnings`: Optional array of captured warnings/deprecations with metadata (`category`, `kind`, `guidance`).
+  - `autofix_commands`: Optional array of shell-ready fix commands (e.g., `poetry run ruff check . --fix`, `trunk fmt`) to streamline remediation for humans and agents.
   - `summary`: Tool-specific metrics (e.g., issue counts, severity breakdowns).
     - Includes `warning_count` / `omitted_warnings` when warnings are captured so evergreen upgrades can be prioritised.
     - Optional fields: `stderr_preview`, `notes`, `raw_preview` (for parsing failures).

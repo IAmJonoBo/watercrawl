@@ -247,6 +247,34 @@ def test_collect_aggregates_and_truncates_outputs(
     )
 
 
+def test_collect_default_registry_includes_autofix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_runner(
+        spec: collect_problems.ToolSpec,
+        cmd: Sequence[str],
+        env: Mapping[str, str] | None,
+        cwd: Path | None,
+    ) -> subprocess.CompletedProcess[str]:
+        if spec.name == "bandit":
+            stdout = json.dumps({"results": [], "metrics": {}})
+        elif spec.name == "mypy":
+            stdout = "Success: no issues found\n"
+        elif spec.name == "ruff":
+            stdout = "[]"
+        elif spec.name == "yamllint":
+            stdout = ""
+        else:
+            stdout = ""
+        return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(collect_problems, "_run_subprocess", fake_runner)
+    results = collect_problems.collect()
+    ruff_entry = next(entry for entry in results if entry["tool"] == "ruff")
+    assert "autofix_commands" in ruff_entry
+    assert any("ruff" in cmd for cmd in ruff_entry["autofix_commands"])
+
+
 def test_vscode_fallback_parses_markers(tmp_path: Path) -> None:
     payload = {
         "problems": [
@@ -337,10 +365,12 @@ def test_run_autofixes_executes_commands(monkeypatch: pytest.MonkeyPatch) -> Non
         return subprocess.CompletedProcess(cmd, 0, stdout="ok", stderr="")
 
     results = collect_problems.run_autofixes(["ruff", "unknown"], runner=fake_runner)
-    assert calls[0][:2] == ["ruff", "check"]
+    assert calls[0][:3] == ["poetry", "run", "ruff"]
     status_by_tool = {entry["tool"]: entry["status"] for entry in results}
     assert status_by_tool["ruff"] == "succeeded"
     assert status_by_tool["unknown"] == "unsupported"
+    ruff_autofix = next(entry for entry in results if entry["tool"] == "ruff")
+    assert ruff_autofix["commands"][0]["command"][:3] == ["poetry", "run", "ruff"]
 
 
 def test_write_report_includes_autofixes(tmp_path: Path) -> None:

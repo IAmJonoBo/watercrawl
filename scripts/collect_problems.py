@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess  # nosec B404 - subprocess usage is for controlled QA tool execution
 import sys
 from collections import Counter, defaultdict
@@ -159,7 +160,10 @@ _TAB_WARNING_PATTERN = re.compile(
 _GENERIC_WARNING_PATTERN = re.compile(
     r"^\s*WARNING[:\-\s]*(?P<message>.+)$", re.IGNORECASE
 )
-_NPM_WARN_PATTERN = re.compile(r"^\s*(npm)\s+warn\s+(?P<message>.+)$", re.IGNORECASE)
+_NPM_WARN_PATTERN = re.compile(
+    r"^\s*(npm)\s+(?P<level>warn|warning|notice|note)\s+(?P<message>.+)$",
+    re.IGNORECASE,
+)
 
 
 def _derive_warning_kind(category: str | None, message: str) -> str:
@@ -221,9 +225,10 @@ def _parse_warning_line(line: str) -> dict[str, Any] | None:
 
     match = _NPM_WARN_PATTERN.match(line)
     if match:
+        level = match.group("level") or "warn"
         entry = {
             "source": "npm",
-            "category": "npm warn",
+            "category": f"npm {level.lower()}",
             "message": match.group("message").strip(),
         }
         return _finalise_warning_entry(entry)
@@ -266,6 +271,7 @@ class ToolSpec:
     command: Callable[[], tuple[list[str], Mapping[str, str] | None, Path | None]]
     parser: Callable[[CompletedProcess], dict[str, Any]]
     optional: bool = False
+    autofix: tuple[tuple[str, ...], ...] = ()
 
 
 class ToolRegistry:
@@ -815,6 +821,7 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
         name="ruff",
         command=_static_command("ruff", "check", ".", "--output-format", "json"),
         parser=parse_ruff_output,
+        autofix=(("poetry", "run", "ruff", "check", ".", "--fix"),),
     )
     yield ToolSpec(
         name="mypy",
@@ -865,12 +872,23 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
         command=_trunk_command,
         parser=parse_trunk_output,
         optional=True,
+        autofix=(("trunk", "fmt"),),
     )
     yield ToolSpec(
         name="biome",
         command=_static_command("npx", "biome", "check", "--reporter", "json"),
         parser=parse_biome_output,
         optional=True,
+        autofix=(
+            (
+                "npx",
+                "biome",
+                "check",
+                "--apply",
+                "--reporter",
+                "json",
+            ),
+        ),
     )
 
 
@@ -937,11 +955,28 @@ def _iter_configured_tool_specs(
         if isinstance(env_override, Mapping):
             env_mapping = {str(key): str(value) for key, value in env_override.items()}
         cwd = entry.get("cwd")
+        autofix_entries = entry.get("autofix")
+        autofix_commands: list[tuple[str, ...]] = []
+        if isinstance(autofix_entries, (list, tuple)):
+            for item in autofix_entries:
+                try:
+                    coerced = _coerce_command(item)
+                except ValueError:
+                    continue
+                autofix_commands.append(tuple(coerced))
+        elif autofix_entries:
+            try:
+                coerced = _coerce_command(autofix_entries)
+            except ValueError:
+                coerced = None
+            if coerced:
+                autofix_commands.append(tuple(coerced))
         spec = ToolSpec(
             name=str(name),
             command=_configured_command(command, env=env_mapping, cwd=cwd),
             parser=parser,
             optional=bool(entry.get("optional", False)),
+            autofix=tuple(autofix_commands),
         )
         yield spec
 
@@ -1043,6 +1078,8 @@ def collect(
         )
         if warnings:
             entry["warnings"] = warnings
+        if spec.autofix:
+            entry["autofix_commands"] = [shlex.join(cmd) for cmd in spec.autofix]
         if warnings or omitted_warnings:
             summary_block = entry.get("summary")
             if not isinstance(summary_block, dict):
@@ -1060,6 +1097,19 @@ def collect(
     if tools is None:
         aggregated.extend(_collect_vscode_problems_fallback(dict(os.environ)))
     return aggregated
+
+
+def _autofix_command_map(registry: ToolRegistry) -> dict[str, list[list[str]]]:
+    mapping: dict[str, list[list[str]]] = {}
+    for spec in registry.values():
+        commands: list[list[str]] = [list(cmd) for cmd in spec.autofix]
+        if not commands:
+            fallback = AUTOFIX_COMMANDS.get(spec.name)
+            if fallback:
+                commands.append(list(fallback))
+        if commands:
+            mapping[spec.name] = commands
+    return mapping
 
 
 def _expand_trunk_results(results: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -1383,22 +1433,35 @@ def run_autofixes(
         [Sequence[str]], subprocess.CompletedProcess[str]
     ] = _run_autofix_command,
 ) -> list[dict[str, Any]]:
-    selected = list(dict.fromkeys(tools or AUTOFIX_COMMANDS.keys()))
+    registry = build_tool_registry()
+    autofix_map = _autofix_command_map(registry)
+    selected_names = list(dict.fromkeys(tools or autofix_map.keys()))
     results: list[dict[str, Any]] = []
-    for tool in selected:
-        command = AUTOFIX_COMMANDS.get(tool)
-        if not command:
+    for tool in selected_names:
+        commands = autofix_map.get(tool)
+        if not commands:
             results.append({"tool": tool, "status": "unsupported"})
             continue
-        process = runner(command)
+        command_results: list[dict[str, Any]] = []
+        failure = False
+        for command in commands:
+            process = runner(command)
+            command_entry: dict[str, Any] = {
+                "command": list(command),
+                "returncode": process.returncode,
+            }
+            _attach_preview(command_entry, "stdout_preview", process.stdout)
+            _attach_preview(command_entry, "stderr_preview", process.stderr)
+            if process.returncode != 0:
+                failure = True
+            command_results.append(command_entry)
         entry: dict[str, Any] = {
             "tool": tool,
-            "command": list(command),
-            "status": "succeeded" if process.returncode == 0 else "failed",
-            "returncode": process.returncode,
+            "status": "failed" if failure else "succeeded",
+            "returncode": command_results[-1]["returncode"],
+            "commands": command_results,
+            "command": command_results[0]["command"],
         }
-        _attach_preview(entry, "stdout_preview", process.stdout)
-        _attach_preview(entry, "stderr_preview", process.stderr)
         results.append(entry)
     return results
 
