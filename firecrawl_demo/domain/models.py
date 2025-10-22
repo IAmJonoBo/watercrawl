@@ -208,7 +208,7 @@ class PipelineReport:
     refined_dataframe: Any
     validation_report: ValidationReport
     evidence_log: list[EvidenceRecord]
-    metrics: dict[str, int]
+    metrics: dict[str, float | int]
     sanity_findings: list[SanityCheckFinding] = field(default_factory=list)
     quality_issues: list[QualityIssue] = field(default_factory=list)
     rollback_plan: RollbackPlan | None = None
@@ -371,9 +371,7 @@ def validation_report_from_contract(contract):
     from firecrawl_demo.domain.contracts import ValidationReportContract
 
     if not isinstance(contract, ValidationReportContract):
-        raise TypeError(
-            f"Expected ValidationReportContract, got {type(contract)}"
-        )
+        raise TypeError(f"Expected ValidationReportContract, got {type(contract)}")
 
     return ValidationReport(
         issues=[validation_issue_from_contract(issue) for issue in contract.issues],
@@ -396,9 +394,7 @@ def sanity_check_finding_from_contract(contract):
     from firecrawl_demo.domain.contracts import SanityCheckFindingContract
 
     if not isinstance(contract, SanityCheckFindingContract):
-        raise TypeError(
-            f"Expected SanityCheckFindingContract, got {type(contract)}"
-        )
+        raise TypeError(f"Expected SanityCheckFindingContract, got {type(contract)}")
 
     return SanityCheckFinding(
         row_id=contract.row_id,
@@ -411,12 +407,21 @@ def sanity_check_finding_from_contract(contract):
 def pipeline_report_to_contract(report: PipelineReport):
     from firecrawl_demo.domain.contracts import PipelineReportContract
 
+    normalized_metrics: dict[str, float] = {}
+    for key, value in report.metrics.items():
+        if isinstance(value, (int, float, bool)):
+            normalized_metrics[key] = float(value)
+        else:
+            raise TypeError(
+                f"Metric '{key}' must be numeric, received {type(value).__name__}"
+            )
+
     return PipelineReportContract(
         validation_report=validation_report_to_contract(report.validation_report),
         evidence_log=[
             evidence_record_to_contract(record) for record in report.evidence_log
         ],
-        metrics=dict(report.metrics),
+        metrics=normalized_metrics,
         sanity_findings=[
             sanity_check_finding_to_contract(finding)
             for finding in report.sanity_findings
@@ -431,16 +436,13 @@ def pipeline_report_from_contract(contract):
     from firecrawl_demo.domain.contracts import PipelineReportContract
 
     if not isinstance(contract, PipelineReportContract):
-        raise TypeError(
-            f"Expected PipelineReportContract, got {type(contract)}"
-        )
+        raise TypeError(f"Expected PipelineReportContract, got {type(contract)}")
 
     return PipelineReport(
         refined_dataframe=None,
         validation_report=validation_report_from_contract(contract.validation_report),
         evidence_log=[
-            evidence_record_from_contract(record)
-            for record in contract.evidence_log
+            evidence_record_from_contract(record) for record in contract.evidence_log
         ],
         metrics=dict(contract.metrics),
         sanity_findings=[
@@ -448,7 +450,6 @@ def pipeline_report_from_contract(contract):
             for finding in contract.sanity_findings
         ],
         quality_issues=[
-            quality_issue_from_contract(issue)
-            for issue in contract.quality_issues
+            quality_issue_from_contract(issue) for issue in contract.quality_issues
         ],
     )

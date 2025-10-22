@@ -21,6 +21,7 @@ def main() -> int:
     # Hard-coded minimal list for now — add packages as needed.
     deps = [
         ("marshmallow", "3.19.0"),
+        ("pytest-cov", "7.0.0"),
     ]
 
     for name, ver in deps:

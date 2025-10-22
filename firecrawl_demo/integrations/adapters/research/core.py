@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from concurrent.futures import Executor
 import logging
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+from concurrent.futures import Executor
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 

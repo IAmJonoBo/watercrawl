@@ -12,12 +12,12 @@ from typing import Any
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.core import config
+from firecrawl_demo.domain.contracts import CommitArtifactContract, PlanArtifactContract
 from firecrawl_demo.governance.safety import (
     SafetyDecision,
     SafetyPolicy,
     evaluate_plan_commit,
 )
-from firecrawl_demo.domain.contracts import CommitArtifactContract, PlanArtifactContract
 from firecrawl_demo.infrastructure.planning import (
     PlanCommitContract,
     build_infrastructure_plan,

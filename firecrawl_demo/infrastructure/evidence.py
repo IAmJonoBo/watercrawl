@@ -13,7 +13,11 @@ from structlog.typing import FilteringBoundLogger
 
 from firecrawl_demo.core import config
 from firecrawl_demo.domain.contracts import EvidenceRecordContract
-from firecrawl_demo.domain.models import EvidenceRecord, evidence_record_from_contract, evidence_record_to_contract
+from firecrawl_demo.domain.models import (
+    EvidenceRecord,
+    evidence_record_from_contract,
+    evidence_record_to_contract,
+)
 
 if TYPE_CHECKING:
     from firecrawl_demo.application.interfaces import EvidenceSink
@@ -26,7 +30,7 @@ else:  # pragma: no cover - runtime protocol for loose coupling
 
 
 def _ensure_contract_records(
-    entries: Iterable[EvidenceRecord | EvidenceRecordContract]
+    entries: Iterable[EvidenceRecord | EvidenceRecordContract],
 ) -> list[EvidenceRecordContract]:
     """Normalise evidence entries into validated contract instances."""
 
@@ -68,7 +72,9 @@ class CSVEvidenceSink:
         "Confidence",
     )
 
-    def record(self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]) -> None:
+    def record(
+        self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]
+    ) -> None:
         contracts = _ensure_contract_records(entries)
         if not contracts:
             return

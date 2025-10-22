@@ -33,7 +33,8 @@ from firecrawl_demo.application.row_processing import (
     RowProcessingRequest,
     process_row,
 )
-from firecrawl_demo.core import cache as global_cache, config
+from firecrawl_demo.core import cache as global_cache
+from firecrawl_demo.core import config
 
 if _PANDAS_AVAILABLE:
     from firecrawl_demo.core.excel import EXPECTED_COLUMNS, read_dataset, write_dataset
@@ -83,6 +84,7 @@ from firecrawl_demo.integrations.telemetry.drift_dashboard import (
     write_prometheus_metrics,
 )
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
+
 logger = logging.getLogger(__name__)
 
 
@@ -353,9 +355,7 @@ class _LookupCoordinator:
                 retries=retries,
             )
 
-    def _load_from_cache(
-        self, key: tuple[str, str]
-    ) -> ResearchFinding | None:
+    def _load_from_cache(self, key: tuple[str, str]) -> ResearchFinding | None:
         if self._cache_ttl_hours is None:
             return None
         cached = global_cache.load(key, max_age_hours=self._cache_ttl_hours)
@@ -363,9 +363,7 @@ class _LookupCoordinator:
             return cached
         return None
 
-    async def _attempt_lookup(
-        self, state: _RowState
-    ) -> tuple[ResearchFinding, int]:
+    async def _attempt_lookup(self, state: _RowState) -> tuple[ResearchFinding, int]:
         retries = 0
         max_delay = 5.0
         while True:
@@ -391,6 +389,8 @@ class _LookupCoordinator:
             else:
                 self._circuit_breaker.record_success()
                 return finding, retries
+
+
 @dataclass
 class Pipeline(PipelineService):
     """Coordinate validation, enrichment, and evidence logging."""
@@ -609,7 +609,9 @@ class Pipeline(PipelineService):
         )
         p95_queue_latency = _p95(lookup_metrics.queue_latencies)
         max_queue_latency = (
-            max(lookup_metrics.queue_latencies) if lookup_metrics.queue_latencies else 0.0
+            max(lookup_metrics.queue_latencies)
+            if lookup_metrics.queue_latencies
+            else 0.0
         )
 
         metrics = {

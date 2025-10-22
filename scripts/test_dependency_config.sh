@@ -20,40 +20,40 @@ PASSED=0
 FAILED=0
 
 test_config() {
-    local name="$1"
-    local command="$2"
-    local expected="$3"
-    
-    echo -n "Testing $name... "
-    local result=0
-    # Temporarily disable pipefail for this command
-    set +o pipefail
-    result=$(eval "$command" 2>/dev/null | grep -c "$expected" || true)
-    set -o pipefail
-    
-    if [ "$result" -gt 0 ]; then
-        echo -e "${GREEN}✓ PASS${NC}"
-        PASSED=$((PASSED + 1))
-    else
-        echo -e "${RED}✗ FAIL${NC}"
-        echo "  Expected to find: $expected"
-        FAILED=$((FAILED + 1))
-    fi
+	local name="$1"
+	local command="$2"
+	local expected="$3"
+
+	echo -n "Testing $name... "
+	local result=0
+	# Temporarily disable pipefail for this command
+	set +o pipefail
+	result=$(eval "$command" 2>/dev/null | grep -c "$expected" || true)
+	set -o pipefail
+
+	if [ "$result" -gt 0 ]; then
+		echo -e "${GREEN}✓ PASS${NC}"
+		PASSED=$((PASSED + 1))
+	else
+		echo -e "${RED}✗ FAIL${NC}"
+		echo "  Expected to find: $expected"
+		FAILED=$((FAILED + 1))
+	fi
 }
 
 test_file() {
-    local name="$1"
-    local file="$2"
-    
-    echo -n "Testing $name exists... "
-    if [ -f "$file" ]; then
-        echo -e "${GREEN}✓ PASS${NC}"
-        PASSED=$((PASSED + 1))
-    else
-        echo -e "${RED}✗ FAIL${NC}"
-        echo "  File not found: $file"
-        FAILED=$((FAILED + 1))
-    fi
+	local name="$1"
+	local file="$2"
+
+	echo -n "Testing $name exists... "
+	if [ -f "$file" ]; then
+		echo -e "${GREEN}✓ PASS${NC}"
+		PASSED=$((PASSED + 1))
+	else
+		echo -e "${RED}✗ FAIL${NC}"
+		echo "  File not found: $file"
+		FAILED=$((FAILED + 1))
+	fi
 }
 
 # Test pip configuration
@@ -106,9 +106,9 @@ echo -e "Failed: ${RED}${FAILED}${NC}"
 echo ""
 
 if [ "$FAILED" -eq 0 ]; then
-    echo -e "${GREEN}All dependency download configuration tests passed!${NC}"
-    exit 0
+	echo -e "${GREEN}All dependency download configuration tests passed!${NC}"
+	exit 0
 else
-    echo -e "${RED}Some tests failed. Please review the configuration.${NC}"
-    exit 1
+	echo -e "${RED}Some tests failed. Please review the configuration.${NC}"
+	exit 1
 fi

@@ -207,9 +207,7 @@ def _load_research(payload: Mapping[str, Any]) -> ResearchProfile:
     max_retries = int(payload.get("max_retries", 3) or 0)
     retry_backoff_base = float(payload.get("retry_backoff_base_seconds", 0.25) or 0.0)
     breaker_payload = payload.get("circuit_breaker") or {}
-    failure_threshold = int(
-        breaker_payload.get("failure_threshold", 5) or 1
-    )
+    failure_threshold = int(breaker_payload.get("failure_threshold", 5) or 1)
     reset_seconds = float(breaker_payload.get("reset_seconds", 30.0) or 0.0)
 
     if concurrency_limit < 1:
@@ -217,9 +215,7 @@ def _load_research(payload: Mapping[str, Any]) -> ResearchProfile:
     if max_retries < 0:
         raise ProfileError("research.max_retries cannot be negative")
     if retry_backoff_base < 0:
-        raise ProfileError(
-            "research.retry_backoff_base_seconds must be non-negative"
-        )
+        raise ProfileError("research.retry_backoff_base_seconds must be non-negative")
     if failure_threshold < 1:
         raise ProfileError(
             "research.circuit_breaker.failure_threshold must be at least 1"

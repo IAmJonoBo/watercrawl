@@ -198,8 +198,9 @@ class PipelineReportContract(BaseModel):
     evidence_log: list[EvidenceRecordContract] = Field(
         default_factory=list, description="Evidence log entries"
     )
-    metrics: dict[str, int] = Field(
-        default_factory=dict, description="Pipeline execution metrics"
+    metrics: dict[str, float] = Field(
+        default_factory=dict,
+        description="Pipeline execution metrics where values may be counts or rates",
     )
     sanity_findings: list[SanityCheckFindingContract] = Field(
         default_factory=list, description="Sanity check findings"
@@ -225,11 +226,10 @@ class PlanArtifactContract(BaseModel):
     """Contract describing saved plan artefacts used by the plan→commit guard."""
 
     changes: list[dict[str, Any]] = Field(
-        default_factory=list, description="Ordered list of intended changes",
+        default_factory=list,
+        description="Ordered list of intended changes",
     )
-    instructions: str = Field(
-        ..., description="Natural language summary of the plan"
-    )
+    instructions: str = Field(..., description="Natural language summary of the plan")
     generated_at: datetime | None = Field(
         None, description="Optional timestamp recording plan creation time"
     )
@@ -279,10 +279,7 @@ def export_json_schema(contract_class: type[BaseModel]) -> dict[str, Any]:
 def export_all_schemas() -> dict[str, dict[str, Any]]:
     """Export JSON Schemas for all contract classes."""
 
-    return {
-        name: export_json_schema(model)
-        for name, model in _CONTRACT_MODELS.items()
-    }
+    return {name: export_json_schema(model) for name, model in _CONTRACT_MODELS.items()}
 
 
 def export_avro_schema(contract_class: type[BaseModel]) -> dict[str, Any]:
@@ -303,7 +300,10 @@ def export_avro_schema(contract_class: type[BaseModel]) -> dict[str, Any]:
             entry["doc"] = field_doc
         fields.append(entry)
 
-    schema_uri = json_schema.get("schema_uri") or f"{SCHEMA_URI_BASE}/{contract_class.__name__.lower()}"
+    schema_uri = (
+        json_schema.get("schema_uri")
+        or f"{SCHEMA_URI_BASE}/{contract_class.__name__.lower()}"
+    )
 
     return {
         "type": "record",
@@ -319,9 +319,7 @@ def export_avro_schema(contract_class: type[BaseModel]) -> dict[str, Any]:
 def export_all_avro_schemas() -> dict[str, dict[str, Any]]:
     """Export Avro schemas for all contract classes."""
 
-    return {
-        name: export_avro_schema(model) for name, model in _CONTRACT_MODELS.items()
-    }
+    return {name: export_avro_schema(model) for name, model in _CONTRACT_MODELS.items()}
 
 
 def export_contract_registry() -> dict[str, dict[str, Any]]:
