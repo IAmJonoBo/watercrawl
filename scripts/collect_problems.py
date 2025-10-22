@@ -677,6 +677,65 @@ _YAMLLINT_PATTERN = re.compile(
 )
 
 
+def parse_black_output(result: CompletedProcess) -> dict[str, Any]:
+    """Parse black check output (text-based)."""
+    issues: list[dict[str, Any]] = []
+    
+    # Black uses exit code 1 when files need reformatting
+    if result.returncode == 1:
+        # Parse "would reformat" messages
+        for line in (result.stderr or result.stdout or "").splitlines():
+            if "would reformat" in line.lower():
+                # Extract filename from "would reformat <path>"
+                parts = line.split()
+                if len(parts) >= 3:
+                    path = parts[2]
+                    issues.append({
+                        "path": path,
+                        "message": "File needs reformatting",
+                        "code": "black-reformat",
+                        "fixable": True,
+                    })
+    
+    return {
+        "issues": issues,
+        "summary": {
+            "issue_count": len(issues),
+            "fixable": len(issues),
+        },
+    }
+
+
+def parse_isort_output(result: CompletedProcess) -> dict[str, Any]:
+    """Parse isort check output (text-based)."""
+    issues: list[dict[str, Any]] = []
+    
+    # isort uses exit code 1 when imports need sorting
+    if result.returncode == 1:
+        # Parse "would reformat" or "Fixing" messages
+        for line in (result.stderr or result.stdout or "").splitlines():
+            if "would fix" in line.lower() or "skipped" in line.lower():
+                # Extract filename from "ERROR: <path> Imports are incorrectly sorted"
+                parts = line.strip().split()
+                for i, part in enumerate(parts):
+                    if part.endswith(".py"):
+                        issues.append({
+                            "path": part,
+                            "message": "Imports need sorting",
+                            "code": "isort-unsorted",
+                            "fixable": True,
+                        })
+                        break
+    
+    return {
+        "issues": issues,
+        "summary": {
+            "issue_count": len(issues),
+            "fixable": len(issues),
+        },
+    }
+
+
 def parse_yamllint_output(result: CompletedProcess) -> dict[str, Any]:
     issues: list[dict[str, Any]] = []
     for raw_line in (result.stdout or "").splitlines():
@@ -992,7 +1051,7 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
     yield ToolSpec(
         name="black",
         command=_static_command("black", ".", "--check"),
-        parser=parse_ruff_output,  # black doesn't have JSON output, but we can parse text
+        parser=parse_black_output,
         autofix=(
             ("poetry", "run", "black", "."),
             ("black", "."),
@@ -1002,7 +1061,7 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
     yield ToolSpec(
         name="isort",
         command=_static_command("isort", ".", "--check-only"),
-        parser=parse_ruff_output,  # isort doesn't have JSON output, but we can parse text
+        parser=parse_isort_output,
         autofix=(
             ("poetry", "run", "isort", "."),
             ("isort", "."),
