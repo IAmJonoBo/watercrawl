@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 import pandas as pd
 
 from firecrawl_demo.core.excel import EXPECTED_COLUMNS
@@ -26,7 +25,6 @@ from firecrawl_demo.integrations.telemetry.graph_semantics import (
 
 def _prov(source: str, connector: str | None = None) -> ProvenanceTag:
     return ProvenanceTag(source=source, connector=connector)
-)
 
 
 def _sample_frame() -> pd.DataFrame:

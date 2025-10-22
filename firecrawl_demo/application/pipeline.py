@@ -54,6 +54,7 @@ from firecrawl_demo.domain import relationships
 from firecrawl_demo.domain.compliance import normalize_province
 from firecrawl_demo.domain.contracts import PipelineReportContract
 from firecrawl_demo.domain.models import (
+    ComplianceScheduleEntry,
     EvidenceRecord,
     PipelineReport,
     QualityIssue,
@@ -318,7 +319,7 @@ class _LookupCoordinator:
     def metrics(self) -> _LookupMetrics:
         return self._metrics
 
-    async def __aenter__(self) -> "_LookupCoordinator":
+    async def __aenter__(self) -> _LookupCoordinator:
         self._executor = ThreadPoolExecutor(
             max_workers=self._concurrency,
             thread_name_prefix="pipeline-lookup",
@@ -553,7 +554,9 @@ class Pipeline(PipelineService):
             organisation = relationships.merge_organisations(existing_org, organisation)
         organisations[organisation_id] = organisation
 
-        def _store_edge(key: tuple[str, str, str], link: relationships.EvidenceLink) -> None:
+        def _store_edge(
+            key: tuple[str, str, str], link: relationships.EvidenceLink
+        ) -> None:
             existing = edges.get(key)
             if existing:
                 edges[key] = relationships.merge_evidence_links(existing, link)
@@ -624,7 +627,9 @@ class Pipeline(PipelineService):
             )
             _store_edge((organisation_id, person_id, "has_contact"), contact_edge)
 
-        def _record_source(url: str, *, connector: str | None, note: str | None) -> None:
+        def _record_source(
+            url: str, *, connector: str | None, note: str | None
+        ) -> None:
             if not url:
                 return
             document_id = relationships.canonical_id("source", url)
@@ -655,7 +660,9 @@ class Pipeline(PipelineService):
                 provenance={provenance_tag},
                 attributes={"connector": connector} if connector else {},
             )
-            _store_edge((organisation_id, document_id, "corroborated_by"), evidence_link)
+            _store_edge(
+                (organisation_id, document_id, "corroborated_by"), evidence_link
+            )
             if person_id and person_id in people:
                 contact_link = relationships.EvidenceLink(
                     source=person_id,
@@ -687,7 +694,11 @@ class Pipeline(PipelineService):
             organisations[organisation_id].provenance.add(connector_tag)
             if person_id and person_id in people:
                 people[person_id].provenance.add(connector_tag)
-            summary = "; ".join(connector_evidence.notes) if connector_evidence.notes else None
+            summary = (
+                "; ".join(connector_evidence.notes)
+                if connector_evidence.notes
+                else None
+            )
             for source in connector_evidence.sources:
                 if source not in seen_sources:
                     seen_sources.add(source)
@@ -735,6 +746,7 @@ class Pipeline(PipelineService):
         enriched_rows = 0
         adapter_failures = 0
         sanity_findings: list[SanityCheckFinding] = []
+        compliance_schedule_entries: list[ComplianceScheduleEntry] = []
         row_number_lookup: dict[Hashable, int] = {}
         quality_issues: list[QualityIssue] = []
         rollback_actions: list[RollbackAction] = []
@@ -743,9 +755,7 @@ class Pipeline(PipelineService):
         relationship_orgs: dict[str, relationships.Organisation] = {}
         relationship_people: dict[str, relationships.Person] = {}
         relationship_sources: dict[str, relationships.SourceDocument] = {}
-        relationship_edges: dict[
-            tuple[str, str, str], relationships.EvidenceLink
-        ] = {}
+        relationship_edges: dict[tuple[str, str, str], relationships.EvidenceLink] = {}
 
         listener.on_start(len(working_frame))
 
@@ -815,6 +825,23 @@ class Pipeline(PipelineService):
                 rollback_actions.append(row_result.rollback_action)
             if row_result.evidence_record is not None:
                 evidence_records.append(row_result.evidence_record)
+            if row_result.follow_up_records:
+                evidence_records.extend(row_result.follow_up_records)
+            if row_result.compliance is not None:
+                compliance_schedule_entries.append(
+                    ComplianceScheduleEntry(
+                        row_id=row_id,
+                        organisation=row_result.record.name
+                        or state.original_record.name,
+                        status=row_result.record.status,
+                        last_verified_at=row_result.compliance.last_verified_at,
+                        next_review_due=row_result.compliance.next_review_due,
+                        mx_failure_count=row_result.compliance.mx_failure_count,
+                        tasks=tuple(row_result.compliance.recommended_tasks),
+                        lawful_basis=row_result.compliance.lawful_basis,
+                        contact_purpose=row_result.compliance.contact_purpose,
+                    )
+                )
             if row_result.updated and not row_result.quality_rejected:
                 enriched_rows += 1
 
@@ -913,6 +940,7 @@ class Pipeline(PipelineService):
             rollback_plan=(
                 RollbackPlan(rollback_actions) if rollback_actions else None
             ),
+            compliance_schedule=compliance_schedule_entries,
         )
         active_context = lineage_context
 

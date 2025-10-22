@@ -53,7 +53,7 @@ PROFILE_PATH: Path
 COLUMN_DESCRIPTORS: tuple[ColumnDescriptor, ...]
 NUMERIC_UNIT_LOOKUP: dict[str, dict[str, Any]]
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from firecrawl_demo.core.normalization import ColumnNormalizationRegistry
+    pass
 
 COLUMN_NORMALIZATION_REGISTRY: Any
 
@@ -80,7 +80,9 @@ PROVENANCE_CSV = PROCESSED_DIR / "firecrawl_provenance.csv"
 EVIDENCE_LOG = INTERIM_DIR / "evidence_log.csv"
 RELATIONSHIPS_CSV = PROJECT_ROOT / "data" / "processed" / "relationships.csv"
 RELATIONSHIPS_GRAPHML = PROJECT_ROOT / "data" / "processed" / "relationships.graphml"
-RELATIONSHIPS_EDGES_CSV = PROJECT_ROOT / "data" / "processed" / "relationships_edges.csv"
+RELATIONSHIPS_EDGES_CSV = (
+    PROJECT_ROOT / "data" / "processed" / "relationships_edges.csv"
+)
 SUMMARY_TXT = PROCESSED_DIR / "enrichment_summary.txt"
 
 
@@ -100,6 +102,14 @@ MIN_EVIDENCE_SOURCES: int
 DEFAULT_CONFIDENCE_BY_STATUS: dict[str, int]
 OFFICIAL_SOURCE_KEYWORDS: tuple[str, ...]
 EVIDENCE_QUERIES: list[str]
+COMPLIANCE_LAWFUL_BASES: dict[str, str]
+COMPLIANCE_DEFAULT_LAWFUL_BASIS: str
+COMPLIANCE_CONTACT_PURPOSES: dict[str, str]
+COMPLIANCE_DEFAULT_CONTACT_PURPOSE: str
+COMPLIANCE_OPT_OUT_STATUSES: tuple[str, ...]
+COMPLIANCE_REVALIDATION_DAYS: int
+COMPLIANCE_NOTIFICATION_TEMPLATES: dict[str, str]
+COMPLIANCE_AUDIT_EXPORTS: tuple[str, ...]
 
 PHONE_COUNTRY_CODE: str
 PHONE_E164_REGEX: str
@@ -129,9 +139,17 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
     global EXPECTED_COLUMNS, PROVINCES, CANONICAL_STATUSES, DEFAULT_STATUS
     global MIN_EVIDENCE_SOURCES, DEFAULT_CONFIDENCE_BY_STATUS, OFFICIAL_SOURCE_KEYWORDS
     global EVIDENCE_QUERIES, PHONE_COUNTRY_CODE, PHONE_E164_REGEX
+    global COMPLIANCE_LAWFUL_BASES, COMPLIANCE_DEFAULT_LAWFUL_BASIS
+    global COMPLIANCE_CONTACT_PURPOSES, COMPLIANCE_DEFAULT_CONTACT_PURPOSE
+    global COMPLIANCE_OPT_OUT_STATUSES, COMPLIANCE_REVALIDATION_DAYS
+    global COMPLIANCE_NOTIFICATION_TEMPLATES, COMPLIANCE_AUDIT_EXPORTS
     global PHONE_NATIONAL_PREFIXES, PHONE_NATIONAL_NUMBER_LENGTH
     global EMAIL_REGEX, ROLE_INBOX_PREFIXES, EMAIL_REQUIRE_DOMAIN_MATCH
     global RESEARCH_QUERIES, NUMERIC_UNIT_RULES
+    global RESEARCH_CONCURRENCY_LIMIT, RESEARCH_CACHE_TTL_HOURS
+    global RESEARCH_MAX_RETRIES, RESEARCH_RETRY_BACKOFF_BASE_SECONDS
+    global RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD
+    global RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS
     global RESEARCH_ALLOW_PERSONAL_DATA, RESEARCH_RATE_LIMIT_SECONDS
     global RESEARCH_CONNECTOR_SETTINGS
     global COLUMN_DESCRIPTORS, NUMERIC_UNIT_LOOKUP, COLUMN_NORMALIZATION_REGISTRY
@@ -148,6 +166,14 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
     DEFAULT_CONFIDENCE_BY_STATUS = dict(profile.compliance.default_confidence)
     OFFICIAL_SOURCE_KEYWORDS = tuple(profile.compliance.official_source_keywords)
     EVIDENCE_QUERIES = list(profile.compliance.evidence_queries)
+    COMPLIANCE_LAWFUL_BASES = dict(profile.compliance.lawful_basis)
+    COMPLIANCE_DEFAULT_LAWFUL_BASIS = profile.compliance.default_lawful_basis
+    COMPLIANCE_CONTACT_PURPOSES = dict(profile.compliance.contact_purposes)
+    COMPLIANCE_DEFAULT_CONTACT_PURPOSE = profile.compliance.default_contact_purpose
+    COMPLIANCE_OPT_OUT_STATUSES = tuple(profile.compliance.opt_out_statuses)
+    COMPLIANCE_REVALIDATION_DAYS = int(profile.compliance.revalidation_days)
+    COMPLIANCE_NOTIFICATION_TEMPLATES = dict(profile.compliance.notification_templates)
+    COMPLIANCE_AUDIT_EXPORTS = tuple(profile.compliance.audit_exports)
 
     PHONE_COUNTRY_CODE = profile.contact.phone.country_code
     PHONE_E164_REGEX = profile.contact.phone.e164_regex
@@ -206,9 +232,7 @@ _apply_profile(_profile_init, _profile_path_init)
 RESEARCH_ALLOW_PERSONAL_DATA = bool(
     globals().get("RESEARCH_ALLOW_PERSONAL_DATA", False)
 )
-RESEARCH_RATE_LIMIT_SECONDS = float(
-    globals().get("RESEARCH_RATE_LIMIT_SECONDS", 0.0)
-)
+RESEARCH_RATE_LIMIT_SECONDS = float(globals().get("RESEARCH_RATE_LIMIT_SECONDS", 0.0))
 _connector_defaults = globals().get("RESEARCH_CONNECTOR_SETTINGS", {})
 if not isinstance(_connector_defaults, dict):
     _connector_defaults = {}

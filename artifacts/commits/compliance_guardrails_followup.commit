@@ -1,0 +1,127 @@
+{
+  "plan": "artifacts/plans/compliance_guardrails_followup.plan",
+  "if_match": "manual-review-2025-10-24",
+  "diff_summary": [
+    {
+      "path": "firecrawl_demo/application/compliance_review.py",
+      "status": "added",
+      "notes": "Implements ComplianceReview engine producing disclosures, MX downgrade handling, and follow-up evidence"
+    },
+    {
+      "path": "firecrawl_demo/application/row_processing.py",
+      "status": "modified",
+      "notes": "Integrates compliance review outcomes, persists follow-up evidence, and tracks MX failure counts"
+    },
+    {
+      "path": "firecrawl_demo/application/pipeline.py",
+      "status": "modified",
+      "notes": "Propagates compliance schedule entries into pipeline report and emits follow-up evidence records"
+    },
+    {
+      "path": "firecrawl_demo/domain/models.py",
+      "status": "modified",
+      "notes": "Adds ComplianceScheduleEntry dataclass plus contract conversion helpers"
+    },
+    {
+      "path": "firecrawl_demo/domain/contracts.py",
+      "status": "modified",
+      "notes": "Extends PipelineReport contract with compliance schedule payloads"
+    },
+    {
+      "path": "firecrawl_demo/core/config.py",
+      "status": "modified",
+      "notes": "Surfaces compliance defaults (lawful bases, contact purposes, notification templates, revalidation cadence)"
+    },
+    {
+      "path": "firecrawl_demo/core/profiles.py",
+      "status": "modified",
+      "notes": "Parses compliance configuration, including lawful basis and revalidation fields"
+    },
+    {
+      "path": "firecrawl_demo/integrations/adapters/research/connectors/__init__.py",
+      "status": "modified",
+      "notes": "Respects crawl policy and ToS exclusions, logging skipped sources and alternates"
+    },
+    {
+      "path": "apps/automation/qa_tasks.py",
+      "status": "added",
+      "notes": "Provides helpers that translate compliance schedule entries into revalidation tasks"
+    },
+    {
+      "path": "tests/test_compliance_review.py",
+      "status": "added",
+      "notes": "Covers compliance disclosures, MX downgrade flow, and automation helper behaviour"
+    },
+    {
+      "path": "tests/test_sqlfluff_runner.py",
+      "status": "modified",
+      "notes": "Adds sys import via pytest.importorskip guard so module skips cleanly"
+    },
+    {
+      "path": "tests/test_graph_semantics.py",
+      "status": "modified",
+      "notes": "Tidies header imports after graph semantics updates"
+    },
+    {
+      "path": "docs/compliance.md",
+      "status": "added",
+      "notes": "Documents POPIA workflow configuration, automation hooks, and connector politeness"
+    },
+    {
+      "path": "docs/index.md",
+      "status": "modified",
+      "notes": "Links to compliance documentation"
+    },
+    {
+      "path": "profiles/za_flight_schools.yaml",
+      "status": "modified",
+      "notes": "Configures lawful basis/contact purpose defaults and revalidation cadence"
+    },
+    {
+      "path": "templates/transparency_notice.md",
+      "status": "added",
+      "notes": "Provides default transparency notice template for compliance follow-ups"
+    },
+    {
+      "path": "Next_Steps.md",
+      "status": "modified",
+      "notes": "Logs compliance guardrail follow-up and outstanding QA blockers"
+    }
+  ],
+  "rag": {
+    "faithfulness": 1.0,
+    "groundedness": 1.0,
+    "tool_precision": 1.0
+  },
+  "checks": {
+    "pytest_targeted": {
+      "command": "poetry run pytest tests/test_compliance_review.py tests/test_sqlfluff_runner.py tests/test_graph_semantics.py",
+      "status": "passed"
+    },
+    "pytest_full": {
+      "command": "poetry run pytest",
+      "status": "failed",
+      "notes": "Legacy suites fail on missing Fleet Size/Runway Length columns and contract regressions"
+    },
+    "ruff": {
+      "command": "poetry run ruff check",
+      "status": "failed",
+      "notes": "Pre-existing unused globals/imports across config, crawl policy, observability, tests"
+    },
+    "mypy": {
+      "command": "poetry run mypy .",
+      "status": "failed",
+      "notes": "Historical stub gaps (networkx/opentelemetry) and normalization typing issues remain"
+    },
+    "bandit": {
+      "command": "poetry run bandit -r .",
+      "status": "interrupted",
+      "notes": "Aborted at ~10% progress due to runtime constraints"
+    },
+    "safety": {
+      "command": "poetry run safety check",
+      "status": "failed",
+      "notes": "Offline environment prevented vulnerability database fetch"
+    }
+  }
+}

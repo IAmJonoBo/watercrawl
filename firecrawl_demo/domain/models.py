@@ -81,7 +81,7 @@ class ValidationReport:
     def is_valid(self) -> bool:
         return not self.issues
 
-    def to_contract(self) -> "ValidationReportContract":
+    def to_contract(self) -> ValidationReportContract:
         return validation_report_to_contract(self)
 
 
@@ -141,6 +141,21 @@ class SanityCheckFinding:
             "issue": self.issue,
             "remediation": self.remediation,
         }
+
+
+@dataclass(frozen=True)
+class ComplianceScheduleEntry:
+    """Record compliance verification state for a dataset row."""
+
+    row_id: int
+    organisation: str
+    status: str
+    last_verified_at: datetime | None = None
+    next_review_due: datetime | None = None
+    mx_failure_count: int = 0
+    tasks: tuple[str, ...] = ()
+    lawful_basis: str | None = None
+    contact_purpose: str | None = None
 
 
 @dataclass
@@ -230,12 +245,13 @@ class PipelineReport:
     graph_semantics: GraphSemanticsReport | None = None
     relationship_graph: RelationshipGraphSnapshot | None = None
     drift_report: DriftReport | None = None
+    compliance_schedule: list[ComplianceScheduleEntry] = field(default_factory=list)
 
     @property
     def issues(self) -> list[ValidationIssue]:
         return self.validation_report.issues
 
-    def to_contract(self) -> "PipelineReportContract":
+    def to_contract(self) -> PipelineReportContract:
         return pipeline_report_to_contract(self)
 
 
@@ -295,6 +311,23 @@ def evidence_record_to_contract(record: EvidenceRecord):
     )
 
 
+def compliance_schedule_entry_to_contract(entry: ComplianceScheduleEntry):
+    """Convert ComplianceScheduleEntry to its contract representation."""
+    from firecrawl_demo.domain.contracts import ComplianceScheduleEntryContract
+
+    return ComplianceScheduleEntryContract(
+        row_id=entry.row_id,
+        organisation=entry.organisation,
+        status=entry.status,
+        last_verified_at=entry.last_verified_at,
+        next_review_due=entry.next_review_due,
+        mx_failure_count=entry.mx_failure_count,
+        tasks=list(entry.tasks),
+        lawful_basis=entry.lawful_basis,
+        contact_purpose=entry.contact_purpose,
+    )
+
+
 def evidence_record_from_contract(contract):
     """Convert contract model to legacy EvidenceRecord dataclass."""
     from firecrawl_demo.domain.contracts import EvidenceRecordContract
@@ -310,6 +343,28 @@ def evidence_record_from_contract(contract):
         notes=contract.notes,
         confidence=contract.confidence,
         timestamp=contract.timestamp,
+    )
+
+
+def compliance_schedule_entry_from_contract(contract):
+    """Convert ComplianceScheduleEntryContract back to dataclass."""
+    from firecrawl_demo.domain.contracts import ComplianceScheduleEntryContract
+
+    if not isinstance(contract, ComplianceScheduleEntryContract):
+        raise TypeError(
+            f"Expected ComplianceScheduleEntryContract, got {type(contract)}"
+        )
+
+    return ComplianceScheduleEntry(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        status=contract.status,
+        last_verified_at=contract.last_verified_at,
+        next_review_due=contract.next_review_due,
+        mx_failure_count=contract.mx_failure_count,
+        tasks=tuple(contract.tasks),
+        lawful_basis=contract.lawful_basis,
+        contact_purpose=contract.contact_purpose,
     )
 
 
@@ -442,6 +497,10 @@ def pipeline_report_to_contract(report: PipelineReport):
         quality_issues=[
             quality_issue_to_contract(issue) for issue in report.quality_issues
         ],
+        compliance_schedule=[
+            compliance_schedule_entry_to_contract(entry)
+            for entry in report.compliance_schedule
+        ],
     )
 
 
@@ -464,5 +523,9 @@ def pipeline_report_from_contract(contract):
         ],
         quality_issues=[
             quality_issue_from_contract(issue) for issue in contract.quality_issues
+        ],
+        compliance_schedule=[
+            compliance_schedule_entry_from_contract(entry)
+            for entry in contract.compliance_schedule
         ],
     )

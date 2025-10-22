@@ -109,6 +109,38 @@ class EvidenceRecordContract(BaseModel):
     }
 
 
+class ComplianceScheduleEntryContract(BaseModel):
+    """Contract describing compliance verification metadata for a row."""
+
+    row_id: int = Field(..., ge=0, description="Row identifier")
+    organisation: str = Field(..., min_length=1, description="Organisation name")
+    status: str = Field(..., min_length=1, description="Current status value")
+    last_verified_at: datetime | None = Field(
+        None, description="Timestamp when the contact was last verified"
+    )
+    next_review_due: datetime | None = Field(
+        None, description="Timestamp when re-validation should occur"
+    )
+    mx_failure_count: int = Field(
+        0, ge=0, description="Consecutive MX validation failures"
+    )
+    tasks: list[str] = Field(
+        default_factory=list,
+        description="Follow-up tasks required to regain compliance",
+    )
+    lawful_basis: str | None = Field(
+        None, description="Active lawful basis key for processing"
+    )
+    contact_purpose: str | None = Field(None, description="Current contact purpose key")
+
+    model_config = {
+        "json_schema_extra": {
+            "version": CONTRACT_VERSION,
+            "schema_uri": f"{SCHEMA_URI_BASE}/compliance-schedule-entry",
+        }
+    }
+
+
 class QualityIssueContract(BaseModel):
     """Contract for quality gate issues.
 
@@ -207,6 +239,10 @@ class PipelineReportContract(BaseModel):
     )
     quality_issues: list[QualityIssueContract] = Field(
         default_factory=list, description="Quality gate issues"
+    )
+    compliance_schedule: list[ComplianceScheduleEntryContract] = Field(
+        default_factory=list,
+        description="Compliance re-validation schedule entries",
     )
 
     @property
@@ -403,6 +439,7 @@ _CONTRACT_MODELS: dict[str, type[BaseModel]] = {
     "ContractDescriptor": ContractDescriptor,
     "SchoolRecord": SchoolRecordContract,
     "EvidenceRecord": EvidenceRecordContract,
+    "ComplianceScheduleEntry": ComplianceScheduleEntryContract,
     "QualityIssue": QualityIssueContract,
     "ValidationIssue": ValidationIssueContract,
     "ValidationReport": ValidationReportContract,
@@ -418,6 +455,7 @@ __all__ = [
     "ContractDescriptor",
     "SchoolRecordContract",
     "EvidenceRecordContract",
+    "ComplianceScheduleEntryContract",
     "QualityIssueContract",
     "ValidationIssueContract",
     "ValidationReportContract",

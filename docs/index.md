@@ -46,6 +46,7 @@ For detailed architecture, see [Architecture](architecture.md).
 - [CLI](cli.md): Command usage and examples
 - [Data Quality](data-quality.md): Validation and contracts
 - [Operations](operations.md): Deployment and maintenance
+- [Compliance](compliance.md): POPIA workflows and automation
 - [MCP](mcp.md): AI integration contract
 - [Lineage Lakehouse](lineage-lakehouse.md): Data provenance
 
