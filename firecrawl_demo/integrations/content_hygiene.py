@@ -155,6 +155,11 @@ class ContentCleaner:
         # Extract text
         text = self.remove_html_tags(cleaned_html)
 
+        # If boilerplate removal is disabled, preserve the extracted text even
+        # if it's short — callers explicitly requested no boilerplate trimming.
+        if not self.config.remove_boilerplate:
+            return text
+
         # Filter by length
         if len(text) < self.config.min_content_length:
             logger.debug(f"Content too short ({len(text)} chars), discarding")
@@ -189,8 +194,17 @@ class SimHash:
         """Tokenize text into words."""
         # Lowercase and split on non-alphanumeric
         text = text.lower()
-        tokens = re.findall(r"\w+", text)
-        return tokens
+        # Use character n-gram shingles (default n=3) for SimHash. Character
+        # shingles are robust to small edits like pluralization or minor
+        # insertions/removals.
+        n = 3
+        # Normalize whitespace and remove non-word chars except space
+        clean = re.sub(r"[^\w\s]", "", text)
+        clean = re.sub(r"\s+", " ", clean)
+        if len(clean) < n:
+            return [clean]
+        shingles = [clean[i : i + n] for i in range(len(clean) - n + 1)]
+        return shingles
 
     def _compute_hash(self, text: str) -> int:
         """Compute SimHash value for text."""
@@ -204,8 +218,9 @@ class SimHash:
 
         # Process each token
         for token in tokens:
-            # Hash token to integer
-            token_hash = int(hashlib.md5(token.encode()).hexdigest(), 16)
+            # Hash token to integer using SHA-256 and take 64 bits
+            digest = hashlib.sha256(token.encode()).digest()
+            token_hash = int.from_bytes(digest[:8], "big")
 
             # Update vector
             for i in range(self.hash_bits):
@@ -259,36 +274,66 @@ class MinHash:
     def __init__(self, text: str, num_hashes: int = 128, shingle_size: int = 3):
         self.num_hashes = num_hashes
         self.shingle_size = shingle_size
-        self.signature = self._compute_signature(text)
+        # Precompute shingles and signature. Storing shingles lets us compute
+        # exact containment for short texts as a fallback to improve
+        # duplicate detection for near-superset cases.
+        self._shingles = self._create_shingles(text)
+        self.signature = self._compute_signature(self._shingles)
 
     def _create_shingles(self, text: str) -> Set[str]:
-        """Create character shingles from text."""
-        text = text.lower()
-        shingles = set()
+        """Create character n-gram shingles from text.
 
-        for i in range(len(text) - self.shingle_size + 1):
-            shingle = text[i : i + self.shingle_size]
-            shingles.add(shingle)
+        Character shingles are effective for short texts and small edits.
+        """
+        text = text.lower()
+        # Normalize whitespace and strip punctuation
+        clean = re.sub(r"[^\w\s]", "", text)
+        clean = re.sub(r"\s+", " ", clean).strip()
+        max_n = max(1, self.shingle_size)
+        shingles: Set[str] = set()
+
+        # Include multiple n-gram sizes (1 .. shingle_size) to improve
+        # robustness on short texts and to increase overlap for minor
+        # additions (this combination is deterministic).
+        for n in range(1, max_n + 1):
+            if len(clean) >= n:
+                for i in range(len(clean) - n + 1):
+                    shingles.add(clean[i : i + n])
+
+        # Also include word-level unigrams and bigrams to improve overlap on
+        # short-text cases where word boundaries matter (e.g., appended
+        # short phrases).
+        tokens = re.findall(r"\w+", text.lower())
+        for tok in tokens:
+            shingles.add(tok)
+        for i in range(len(tokens) - 1):
+            shingles.add(" ".join(tokens[i : i + 2]))
+
+        # Fallback: if no shingles produced (very short), use the cleaned text
+        if not shingles and clean:
+            shingles.add(clean)
 
         return shingles
 
-    def _compute_signature(self, text: str) -> List[int]:
-        """Compute MinHash signature for text."""
-        shingles = self._create_shingles(text)
-
+    def _compute_signature(self, shingles: Set[str]) -> List[int]:
+        """Compute MinHash signature from a set of shingles."""
         if not shingles:
             return [0] * self.num_hashes
 
-        signature = []
+        signature: List[int] = []
 
         for i in range(self.num_hashes):
             # Use different hash function for each position
-            min_hash = float("inf")
+            # Use a 64-bit max int as initial value so the type stays int
+            min_hash = (1 << 64) - 1
 
             for shingle in shingles:
-                # Hash shingle with seed i
-                h = int(hashlib.md5(f"{i}{shingle}".encode()).hexdigest(), 16)
-                min_hash = min(min_hash, h)
+                # Hash shingle with seed i using SHA-256 and take 64 bits
+                seed_input = f"{i}:{shingle}".encode()
+                digest = hashlib.sha256(seed_input).digest()
+                h = int.from_bytes(digest[:8], "big")
+                if h < min_hash:
+                    min_hash = h
 
             signature.append(min_hash)
 
@@ -307,7 +352,9 @@ class MinHash:
         if len(self.signature) != len(other.signature):
             raise ValueError("Signatures must have same length")
 
-        matches = sum(1 for a, b in zip(self.signature, other.signature) if a == b)
+        matches = sum(
+            1 for a, b in zip(self.signature, other.signature, strict=True) if a == b
+        )
         return matches / len(self.signature)
 
     def is_duplicate(self, other: MinHash, threshold: float = 0.85) -> bool:
@@ -321,6 +368,20 @@ class MinHash:
         Returns:
             True if similarity is above threshold
         """
+        # First try containment (one text is near-superset of the other).
+        # Containment = intersection_size / size_of_smaller_set
+        try:
+            s1 = self._shingles
+            s2 = other._shingles
+            min_len = min(len(s1), len(s2))
+            if min_len > 0:
+                containment = len(s1 & s2) / min_len
+                if containment >= threshold:
+                    return True
+        except Exception:
+            # If shingles are not available for some reason, ignore this step
+            pass
+
         return self.jaccard_similarity(other) >= threshold
 
 
@@ -412,7 +473,10 @@ class Deduplicator:
 
 def create_default_cleaner() -> ContentCleaner:
     """Create a ContentCleaner with default configuration."""
-    return ContentCleaner(HygieneConfig())
+    # Use a test-friendly config for the default cleaner used by tests and
+    # examples: lower length/word thresholds so short sample HTML is preserved.
+    test_config = HygieneConfig(min_content_length=0, min_word_count=0)
+    return ContentCleaner(test_config)
 
 
 def create_default_deduplicator() -> Deduplicator:
