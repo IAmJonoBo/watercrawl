@@ -3,9 +3,11 @@
 import warnings
 from importlib import import_module
 
-from marshmallow.warnings import ChangedInMarshmallow4Warning
-
-warnings.filterwarnings("ignore", category=ChangedInMarshmallow4Warning)
+try:
+    from marshmallow.warnings import ChangedInMarshmallow4Warning
+    warnings.filterwarnings("ignore", category=ChangedInMarshmallow4Warning)
+except (ImportError, AttributeError):
+    pass  # Marshmallow warnings module not available in this version
 
 _SUBMODULES = (
     "core",
