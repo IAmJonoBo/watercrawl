@@ -11,6 +11,7 @@ if TYPE_CHECKING:
         PipelineReportContract,
         ValidationReportContract,
     )
+    from firecrawl_demo.domain.relationships import RelationshipGraphSnapshot
     from firecrawl_demo.integrations.storage.lakehouse import LakehouseManifest
     from firecrawl_demo.integrations.storage.versioning import VersionInfo
     from firecrawl_demo.integrations.telemetry.drift import DriftReport
@@ -25,6 +26,10 @@ else:  # pragma: no cover - optional integrations may be unavailable at runtime
         )
     except Exception:  # pragma: no cover - fallback when telemetry module missing
         GraphSemanticsReport = Any  # type: ignore[misc, assignment]
+    try:
+        from firecrawl_demo.domain.relationships import RelationshipGraphSnapshot
+    except Exception:  # pragma: no cover - fallback when relationships module missing
+        RelationshipGraphSnapshot = Any  # type: ignore[misc, assignment]
 
 EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
 
@@ -223,6 +228,7 @@ class PipelineReport:
     lakehouse_manifest: LakehouseManifest | None = None
     version_info: VersionInfo | None = None
     graph_semantics: GraphSemanticsReport | None = None
+    relationship_graph: RelationshipGraphSnapshot | None = None
     drift_report: DriftReport | None = None
 
     @property

@@ -9,6 +9,7 @@ from collections.abc import Hashable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
+from datetime import UTC, datetime
 from math import ceil
 from pathlib import Path
 from statistics import mean
@@ -31,6 +32,7 @@ from firecrawl_demo.application.progress import (
 from firecrawl_demo.application.quality import QualityGate
 from firecrawl_demo.application.row_processing import (
     RowProcessingRequest,
+    RowProcessingResult,
     compose_evidence_notes,
     process_row,
 )
@@ -49,6 +51,7 @@ else:
         raise NotImplementedError("Dataset operations require pandas (Python < 3.14)")
 
 
+from firecrawl_demo.domain import relationships
 from firecrawl_demo.domain.compliance import normalize_province
 from firecrawl_demo.domain.contracts import PipelineReportContract
 from firecrawl_demo.domain.models import (
@@ -90,6 +93,14 @@ from firecrawl_demo.integrations.telemetry.graph_semantics import (
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
 
 logger = logging.getLogger(__name__)
+
+
+_CONNECTOR_PUBLISHERS = {
+    "regulator": "South African Civil Aviation Authority",
+    "press": "Press Coverage",
+    "corporate_filings": "Companies and Intellectual Property Commission",
+    "social": "Social Media Monitoring",
+}
 
 
 def _load_research_adapter() -> ResearchAdapter:
@@ -497,6 +508,192 @@ class Pipeline(PipelineService):
             sanity_notes=sanity_notes,
         )
 
+    def _update_relationship_state(
+        self,
+        *,
+        organisations: dict[str, relationships.Organisation],
+        people: dict[str, relationships.Person],
+        sources: dict[str, relationships.SourceDocument],
+        edges: dict[tuple[str, str, str], relationships.EvidenceLink],
+        row_state: _RowState,
+        row_result: RowProcessingResult,
+        finding: ResearchFinding,
+    ) -> None:
+        now = datetime.now(UTC)
+        name = row_result.record.name or row_state.original_record.name
+        if not name:
+            name = f"Row {row_state.row_id}"
+        organisation_id = relationships.canonical_id("organisation", name)
+        provinces = (
+            {row_result.record.province}
+            if getattr(row_result.record, "province", None)
+            else set()
+        )
+        statuses = (
+            {row_result.record.status}
+            if getattr(row_result.record, "status", None)
+            else set()
+        )
+        organisation = relationships.Organisation(
+            identifier=organisation_id,
+            name=name,
+            provinces=provinces,
+            statuses=statuses,
+            website_url=row_result.record.website_url,
+            aliases=set(finding.alternate_names),
+            provenance={
+                relationships.ProvenanceTag(
+                    source="pipeline:dataset",
+                    retrieved_at=now,
+                    notes=f"row:{row_state.row_id}",
+                )
+            },
+        )
+        existing_org = organisations.get(organisation_id)
+        if existing_org:
+            organisation = relationships.merge_organisations(existing_org, organisation)
+        organisations[organisation_id] = organisation
+
+        def _store_edge(key: tuple[str, str, str], link: relationships.EvidenceLink) -> None:
+            existing = edges.get(key)
+            if existing:
+                edges[key] = relationships.merge_evidence_links(existing, link)
+            else:
+                edges[key] = link
+
+        contact_name = row_result.record.contact_person or finding.contact_person
+        person_id: str | None = None
+        if contact_name:
+            person_id = relationships.canonical_id("person", contact_name)
+            emails = {
+                value
+                for value in (
+                    row_result.record.contact_email,
+                    finding.contact_email,
+                )
+                if value
+            }
+            phones = {
+                value
+                for value in (
+                    row_result.record.contact_number,
+                    finding.contact_phone,
+                )
+                if value
+            }
+            person = relationships.Person(
+                identifier=person_id,
+                name=contact_name,
+                role="Primary Contact",
+                emails=emails,
+                phones=phones,
+                organisations={organisation_id},
+                provenance={
+                    relationships.ProvenanceTag(
+                        source="pipeline:dataset",
+                        retrieved_at=now,
+                        notes=f"row:{row_state.row_id}",
+                    )
+                },
+            )
+            if finding.contact_person and finding.contact_person != contact_name:
+                person.provenance.add(
+                    relationships.ProvenanceTag(
+                        source="pipeline:research",
+                        retrieved_at=now,
+                        notes="adapter_contact",
+                    )
+                )
+            existing_person = people.get(person_id)
+            if existing_person:
+                person = relationships.merge_people(existing_person, person)
+            people[person_id] = person
+            organisations[organisation_id].contacts.add(person_id)
+            contact_edge = relationships.EvidenceLink(
+                source=organisation_id,
+                target=person_id,
+                kind="has_contact",
+                weight=1.0,
+                provenance={
+                    relationships.ProvenanceTag(
+                        source="pipeline:dataset",
+                        retrieved_at=now,
+                        notes=f"row:{row_state.row_id}",
+                    )
+                },
+                attributes={"status": row_result.record.status or ""},
+            )
+            _store_edge((organisation_id, person_id, "has_contact"), contact_edge)
+
+        def _record_source(url: str, *, connector: str | None, note: str | None) -> None:
+            if not url:
+                return
+            document_id = relationships.canonical_id("source", url)
+            provenance_tag = relationships.ProvenanceTag(
+                source=url,
+                connector=connector,
+                retrieved_at=now,
+                notes=note,
+            )
+            publisher = _CONNECTOR_PUBLISHERS.get(connector)
+            document = relationships.SourceDocument(
+                identifier=document_id,
+                uri=url,
+                publisher=publisher,
+                connector=connector,
+                tags={connector} if connector else set(),
+                provenance={provenance_tag},
+            )
+            existing_document = sources.get(document_id)
+            if existing_document:
+                document = relationships.merge_sources(existing_document, document)
+            sources[document_id] = document
+            evidence_link = relationships.EvidenceLink(
+                source=organisation_id,
+                target=document_id,
+                kind="corroborated_by",
+                weight=1.0,
+                provenance={provenance_tag},
+                attributes={"connector": connector} if connector else {},
+            )
+            _store_edge((organisation_id, document_id, "corroborated_by"), evidence_link)
+            if person_id and person_id in people:
+                contact_link = relationships.EvidenceLink(
+                    source=person_id,
+                    target=document_id,
+                    kind="contact_evidence",
+                    weight=1.0,
+                    provenance={provenance_tag},
+                    attributes={"connector": connector} if connector else {},
+                )
+                _store_edge((person_id, document_id, "contact_evidence"), contact_link)
+
+        seen_sources: set[str] = set()
+        for source in row_result.sources:
+            if source not in seen_sources:
+                seen_sources.add(source)
+                _record_source(source, connector=None, note="row_sanity")
+        for source in finding.sources:
+            if source not in seen_sources:
+                seen_sources.add(source)
+                _record_source(source, connector=None, note="research_finding")
+
+        for connector_name, connector_evidence in finding.evidence_by_connector.items():
+            connector_tag = relationships.ProvenanceTag(
+                source=connector_name,
+                connector=connector_name,
+                retrieved_at=now,
+                notes="connector_observation",
+            )
+            organisations[organisation_id].provenance.add(connector_tag)
+            if person_id and person_id in people:
+                people[person_id].provenance.add(connector_tag)
+            summary = "; ".join(connector_evidence.notes) if connector_evidence.notes else None
+            for source in connector_evidence.sources:
+                if source not in seen_sources:
+                    seen_sources.add(source)
+                _record_source(source, connector=connector_name, note=summary)
+
     def run_dataframe(
         self,
         frame: Any,
@@ -544,6 +741,12 @@ class Pipeline(PipelineService):
         rollback_actions: list[RollbackAction] = []
         quality_rejections = 0
         listener = progress or NullPipelineProgressListener()
+        relationship_orgs: dict[str, relationships.Organisation] = {}
+        relationship_people: dict[str, relationships.Person] = {}
+        relationship_sources: dict[str, relationships.SourceDocument] = {}
+        relationship_edges: dict[
+            tuple[str, str, str], relationships.EvidenceLink
+        ] = {}
 
         listener.on_start(len(working_frame))
 
@@ -627,6 +830,15 @@ class Pipeline(PipelineService):
                     column_updates[column][idx] = value
 
             listener.on_row_processed(position, row_result.updated, row_result.record)
+            self._update_relationship_state(
+                organisations=relationship_orgs,
+                people=relationship_people,
+                sources=relationship_sources,
+                edges=relationship_edges,
+                row_state=state,
+                row_result=row_result,
+                finding=result.finding,
+            )
 
         if column_updates or cleared_cells:
             touched_columns = set(column_updates) | set(cleared_cells)
@@ -734,6 +946,27 @@ class Pipeline(PipelineService):
                     metrics["graph_semantics_issues"] = len(
                         getattr(graph_report, "issues", [])
                     )
+            builder = self.graph_semantics_toolkit.get("build_relationship_graph")
+            if callable(builder) and relationship_orgs:
+                try:
+                    snapshot = builder(
+                        organisations=list(relationship_orgs.values()),
+                        people=list(relationship_people.values()),
+                        sources=list(relationship_sources.values()),
+                        evidence=list(relationship_edges.values()),
+                        graphml_path=config.RELATIONSHIPS_GRAPHML,
+                        nodes_csv_path=config.RELATIONSHIPS_CSV,
+                        edges_csv_path=config.RELATIONSHIPS_EDGES_CSV,
+                    )
+                except Exception as exc:  # pragma: no cover - defensive guard
+                    logger.warning(
+                        "Relationship graph export failed: %s", exc, exc_info=exc
+                    )
+                else:
+                    report.relationship_graph = snapshot
+                    metrics["relationship_graph_nodes"] = snapshot.node_count
+                    metrics["relationship_graph_edges"] = snapshot.edge_count
+                    metrics["relationship_anomalies"] = len(snapshot.anomalies)
         manifest = None
         version_info = None
         if self.lakehouse_writer and active_context:

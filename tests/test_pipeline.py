@@ -192,7 +192,9 @@ class _RecordingEvidenceSink:
         self.records.append(batch)
 
 
-def test_pipeline_records_lakehouse_versioning_and_lineage(tmp_path: Path) -> None:
+def test_pipeline_records_lakehouse_versioning_and_lineage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     research_adapter = StaticResearchAdapter(
         {
             "Example Flight School": ResearchFinding(
@@ -215,6 +217,12 @@ def test_pipeline_records_lakehouse_versioning_and_lineage(tmp_path: Path) -> No
     lakehouse_writer = TrackingLakehouseWriter(tmp_path)
     versioning_manager = TrackingVersioningManager(tmp_path)
     lineage_manager = TrackingLineageManager(tmp_path)
+    graphml_path = tmp_path / "relationships.graphml"
+    nodes_path = tmp_path / "relationships.csv"
+    edges_path = tmp_path / "relationships_edges.csv"
+    monkeypatch.setattr(config, "RELATIONSHIPS_GRAPHML", graphml_path)
+    monkeypatch.setattr(config, "RELATIONSHIPS_CSV", nodes_path)
+    monkeypatch.setattr(config, "RELATIONSHIPS_EDGES_CSV", edges_path)
 
     pipe = Pipeline(
         research_adapter=research_adapter,
@@ -250,10 +258,21 @@ def test_pipeline_records_lakehouse_versioning_and_lineage(tmp_path: Path) -> No
     assert (
         lineage_manager.captured[0].lakehouse_uri == report.lakehouse_manifest.table_uri
     )
-    assert (
+    assert ( 
         evidence_sink.records
         and evidence_sink.records[0][0].organisation == "Example Flight School"
     )
+    snapshot = report.relationship_graph
+    assert snapshot is not None
+    assert snapshot.graphml_path == graphml_path
+    assert snapshot.node_summary_path == nodes_path
+    assert snapshot.edge_summary_path == edges_path
+    assert graphml_path.exists()
+    assert nodes_path.exists()
+    assert edges_path.exists()
+    assert report.metrics["relationship_graph_nodes"] >= 2
+    assert report.metrics["relationship_graph_edges"] >= 1
+    assert report.metrics["relationship_anomalies"] >= 0
 
 
 @pytest.mark.asyncio()
