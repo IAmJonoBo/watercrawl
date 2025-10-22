@@ -69,11 +69,27 @@ jobs:
       - name: Run pre-commit
         if: matrix.python-version == '3.13'
         run: poetry run pre-commit run --all-files --show-diff-on-failure
-      - name: Run tests
+      - name: Run unit tests
         if: matrix.python-version == '3.13'
         run: >-
           poetry run pytest --maxfail=5 --disable-warnings --cov=firecrawl_demo
           --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=pytest-results.xml
+          -m "not system and not performance"
+      - name: Run contract consumer tests
+        if: matrix.python-version == '3.13'
+        run: >-
+          poetry run pytest tests/test_contract_consumers.py -v
+          --junitxml=pytest-contract-results.xml
+      - name: Run performance smoke tests
+        if: matrix.python-version == '3.13'
+        run: >-
+          poetry run pytest -m performance -v
+          --junitxml=pytest-performance-results.xml
+      - name: Run system integration tests
+        if: matrix.python-version == '3.13'
+        run: >-
+          poetry run pytest tests/system/ -v
+          --junitxml=pytest-system-results.xml
       - name: Run data contracts
         if: matrix.python-version == '3.13'
         run: >-

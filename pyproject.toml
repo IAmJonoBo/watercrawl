@@ -168,3 +168,9 @@ paths_to_mutate = [
 ]
 tests_dir = "tests"
 runner = "python -m pytest tests/test_pipeline.py tests/test_research_logic.py"
+
+# Pytest markers for test categorization
+[tool.pytest.markers]
+system = "System integration tests that drive the CLI"
+contract = "Contract consumer tests validating schemas"
+performance = "Performance smoke tests with thresholds"

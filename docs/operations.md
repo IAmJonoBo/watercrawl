@@ -644,3 +644,90 @@ manifest paths so runbooks can link provenance bundles without digging through t
 - `firecrawl_demo.infrastructure.planning.detect_plan_drift()` compares the active plan against the checked-in baseline snapshot.
 - `tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot` guards probe endpoints, the active OPA bundle path, and plan→commit automation topics from unexpected drift.
 - Update the baseline snapshot intentionally whenever probes move or policy bundles change, and note the reason in `Next_Steps.md`.
+
+## System Integration Tests (SIT)
+
+System integration tests verify the end-to-end enrichment workflow by driving the analyst CLI against sample datasets and validating outputs. These tests are run in CI as blocking gates.
+
+### Running System Tests
+
+```bash
+# Run all system tests
+poetry run pytest tests/system/ -v
+
+# Run specific system test suites
+poetry run pytest tests/system/test_cli_enrichment.py -v
+```
+
+System tests verify:
+- Evidence sink writes are correctly formatted
+- Telemetry outputs (Prometheus metrics, whylogs profiles) are generated
+- Contract models validate against published schemas
+
+### Contract Consumer Tests
+
+Contract consumer tests ensure all outputs (MCP responses, evidence logs, plan→commit artifacts) validate against published schemas:
+
+```bash
+# Run contract consumer tests
+poetry run pytest tests/test_contract_consumers.py -v -m contract
+```
+
+These tests:
+- Validate MCP responses include schema URIs and version metadata
+- Verify evidence logs conform to `EvidenceRecordContract`
+- Check plan→commit artifacts follow expected structure
+- Test schema export completeness
+
+Contract tests are blocking in CI to prevent schema drift.
+
+### Performance Smoke Tests
+
+Performance smoke tests enforce throughput thresholds to guard against performance regressions:
+
+```bash
+# Run performance tests
+poetry run pytest -m performance -v
+
+# Run with detailed timing output
+poetry run pytest -m performance -v -s
+```
+
+**Thresholds enforced:**
+- Pipeline throughput: 10 rows in < 5 seconds (null adapter)
+- Concurrent speedup: ≥ 1.5x vs sequential for 5 rows
+- Bulk updates: 10 rows in < 0.1 seconds
+- RowProcessor: 100 rows in < 1 second
+- Change tracking: 1000 operations in < 0.5 seconds
+- itertuples vs iterrows: ≥ 1.5x speedup
+
+Performance tests fail the build if thresholds are exceeded.
+
+### CI Test Pipeline
+
+The CI workflow runs test stages in sequence:
+
+1. **Unit tests** - Core functionality with coverage reporting
+2. **Contract consumer tests** - Schema validation (blocking)
+3. **Performance smoke tests** - Throughput thresholds (blocking)
+4. **System integration tests** - End-to-end CLI workflows (blocking)
+
+Each stage produces JUnit XML results for CI dashboards:
+- `pytest-results.xml` - Unit test results
+- `pytest-contract-results.xml` - Contract validation results
+- `pytest-performance-results.xml` - Performance test results
+- `pytest-system-results.xml` - System integration test results
+
+### Coverage Reporting
+
+Coverage deltas are surfaced in CI summaries:
+
+```bash
+# Generate coverage report locally
+poetry run pytest --cov=firecrawl_demo --cov-report=html
+
+# View HTML report
+open htmlcov/index.html
+```
+
+CI enforces coverage thresholds via the pytest configuration in `pyproject.toml`.
