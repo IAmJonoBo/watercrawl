@@ -6,12 +6,14 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+import time
+
 import pandas as pd
 import pytest
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.application.quality import QualityGate
-from firecrawl_demo.core import config
+from firecrawl_demo.core import cache as cache_module, config
 from firecrawl_demo.domain.contracts import EvidenceRecordContract
 from firecrawl_demo.domain.models import (
     EvidenceRecord,
@@ -19,6 +21,7 @@ from firecrawl_demo.domain.models import (
     evidence_record_from_contract,
 )
 from firecrawl_demo.integrations.adapters.research import (
+    ResearchAdapter,
     ResearchFinding,
     StaticResearchAdapter,
 )
@@ -52,6 +55,13 @@ def _minimal_frame() -> pd.DataFrame:
             }
         ]
     )
+
+
+def _frame_with_rows(count: int) -> pd.DataFrame:
+    frame = pd.concat([_minimal_frame() for _ in range(count)], ignore_index=True)
+    for idx in range(count):
+        frame.at[idx, "Name of Organisation"] = f"Example Flight School {idx}"
+    return frame
 
 
 def test_pipeline_import():
@@ -216,6 +226,96 @@ def test_pipeline_records_lakehouse_versioning_and_lineage(tmp_path: Path) -> No
         evidence_sink.records
         and evidence_sink.records[0][0].organisation == "Example Flight School"
     )
+
+
+@pytest.mark.asyncio()
+async def test_pipeline_lookup_concurrency_improves_throughput(monkeypatch) -> None:
+    cache_module._cache.clear()
+    monkeypatch.setattr(config, "RESEARCH_CONCURRENCY_LIMIT", 4)
+    monkeypatch.setattr(config, "RESEARCH_CACHE_TTL_HOURS", None)
+    monkeypatch.setattr(config, "RESEARCH_MAX_RETRIES", 0)
+    monkeypatch.setattr(config, "RESEARCH_RETRY_BACKOFF_BASE_SECONDS", 0.0)
+    monkeypatch.setattr(
+        config, "RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD", 5
+    )
+    monkeypatch.setattr(config, "RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS", 30.0)
+
+    class SlowAdapter(ResearchAdapter):
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def lookup(self, organisation: str, province: str) -> ResearchFinding:
+            self.calls += 1
+            time.sleep(0.05)
+            slug = organisation.lower().replace(" ", "-")
+            return ResearchFinding(
+                website_url=f"https://{slug}.za",
+                contact_person="Automation Tester",
+                contact_email=f"{slug}@example.za",
+                contact_phone="+27105550100",
+                sources=["https://example.com"],
+                notes="slow adapter",
+                confidence=85,
+            )
+
+    adapter = SlowAdapter()
+    frame = _frame_with_rows(4)
+    pipe = Pipeline(
+        research_adapter=adapter,
+        quality_gate=QualityGate(min_confidence=0, require_official_source=False),
+    )
+
+    start = time.perf_counter()
+    report = await pipe.run_dataframe_async(frame)
+    elapsed = time.perf_counter() - start
+
+    assert adapter.calls == len(frame)
+    assert elapsed < 0.25
+    assert report.metrics["adapter_retry_attempts"] == 0
+    assert report.metrics["research_cache_hits"] == 0
+    assert report.metrics["research_queue_latency_avg_ms"] >= 0.0
+
+
+@pytest.mark.asyncio()
+async def test_pipeline_preserves_order_with_concurrency_one(monkeypatch) -> None:
+    cache_module._cache.clear()
+    monkeypatch.setattr(config, "RESEARCH_CONCURRENCY_LIMIT", 1)
+    monkeypatch.setattr(config, "RESEARCH_CACHE_TTL_HOURS", None)
+
+    names = [f"Ordered Org {idx}" for idx in range(3)]
+    frame = _frame_with_rows(len(names))
+    for idx, name in enumerate(names):
+        frame.at[idx, "Name of Organisation"] = name
+
+    class RecordingAdapter(ResearchAdapter):
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def lookup(self, organisation: str, province: str) -> ResearchFinding:
+            self.calls.append(organisation)
+            slug = organisation.lower().replace(" ", "-")
+            return ResearchFinding(
+                website_url=f"https://{slug}.za",
+                contact_person=organisation,
+                contact_email=f"{slug}@example.za",
+                contact_phone="+27105550100",
+                sources=[f"https://{slug}.za"],
+                notes=organisation,
+                confidence=90,
+            )
+
+    adapter = RecordingAdapter()
+    pipe = Pipeline(
+        research_adapter=adapter,
+        quality_gate=QualityGate(min_confidence=0, require_official_source=False),
+    )
+
+    report = await pipe.run_dataframe_async(frame)
+
+    assert adapter.calls == names
+    assert [record.organisation for record in report.evidence_log] == names
+    assert report.metrics["adapter_circuit_rejections"] == 0
+    assert report.metrics["research_cache_misses"] == len(names)
 
 
 def test_pipeline_sends_slack_alert_on_drift(tmp_path: Path, monkeypatch) -> None:

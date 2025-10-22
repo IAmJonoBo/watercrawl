@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Mapping
 
 import yaml
 
@@ -80,6 +80,12 @@ class ResearchProfile:
     """Research helper queries to seed adapters."""
 
     queries: tuple[str, ...] = ()
+    concurrency_limit: int = 4
+    cache_ttl_hours: float | None = None
+    max_retries: int = 3
+    retry_backoff_base_seconds: float = 0.25
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_reset_seconds: float = 30.0
 
 
 @dataclass(frozen=True)
@@ -189,7 +195,49 @@ def _load_compliance(payload: Mapping[str, Any]) -> ComplianceProfile:
 
 def _load_research(payload: Mapping[str, Any]) -> ResearchProfile:
     queries = tuple(str(item) for item in payload.get("queries", ()))
-    return ResearchProfile(queries=queries)
+    concurrency_limit = int(payload.get("concurrency_limit", 4) or 1)
+    cache_ttl = payload.get("cache_ttl_hours")
+    ttl_value: float | None
+    if cache_ttl is None:
+        ttl_value = None
+    else:
+        ttl_value = float(cache_ttl)
+        if ttl_value < 0:
+            raise ProfileError("research.cache_ttl_hours must be non-negative")
+    max_retries = int(payload.get("max_retries", 3) or 0)
+    retry_backoff_base = float(payload.get("retry_backoff_base_seconds", 0.25) or 0.0)
+    breaker_payload = payload.get("circuit_breaker") or {}
+    failure_threshold = int(
+        breaker_payload.get("failure_threshold", 5) or 1
+    )
+    reset_seconds = float(breaker_payload.get("reset_seconds", 30.0) or 0.0)
+
+    if concurrency_limit < 1:
+        raise ProfileError("research.concurrency_limit must be at least 1")
+    if max_retries < 0:
+        raise ProfileError("research.max_retries cannot be negative")
+    if retry_backoff_base < 0:
+        raise ProfileError(
+            "research.retry_backoff_base_seconds must be non-negative"
+        )
+    if failure_threshold < 1:
+        raise ProfileError(
+            "research.circuit_breaker.failure_threshold must be at least 1"
+        )
+    if reset_seconds < 0:
+        raise ProfileError(
+            "research.circuit_breaker.reset_seconds must be non-negative"
+        )
+
+    return ResearchProfile(
+        queries=queries,
+        concurrency_limit=concurrency_limit,
+        cache_ttl_hours=ttl_value,
+        max_retries=max_retries,
+        retry_backoff_base_seconds=retry_backoff_base,
+        circuit_breaker_failure_threshold=failure_threshold,
+        circuit_breaker_reset_seconds=reset_seconds,
+    )
 
 
 def load_profile(profile_path: Path) -> RefinementProfile:

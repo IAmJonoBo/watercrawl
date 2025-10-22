@@ -102,6 +102,12 @@ ROLE_INBOX_PREFIXES: tuple[str, ...]
 EMAIL_REQUIRE_DOMAIN_MATCH: bool
 
 RESEARCH_QUERIES: list[str]
+RESEARCH_CONCURRENCY_LIMIT: int
+RESEARCH_CACHE_TTL_HOURS: float | None
+RESEARCH_MAX_RETRIES: int
+RESEARCH_RETRY_BACKOFF_BASE_SECONDS: float
+RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int
+RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS: float
 
 NUMERIC_UNIT_RULES: tuple[NumericUnitRule, ...]
 
@@ -138,6 +144,18 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
     EMAIL_REQUIRE_DOMAIN_MATCH = profile.contact.email.require_domain_match
 
     RESEARCH_QUERIES = list(profile.research.queries)
+    RESEARCH_CONCURRENCY_LIMIT = max(1, int(profile.research.concurrency_limit))
+    RESEARCH_CACHE_TTL_HOURS = profile.research.cache_ttl_hours
+    RESEARCH_MAX_RETRIES = max(0, int(profile.research.max_retries))
+    RESEARCH_RETRY_BACKOFF_BASE_SECONDS = max(
+        0.0, float(profile.research.retry_backoff_base_seconds)
+    )
+    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD = max(
+        1, int(profile.research.circuit_breaker_failure_threshold)
+    )
+    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS = max(
+        0.0, float(profile.research.circuit_breaker_reset_seconds)
+    )
     NUMERIC_UNIT_RULES = tuple(profile.dataset.numeric_units)
 
 

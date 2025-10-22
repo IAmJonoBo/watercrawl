@@ -75,3 +75,10 @@ research:
     - "{name} {province} civil aviation"
     - "{name} flight school"
     - "{name} aviation South Africa"
+  concurrency_limit: 4
+  cache_ttl_hours: 12
+  max_retries: 3
+  retry_backoff_base_seconds: 0.3
+  circuit_breaker:
+    failure_threshold: 5
+    reset_seconds: 45
