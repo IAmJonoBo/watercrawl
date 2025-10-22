@@ -31,7 +31,7 @@ from firecrawl_demo.interfaces.cli_base import (
     PlanCommitGuard,
     load_cli_environment,
 )
-from scripts import bootstrap_python, collect_problems
+from scripts import bootstrap_python
 
 CLI_ENVIRONMENT = load_cli_environment()
 
@@ -1085,63 +1085,6 @@ def qa_fmt(
         force=force,
     )
     raise SystemExit(exit_code)
-
-
-@qa.command("problems")
-@click.option(
-    "--fail-on-issues/--no-fail-on-issues",
-    default=False,
-    help="Return a non-zero exit code when any tool reports issues.",
-)
-def qa_problems(fail_on_issues: bool) -> None:
-    """Run the problems collector and summarise outstanding QA findings."""
-
-    console = Console()
-    console.print(Text.assemble(("Collecting problems…", "cyan")))
-    results = collect_problems.collect()
-    collect_problems.write_report(results)
-
-    table = Table(title="Problems report summary")
-    table.add_column("Tool", style="magenta")
-    table.add_column("Status", style="cyan")
-    table.add_column("Issues", justify="right")
-    table.add_column("Return", justify="right")
-
-    total_issues = 0
-    for entry in results:
-        summary = entry.get("summary", {})
-        issue_count = int(summary.get("issue_count", 0))
-        total_issues += issue_count
-        status = entry.get("status", "unknown")
-        style = "green"
-        if status not in {"completed", "completed_with_exit_code"}:
-            style = "yellow"
-        if issue_count > 0:
-            style = "red"
-        table.add_row(
-            entry.get("tool", "unknown"),
-            status,
-            str(issue_count),
-            str(entry.get("returncode", "")),
-            style=style,
-        )
-
-    console.print(table)
-    console.print(
-        Text.assemble(
-            ("Problems report written to ", "green"),
-            collect_problems.REPORT_PATH.as_posix(),
-        )
-    )
-    if total_issues:
-        console.print(
-            Text.assemble(
-                ("Detected ", "yellow"),
-                str(total_issues),
-                (" outstanding issue(s).", "yellow"),
-            )
-        )
-    raise SystemExit(1 if total_issues and fail_on_issues else 0)
 
 
 @qa.command("lint")

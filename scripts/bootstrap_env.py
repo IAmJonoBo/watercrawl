@@ -5,6 +5,7 @@ import subprocess
 import sys
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from os import environ
 from pathlib import Path
 
 
@@ -19,11 +20,16 @@ class BootstrapStep:
     description: str
     command: tuple[str, ...]
     cwd: Path | None = None
+    env: dict[str, str] | None = None
 
     def render(self) -> str:
         location = f" (cwd: {self.cwd})" if self.cwd else ""
         cmd = " ".join(self.command)
-        return f"{self.description}{location}: $ {cmd}"
+        suffix = ""
+        if self.env:
+            exports = " ".join(f"{key}={value}" for key, value in self.env.items())
+            suffix = f" (env: {exports})"
+        return f"{self.description}{location}: $ {cmd}{suffix}"
 
 
 def discover_node_projects(repo_root: Path) -> list[Path]:
@@ -78,6 +84,7 @@ def build_bootstrap_plan(
             BootstrapStep(
                 description="Install Poetry environment",
                 command=("poetry", "install", "--no-root", "--sync"),
+                env={"PYO3_USE_ABI3_FORWARD_COMPATIBILITY": "1"},
             )
         )
         steps.append(
@@ -131,7 +138,10 @@ def execute_plan(steps: Iterable[BootstrapStep], *, dry_run: bool) -> None:
         print(step.render())
         if dry_run:
             continue
-        result = subprocess.run(step.command, cwd=step.cwd, check=False)
+        env = environ.copy()
+        if step.env:
+            env.update(step.env)
+        result = subprocess.run(step.command, cwd=step.cwd, check=False, env=env)
         if result.returncode != 0:
             raise BootstrapError(
                 f"Step '{step.description}' failed with exit code {result.returncode}."

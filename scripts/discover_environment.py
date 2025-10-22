@@ -75,7 +75,6 @@ def discover_bootstrap_tools(repo_root: Path) -> dict[str, Any]:
         "bootstrap_env": (scripts_dir / "bootstrap_env.py").exists(),
         "bootstrap_python": (scripts_dir / "bootstrap_python.py").exists(),
         "bootstrap_node": (scripts_dir / "bootstrap_node.py").exists(),
-        "collect_problems": (scripts_dir / "collect_problems.py").exists(),
     }
 
 
@@ -183,7 +182,9 @@ def main() -> int:
     print()
     print("  For agents, ensure access to:")
     print("    - poetry run <command>  # Run commands in Poetry venv")
-    print("    - scripts/collect_problems.py  # Check quality gates")
+    print("    - poetry run python -m apps.automation.cli qa lint --help")
+    print("    - poetry run python -m apps.automation.cli qa typecheck --help")
+    print("    - poetry run python -m apps.automation.cli qa mutation --help")
     print("    - .venv/bin/python  # Direct venv access (after setup)")
     print()
 

@@ -6,7 +6,7 @@ When Copilot coding agent is asked to make changes in this repository, follow th
 
 Project quick-start (what Copilot should use when running or testing locally)
 - Build & dependencies (Poetry):
-  - Install dependencies: `poetry install --no-root --with dev`
+  - Install dependencies: `PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 poetry install --no-root --with dev`
   - Tests: `poetry run pytest -q`
   - Type-checking: `./scripts/run_with_stubs.sh -- poetry run mypy . --show-error-codes`
   - Lint & format: `poetry run ruff . && poetry run black . && poetry run isort .`
@@ -21,7 +21,7 @@ What files to change
 
 Code standards & checks (acceptance criteria)
 - New or changed code must include unit tests where appropriate and all tests must pass.
-- Must satisfy type-checking (mypy), linting (ruff/black/isort), and project QA checks in `scripts/collect_problems.py` if applicable.
+- Must satisfy type-checking (mypy), linting (ruff/black/isort), and the automation QA entry points (`poetry run python -m apps.automation.cli qa lint`, `qa typecheck`, `qa mutation`) when relevant.
 - Avoid changing generated files, lockfiles, or files under ignored directories: `node_modules`, `dist`, `.astro`, `data`, `artifacts`, `tmp`, `stubs/third_party`.
 
 Tasks suitable for Copilot
@@ -42,51 +42,25 @@ How to present changes when creating PRs
 Useful commands (for Copilot's ephemeral environment)
 - Run tests: `poetry run pytest -q`
 - Run mypy: `./scripts/run_with_stubs.sh -- poetry run mypy . --show-error-codes`
-- Run collector (regenerate problems report): `poetry run python scripts/collect_problems.py` or `python3 scripts/collect_problems.py --summary`
+- Run QA lint suite: `poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap`
+- Run QA type-check suite: `poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap`
+- Run QA mutation smoke: `poetry run python -m apps.automation.cli qa mutation --dry-run`
 - Run autofix for all tools: `python3 scripts/autofix.py --dry-run` (inspect first), then `python3 scripts/autofix.py`
 - Run autofix for specific tool: `python3 scripts/autofix.py ruff` or `python3 scripts/autofix.py black`
 
-Copilot-specific workflow: run-and-triage the problems reporter
-- Run the problems reporter at the start of any fresh session and before opening or updating a PR. This keeps the Problems pane and `problems_report.json` up to date and avoids noisy or surprise failures in CI.
-- The problems reporter now includes:
-  - Early detection of unavailable tools with setup guidance
-  - Performance metrics showing which tools are slowest
-  - Actionable autofix commands for supported tools
-  - Human-readable summary output with `--summary` flag
-- Recommended cadence:
-  - At session start: `python3 scripts/collect_problems.py --summary` (works without Poetry)
-  - Before creating/updating a PR: run the collector and address any new or bumped issues shown in `problems_report.json`.
-  - After making a set of edits locally (especially to workflows, linters, type stubs, or packaging): re-run the collector and ensure the report does not introduce new high-severity items.
+Copilot QA cadence
+- At session start: `poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap` to surface formatter and lint issues early.
+- When Python types or core contracts change, run `poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap`.
+- Before opening or updating a PR, execute the relevant QA commands (`qa lint`, `qa typecheck`, `qa mutation --dry-run`) and address any failures locally.
+- Optional: if Trunk is installed, `poetry run trunk check` provides an aggregated view of lint diagnostics; treat Trunk findings with the same priority as the standalone QA commands.
 
-Triage steps for issues returned by the collector
-- Classify each issue in `problems_report.json` as one of: ` blocker ` (must fix before PR), ` fix-later ` (documented technical debt), or ` informational ` (low/no action).
-- For `blocker` items, create a short plan in the PR description and either fix them in the same branch or open a follow-up PR referencing the blocker and why it was deferred.
-- For `fix-later` items, add an entry to the repository problems tracker (or an issue) with a short justification, an owner, and ETA.
-- Record triage decisions in the PR description and append the relevant evidence to `data/interim/evidence_log.csv` where applicable.
-
-Commands and quick workflow
-- Regenerate problems and show a compact summary on the terminal:
-
-```bash
-poetry run python scripts/collect_problems.py --output problems_report.json && jq '.summary' problems_report.json || true
-```
-
-- Open the full report locally (pretty JSON):
-
-```bash
-python -m json.tool problems_report.json | less -R
-```
-
-- If a session or CI run reports a previously unseen `blocker`, stop and either fix the blocker locally or create an explicit follow-up `*.plan`/`*.commit` artefact before proceeding (see `AGENTS.md` for Plan→Commit workflow).
+Remediation workflow
+- Use `python3 scripts/autofix.py --dry-run` to preview fixers, then rerun without `--dry-run` for the desired tool (e.g., `python3 scripts/autofix.py ruff`).
+- When QA commands surface blockers that cannot be resolved immediately, capture the debt in the PR description (or a follow-up issue) with owners and expected resolution.
+- Append supporting evidence to `data/interim/evidence_log.csv` whenever a change affects enrichment data or QA guardrails.
 
 Notes
-- The collector is the canonical source of repo QA state for Copilot sessions. Copilot must not make large cross-cutting changes without first running and triaging the collector results.
-- If the collector cannot run locally because of environment constraints (missing system deps, network, etc.), document the blocker in the PR and escalate to a maintainer for guidance.
-  - Troubleshooting: if `scripts/collect_problems.py` fails with import errors like "No module named 'firecrawl_demo'", ensure dev dependencies are installed in the local environment and the command is run from the repository root. Example:
-
-```bash
-poetry install --no-root --with dev
-poetry run python scripts/collect_problems.py --output problems_report.json
-```
+- If a QA command fails because dependencies are missing, follow `ENVIRONMENT.md` setup guidance or escalate to a maintainer before continuing.
+- When automation guardrails fail on CI but pass locally, include command output snippets in the PR discussion to help reviewers reproduce the issue.
 
 If you need to run interactive iterations on a PR, a human reviewer with write access can `@copilot` in PR comments to request follow-ups.

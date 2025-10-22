@@ -13,12 +13,12 @@ bootstrap:
 # Install dependencies with Poetry
 install:
     @echo "Installing dependencies with timeout/retry protection..."
-    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 && poetry install --no-root
+    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 && poetry install --no-root
 
 # Install with development dependencies
 install-dev:
     @echo "Installing with dev dependencies and timeout/retry protection..."
-    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 && poetry install --no-root --with dev
+    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 && poetry install --no-root --with dev
 
 # Run all tests
 test:

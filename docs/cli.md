@@ -114,22 +114,6 @@ poetry run python -m apps.automation.cli qa fmt --generate-plan --plan-dir tmp/p
 - Requires plan artefacts by default; use `--plan/--commit` to provide them or `--generate-plan` (with optional `--plan-note` / `--if-match-token`) to materialise compliant artefacts automatically.
 - Honours `--dry-run` and `--no-auto-bootstrap` toggles when previewing or skipping uv provisioning.
 
-### `qa problems`
-
-```bash
-poetry run python -m apps.automation.cli qa problems --fail-on-issues
-```
-
-- Runs the consolidated problems collector and prints a per-tool summary table.
-- Writes `problems_report.json` with previews to share in PRs or CI artefacts.
-- Return code is non-zero only when `--fail-on-issues` is supplied and issues are detected, making it safe to wire into optional QA hooks.
-- Tool execution is now registry-driven: the collector inspects `presets/problems_tools.toml` and merges those definitions with built-ins (Ruff, Mypy, Bandit, SQLFluff, Trunk, Biome) so new linters can be enabled declaratively or swapped out without code changes.
-- Trunk findings are expanded per underlying linter (`trunk:ruff`, `trunk:markdownlint`, etc.), ensuring problems from newly added plugins surface automatically with accurate severity counts.
-- Warning streams (including Python `DeprecationWarning` traces, sqlfluff/dbt warnings, npm `warn` lines, etc.) are captured per tool, summarised in `warning_count`, and highlighted with upgrade guidance so future deprecations can be planned before they break CI.
-- Autofix commands are surfaced per tool (`autofix_commands`) and reused by `scripts/collect_problems.py --autofix`, so agents can trigger `ruff --fix`, `trunk fmt`, or `biome --apply` remediation flows without hand-curating command strings.
-- The overall summary includes an `actions` array that prioritises next steps (autofix commands, warning follow-ups, missing linters) so humans or agents can jump straight to remediation.
-- When `VSCODE_PROBLEMS_EXPORT=/path/to/problems.json` is set, the collector ingests exported VS Code problem markers as a safety net for editors or extensions that do not yet report via Trunk or dedicated CLI invocations.
-
 ### Targeted QA commands
 
 Each QA stage is also exposed individually:
@@ -141,7 +125,7 @@ Each QA stage is also exposed individually:
 - `poetry run python -m apps.automation.cli qa security --skip-secrets`
 - `poetry run python -m apps.automation.cli qa build`
 - `poetry run python -m apps.automation.cli qa contracts --dry-run`
-- `poetry run python -m apps.automation.cli qa problems`
+Additional output from these commands is summarised in the automation CLI console tables and plan artefacts, eliminating the need for the legacy problems report workflow.
 
 Pass `--auto-bootstrap/--no-auto-bootstrap` to any targeted command to control whether uv is invoked automatically. The `qa dependencies` command now installs the Poetry environment before running the compatibility survey and guard checks, ensuring ephemeral runners start from a consistent toolchain.
 

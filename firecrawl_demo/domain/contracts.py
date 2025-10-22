@@ -248,8 +248,12 @@ class PipelineReportContract(BaseModel):
     @property
     def issues(self) -> list[ValidationIssueContract]:
         """Get validation issues from the report."""
-        # Use getattr to fetch the runtime attribute value (avoids the class-level FieldInfo)
-        return cast(ValidationReportContract, getattr(self, "validation_report")).issues
+        # Access via object.__getattribute__ to avoid the class-level FieldInfo
+        report = cast(
+            ValidationReportContract,
+            object.__getattribute__(self, "validation_report"),
+        )
+        return report.issues
 
     model_config = {
         "json_schema_extra": {

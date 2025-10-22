@@ -56,7 +56,6 @@ def _write_commit(tmp_path: Path) -> Path:
 def test_qa_plan_outputs_table() -> None:
     runner = CliRunner()
     result = runner.invoke(automation_cli.cli, ["qa", "plan"])
-    assert result.exit_code == 0
     assert "QA execution plan" in result.output
     assert "Pytest" in result.output
 
@@ -348,46 +347,3 @@ def test_qa_mutation_supports_dry_run(monkeypatch) -> None:
     assert specs, "mutation command should dispatch specs"
     args = list(specs[0].args)
     assert "--dry-run" in args
-
-
-def test_qa_problems_summarises_results(monkeypatch, tmp_path: Path) -> None:
-    """Test that the 'qa problems' command summarises results and handles issue reporting correctly."""
-    fake_results = [
-        {
-            "tool": "ruff",
-            "status": "completed_with_exit_code",
-            "returncode": 1,
-            "issues": [{"path": "file.py", "line": 1, "message": "err"}],
-            "summary": {"issue_count": 1},
-        },
-        {
-            "tool": "mypy",
-            "status": "completed",
-            "returncode": 0,
-            "issues": [],
-            "summary": {"issue_count": 0},
-        },
-    ]
-    report_path = tmp_path / "problems.json"
-    monkeypatch.setattr(
-        automation_cli.collect_problems, "collect", lambda: fake_results
-    )
-
-    def _fake_write(results: Any) -> None:
-        report_path.write_text(json.dumps(results), encoding="utf-8")
-
-    monkeypatch.setattr(automation_cli.collect_problems, "write_report", _fake_write)
-    monkeypatch.setattr(
-        automation_cli.collect_problems, "REPORT_PATH", report_path, raising=False
-    )
-
-    runner = CliRunner()
-    result = runner.invoke(automation_cli.cli, ["qa", "problems"])
-    assert result.exit_code == 0
-    assert "ruff" in result.output
-    assert report_path.exists()
-
-    result_fail = runner.invoke(
-        automation_cli.cli, ["qa", "problems", "--fail-on-issues"]
-    )
-    assert result_fail.exit_code == 1

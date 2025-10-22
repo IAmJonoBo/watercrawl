@@ -26,7 +26,7 @@ This guide outlines our conventions and standards. By contributing, you agree to
 
    ```bash
    python -m scripts.bootstrap_python --install-uv --poetry
-   poetry install --no-root
+    PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 poetry install --no-root
    ```
 
    > Node note: This repository uses pnpm for JavaScript tooling. Enable corepack and install dependencies with:
@@ -250,13 +250,12 @@ register_plugin("adapters", "my-adapter", {
 - **Security**: Bandit, safety
 - **Contracts**: Great Expectations + dbt
 - **Lineage**: OpenLineage, PROV-O, DCAT
-- **Problems Report**: Aggregated QA findings in `problems_report.json`
 
 ### CI Pipeline
 
 - Runs on push/PR to main
 - Mirrors local QA: `poetry run python -m apps.automation.cli qa all`
-- Generates artifacts: coverage.xml, problems_report.json, ci-summary.md
+- Generates artifacts: coverage.xml, ci-summary.md
 - Gates merges on all checks passing
 
 ### Local QA
@@ -270,8 +269,6 @@ poetry run python -m apps.automation.cli qa tests
 poetry run python -m apps.automation.cli qa lint
 poetry run python -m apps.automation.cli qa typecheck
 
-# Problems report
-poetry run python scripts/collect_problems.py
 ```
 
 ## Documentation Standards

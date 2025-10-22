@@ -10,12 +10,17 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess  # nosec B404 - subprocess usage is for controlled QA tool execution
 import sys
+import tempfile
 import threading
+import time
+import tracemalloc
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib import import_module
@@ -32,7 +37,18 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreter
 
 from urllib.parse import unquote, urlparse
 
-CACHE_TOOL_AVAILABILITY: dict[str, bool] = {}
+
+def _int_from_env(name: str, default: int) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None or not raw_value.strip():
+        return default
+    try:
+        return int(raw_value)
+    except ValueError:
+        return default
+
+
+CACHE_TOOL_AVAILABILITY: dict[str, tuple[float, bool]] = {}
 CACHE_LOCK = threading.Lock()
 
 
@@ -217,6 +233,24 @@ PYTHON_TOOL_MODULES: dict[str, str] = {
 
 PRE_COMMIT_CONFIG = Path(".pre-commit-config.yaml")
 MAX_PARALLELISM = max(4, os.cpu_count() or 4)
+
+DEFAULT_TOOL_CACHE_TTL = 900
+TOOL_CACHE_TTL_SECONDS = max(
+    0, _int_from_env("PROBLEMS_TOOL_CACHE_TTL", DEFAULT_TOOL_CACHE_TTL)
+)
+_DEFAULT_STREAM_CACHE_DIR = Path.home() / ".cache" / "watercrawl" / "problems_streams"
+STREAM_CACHE_DIR = Path(
+    os.getenv("PROBLEMS_STREAM_CACHE_DIR", str(_DEFAULT_STREAM_CACHE_DIR))
+)
+STREAM_PERSIST_THRESHOLD = max(
+    0, _int_from_env("PROBLEMS_STREAM_CACHE_THRESHOLD", 64 * 1024)
+)
+STREAM_CACHE_MAX_AGE = max(
+    0, _int_from_env("PROBLEMS_STREAM_CACHE_MAX_AGE", 7 * 24 * 60 * 60)
+)
+STREAM_CACHE_MAX_BYTES = max(
+    0, _int_from_env("PROBLEMS_STREAM_CACHE_MAX_BYTES", 512 * 1024 * 1024)
+)
 
 REPORT_PATH = Path("problems_report.json")
 TOOLS_CONFIG_PATH = Path("presets/problems_tools.toml")
@@ -615,13 +649,19 @@ def _probe_tool_command(tool_name: str) -> bool:
 
 
 def _check_tool_available(tool_name: str) -> bool:
+    now = time.monotonic()
     with CACHE_LOCK:
-        cached = CACHE_TOOL_AVAILABILITY.get(tool_name)
-    if cached is not None:
-        return cached
+        cached_entry: tuple[float, bool] | None = CACHE_TOOL_AVAILABILITY.get(tool_name)
+    if cached_entry is not None:
+        cached_timestamp, cached_value = cached_entry
+        if (
+            TOOL_CACHE_TTL_SECONDS <= 0
+            or now - cached_timestamp <= TOOL_CACHE_TTL_SECONDS
+        ):
+            return cached_value
     available = _probe_tool_command(tool_name)
     with CACHE_LOCK:
-        CACHE_TOOL_AVAILABILITY[tool_name] = available
+        CACHE_TOOL_AVAILABILITY[tool_name] = (now, available)
     return available
 
 
@@ -640,6 +680,136 @@ def _run_subprocess(
         env=dict(env) if env is not None else None,
         cwd=cwd,
     )
+
+
+def _prune_stream_cache(max_age_seconds: int, max_bytes: int) -> dict[str, int]:
+    stats = {"files_removed": 0, "bytes_removed": 0}
+    if not STREAM_CACHE_DIR.exists():
+        return stats
+    now = time.time()
+    entries: list[tuple[Path, float, int]] = []
+    for candidate in STREAM_CACHE_DIR.iterdir():
+        if not candidate.is_file():
+            continue
+        with suppress(OSError):
+            metadata = candidate.stat()
+            entries.append((candidate, metadata.st_mtime, metadata.st_size))
+    if not entries:
+        return stats
+    entries.sort(key=lambda item: item[1])  # oldest first
+    total_size = sum(size for _, _, size in entries)
+    to_remove: list[Path] = []
+    if max_age_seconds > 0:
+        cutoff = now - max_age_seconds
+        to_remove.extend(path for path, mtime, _ in entries if mtime < cutoff)
+    if max_bytes > 0 and total_size > max_bytes:
+        remaining = total_size
+        for path, _, file_size in entries:
+            if path in to_remove:
+                remaining -= file_size
+                continue
+            to_remove.append(path)
+            remaining -= file_size
+            if remaining <= max_bytes:
+                break
+    removed: set[Path] = set(to_remove)
+    for path in removed:
+        file_size = 0
+        with suppress(OSError):
+            file_size = path.stat().st_size
+        with suppress(OSError):
+            path.unlink()
+        if file_size:
+            stats["bytes_removed"] += file_size
+        stats["files_removed"] += 1
+    with suppress(OSError):
+        if not any(STREAM_CACHE_DIR.iterdir()):
+            STREAM_CACHE_DIR.rmdir()
+    return stats
+
+
+def _persist_stream_payload(payload: str, prefix: str) -> Path | None:
+    if not payload:
+        return None
+    safe_prefix = re.sub(r"[^A-Za-z0-9_.-]+", "_", prefix).strip("_") or "stream"
+    safe_prefix = (
+        (safe_prefix[:32] + "_") if len(safe_prefix) >= 32 else f"{safe_prefix}_"
+    )
+    try:
+        STREAM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            delete=False,
+            dir=STREAM_CACHE_DIR,
+            prefix=safe_prefix,
+            suffix=".log",
+        ) as handle:
+            handle.write(payload)
+        return Path(handle.name)
+    except OSError:
+        return None
+
+
+def _handle_stream(
+    entry: dict[str, Any],
+    *,
+    data: str | None,
+    label: str,
+    spec_name: str,
+) -> str | None:
+    if not data:
+        return data
+    preview_key = f"{label}_preview"
+    _attach_preview(entry, preview_key, data)
+    if STREAM_PERSIST_THRESHOLD > 0 and len(data) > STREAM_PERSIST_THRESHOLD:
+        persisted = _persist_stream_payload(data, f"{spec_name}_{label}")
+        if persisted is not None:
+            entry[f"{label}_path"] = persisted.as_posix()
+            return ""
+    return data
+
+
+def _remove_directory(path: Path) -> dict[str, int]:
+    stats = {"files_removed": 0, "bytes_removed": 0}
+    if not path.exists():
+        return stats
+    for root, _, files in os.walk(path):
+        root_path = Path(root)
+        for filename in files:
+            file_path = root_path / filename
+            with suppress(OSError):
+                stats["bytes_removed"] += file_path.stat().st_size
+                stats["files_removed"] += 1
+    shutil.rmtree(path, ignore_errors=True)
+    return stats
+
+
+def clear_cache_state(
+    *,
+    remove_stream_files: bool = False,
+    remove_bootstrap_cache: bool = False,
+) -> dict[str, Any]:
+    cleared: dict[str, Any] = {
+        "tool_cache_entries": 0,
+        "stream_files_removed": 0,
+        "stream_bytes_removed": 0,
+        "bootstrap_bytes_removed": 0,
+    }
+    with CACHE_LOCK:
+        cleared["tool_cache_entries"] = len(CACHE_TOOL_AVAILABILITY)
+        CACHE_TOOL_AVAILABILITY.clear()
+    ensure_tool_dependencies.cache_clear()
+    if remove_stream_files:
+        stats = _remove_directory(STREAM_CACHE_DIR)
+        cleared["stream_files_removed"] = stats["files_removed"]
+        cleared["stream_bytes_removed"] = stats["bytes_removed"]
+    if remove_bootstrap_cache and _bootstrap is not None:
+        cache_root = getattr(_bootstrap, "CACHE_ROOT", None)
+        if isinstance(cache_root, Path):
+            stats = _remove_directory(cache_root)
+            cleared["bootstrap_bytes_removed"] = stats["bytes_removed"]
+    return cleared
 
 
 def parse_ruff_output(result: CompletedProcess) -> dict[str, Any]:
@@ -1498,7 +1668,8 @@ def collect(
                     "issues": [],
                     "error": (
                         f"Tool '{primary_cmd}' is not available in PATH after provisioning."
-                        " Install dependencies with: poetry install --no-root --with dev"
+                        " Install dependencies with: PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1"
+                        " poetry install --no-root --with dev"
                     ),
                 },
             )
@@ -1574,11 +1745,25 @@ def collect(
                     severity_counts = {}
                     summary_block["severity_counts"] = severity_counts
                 severity_counts["error"] = severity_counts.get("error", 0) + 1
-        if completed.stderr:
-            _attach_preview(result_entry, "stderr_preview", completed.stderr)
         warnings, omitted_warnings = _extract_warnings(
             completed.stdout, completed.stderr
         )
+        stdout_after = _handle_stream(
+            result_entry,
+            data=completed.stdout,
+            label="stdout",
+            spec_name=spec.name,
+        )
+        if stdout_after is not None:
+            completed.stdout = stdout_after
+        stderr_after = _handle_stream(
+            result_entry,
+            data=completed.stderr,
+            label="stderr",
+            spec_name=spec.name,
+        )
+        if stderr_after is not None:
+            completed.stderr = stderr_after
         if warnings:
             result_entry["warnings"] = list(warnings)
         if spec.autofix:
@@ -1961,7 +2146,10 @@ def build_overall_summary(
             {
                 "issue": "Required QA tools not available",
                 "tools": tools_not_available,
-                "solution": "Install dependencies with: poetry install --no-root --with dev",
+                "solution": (
+                    "Install dependencies with: PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 "
+                    "poetry install --no-root --with dev"
+                ),
                 "alternative": "Or use Python directly: python3 -m pip install ruff mypy black isort bandit yamllint",
             }
         )
@@ -2056,6 +2244,7 @@ def write_report(
     *,
     autofixes: Sequence[Mapping[str, Any]] | None = None,
     output_path: Path = REPORT_PATH,
+    metadata: Mapping[str, Any] | None = None,
 ) -> None:
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -2063,6 +2252,8 @@ def write_report(
         "tools": list(results),
         "autofixes": list(autofixes or []),
     }
+    if metadata:
+        payload["metadata"] = dict(metadata)
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return None
 
@@ -2141,6 +2332,32 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Print a quick summary to stdout after generating the report.",
     )
+    parser.add_argument(
+        "--clear-cache",
+        action="store_true",
+        help="Clear cached tool metadata and persisted stream logs before execution.",
+    )
+    parser.add_argument(
+        "--clear-bootstrap-cache",
+        action="store_true",
+        help="When used with --clear-cache, also delete the vendored bootstrap cache.",
+    )
+    parser.add_argument(
+        "--profile-memory",
+        action="store_true",
+        help="Capture tracemalloc statistics during the run and store them in the report metadata.",
+    )
+    parser.add_argument(
+        "--memory-profile-limit",
+        type=int,
+        default=10,
+        help="Number of top allocation entries to include when --profile-memory is enabled (default: 10).",
+    )
+    parser.add_argument(
+        "--tool-cache-ttl",
+        type=int,
+        help="Override the tool availability cache TTL in seconds (0 disables caching).",
+    )
     return parser.parse_args(argv)
 
 
@@ -2215,11 +2432,77 @@ def print_summary(report_path: Path) -> None:
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
+    metadata: dict[str, Any] = {}
+    config_meta: dict[str, Any] = {
+        "stream_cache_dir": STREAM_CACHE_DIR.as_posix(),
+        "stream_cache_threshold": STREAM_PERSIST_THRESHOLD,
+        "stream_cache_max_age": STREAM_CACHE_MAX_AGE,
+        "stream_cache_max_bytes": STREAM_CACHE_MAX_BYTES,
+    }
+
+    global TOOL_CACHE_TTL_SECONDS
+    if args.tool_cache_ttl is not None:
+        TOOL_CACHE_TTL_SECONDS = max(0, args.tool_cache_ttl)
+    config_meta["tool_cache_ttl_seconds"] = TOOL_CACHE_TTL_SECONDS
+
+    cache_reset_stats: dict[str, Any] | None = None
+    if args.clear_cache:
+        cache_reset_stats = clear_cache_state(
+            remove_stream_files=True,
+            remove_bootstrap_cache=args.clear_bootstrap_cache,
+        )
+        metadata["cleared_caches"] = cache_reset_stats
+
+    if STREAM_CACHE_MAX_AGE > 0 or STREAM_CACHE_MAX_BYTES > 0:
+        prune_stats = _prune_stream_cache(STREAM_CACHE_MAX_AGE, STREAM_CACHE_MAX_BYTES)
+        metadata["stream_cache_prune"] = prune_stats
+
+    start_snapshot = None
+    if args.profile_memory:
+        tracemalloc.start()
+        start_snapshot = tracemalloc.take_snapshot()
+
     autofix_results: list[dict[str, Any]] = []
     if args.autofix:
         autofix_results = run_autofixes(args.autofix_tools or None)
+
     results = collect()
-    write_report(results, autofixes=autofix_results, output_path=args.output)
+
+    if args.profile_memory:
+        current_bytes, peak_bytes = tracemalloc.get_traced_memory()
+        snapshot = tracemalloc.take_snapshot()
+        tracemalloc.stop()
+        stats = (
+            snapshot.compare_to(start_snapshot, "lineno")
+            if start_snapshot is not None
+            else snapshot.statistics("lineno")
+        )
+        limit = max(1, args.memory_profile_limit)
+        top_entries: list[dict[str, Any]] = []
+        for stat in stats[:limit]:
+            entry = {
+                "size_bytes": getattr(stat, "size", 0),
+                "count": stat.count,
+                "traceback": stat.traceback.format(),
+            }
+            size_diff = getattr(stat, "size_diff", None)
+            if size_diff is not None:
+                entry["size_diff_bytes"] = size_diff
+            top_entries.append(entry)
+        metadata["memory_profile"] = {
+            "current_bytes": current_bytes,
+            "peak_bytes": peak_bytes,
+            "top_allocations": top_entries,
+        }
+
+    metadata["config"] = config_meta
+
+    write_report(
+        results,
+        autofixes=autofix_results,
+        output_path=args.output,
+        metadata=metadata if metadata else None,
+    )
     print(f"Problems report written to {args.output}")
     if args.summary:
         print_summary(args.output)

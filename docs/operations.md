@@ -286,182 +286,53 @@ release reviews so operators can replay or roll back snapshots deterministically
 > **Codex guardrail:** run `promptfoo eval codex/evals/promptfooconfig.yaml` before enabling any Codex or MCP-assisted sessions.
 > Production platform deployments must leave Codex disabled; only the `apps/automation/` workspace may opt in after the smoke tests pass.
 
-## Problems Report Aggregation
+## QA Automation Guardrails
 
-The `problems_report.json` artefact aggregates findings from multiple QA tools into a unified, machine-readable format for automated triage and human review. This pipeline ensures that linter errors, type issues, security vulnerabilities, and other code quality problems are surfaced consistently across CI, ephemeral runners, and local development environments.
+Automation across CI, ephemeral runners, and local development is now driven entirely by `apps.automation.cli`. The CLI orchestrates linting, type-checking, security scans, contract verification, mutation smoke tests, and evidence plan workflows without the legacy problems reporter artefacts.
 
 ### Pipeline Overview
 
-The aggregation is performed by `scripts/collect_problems.py`, which executes a suite of QA tools in parallel and parses their outputs into a standardized JSON structure. The script is designed to be fast, with output truncation for large reports (max 2000 characters per message, 100 issues per tool by default—override with `PROBLEMS_MAX_ISSUES`) to prevent context overflow.
+- `qa all` mirrors the full CI workflow (cleanup, dependency verification, tests, lint/type/security checks, dbt contracts, build, signing) and can optionally generate plan/commit artefacts on the fly.
+- `qa lint`, `qa typecheck`, `qa mutation`, `qa security`, `qa contracts`, and `qa build` expose focused subsets for faster iteration.
+- `qa fmt` and `qa fmt --generate-plan` wrap Ruff/isort/Black with plan→commit enforcement so formatting changes remain auditable.
+- Each command prints a Rich table summarising execution status, durations, and return codes. When `--generate-plan` is used, compliant plan/commit artefacts are written automatically and include step-by-step instructions for the executed QA tasks.
 
-Supported QA tools are now registry-driven:
+### Integration with Plan→Commit
 
-- **Built-ins**: Ruff, Mypy, Yamllint, Bandit (Python < 3.14), SQLFluff (Python < 3.14), Trunk, and Biome are registered automatically.
-- **Declarative extensions**: add or override tools in `presets/problems_tools.toml`. Each entry defines the command, parser, and optional environment gating, eliminating the need to edit `collect_problems.py` when onboarding new linters or changing invocation flags.
-- **Pylint** (opt-in): shipped via the registry config. Set `ENABLE_PYLINT=1` when invoking `scripts/collect_problems.py` (or exporting the env var in CI) to activate the declarative Pylint entry.
-- **Trunk expansion**: Trunk results are split per underlying linter (`trunk:ruff`, `trunk:markdownlint-cli2`, etc.) so new plugins appear automatically with accurate severity counts—even when added via `trunk.yaml` upgrades.
-- **VS Code fallback**: set `VSCODE_PROBLEMS_EXPORT=/path/to/problems.json` after exporting the editor Problems pane to ingest diagnostics from extensions that are not yet wired into Trunk or a standalone CLI.
-- **Warning capture**: stdout/stderr warnings (Python `DeprecationWarning`, dbt/sqlfluff warnings, npm `warn`, Bandit manager notes, etc.) are captured per tool and surfaced in `warning_count` with upgrade guidance so dependency pivots can be scheduled proactively.
+Destructive or repo-wide commands (cleanup, fmt, all) require plan/commit acknowledgement. Supply existing artefacts via `--plan` / `--commit` or allow the CLI to create them with `--generate-plan`. Artefacts embed:
 
-> **Python 3.14 compatibility:** dbt 1.10.x currently pulls in a `mashumaro` release that breaks SQLFluff's dbt templater on Python ≥3.14. The problems collector therefore skips SQLFluff by default on those interpreters. When you need SQL linting, install Python 3.13 alongside the default toolchain (e.g., `uv python install 3.13.0`), switch Poetry to that interpreter temporarily, and run:
->
-> ```bash
-> poetry env use 3.13
-> poetry run python -m tools.sql.sqlfluff_runner --project-dir data_contracts/analytics
-> ```
->
-> The `.sqlfluff` config already targets `data_contracts/analytics`, so the command above lints the golden-path dbt project while reusing the same DuckDB cache directory. Switch the environment back to your usual interpreter (3.13 for this repository) once the lint step completes.
+- The ordered command list executed (or planned) with shell-safe arguments.
+- Any tags used to express intent (e.g., `dbt`, `formatting`, `security`).
+- The contract schema version so evidence remains verifiable over time.
 
-Each tool's results are captured with status, return code, parsed issues, and summary metrics. The report includes a generation timestamp for freshness tracking.
-
-### JSON Structure
-
-The `problems_report.json` file follows this schema:
-
-```json
-{
-  "generated_at": "2025-10-18T12:37:05.925602+00:00",
-  "tools": [
-    {
-      "tool": "ruff",
-      "status": "completed",
-      "returncode": 0,
-      "issues": [
-        {
-          "path": "file.py",
-          "line": 10,
-          "column": 5,
-          "code": "E501",
-          "message": "Line too long"
-        }
-      ],
-      "warnings": [
-        {
-          "message": "path/to/lib.py: DeprecationWarning: distutils is deprecated",
-          "category": "DeprecationWarning",
-          "kind": "deprecation"
-        }
-      ],
-      "summary": {
-        "issue_count": 1,
-        "fixable": 1,
-        "warning_count": 1
-      }
-    }
-  ]
-}
-```
-
-- `generated_at`: ISO 8601 timestamp of report generation.
-- `tools`: Array of tool results, each with:
-  - `tool`: Tool name.
-  - `status`: Execution status (e.g., "completed", "failed").
-  - `returncode`: Exit code from the tool.
-  - `issues`: Array of parsed issues (truncated if excessive).
-  - `warnings`: Optional array of captured warnings/deprecations with metadata (`category`, `kind`, `guidance`).
-  - `autofix_commands`: Optional array of shell-ready fix commands (e.g., `poetry run ruff check . --fix`, `trunk fmt`) to streamline remediation for humans and agents.
-  - `summary`: Tool-specific metrics (e.g., issue counts, severity breakdowns).
-    - Includes `warning_count` / `omitted_warnings` when warnings are captured so evergreen upgrades can be prioritised.
-    - Optional fields: `stderr_preview`, `notes`, `raw_preview` (for parsing failures).
-      Each preview stores chunked text to keep lines below shell output limits and includes truncation metadata when applicable.
-- `summary.configured_tools`: Mirrors QA configuration (Trunk enabled linters, Biome presence) and flags tools that should be executed but were missing from the run. Use this to spot configuration drift early and wire new linters into the automation pipeline.
-- `summary.performance`: Tracks tool execution times for diagnosing slow QA tools on ephemeral runners. Includes:
-  - `total_duration_seconds`: Combined runtime of all tools
-  - `slowest_tools`: Array of the 5 slowest tools with their execution times
-- `summary.actions`: Ordered list of next-step recommendations (autofix commands, warning reviews, missing linters). Surface these directly to contributors or agents so remediation is one copy/paste away.
-
-### Wiring and Integration
-
-- **CI Pipeline**: In `.github/workflows/ci.yml`, the report is generated after tests via `poetry run python scripts/collect_problems.py` and uploaded as a CI artifact named `ci-dashboards`. This ensures problems are visible in GitHub Actions runs.
-- **Ephemeral Runners**: Automatically generated during containerized or serverless executions to surface issues without full IDE access.
-- **Local Development**: Run manually or via the shell wrapper `scripts/collect_problems.sh` to check code quality before commits.
-- **Automation CLI**: While `poetry run python -m apps.automation.cli qa all` mirrors most CI checks, the problems report is generated separately to aggregate findings post-QA.
-
-Analysts and Copilot agents must check `problems_report.json` for outstanding issues before remediation or enrichment tasks. This workflow blocks clean evidence logging and enrichment until problems are resolved.
-
-### Usage
-
-To generate the problems report locally:
-
-```bash
-# Via Python script
-poetry run python scripts/collect_problems.py
-
-# Via shell wrapper
-bash scripts/collect_problems.sh
-```
-
-The script outputs the path to the generated `problems_report.json`. Review the file to identify issues by tool, and address them using the standard QA commands (e.g., `poetry run ruff check . --fix` for auto-fixable Ruff issues).
-
-For CI-like execution, run the full QA suite first:
-
-```bash
-poetry run python -m apps.automation.cli qa all
-poetry run python scripts/collect_problems.py
-```
-
-This mirrors the CI sequence and ensures the report reflects the latest code state.
+This approach replaces the previous `problems_report.json` workflow with richer provenance that slots directly into MCP and analyst review gates.
 
 ### Ephemeral Runner Support
 
-The problems reporter is designed to work reliably on ephemeral runners (GitHub Actions, containerized environments, Copilot sandboxes) where full project dependencies may not be installed. Key features:
+The automation CLI is tuned for disposability:
 
-#### Automatic Stub Configuration
+- On Python <3.13 it will bootstrap a pinned interpreter via uv when `--auto-bootstrap` (default) is enabled.
+- Type checking automatically reuses vendored stubs by exporting `MYPYPATH` internally, so `qa typecheck` delivers consistent results without the manual `run_with_stubs.sh` wrapper.
+- When optional tooling is missing (e.g., SQLFluff or Bandit on minimal containers) the CLI reports the gap in the console summary and continues executing the remaining stages, mirroring CI.
+- The `qa dependencies` command verifies bootstrap scripts, wheelhouse availability, and stub cache freshness so subsequent QA runs do not encounter missing binaries.
 
-The mypy runner automatically configures `MYPYPATH` to include the repository's type stubs:
-- `stubs/third_party/` - vendored third-party type stubs (boto3, pandas, requests, etc.)
-- `stubs/` - project-specific type stubs
+### Minimal Setup Recipes
 
-This eliminates the need to manually invoke mypy via `scripts/run_with_stubs.sh` when running the problems collector. The stubs are automatically discovered and configured.
-
-#### Graceful Dependency Fallback
-
-When full project dependencies are unavailable (e.g., `firecrawl_demo` module cannot be imported), the collector:
-1. Falls back to a no-op implementation for optional features
-2. Continues executing all available QA tools
-3. Reports which tools couldn't run and why
-
-This means the problems reporter can run with minimal dependencies—only the QA tools themselves (mypy, ruff, etc.) need to be available.
-
-#### Summary Metadata
-
-The generated `problems_report.json` includes ephemeral runner diagnostics:
-
-```json
-{
-  "summary": {
-    "stubs_available": true,
-    "ephemeral_runner_notes": [
-      "Type stubs are properly configured for mypy via MYPYPATH"
-    ],
-    "configured_tools": {
-      "trunk_enabled": ["mypy", "ruff", "shellcheck"],
-      "biome_present": true
-    }
-  }
-}
-```
-
-These fields help diagnose why certain tools may not have run and confirm that type checking will use the correct stub files.
-
-#### Minimal Setup for Ephemeral Runners
-
-To run the problems collector on a fresh runner with minimal dependencies:
+For ephemeral agents with limited bandwidth:
 
 ```bash
-# Install only QA tools (via pip, pipx, or system package manager)
-pip install mypy ruff yamllint
+# install only mandatory CLI dependencies
+poetry install --no-root --with dev --sync
 
-# Run collector - works without project dependencies
-python scripts/collect_problems.py --output problems_report.json
-
-# Check for issues
-jq '.summary' problems_report.json
+# run targeted QA without destructive actions
+poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap
+poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap
+poetry run python -m apps.automation.cli qa mutation --dry-run
 ```
 
-The collector will skip tools that aren't installed (marking them as "not_installed" in the report) and run everything that's available. This allows Copilot agents and CI systems to get partial QA results even when the full environment isn't set up.
+The Rich tables highlight failing tools, durations, and remediation hints. Because the CLI captures stdout/stderr previews for failing steps, contributors can triage issues directly from ephemeral logs without opening auxiliary artefacts.
 
-**💡 For a comprehensive guide on running QA with minimal dependencies, see [Ephemeral QA Guide](ephemeral-qa-guide.md).**
+**💡 For detailed guidance on constrained environments, see [Ephemeral QA Guide](ephemeral-qa-guide.md).**
 
 > Update the path passed to `dotenv-linter` to match the environment file under
 > review (for example `.env`, `.env.production`, or `.env.sample`). The command
@@ -483,8 +354,8 @@ of silencing mypy regressions.
 
 ### Vendored type stubs (offline QA)
 
-The QA suite relies on a vendored cache of third-party type stubs so that `mypy`,
-Ruff, and the problems reporter succeed without network access. Refresh the cache
+The QA suite relies on a vendored cache of third-party type stubs so that `mypy`
+and Ruff succeed without network access. Refresh the cache
 whenever stub dependencies change:
 
 ```bash

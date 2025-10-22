@@ -15,7 +15,7 @@ python -m scripts.bootstrap_env
 
 # Manual steps when you need finer-grained control
 python -m scripts.bootstrap_python --install-uv --poetry
-poetry install --no-root
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 poetry install --no-root
 
 # Refresh vendored type stubs for offline QA tooling
 poetry run python -m scripts.sync_type_stubs --sync
@@ -158,10 +158,12 @@ poetry run pre-commit run --all-files
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 poetry run python apps/analyst/accessibility/axe_smoke.py
 # Aggregate lint/type issues (add --autofix to run available fixers before reporting)
-poetry run python scripts/collect_problems.py --output problems_report.json
+poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap
+poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap
+poetry run python -m apps.automation.cli qa mutation --dry-run
 ```
 
-> **Ephemeral Runner Support:** The problems reporter (`scripts/collect_problems.py`) is designed to work on ephemeral runners (GitHub Actions, Copilot sandboxes) with minimal dependencies. It automatically configures type stubs for mypy via MYPYPATH and gracefully handles missing project dependencies, allowing partial QA results even when the full environment isn't available. See [docs/operations.md](docs/operations.md#ephemeral-runner-support) for details.
+> **Ephemeral Runner Support:** The automation QA commands (`qa lint`, `qa typecheck`, `qa mutation`) are resilient on ephemeral runners (GitHub Actions, Copilot sandboxes) with minimal dependencies. They bootstrap vendored tooling automatically and allow partial QA results even when the full environment isn't available. See [docs/operations.md](docs/operations.md#qa-automation-workflows) for details.
 
 > Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.
 

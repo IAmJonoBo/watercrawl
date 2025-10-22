@@ -33,11 +33,15 @@ This will show you:
 pip install poetry
 
 # Install dependencies
-poetry install --no-root --with dev
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 poetry install --no-root --with dev
 
 # Verify installation
 poetry run python --version
 ```
+
+> The bootstrap scripts and Just recipes export `PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1`
+> automatically. Include the same flag when running raw `poetry install` commands so
+> PyO3-based wheels (such as `libcst`) build successfully on Python 3.14 runtimes.
 
 **Usage**:
 

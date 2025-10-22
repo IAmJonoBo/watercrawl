@@ -13,6 +13,7 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 from pathlib import Path
 from typing import BinaryIO
 
@@ -432,8 +433,13 @@ def ensure_python_package(
                 with tarfile.open(archive) as tar:
                     _safe_extract_tar(tar, dest)
             except tarfile.ReadError:
-                # try zip
-                pass
+                try:
+                    with zipfile.ZipFile(archive) as zf:
+                        _safe_extract_zip(zf, dest)
+                except zipfile.BadZipFile as exc:
+                    raise BootstrapError(
+                        "Wheelhouse archive is not a valid tar or zip file"
+                    ) from exc
 
             # Look for wheel matching the requested package and version
             import re
@@ -465,12 +471,12 @@ def ensure_python_package(
         pkg,
     ]
     try:
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd)  # nosec B603 - controlled tool bootstrap command
     except subprocess.CalledProcessError as exc:
         raise BootstrapError(f"Failed to pip install {pkg}: {exc}") from exc
     pkg = package_name if not version else f"{package_name}=={version}"
     cmd = [python_executable, "-m", "pip", "install", pkg]
     try:
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd)  # nosec B603 - controlled tool bootstrap command
     except subprocess.CalledProcessError as exc:
         raise BootstrapError(f"Failed to pip install {pkg}: {exc}") from exc

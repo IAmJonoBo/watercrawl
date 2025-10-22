@@ -60,6 +60,7 @@ jobs:
           # Set pip timeout for Poetry's use
           PIP_TIMEOUT: 60
           PIP_RETRIES: 5
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"
       - name: Bootstrap vendored Python dependencies
         # Run the repo-provided provisioning script inside the Poetry venv.
         # This prefers vendored wheels (tools/vendor/...) or a wheelhouse artifact
@@ -129,8 +130,6 @@ jobs:
         run: poetry run python -m scripts.verify_artifact_signatures dist artifacts/signatures/bundles
       - name: Validate wheel contents
         run: poetry run python -m scripts.validate_wheel
-      - name: Aggregate Problems Report
-        run: poetry run python scripts/collect_problems.py
       - name: Generate CI summary
         run: |
           poetry run python -m scripts.ci_summary \
@@ -149,7 +148,6 @@ jobs:
             pytest-results.xml
             ci-summary.md
             ci-dashboard.json
-            problems_report.json
             tools/dependency_matrix/report.json
             tools/dependency_matrix/status.json
             dist/*.whl

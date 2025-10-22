@@ -42,3 +42,4 @@ runs:
         # Set pip timeout for Poetry's use
         PIP_TIMEOUT: 60
         PIP_RETRIES: 5
+        PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"

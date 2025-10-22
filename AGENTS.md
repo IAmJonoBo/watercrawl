@@ -17,7 +17,7 @@ Name of Organisation | Province | Status | Website URL | Contact Person | Contac
 
 1. **Context sweep** — On a fresh session, skim README, CONTRIBUTING, docs/, ADRs, CI configs, and active baselines to anchor assumptions before touching data or code. Capture unknowns.
 2. **Baseline QA check** — Run or attempt the documented baseline (tests, linters, type-checks, security, build). If tooling is missing (e.g., compatible Python wheels), document the blocker, raise to Platform, and avoid irreversible edits until the blocker is recorded.
-3. **Problems report triage** — Open `problems_report.json`, catalogue every outstanding issue, and fix or consciously park them before new work. Re-run `scripts/collect_problems.sh` after changes to confirm green.
+3. **QA diagnostics triage** — Run the automation CLI guardrails (`poetry run python -m apps.automation.cli qa lint`, `qa typecheck`, `qa mutation --dry-run`) and catalogue every outstanding issue before new work. Supplement with `poetry run trunk check` when available.
 4. **Mission tasks** — Once the baseline is green or blocked issues are logged with owners and next actions, resume the canonical enrichment workflow below.
 
 ### Enrichment workflow
@@ -64,13 +64,12 @@ Name of Organisation | Province | Status | Website URL | Contact Person | Contac
 
 ## Problems Reporting & Remediation (for Copilot and Ephemeral Runners)
 
-- All linter, type, and QA errors are aggregated into `problems_report.json` after each run (see `scripts/collect_problems.py`).
+- All linter, type, and QA errors must be surfaced via the automation CLI (`qa lint`, `qa typecheck`, `qa mutation`) and Trunk diagnostics when available.
 - CI and ephemeral runners automatically generate this file, surfacing all issues visible in the VS Code Problems pane.
-- Copilot agents and analysts must:
-  - Check `problems_report.json` for outstanding issues before remediation or enrichment.
-  - Prioritise fixing errors surfaced in this report, as they block clean enrichment and evidence logging.
-  - Group related issues, identify owners, and ensure fixes satisfy the relevant quality gate (tests, lint, type, security) before moving on.
-  - Use the shell script `scripts/collect_problems.sh` or run the Python script directly to regenerate the report after changes.
+- Copilot agents and analysts must review CLI output for outstanding lint/type issues before remediation or enrichment.
+- Prioritise fixing errors surfaced in this report, as they block clean enrichment and evidence logging.
+- Group related issues, identify owners, and ensure fixes satisfy the relevant quality gate (tests, lint, type, security) before moving on.
+- Re-run the relevant automation CLI commands after changes to confirm the workspace is green.
 - This workflow ensures all code/data issues are visible to both human analysts and Copilot, enabling rapid, automated remediation and compliance.
 
-> **Best Practice:** Integrate `problems_report.json` as a required artefact in CI and review gates. Always remediate issues before publishing or updating evidence logs.
+> **Best Practice:** Integrate the automation QA commands and Trunk diagnostics into CI and review gates. Always remediate issues before publishing or updating evidence logs.
