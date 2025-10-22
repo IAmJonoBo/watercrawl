@@ -23,6 +23,7 @@ except ImportError:
     pd = None  # type: ignore
     _PANDAS_AVAILABLE = False
 
+from firecrawl_demo.application.change_tracking import describe_changes
 from firecrawl_demo.application.interfaces import EvidenceSink, PipelineService
 from firecrawl_demo.application.progress import (
     NullPipelineProgressListener,
@@ -33,6 +34,7 @@ from firecrawl_demo.application.quality import (
     QualityGate,
     QualityGateDecision,
 )
+from firecrawl_demo.application.row_processing import RowProcessor
 from firecrawl_demo.core import cache as global_cache, config
 
 if _PANDAS_AVAILABLE:
@@ -534,6 +536,12 @@ class Pipeline(PipelineService):
         lookup_metrics = coordinator.metrics
         adapter_failures = lookup_metrics.failures
 
+        # Create row processor for handling transformations
+        row_processor = RowProcessor(quality_gate=self.quality_gate)
+        
+        # Build list of update instructions for vectorized application
+        update_instructions: list[tuple[Any, SchoolRecord, list[str]]] = []
+        
         for result in lookup_results:
             state = result.state
             position = state.position
@@ -541,177 +549,84 @@ class Pipeline(PipelineService):
             row_id = state.row_id
             original_row = state.original_row
             original_record = state.original_record
-            record = replace(state.working_record)
             finding = result.finding
 
-            sources = self._merge_sources(record, finding)
-            (
-                total_source_count,
-                fresh_source_count,
-                official_source_count,
-                official_fresh_source_count,
-            ) = self._summarize_sources(
-                original=original_record, merged_sources=sources
-            )
-
-            if finding.website_url:
-                current_domain = canonical_domain(record.website_url)
-                proposed_domain = canonical_domain(finding.website_url)
-                if not record.website_url or (
-                    proposed_domain and proposed_domain != current_domain
-                ):
-                    record.website_url = finding.website_url
-
-            if not record.contact_person and finding.contact_person:
-                record.contact_person = finding.contact_person
-
-            previous_phone = record.contact_number
-            phone_candidate = finding.contact_phone or record.contact_number
-            normalized_phone, phone_issues = normalize_phone(phone_candidate)
-            if normalized_phone and normalized_phone != record.contact_number:
-                record.contact_number = normalized_phone
-            elif not normalized_phone and record.contact_number:
-                record.contact_number = None
-
-            previous_email = record.contact_email
-            email_candidate = finding.contact_email or record.contact_email
-            validated_email, email_issues = validate_email(
-                email_candidate, canonical_domain(record.website_url)
-            )
-            filtered_email_issues = [
-                issue for issue in email_issues if issue != "MX lookup unavailable"
-            ]
-            if validated_email and validated_email != record.contact_email:
-                record.contact_email = validated_email
-            elif not validated_email and record.contact_email:
-                record.contact_email = None
-
-            has_named_contact = bool(record.contact_person)
-            has_official_domain = official_source_count > 0
-            has_multiple_sources = total_source_count >= 2
-            status = determine_status(
-                bool(record.website_url),
-                has_named_contact,
-                phone_issues,
-                filtered_email_issues,
-                has_multiple_sources,
-            )
-            if status != record.status:
-                record.status = status
-
-            (
-                _sanity_updated,
-                sanity_notes,
-                row_findings,
-                sources,
-                cleared_columns,
-            ) = self._run_sanity_checks(
-                record=record,
+            # Process the row using the new row processor
+            processing_result = row_processor.process_row(
+                original_record=original_record,
+                finding=finding,
                 row_id=row_id,
-                sources=sources,
-                phone_issues=phone_issues,
-                email_issues=filtered_email_issues,
-                previous_phone=previous_phone,
-                previous_email=previous_email,
             )
-            if row_findings:
-                sanity_findings.extend(row_findings)
-            for column in cleared_columns:
-                # Ensure column is object dtype to avoid pandas incompatibility warnings
-                if working_frame_cast[column].dtype != "object":
-                    working_frame_cast[column] = working_frame_cast[column].astype(
-                        "object"
-                    )
-                working_frame_cast.at[idx, column] = ""
-
-            changed_columns = self._collect_changed_columns(original_record, record)
-            final_record = record
-            final_updated = bool(changed_columns)
-            decision: QualityGateDecision | None = None
-            if changed_columns:
-                decision = self.quality_gate.evaluate(
-                    original=original_record,
-                    proposed=record,
-                    finding=finding,
-                    changed_columns=changed_columns,
-                    phone_issues=phone_issues,
-                    email_issues=filtered_email_issues,
-                    total_source_count=total_source_count,
-                    fresh_source_count=fresh_source_count,
-                    official_source_count=official_source_count,
-                    official_fresh_source_count=official_fresh_source_count,
-                )
-
-            if decision and not decision.accepted:
+            
+            final_record = processing_result.final_record
+            final_updated = processing_result.updated
+            
+            # Collect side effects
+            sanity_findings.extend(processing_result.sanity_findings)
+            quality_issues.extend(processing_result.quality_issues)
+            if processing_result.rollback_action:
+                rollback_actions.append(processing_result.rollback_action)
                 quality_rejections += 1
-                issues = [
-                    self._quality_issue_from_finding(
-                        row_id=row_id,
-                        organisation=original_record.name,
-                        finding=finding_detail,
-                    )
-                    for finding_detail in decision.findings
-                ]
-                quality_issues.extend(issues)
-                rollback_actions.append(
-                    self._build_rollback_action(
-                        row_id=row_id,
-                        organisation=original_record.name,
-                        attempted_changes=changed_columns,
-                        issues=issues,
-                    )
-                )
-                final_record = decision.fallback_record or replace(
-                    original_record, status="Needs Review"
-                )
-                final_updated = final_record != original_record
-                attempted_changes_text = self._describe_changes(original_row, record)
-                final_changes_text = self._describe_changes(original_row, final_record)
-                rejection_reason = self._format_rejection_reason(issues)
+            
+            # Store update instruction for vectorized application
+            update_instructions.append(
+                (idx, final_record, processing_result.cleared_columns)
+            )
+            
+            # Build evidence record
+            if processing_result.rollback_action:
+                # Quality gate rejection
+                attempted_changes_text = describe_changes(original_row, processing_result.final_record)
+                final_changes_text = describe_changes(original_row, final_record)
+                rejection_reason = self._format_rejection_reason(processing_result.quality_issues)
                 notes = self._compose_quality_rejection_notes(
                     rejection_reason,
                     attempted_changes_text,
-                    decision.findings,
-                    sanity_notes,
+                    [],  # decision.findings not available from processing_result
+                    processing_result.sanity_notes,
                 )
                 evidence_records.append(
                     EvidenceRecord(
                         row_id=row_id,
                         organisation=final_record.name,
                         changes=final_changes_text or "No changes",
-                        sources=sources,
+                        sources=processing_result.sources,
                         notes=notes,
                         confidence=0,
                     )
                 )
-            else:
-                if final_updated:
-                    confidence = finding.confidence or confidence_for_status(
-                        final_record.status,
-                        len(phone_issues) + len(filtered_email_issues),
+            elif final_updated:
+                # Successful enrichment
+                (
+                    total_source_count,
+                    fresh_source_count,
+                    official_source_count,
+                    official_fresh_source_count,
+                ) = processing_result.source_counts
+                evidence_records.append(
+                    EvidenceRecord(
+                        row_id=row_id,
+                        organisation=final_record.name,
+                        changes=describe_changes(original_row, final_record),
+                        sources=processing_result.sources,
+                        notes=self._compose_evidence_notes(
+                            finding,
+                            original_row,
+                            final_record,
+                            has_official_source=official_source_count > 0,
+                            total_source_count=total_source_count,
+                            fresh_source_count=fresh_source_count,
+                            sanity_notes=processing_result.sanity_notes,
+                        ),
+                        confidence=processing_result.confidence,
                     )
-                    evidence_records.append(
-                        EvidenceRecord(
-                            row_id=row_id,
-                            organisation=final_record.name,
-                            changes=self._describe_changes(original_row, final_record),
-                            sources=sources,
-                            notes=self._compose_evidence_notes(
-                                finding,
-                                original_row,
-                                final_record,
-                                has_official_source=has_official_domain,
-                                total_source_count=total_source_count,
-                                fresh_source_count=fresh_source_count,
-                                sanity_notes=sanity_notes,
-                            ),
-                            confidence=confidence,
-                        )
-                    )
-                    enriched_rows += 1
-
-            self._apply_record(working_frame, idx, final_record)
+                )
+                enriched_rows += 1
+            
             listener.on_row_processed(position, final_updated, final_record)
+        
+        # Apply updates in a vectorized manner to preserve dtype stability
+        self._apply_bulk_updates(working_frame, update_instructions)
 
         if evidence_records:
             contract_entries = [
@@ -1116,6 +1031,39 @@ class Pipeline(PipelineService):
                 if frame_cast[column].dtype != "object":
                     frame_cast[column] = frame_cast[column].astype("object")
                 frame_cast.at[index, column] = value
+    
+    def _apply_bulk_updates(
+        self,
+        frame: Any,
+        instructions: list[tuple[Any, SchoolRecord, list[str]]],
+    ) -> None:
+        """Apply row updates in a vectorized manner to preserve dtype stability.
+        
+        Args:
+            frame: The DataFrame to update
+            instructions: List of (index, record, cleared_columns) tuples
+        """
+        frame_cast = cast(Any, frame)
+        
+        # Pre-convert columns to object dtype once to avoid repeated conversions
+        columns_to_convert: set[str] = set()
+        for _, record, cleared_cols in instructions:
+            for column, value in record.as_dict().items():
+                if value is not None:
+                    columns_to_convert.add(column)
+            columns_to_convert.update(cleared_cols)
+        
+        for column in columns_to_convert:
+            if column in frame_cast.columns and frame_cast[column].dtype != "object":
+                frame_cast[column] = frame_cast[column].astype("object")
+        
+        # Apply all updates
+        for idx, record, cleared_cols in instructions:
+            for column, value in record.as_dict().items():
+                if value is not None:
+                    frame_cast.at[idx, column] = value
+            for column in cleared_cols:
+                frame_cast.at[idx, column] = ""
 
     def _collect_changed_columns(
         self, original: SchoolRecord, proposed: SchoolRecord
