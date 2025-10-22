@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from importlib import metadata
 from typing import Any
 
+from firecrawl_demo.domain.contracts import export_contract_registry
 from firecrawl_demo.governance.secrets import SecretsProvider
 
 logger = logging.getLogger(__name__)
@@ -174,6 +175,12 @@ def reset_registry() -> None:
     _entrypoint_cache.clear()
 
 
+def contract_registry() -> Mapping[str, dict[str, Any]]:
+    """Expose the active contract registry for downstream consumers."""
+
+    return export_contract_registry()
+
+
 __all__ = [
     "ENTRYPOINT_GROUP_PREFIX",
     "IntegrationPlugin",
@@ -189,4 +196,5 @@ __all__ = [
     "instantiate_plugin",
     "register_plugin",
     "reset_registry",
+    "contract_registry",
 ]

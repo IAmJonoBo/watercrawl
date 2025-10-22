@@ -34,6 +34,7 @@ from firecrawl_demo.integrations.contracts import (
     run_deequ_checks,
     validate_curated_file,
 )
+from firecrawl_demo.integrations.integration_plugins import contract_registry
 from firecrawl_demo.integrations.storage.lakehouse import build_lakehouse_writer
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
 from firecrawl_demo.interfaces.cli_base import (
@@ -195,11 +196,19 @@ def validate(
     pipeline = pipeline_factory()
     frame = reader(input_path)
     report = pipeline.validator.validate_dataframe(frame)
-    issues_payload = [issue.__dict__ for issue in report.issues]
+    validation_contract = report.to_contract()
+    issues_payload = [issue.model_dump() for issue in validation_contract.issues]
+    registry = contract_registry()
     payload: dict[str, object] = {
-        "rows": report.rows,
+        "rows": validation_contract.rows,
         "issues": issues_payload,
-        "is_valid": report.is_valid,
+        "is_valid": validation_contract.is_valid,
+        "contracts": {
+            "validation": {
+                "version": registry["ValidationReport"]["version"],
+                "schema_uri": registry["ValidationReport"]["schema_uri"],
+            }
+        },
     }
     progress_listener_factory = _get_cli_override(
         "RichPipelineProgress", RichPipelineProgress
@@ -351,16 +360,24 @@ def enrich(
         progress=listener,
         lineage_context=lineage_context,
     )
-    issues_payload = [issue.__dict__ for issue in report.issues]
+    report_contract = report.to_contract()
+    issues_payload = [issue.model_dump() for issue in report_contract.issues]
+    registry = contract_registry()
     payload = {
-        "rows_total": report.metrics["rows_total"],
-        "rows_enriched": report.metrics["enriched_rows"],
-        "verified_rows": report.metrics["verified_rows"],
+        "rows_total": report_contract.metrics.get("rows_total", 0),
+        "rows_enriched": report_contract.metrics.get("enriched_rows", 0),
+        "verified_rows": report_contract.metrics.get("verified_rows", 0),
         "issues": issues_payload,
         "output_path": str(target),
-        "adapter_failures": report.metrics["adapter_failures"],
+        "adapter_failures": report_contract.metrics.get("adapter_failures", 0),
         "plan_artifacts": [str(path) for path in validation.plan_paths],
         "commit_artifacts": [str(path) for path in validation.commit_paths],
+        "contracts": {
+            "pipeline_report": {
+                "version": registry["PipelineReport"]["version"],
+                "schema_uri": registry["PipelineReport"]["schema_uri"],
+            }
+        },
     }
     if report.lineage_artifacts:
         payload["lineage_artifacts"] = {

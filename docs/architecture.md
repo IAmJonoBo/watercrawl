@@ -65,24 +65,32 @@ This ensures **backward compatibility** during migration while new code can use 
 ### Schema Export
 
 ```python
-from firecrawl_demo.domain.contracts import export_all_schemas
+from firecrawl_demo.domain.contracts import export_all_avro_schemas, export_all_schemas
 
-# Export all schemas for documentation/testing
-schemas = export_all_schemas()
-# Returns: {"SchoolRecord": {...}, "EvidenceRecord": {...}, ...}
+# Export JSON Schema definitions for documentation/testing
+json_schemas = export_all_schemas()
+
+# Export matching Apache Avro schemas for registry tooling
+avro_schemas = export_all_avro_schemas()
 ```
 
 ### Contract Registry
 
-All contracts include metadata for schema registry integration:
+All contracts include metadata for schema registry integration and can be retrieved from the
+shared registry exposed via `firecrawl_demo.integrations.integration_plugins.contract_registry()`:
 
 - **Version**: Semantic version (e.g., "1.0.0")
 - **Schema URI**: Canonical identifier (e.g., "https://watercrawl.acesaero.co.za/schemas/v1/school-record")
+- **Schemas**: Both JSON Schema and Avro definitions are surfaced for downstream tooling.
 
-Future integration points:
-- MCP responses will embed contract versions and schema URIs
-- Evidence sinks will validate entries against contracts before persistence
-- Plan→commit artefacts will reference contract versions for compatibility checking
+Current integration points:
+
+- CLI and MCP responses embed the contract version + schema URI alongside payloads so downstream agents
+  can verify compatibility.
+- Evidence sinks normalise all entries to `EvidenceRecordContract` before persistence, guaranteeing
+  that only validated contracts reach disk or streaming transports.
+- Plan→commit artefacts are generated via `PlanArtifactContract` and `CommitArtifactContract` ensuring
+  automation tooling enforces the same schema guardrails as CLI users.
 
 ## Data Flow
 

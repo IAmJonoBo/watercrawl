@@ -89,18 +89,23 @@ datasets have quality checks defined before they are published.
 The project uses **Pydantic-based data contracts** (v1.0.0) for all domain models. To validate data against contracts:
 
 ```bash
-# Run contract tests to verify schema compliance
+# Run contract tests to verify schema compliance and snapshot stability
 poetry run pytest tests/test_contract_schemas.py -v
 
 # Export all contract schemas for documentation
 poetry run python -c "from firecrawl_demo.domain.contracts import export_all_schemas; import json; print(json.dumps(export_all_schemas(), indent=2))"
+
+# Export the matching Avro schema bundle when refreshing registry metadata
+poetry run python -c "from firecrawl_demo.domain.contracts import export_all_avro_schemas; import json; print(json.dumps(export_all_avro_schemas(), indent=2))"
 ```
 
 **Contract guarantees:**
 - All domain models have versioned Pydantic equivalents in `firecrawl_demo/domain/contracts.py`
-- JSON Schema export available for integration testing and API docs
+- JSON Schema **and Avro** export available for integration testing, registries, and API docs
 - Backward compatibility adapters in `firecrawl_demo/domain/models.py`
-- Schema stability enforced via regression tests
+- Schema stability enforced via regression tests (JSON + Avro snapshots stored under `tests/data/contracts/`)
+- Evidence sinks normalise and validate entries via `EvidenceRecordContract`
+- Plan→commit artefacts must satisfy `PlanArtifactContract`/`CommitArtifactContract` before execution
 
 **When to update contract versions:**
 - Increment **patch** (1.0.x) for documentation or non-breaking clarifications
@@ -111,6 +116,7 @@ After bumping the contract version, regenerate schema snapshots:
 
 ```bash
 poetry run pytest tests/test_contract_schemas.py::TestSchemaExport::test_schema_stability_regression --snapshot-update
+poetry run pytest tests/test_contract_schemas.py::TestSchemaExport::test_avro_schema_regression --snapshot-update
 ```
 
 ### Supply chain artifacts

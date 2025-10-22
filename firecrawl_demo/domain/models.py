@@ -7,6 +7,10 @@ from typing import TYPE_CHECKING, Any, Literal
 from firecrawl_demo.core import config
 
 if TYPE_CHECKING:
+    from firecrawl_demo.domain.contracts import (
+        PipelineReportContract,
+        ValidationReportContract,
+    )
     from firecrawl_demo.integrations.storage.lakehouse import LakehouseManifest
     from firecrawl_demo.integrations.storage.versioning import VersionInfo
     from firecrawl_demo.integrations.telemetry.drift import DriftReport
@@ -64,6 +68,9 @@ class ValidationReport:
     @property
     def is_valid(self) -> bool:
         return not self.issues
+
+    def to_contract(self) -> "ValidationReportContract":
+        return validation_report_to_contract(self)
 
 
 @dataclass(frozen=True)
@@ -215,6 +222,9 @@ class PipelineReport:
     def issues(self) -> list[ValidationIssue]:
         return self.validation_report.issues
 
+    def to_contract(self) -> "PipelineReportContract":
+        return pipeline_report_to_contract(self)
+
 
 def _clean_value(value: Any) -> str | None:
     if value is None:
@@ -345,4 +355,100 @@ def validation_issue_from_contract(contract):
         message=contract.message,
         row=contract.row,
         column=contract.column,
+    )
+
+
+def validation_report_to_contract(report: ValidationReport):
+    from firecrawl_demo.domain.contracts import ValidationReportContract
+
+    return ValidationReportContract(
+        issues=[validation_issue_to_contract(issue) for issue in report.issues],
+        rows=report.rows,
+    )
+
+
+def validation_report_from_contract(contract):
+    from firecrawl_demo.domain.contracts import ValidationReportContract
+
+    if not isinstance(contract, ValidationReportContract):
+        raise TypeError(
+            f"Expected ValidationReportContract, got {type(contract)}"
+        )
+
+    return ValidationReport(
+        issues=[validation_issue_from_contract(issue) for issue in contract.issues],
+        rows=contract.rows,
+    )
+
+
+def sanity_check_finding_to_contract(finding: SanityCheckFinding):
+    from firecrawl_demo.domain.contracts import SanityCheckFindingContract
+
+    return SanityCheckFindingContract(
+        row_id=finding.row_id,
+        organisation=finding.organisation,
+        issue=finding.issue,
+        remediation=finding.remediation,
+    )
+
+
+def sanity_check_finding_from_contract(contract):
+    from firecrawl_demo.domain.contracts import SanityCheckFindingContract
+
+    if not isinstance(contract, SanityCheckFindingContract):
+        raise TypeError(
+            f"Expected SanityCheckFindingContract, got {type(contract)}"
+        )
+
+    return SanityCheckFinding(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        issue=contract.issue,
+        remediation=contract.remediation,
+    )
+
+
+def pipeline_report_to_contract(report: PipelineReport):
+    from firecrawl_demo.domain.contracts import PipelineReportContract
+
+    return PipelineReportContract(
+        validation_report=validation_report_to_contract(report.validation_report),
+        evidence_log=[
+            evidence_record_to_contract(record) for record in report.evidence_log
+        ],
+        metrics=dict(report.metrics),
+        sanity_findings=[
+            sanity_check_finding_to_contract(finding)
+            for finding in report.sanity_findings
+        ],
+        quality_issues=[
+            quality_issue_to_contract(issue) for issue in report.quality_issues
+        ],
+    )
+
+
+def pipeline_report_from_contract(contract):
+    from firecrawl_demo.domain.contracts import PipelineReportContract
+
+    if not isinstance(contract, PipelineReportContract):
+        raise TypeError(
+            f"Expected PipelineReportContract, got {type(contract)}"
+        )
+
+    return PipelineReport(
+        refined_dataframe=None,
+        validation_report=validation_report_from_contract(contract.validation_report),
+        evidence_log=[
+            evidence_record_from_contract(record)
+            for record in contract.evidence_log
+        ],
+        metrics=dict(contract.metrics),
+        sanity_findings=[
+            sanity_check_finding_from_contract(finding)
+            for finding in contract.sanity_findings
+        ],
+        quality_issues=[
+            quality_issue_from_contract(issue)
+            for issue in contract.quality_issues
+        ],
     )

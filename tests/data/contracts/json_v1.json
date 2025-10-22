@@ -1,0 +1,842 @@
+{
+  "CommitArtifact": {
+    "$defs": {
+      "ContractDescriptor": {
+        "description": "Metadata embedded with downstream artefacts to identify the contract.",
+        "properties": {
+          "name": {
+            "description": "Canonical contract identifier",
+            "title": "Name",
+            "type": "string"
+          },
+          "schema_uri": {
+            "description": "Canonical URI for the schema definition",
+            "title": "Schema Uri",
+            "type": "string"
+          },
+          "version": {
+            "default": "1.0.0",
+            "description": "Semantic version of the contract schema",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "schema_uri"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/contract-descriptor",
+        "title": "ContractDescriptor",
+        "type": "object",
+        "version": "1.0.0"
+      }
+    },
+    "description": "Contract describing commit artefacts captured during plan\u2192commit.",
+    "properties": {
+      "contract": {
+        "$ref": "ContractDescriptor",
+        "description": "Embedded contract metadata for registry lookup"
+      },
+      "diff_format": {
+        "default": "markdown",
+        "description": "Format identifier for diff_summary",
+        "title": "Diff Format",
+        "type": "string"
+      },
+      "diff_summary": {
+        "description": "Reviewer-facing summary of the diff",
+        "title": "Diff Summary",
+        "type": "string"
+      },
+      "if_match": {
+        "description": "Opaque diff approval token",
+        "title": "If Match",
+        "type": "string"
+      },
+      "rag": {
+        "additionalProperties": {
+          "type": "number"
+        },
+        "description": "Recorded Retrieval-Augmented Generation metrics",
+        "title": "Rag",
+        "type": "object"
+      }
+    },
+    "required": [
+      "if_match",
+      "diff_summary",
+      "contract"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/commit-artifact",
+    "title": "CommitArtifactContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "ContractDescriptor": {
+    "description": "Metadata embedded with downstream artefacts to identify the contract.",
+    "properties": {
+      "name": {
+        "description": "Canonical contract identifier",
+        "title": "Name",
+        "type": "string"
+      },
+      "schema_uri": {
+        "description": "Canonical URI for the schema definition",
+        "title": "Schema Uri",
+        "type": "string"
+      },
+      "version": {
+        "default": "1.0.0",
+        "description": "Semantic version of the contract schema",
+        "title": "Version",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "schema_uri"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/contract-descriptor",
+    "title": "ContractDescriptor",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "EvidenceRecord": {
+    "description": "Contract for evidence log entries.\n\nMaps to the legacy EvidenceRecord dataclass for backward compatibility.",
+    "properties": {
+      "changes": {
+        "description": "Description of changes made",
+        "title": "Changes",
+        "type": "string"
+      },
+      "confidence": {
+        "description": "Confidence score (0-100)",
+        "maximum": 100,
+        "minimum": 0,
+        "title": "Confidence",
+        "type": "integer"
+      },
+      "notes": {
+        "default": "",
+        "description": "Additional notes or context",
+        "title": "Notes",
+        "type": "string"
+      },
+      "organisation": {
+        "description": "Organisation name",
+        "minLength": 1,
+        "title": "Organisation",
+        "type": "string"
+      },
+      "row_id": {
+        "description": "Row identifier",
+        "minimum": 0,
+        "title": "Row Id",
+        "type": "integer"
+      },
+      "sources": {
+        "description": "Data source URLs or references",
+        "items": {
+          "type": "string"
+        },
+        "title": "Sources",
+        "type": "array"
+      },
+      "timestamp": {
+        "description": "Record creation timestamp",
+        "format": "date-time",
+        "title": "Timestamp",
+        "type": "string"
+      }
+    },
+    "required": [
+      "row_id",
+      "organisation",
+      "changes",
+      "confidence"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/evidence-record",
+    "title": "EvidenceRecordContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "PipelineReport": {
+    "$defs": {
+      "EvidenceRecordContract": {
+        "description": "Contract for evidence log entries.\n\nMaps to the legacy EvidenceRecord dataclass for backward compatibility.",
+        "properties": {
+          "changes": {
+            "description": "Description of changes made",
+            "title": "Changes",
+            "type": "string"
+          },
+          "confidence": {
+            "description": "Confidence score (0-100)",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Confidence",
+            "type": "integer"
+          },
+          "notes": {
+            "default": "",
+            "description": "Additional notes or context",
+            "title": "Notes",
+            "type": "string"
+          },
+          "organisation": {
+            "description": "Organisation name",
+            "minLength": 1,
+            "title": "Organisation",
+            "type": "string"
+          },
+          "row_id": {
+            "description": "Row identifier",
+            "minimum": 0,
+            "title": "Row Id",
+            "type": "integer"
+          },
+          "sources": {
+            "description": "Data source URLs or references",
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "timestamp": {
+            "description": "Record creation timestamp",
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_id",
+          "organisation",
+          "changes",
+          "confidence"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/evidence-record",
+        "title": "EvidenceRecordContract",
+        "type": "object",
+        "version": "1.0.0"
+      },
+      "QualityIssueContract": {
+        "description": "Contract for quality gate issues.\n\nMaps to the legacy QualityIssue dataclass for backward compatibility.",
+        "properties": {
+          "code": {
+            "description": "Issue code/identifier",
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable issue message",
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "organisation": {
+            "description": "Organisation name",
+            "minLength": 1,
+            "title": "Organisation",
+            "type": "string"
+          },
+          "remediation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Suggested remediation steps",
+            "title": "Remediation"
+          },
+          "row_id": {
+            "description": "Row identifier",
+            "minimum": 0,
+            "title": "Row Id",
+            "type": "integer"
+          },
+          "severity": {
+            "description": "Issue severity level",
+            "enum": [
+              "block",
+              "warn"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_id",
+          "organisation",
+          "code",
+          "severity",
+          "message"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/quality-issue",
+        "title": "QualityIssueContract",
+        "type": "object",
+        "version": "1.0.0"
+      },
+      "SanityCheckFindingContract": {
+        "description": "Contract for sanity check findings.",
+        "properties": {
+          "issue": {
+            "description": "Issue description",
+            "minLength": 1,
+            "title": "Issue",
+            "type": "string"
+          },
+          "organisation": {
+            "description": "Organisation name",
+            "minLength": 1,
+            "title": "Organisation",
+            "type": "string"
+          },
+          "remediation": {
+            "description": "Remediation steps",
+            "minLength": 1,
+            "title": "Remediation",
+            "type": "string"
+          },
+          "row_id": {
+            "description": "Row identifier",
+            "minimum": 0,
+            "title": "Row Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row_id",
+          "organisation",
+          "issue",
+          "remediation"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/sanity-check-finding",
+        "title": "SanityCheckFindingContract",
+        "type": "object",
+        "version": "1.0.0"
+      },
+      "ValidationIssueContract": {
+        "description": "Contract for validation issues.",
+        "properties": {
+          "code": {
+            "description": "Issue code",
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Column name if applicable",
+            "title": "Column"
+          },
+          "message": {
+            "description": "Issue description",
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "row": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Row number if applicable",
+            "title": "Row"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/validation-issue",
+        "title": "ValidationIssueContract",
+        "type": "object",
+        "version": "1.0.0"
+      },
+      "ValidationReportContract": {
+        "description": "Contract for validation reports.",
+        "properties": {
+          "issues": {
+            "description": "List of validation issues",
+            "items": {
+              "$ref": "ValidationIssueContract"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "rows": {
+            "description": "Total number of rows validated",
+            "minimum": 0,
+            "title": "Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/validation-report",
+        "title": "ValidationReportContract",
+        "type": "object",
+        "version": "1.0.0"
+      }
+    },
+    "description": "Contract for pipeline execution reports.\n\nMaps to the legacy PipelineReport dataclass for backward compatibility.\nNote: This is a simplified version that doesn't include all optional\ntelemetry fields (lineage, lakehouse, version info, etc.) as those\nwould create circular dependencies.",
+    "properties": {
+      "evidence_log": {
+        "description": "Evidence log entries",
+        "items": {
+          "$ref": "EvidenceRecordContract"
+        },
+        "title": "Evidence Log",
+        "type": "array"
+      },
+      "metrics": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "description": "Pipeline execution metrics",
+        "title": "Metrics",
+        "type": "object"
+      },
+      "quality_issues": {
+        "description": "Quality gate issues",
+        "items": {
+          "$ref": "QualityIssueContract"
+        },
+        "title": "Quality Issues",
+        "type": "array"
+      },
+      "sanity_findings": {
+        "description": "Sanity check findings",
+        "items": {
+          "$ref": "SanityCheckFindingContract"
+        },
+        "title": "Sanity Findings",
+        "type": "array"
+      },
+      "validation_report": {
+        "$ref": "ValidationReportContract",
+        "description": "Validation results"
+      }
+    },
+    "required": [
+      "validation_report"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/pipeline-report",
+    "title": "PipelineReportContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "PlanArtifact": {
+    "$defs": {
+      "ContractDescriptor": {
+        "description": "Metadata embedded with downstream artefacts to identify the contract.",
+        "properties": {
+          "name": {
+            "description": "Canonical contract identifier",
+            "title": "Name",
+            "type": "string"
+          },
+          "schema_uri": {
+            "description": "Canonical URI for the schema definition",
+            "title": "Schema Uri",
+            "type": "string"
+          },
+          "version": {
+            "default": "1.0.0",
+            "description": "Semantic version of the contract schema",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "schema_uri"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/contract-descriptor",
+        "title": "ContractDescriptor",
+        "type": "object",
+        "version": "1.0.0"
+      }
+    },
+    "description": "Contract describing saved plan artefacts used by the plan\u2192commit guard.",
+    "properties": {
+      "changes": {
+        "description": "Ordered list of intended changes",
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Changes",
+        "type": "array"
+      },
+      "contract": {
+        "$ref": "ContractDescriptor",
+        "description": "Embedded contract metadata for registry lookup"
+      },
+      "generated_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Optional timestamp recording plan creation time",
+        "title": "Generated At"
+      },
+      "instructions": {
+        "description": "Natural language summary of the plan",
+        "title": "Instructions",
+        "type": "string"
+      }
+    },
+    "required": [
+      "instructions",
+      "contract"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/plan-artifact",
+    "title": "PlanArtifactContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "QualityIssue": {
+    "description": "Contract for quality gate issues.\n\nMaps to the legacy QualityIssue dataclass for backward compatibility.",
+    "properties": {
+      "code": {
+        "description": "Issue code/identifier",
+        "minLength": 1,
+        "title": "Code",
+        "type": "string"
+      },
+      "message": {
+        "description": "Human-readable issue message",
+        "minLength": 1,
+        "title": "Message",
+        "type": "string"
+      },
+      "organisation": {
+        "description": "Organisation name",
+        "minLength": 1,
+        "title": "Organisation",
+        "type": "string"
+      },
+      "remediation": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Suggested remediation steps",
+        "title": "Remediation"
+      },
+      "row_id": {
+        "description": "Row identifier",
+        "minimum": 0,
+        "title": "Row Id",
+        "type": "integer"
+      },
+      "severity": {
+        "description": "Issue severity level",
+        "enum": [
+          "block",
+          "warn"
+        ],
+        "title": "Severity",
+        "type": "string"
+      }
+    },
+    "required": [
+      "row_id",
+      "organisation",
+      "code",
+      "severity",
+      "message"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/quality-issue",
+    "title": "QualityIssueContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "SanityCheckFinding": {
+    "description": "Contract for sanity check findings.",
+    "properties": {
+      "issue": {
+        "description": "Issue description",
+        "minLength": 1,
+        "title": "Issue",
+        "type": "string"
+      },
+      "organisation": {
+        "description": "Organisation name",
+        "minLength": 1,
+        "title": "Organisation",
+        "type": "string"
+      },
+      "remediation": {
+        "description": "Remediation steps",
+        "minLength": 1,
+        "title": "Remediation",
+        "type": "string"
+      },
+      "row_id": {
+        "description": "Row identifier",
+        "minimum": 0,
+        "title": "Row Id",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "row_id",
+      "organisation",
+      "issue",
+      "remediation"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/sanity-check-finding",
+    "title": "SanityCheckFindingContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "SchoolRecord": {
+    "description": "Contract for school/organisation enrichment records.\n\nMaps to the legacy SchoolRecord dataclass for backward compatibility.",
+    "properties": {
+      "contact_email": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Contact email address",
+        "title": "Contact Email"
+      },
+      "contact_number": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Contact phone number",
+        "title": "Contact Number"
+      },
+      "contact_person": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Primary contact person",
+        "title": "Contact Person"
+      },
+      "name": {
+        "description": "Organisation name",
+        "minLength": 1,
+        "title": "Name",
+        "type": "string"
+      },
+      "province": {
+        "description": "South African province",
+        "title": "Province",
+        "type": "string"
+      },
+      "status": {
+        "description": "Verification status",
+        "title": "Status",
+        "type": "string"
+      },
+      "website_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Organisation website URL",
+        "title": "Website Url"
+      }
+    },
+    "required": [
+      "name",
+      "province",
+      "status"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/school-record",
+    "title": "SchoolRecordContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "ValidationIssue": {
+    "description": "Contract for validation issues.",
+    "properties": {
+      "code": {
+        "description": "Issue code",
+        "minLength": 1,
+        "title": "Code",
+        "type": "string"
+      },
+      "column": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Column name if applicable",
+        "title": "Column"
+      },
+      "message": {
+        "description": "Issue description",
+        "minLength": 1,
+        "title": "Message",
+        "type": "string"
+      },
+      "row": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Row number if applicable",
+        "title": "Row"
+      }
+    },
+    "required": [
+      "code",
+      "message"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/validation-issue",
+    "title": "ValidationIssueContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
+  "ValidationReport": {
+    "$defs": {
+      "ValidationIssueContract": {
+        "description": "Contract for validation issues.",
+        "properties": {
+          "code": {
+            "description": "Issue code",
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Column name if applicable",
+            "title": "Column"
+          },
+          "message": {
+            "description": "Issue description",
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "row": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Row number if applicable",
+            "title": "Row"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/validation-issue",
+        "title": "ValidationIssueContract",
+        "type": "object",
+        "version": "1.0.0"
+      }
+    },
+    "description": "Contract for validation reports.",
+    "properties": {
+      "issues": {
+        "description": "List of validation issues",
+        "items": {
+          "$ref": "ValidationIssueContract"
+        },
+        "title": "Issues",
+        "type": "array"
+      },
+      "rows": {
+        "description": "Total number of rows validated",
+        "minimum": 0,
+        "title": "Rows",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "rows"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/validation-report",
+    "title": "ValidationReportContract",
+    "type": "object",
+    "version": "1.0.0"
+  }
+}

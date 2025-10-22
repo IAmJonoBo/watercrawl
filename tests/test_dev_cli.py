@@ -9,6 +9,7 @@ from typing import Any, cast
 from click.testing import CliRunner
 
 from apps.automation import cli as automation_cli
+from firecrawl_demo.domain.contracts import CONTRACT_VERSION
 
 
 def _write_plan(tmp_path: Path) -> Path:
@@ -21,6 +22,11 @@ def _write_plan(tmp_path: Path) -> Path:
             }
         ],
         "instructions": "Execute QA cleanup plan",
+        "contract": {
+            "name": "PlanArtifact",
+            "version": CONTRACT_VERSION,
+            "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/plan-artifact",
+        },
     }
     plan_path.write_text(json.dumps(plan_payload), encoding="utf-8")
     return plan_path
@@ -36,6 +42,11 @@ def _write_commit(tmp_path: Path) -> Path:
             "faithfulness": 0.85,
             "context_precision": 0.82,
             "answer_relevancy": 0.84,
+        },
+        "contract": {
+            "name": "CommitArtifact",
+            "version": CONTRACT_VERSION,
+            "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/commit-artifact",
         },
     }
     commit_path.write_text(json.dumps(commit_payload), encoding="utf-8")
@@ -251,9 +262,11 @@ def test_qa_all_generate_plan_creates_artifacts(tmp_path: Path) -> None:
     assert len(commit_files) == 1
     plan_payload = json.loads(plan_files[0].read_text())
     assert plan_payload["changes"], "plan should contain changes"
+    assert plan_payload["contract"]["version"] == CONTRACT_VERSION
     commit_payload = json.loads(commit_files[0].read_text())
     assert commit_payload["if_match"] == '"qa-token"'
     assert "diff_summary" in commit_payload
+    assert commit_payload["contract"]["version"] == CONTRACT_VERSION
     assert any(str(plan_files[0]) in str(path) for path in captured["plan_paths"])
     assert any(str(commit_files[0]) in str(path) for path in captured["commit_paths"])
 
@@ -281,8 +294,10 @@ def test_qa_plan_writes_artifacts(tmp_path: Path) -> None:
     assert result.exit_code == 0
     plan_payload = json.loads(plan_path.read_text())
     assert plan_payload["changes"], "plan artefact should list QA steps"
+    assert plan_payload["contract"]["schema_uri"].endswith("/plan-artifact")
     commit_payload = json.loads(commit_path.read_text())
     assert commit_payload["if_match"] == '"qa-auto"'
+    assert commit_payload["contract"]["schema_uri"].endswith("/commit-artifact")
 
 
 def test_qa_fmt_generates_plan(tmp_path: Path) -> None:
@@ -311,8 +326,10 @@ def test_qa_fmt_generates_plan(tmp_path: Path) -> None:
     assert len(commit_files) == 1
     fmt_plan = json.loads(plan_files[0].read_text())
     assert fmt_plan["changes"], "format plan should list commands"
+    assert fmt_plan["contract"]["version"] == CONTRACT_VERSION
     fmt_commit = json.loads(commit_files[0].read_text())
     assert fmt_commit["if_match"] == '"fmt-token"'
+    assert fmt_commit["contract"]["schema_uri"].endswith("/commit-artifact")
 
 
 def test_qa_mutation_supports_dry_run(monkeypatch) -> None:

@@ -10,13 +10,32 @@ legacy dataclass models in models.py, enabling:
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 # Contract version follows semantic versioning
 CONTRACT_VERSION = "1.0.0"
 SCHEMA_URI_BASE = "https://watercrawl.acesaero.co.za/schemas/v1"
+AVRO_NAMESPACE = "za.watercrawl.contracts.v1"
+
+
+class ContractDescriptor(BaseModel):
+    """Metadata embedded with downstream artefacts to identify the contract."""
+
+    name: str = Field(..., description="Canonical contract identifier")
+    version: str = Field(
+        default=CONTRACT_VERSION,
+        description="Semantic version of the contract schema",
+    )
+    schema_uri: str = Field(..., description="Canonical URI for the schema definition")
+
+    model_config = {
+        "json_schema_extra": {
+            "version": CONTRACT_VERSION,
+            "schema_uri": f"{SCHEMA_URI_BASE}/contract-descriptor",
+        }
+    }
 
 
 class SchoolRecordContract(BaseModel):
@@ -202,20 +221,214 @@ class PipelineReportContract(BaseModel):
     }
 
 
-# Schema export helpers
-def export_json_schema(contract_class: type[BaseModel]) -> dict:
-    """Export JSON Schema for a contract class."""
-    return contract_class.model_json_schema()
+class PlanArtifactContract(BaseModel):
+    """Contract describing saved plan artefacts used by the plan→commit guard."""
 
+    changes: list[dict[str, Any]] = Field(
+        default_factory=list, description="Ordered list of intended changes",
+    )
+    instructions: str = Field(
+        ..., description="Natural language summary of the plan"
+    )
+    generated_at: datetime | None = Field(
+        None, description="Optional timestamp recording plan creation time"
+    )
+    contract: ContractDescriptor = Field(
+        ..., description="Embedded contract metadata for registry lookup"
+    )
 
-def export_all_schemas() -> dict[str, dict]:
-    """Export JSON Schemas for all contract classes."""
-    return {
-        "SchoolRecord": export_json_schema(SchoolRecordContract),
-        "EvidenceRecord": export_json_schema(EvidenceRecordContract),
-        "QualityIssue": export_json_schema(QualityIssueContract),
-        "ValidationIssue": export_json_schema(ValidationIssueContract),
-        "ValidationReport": export_json_schema(ValidationReportContract),
-        "SanityCheckFinding": export_json_schema(SanityCheckFindingContract),
-        "PipelineReport": export_json_schema(PipelineReportContract),
+    model_config = {
+        "json_schema_extra": {
+            "version": CONTRACT_VERSION,
+            "schema_uri": f"{SCHEMA_URI_BASE}/plan-artifact",
+        }
     }
+
+
+class CommitArtifactContract(BaseModel):
+    """Contract describing commit artefacts captured during plan→commit."""
+
+    if_match: str = Field(..., description="Opaque diff approval token")
+    diff_summary: str = Field(..., description="Reviewer-facing summary of the diff")
+    diff_format: str = Field(
+        default="markdown", description="Format identifier for diff_summary"
+    )
+    rag: dict[str, float] = Field(
+        default_factory=dict,
+        description="Recorded Retrieval-Augmented Generation metrics",
+    )
+    contract: ContractDescriptor = Field(
+        ..., description="Embedded contract metadata for registry lookup"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "version": CONTRACT_VERSION,
+            "schema_uri": f"{SCHEMA_URI_BASE}/commit-artifact",
+        }
+    }
+
+
+# Schema export helpers
+def export_json_schema(contract_class: type[BaseModel]) -> dict[str, Any]:
+    """Export JSON Schema for a contract class."""
+
+    return contract_class.model_json_schema(ref_template="{model}")
+
+
+def export_all_schemas() -> dict[str, dict[str, Any]]:
+    """Export JSON Schemas for all contract classes."""
+
+    return {
+        name: export_json_schema(model)
+        for name, model in _CONTRACT_MODELS.items()
+    }
+
+
+def export_avro_schema(contract_class: type[BaseModel]) -> dict[str, Any]:
+    """Generate an Avro schema for a contract class using JSON Schema metadata."""
+
+    json_schema = contract_class.model_json_schema(ref_template="{model}")
+    required_fields = set(json_schema.get("required", []))
+    properties = json_schema.get("properties", {})
+
+    fields: list[dict[str, Any]] = []
+    for field_name, definition in properties.items():
+        avro_type = _json_definition_to_avro_type(definition)
+        if field_name not in required_fields:
+            avro_type = _ensure_optional_type(avro_type)
+        field_doc = definition.get("description")
+        entry: dict[str, Any] = {"name": field_name, "type": avro_type}
+        if field_doc:
+            entry["doc"] = field_doc
+        fields.append(entry)
+
+    schema_uri = json_schema.get("schema_uri") or f"{SCHEMA_URI_BASE}/{contract_class.__name__.lower()}"
+
+    return {
+        "type": "record",
+        "name": contract_class.__name__,
+        "namespace": AVRO_NAMESPACE,
+        "doc": (contract_class.__doc__ or "").strip(),
+        "fields": fields,
+        "watercrawl_version": CONTRACT_VERSION,
+        "schema_uri": schema_uri,
+    }
+
+
+def export_all_avro_schemas() -> dict[str, dict[str, Any]]:
+    """Export Avro schemas for all contract classes."""
+
+    return {
+        name: export_avro_schema(model) for name, model in _CONTRACT_MODELS.items()
+    }
+
+
+def export_contract_registry() -> dict[str, dict[str, Any]]:
+    """Expose metadata used by CLI/MCP surfaces for schema discovery."""
+
+    json_schemas = export_all_schemas()
+    avro_schemas = export_all_avro_schemas()
+    registry: dict[str, dict[str, Any]] = {}
+    for name in _CONTRACT_MODELS:
+        json_schema = json_schemas[name]
+        registry[name] = {
+            "version": json_schema.get("version", CONTRACT_VERSION),
+            "schema_uri": json_schema.get("schema_uri"),
+            "json_schema": json_schema,
+            "avro_schema": avro_schemas[name],
+        }
+    return registry
+
+
+def _json_definition_to_avro_type(definition: dict[str, Any]) -> Any:
+    """Convert a JSON Schema property definition into an Avro type declaration."""
+
+    if isinstance(definition, bool):
+        # ``additionalProperties`` may be declared as false/true. Map to string values
+        # to preserve compatibility with Avro's map semantics.
+        return "string"
+
+    if "$ref" in definition:
+        ref = definition["$ref"]
+        return ref.split("/")[-1]
+
+    schema_type = definition.get("type")
+    if schema_type == "string":
+        return "string"
+    if schema_type == "integer":
+        return "int"
+    if schema_type == "number":
+        return "double"
+    if schema_type == "boolean":
+        return "boolean"
+    if schema_type == "array":
+        items = definition.get("items", {})
+        return {"type": "array", "items": _json_definition_to_avro_type(items)}
+    if schema_type == "object":
+        additional = definition.get("additionalProperties")
+        if not isinstance(additional, dict):
+            additional = {"type": "string"}
+        return {
+            "type": "map",
+            "values": _json_definition_to_avro_type(additional),
+        }
+
+    variants = definition.get("anyOf") or definition.get("oneOf")
+    if variants:
+        avro_members = [_json_definition_to_avro_type(item) for item in variants]
+        return _ensure_optional_type(avro_members)
+
+    if schema_type is None and "enum" in definition:
+        return {
+            "type": "enum",
+            "name": definition.get("title", "Enum"),
+            "symbols": definition["enum"],
+        }
+
+    return "string"
+
+
+def _ensure_optional_type(avro_type: Any) -> Any:
+    """Wrap an Avro type in a null union when representing optional fields."""
+
+    if isinstance(avro_type, list):
+        members = [value for value in avro_type if value != "null"]
+        return ["null", *members]
+    if isinstance(avro_type, dict) and avro_type.get("type") == "union":
+        return ["null", *avro_type.get("types", [])]
+    return ["null", avro_type]
+
+
+_CONTRACT_MODELS: dict[str, type[BaseModel]] = {
+    "ContractDescriptor": ContractDescriptor,
+    "SchoolRecord": SchoolRecordContract,
+    "EvidenceRecord": EvidenceRecordContract,
+    "QualityIssue": QualityIssueContract,
+    "ValidationIssue": ValidationIssueContract,
+    "ValidationReport": ValidationReportContract,
+    "SanityCheckFinding": SanityCheckFindingContract,
+    "PipelineReport": PipelineReportContract,
+    "PlanArtifact": PlanArtifactContract,
+    "CommitArtifact": CommitArtifactContract,
+}
+
+
+__all__ = [
+    "CONTRACT_VERSION",
+    "ContractDescriptor",
+    "SchoolRecordContract",
+    "EvidenceRecordContract",
+    "QualityIssueContract",
+    "ValidationIssueContract",
+    "ValidationReportContract",
+    "SanityCheckFindingContract",
+    "PipelineReportContract",
+    "PlanArtifactContract",
+    "CommitArtifactContract",
+    "export_json_schema",
+    "export_all_schemas",
+    "export_avro_schema",
+    "export_all_avro_schemas",
+    "export_contract_registry",
+]

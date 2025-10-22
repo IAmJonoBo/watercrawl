@@ -12,7 +12,12 @@ import pytest
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.application.quality import QualityGate
 from firecrawl_demo.core import config
-from firecrawl_demo.domain.models import EvidenceRecord, SchoolRecord
+from firecrawl_demo.domain.contracts import EvidenceRecordContract
+from firecrawl_demo.domain.models import (
+    EvidenceRecord,
+    SchoolRecord,
+    evidence_record_from_contract,
+)
 from firecrawl_demo.integrations.adapters.research import (
     ResearchFinding,
     StaticResearchAdapter,
@@ -137,8 +142,16 @@ class _RecordingEvidenceSink:
     def __init__(self) -> None:
         self.records: list[list[EvidenceRecord]] = []
 
-    def record(self, records: Iterable[EvidenceRecord]) -> None:
-        self.records.append(list(records))
+    def record(
+        self, records: Iterable[EvidenceRecord | EvidenceRecordContract]
+    ) -> None:
+        batch: list[EvidenceRecord] = []
+        for record in records:
+            if isinstance(record, EvidenceRecord):
+                batch.append(record)
+            else:
+                batch.append(evidence_record_from_contract(record))
+        self.records.append(batch)
 
 
 def test_pipeline_records_lakehouse_versioning_and_lineage(tmp_path: Path) -> None:

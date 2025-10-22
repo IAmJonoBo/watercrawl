@@ -31,6 +31,7 @@
 - [x] **Backstage TechDocs + golden‑path template** — _Owner: Platform/DevEx · Due: 2026‑01‑15_ (WC‑19) — _Progress: catalog-info.yaml added, TechDocs workflow publishes site artifact, golden-path scaffold available under templates/golden-path/_
 - [x] **Signed artefact promotion with policy‑as‑code** — _Owner: Platform/Security · Due: 2026‑01‑31_ (WC‑13/14)
 - [ ] **Chaos/FMEA exercise for pipeline & MCP** — _Owner: SRE/Security · Due: 2026‑01‑31_ (WC‑20) — _Progress: Scenario catalog and FMEA register published (`docs/chaos-fmea-scenarios.md`) with 11 failure modes, RPN analysis, and quarterly game day schedule; Q4 2025 scenarios selected (F-001, F-004, F-011)_
+- [ ] **Contracts vNext — registry + adapter rollout** — _Owner: Platform/Data · Due: 2025‑11‑05_ (WC‑07) — _Gates: contract registry documented; CLI/MCP emit schema URIs + semver; Avro + JSON Schema regression suites green; evidence sinks validate against contracts._
 
 > Completed items are tracked in the CHANGELOG; they are intentionally omitted here to keep focus.
 
@@ -58,6 +59,9 @@
 - [x] 2025-10-22 — Deequ enforcement: Implemented deterministic Deequ checks with pandas fallback, wired CLI/evidence logging to include Deequ results, added failure messaging, refreshed docs/CHANGELOG to note release blocker now hard-gated.
 - [x] 2025-10-21 — Legal & disclosure baseline: Added MIT LICENSE file and comprehensive SECURITY.md with VDP, security controls, compliance frameworks (NIST SSDF, OWASP ASVS L2, POPIA), and responsible disclosure process. Updated pyproject.toml to declare MIT license. Completes WC-01 and WC-02 acceptance criteria.
 - [x] 2025-10-21 — Documentation completion audit: Marked `docs/data-quality.md` and `codex/` artefacts as complete in Next_Steps.md; updated Red Team doc to reflect completion status for WC-07 through WC-12, WC-14, WC-15, WC-16, and WC-19 based on iteration log evidence.
+- [ ] 2025-10-22 — Baseline QA audit (agent): `pytest` ❌ (content hygiene contract missing body preservation); `ruff` ❌ (pre-existing unused imports in integrations/tests); `mypy` ❌ (missing opentelemetry stubs + chaos typing); `bandit` ⚠️ (MD5 usage flagged in content hygiene); `pre-commit` ⚠️ (nodeenv TLS failure); `offline_safety` ✅; `poetry build` ✅. Documented blockers before contract registry work.
+- [ ] 2025-10-22 — Contract registry instrumentation: Added Pydantic contract adapters for pipeline/evidence, JSON+Avro schema exporters with snapshots, CLI/MCP metadata embedding, and plan→commit/evidence validation guards. Awaiting full QA run once baseline issues cleared.
+- [x] 2025-10-22 — Contract sink regression follow-up: Normalised evidence sink shims/tests to accept contract payloads, updated pipeline/MCP fixtures to coerce contracts back to dataclasses, and reran targeted pytest suite (`tests/test_audit.py`, `tests/test_pipeline.py`, `tests/test_mcp.py`) successfully.
 
 ---
 
@@ -150,6 +154,7 @@ Execute in this order; each item must meet its gate before promotion.
 - Python 3.15 compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, `tornado`, and other tracked packages; track expectations via `presets/dependency_blockers.toml`, ongoing findings in `tools/dependency_matrix/report.json`, and guard outputs in `tools/dependency_matrix/status.json`.
 - [x] 2025-10-21 — Implemented Sigstore signing guardrail: CI now signs artifacts in the build job and enforces `scripts.verify_artifact_signatures` to validate bundle identity before upload; supply-chain plan→commit gate updated accordingly.
 - Node tooling requires certificate pinning/offline cache: `pre-commit run markdownlint-cli2` and `scripts/collect_problems.py` fail under SSL `Missing Authority Key Identifier` when nodeenv resolves `index.json`; bundle cached Node tarballs or configure trusted CAs before treating markdownlint as blocking.
+- Baseline QA currently red on `tests/test_content_hygiene.py::TestBoilerplateRemoval::test_removes_navigation`; contract rollout must not regress this area once fixed—coordinate with content hygiene owners before touching heuristics.
 - **[RESOLVED]** ~~`apps/analyst/accessibility/axe_smoke.py` reuses the default Chrome user data dir in shared runners, triggering `SessionNotCreatedException`; inject per-run temp profiles to unblock accessibility smoke in CI and local QA.~~ Fixed: `axe_smoke.py` now creates unique temporary profile directories using `tempfile.TemporaryDirectory()` to prevent conflicts.
 - **[RESOLVED]** ~~Mypy strict mode now errors on `scripts/collect_problems.py` (missing `tomli`, `No return value expected`, strict Optional handling); align dependencies and refactor functions to return `None` explicitly before enabling gate.~~ Fixed: Added explicit `return None` statements to all functions with `-> None` annotation; `tomli` already in dependencies as fallback for Python <3.11.
 - **[RESOLVED]** ~~Yamllint traverses `.venv/` during repo-root scans; tighten ignore globs or run against `git ls-files` to avoid virtualenv noise during gated runs.~~ Fixed: Added `.venv/**` and `**/.venv/**` to `.yamllint.yaml` ignore patterns.
