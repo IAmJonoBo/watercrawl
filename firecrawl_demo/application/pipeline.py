@@ -194,9 +194,31 @@ class _LookupMetrics:
     failures: int = 0
     retries: int = 0
     circuit_rejections: int = 0
+    connector_latency: defaultdict[str, list[float]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    connector_success: defaultdict[str, list[bool]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    confidence_deltas: list[tuple[int, int, int]] = field(default_factory=list)
 
     def record_queue_latency(self, latency: float) -> None:
         self.queue_latencies.append(latency)
+
+    def record_connector_metrics(self, finding: ResearchFinding) -> None:
+        for name, evidence in finding.evidence_by_connector.items():
+            if evidence.latency_seconds is not None:
+                self.connector_latency[name].append(evidence.latency_seconds)
+            self.connector_success[name].append(evidence.success)
+        if finding.validation is not None:
+            report = finding.validation
+            self.confidence_deltas.append(
+                (
+                    report.base_confidence,
+                    report.confidence_adjustment,
+                    report.final_confidence,
+                )
+            )
 
 
 class _CircuitBreaker:
@@ -354,6 +376,7 @@ class _LookupCoordinator:
 
             if self._cache_ttl_hours is not None:
                 global_cache.store(cache_key, finding)
+            self._metrics.record_connector_metrics(finding)
             return _LookupResult(
                 state=state,
                 finding=finding,
@@ -385,6 +408,15 @@ class _LookupCoordinator:
                 retries += 1
                 self._metrics.retries += 1
                 self._circuit_breaker.record_failure()
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        "Retrying research lookup (%s/%s) for %s (%s): %s",
+                        retries,
+                        self._max_retries,
+                        state.working_record.name,
+                        state.working_record.province,
+                        exc,
+                    )
                 if retries > self._max_retries:
                     raise
                 delay = min(max_delay, self._retry_backoff_base * (2 ** (retries - 1)))

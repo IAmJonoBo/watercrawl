@@ -82,3 +82,20 @@ research:
   circuit_breaker:
     failure_threshold: 5
     reset_seconds: 45
+  allow_personal_data: false
+  rate_limit_seconds: 0.3
+  connectors:
+    regulator:
+      enabled: true
+      rate_limit_seconds: 0.25
+    press:
+      enabled: true
+      rate_limit_seconds: 0.5
+    corporate_filings:
+      enabled: true
+      rate_limit_seconds: 0.5
+      allow_personal_data: false
+    social:
+      enabled: true
+      rate_limit_seconds: 0.75
+      allow_personal_data: false
