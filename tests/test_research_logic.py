@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 
+import asyncio
+from typing import Callable
+
 import pytest
 
 from firecrawl_demo.core import config
+
 from firecrawl_demo.core.external_sources import triangulate_organisation
 from firecrawl_demo.governance.secrets import EnvSecretsProvider
 from firecrawl_demo.integrations.adapters import research
@@ -20,6 +24,19 @@ from firecrawl_demo.integrations.adapters.research import (
     register_adapter,
 )
 from firecrawl_demo.integrations.adapters.research import registry as research_registry
+
+
+class _DummyLoop:
+    def __init__(self) -> None:
+        self.executor: object | None = None
+        self.calls: list[tuple[Callable[..., object], tuple[object, ...]]] = []
+
+    async def run_in_executor(
+        self, executor: object | None, func: Callable[..., object], *args: object
+    ) -> object:
+        self.executor = executor
+        self.calls.append((func, args))
+        return func(*args)
 
 
 class DummyAdapter(ResearchAdapter):
@@ -198,6 +215,30 @@ def test_triangulating_adapter_merges_sources_and_notes():
     assert result.contact_person == "New Investigator"
     assert result.contact_email == "intel@example.com"
     assert result.contact_phone == "+27115550100"
+
+
+@pytest.mark.asyncio()
+async def test_lookup_with_adapter_async_uses_adapter_executor(monkeypatch) -> None:
+    loop = _DummyLoop()
+    monkeypatch.setattr(asyncio, "get_running_loop", lambda: loop)
+
+    class SyncAdapter(ResearchAdapter):
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def lookup(self, organisation: str, province: str) -> ResearchFinding:
+            self.calls += 1
+            return ResearchFinding(notes="ok")
+
+    adapter = SyncAdapter()
+    sentinel_executor = object()
+    setattr(adapter, "_lookup_executor", sentinel_executor)
+
+    result = await research.lookup_with_adapter_async(adapter, "Org", "GP")
+
+    assert result.notes == "ok"
+    assert adapter.calls == 1
+    assert loop.executor is sentinel_executor
     assert sorted(result.sources) == sorted(
         [
             "https://existing.example.com",

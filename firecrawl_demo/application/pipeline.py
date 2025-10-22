@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Hashable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
+from math import ceil
 from pathlib import Path
+from statistics import mean
+from time import monotonic
 from typing import Any, cast
 from urllib.parse import urlparse
 
@@ -29,7 +33,7 @@ from firecrawl_demo.application.quality import (
     QualityGate,
     QualityGateDecision,
 )
-from firecrawl_demo.core import config
+from firecrawl_demo.core import cache as global_cache, config
 
 if _PANDAS_AVAILABLE:
     from firecrawl_demo.core.excel import EXPECTED_COLUMNS, read_dataset, write_dataset
@@ -150,6 +154,252 @@ def _resolve_path(path: Path | None) -> Path | None:
     return path if path.is_absolute() else (config.PROJECT_ROOT / path)
 
 
+def _normalize_cache_key(name: str, province: str) -> tuple[str, str]:
+    return (name.strip().casefold(), province)
+
+
+def _p95(values: Sequence[float]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    index = ceil(0.95 * len(ordered)) - 1
+    if index < 0:
+        index = 0
+    if index >= len(ordered):
+        index = len(ordered) - 1
+    return ordered[index]
+
+
+@dataclass(slots=True)
+class _RowState:
+    position: int
+    index: Hashable
+    row_id: int
+    original_row: Any
+    original_record: SchoolRecord
+    working_record: SchoolRecord
+
+
+@dataclass(slots=True)
+class _LookupResult:
+    state: _RowState
+    finding: ResearchFinding
+    error: Exception | None = None
+    from_cache: bool = False
+    retries: int = 0
+
+
+@dataclass(slots=True)
+class _LookupMetrics:
+    cache_hits: int = 0
+    cache_misses: int = 0
+    queue_latencies: list[float] = field(default_factory=list)
+    failures: int = 0
+    retries: int = 0
+    circuit_rejections: int = 0
+
+    def record_queue_latency(self, latency: float) -> None:
+        self.queue_latencies.append(latency)
+
+
+class _CircuitBreaker:
+    def __init__(self, *, failure_threshold: int, reset_seconds: float) -> None:
+        self._failure_threshold = max(1, failure_threshold)
+        self._reset_seconds = max(0.0, reset_seconds)
+        self._failure_count = 0
+        self._opened_at: float | None = None
+
+    def allow(self) -> bool:
+        if self._opened_at is None:
+            return True
+        if monotonic() - self._opened_at >= self._reset_seconds:
+            self._failure_count = 0
+            self._opened_at = None
+            return True
+        return False
+
+    def record_failure(self) -> None:
+        self._failure_count += 1
+        if self._failure_count >= self._failure_threshold:
+            self._opened_at = monotonic()
+
+    def record_success(self) -> None:
+        self._failure_count = 0
+        self._opened_at = None
+
+
+def _share_executor_with_adapter(
+    adapter: ResearchAdapter, executor: ThreadPoolExecutor | None
+) -> None:
+    visited: set[int] = set()
+
+    def _apply(target: Any) -> None:
+        if target is None:
+            return
+        key = id(target)
+        if key in visited:
+            return
+        visited.add(key)
+        try:
+            if executor is None:
+                if hasattr(target, "_lookup_executor"):
+                    delattr(target, "_lookup_executor")
+            else:
+                setattr(target, "_lookup_executor", executor)
+        except AttributeError:
+            pass
+
+        for attr in ("adapters", "_adapters"):
+            children = getattr(target, attr, None)
+            if isinstance(children, Iterable):
+                for child in children:
+                    _apply(child)
+        base = getattr(target, "base_adapter", None)
+        if base is not None:
+            _apply(base)
+
+    _apply(adapter)
+
+
+class _LookupCoordinator:
+    def __init__(
+        self,
+        *,
+        adapter: ResearchAdapter,
+        listener: PipelineProgressListener,
+        concurrency: int,
+        cache_ttl_hours: float | None,
+        max_retries: int,
+        retry_backoff_base_seconds: float,
+        circuit_breaker: _CircuitBreaker,
+    ) -> None:
+        self._adapter = adapter
+        self._listener = listener
+        self._concurrency = max(1, concurrency)
+        self._semaphore = asyncio.Semaphore(self._concurrency)
+        self._cache_ttl_hours = cache_ttl_hours
+        self._max_retries = max(0, max_retries)
+        self._retry_backoff_base = max(0.0, retry_backoff_base_seconds)
+        self._circuit_breaker = circuit_breaker
+        self._metrics = _LookupMetrics()
+        self._executor: ThreadPoolExecutor | None = None
+
+    @property
+    def metrics(self) -> _LookupMetrics:
+        return self._metrics
+
+    async def __aenter__(self) -> "_LookupCoordinator":
+        self._executor = ThreadPoolExecutor(
+            max_workers=self._concurrency,
+            thread_name_prefix="pipeline-lookup",
+        )
+        _share_executor_with_adapter(self._adapter, self._executor)
+        return self
+
+    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        _share_executor_with_adapter(self._adapter, None)
+        if self._executor is not None:
+            self._executor.shutdown(wait=False, cancel_futures=True)
+
+    async def run(self, states: Sequence[_RowState]) -> list[_LookupResult]:
+        tasks: list[asyncio.Task[_LookupResult]] = []
+        async with asyncio.TaskGroup() as group:
+            for state in states:
+                tasks.append(group.create_task(self._lookup(state)))
+        results = [task.result() for task in tasks]
+        return sorted(results, key=lambda item: item.state.position)
+
+    async def _lookup(self, state: _RowState) -> _LookupResult:
+        queue_entered = monotonic()
+        async with self._semaphore:
+            self._metrics.record_queue_latency(monotonic() - queue_entered)
+            cache_key = _normalize_cache_key(
+                state.working_record.name, state.working_record.province
+            )
+            cached = self._load_from_cache(cache_key)
+            if cached is not None:
+                self._metrics.cache_hits += 1
+                return _LookupResult(state=state, finding=cached, from_cache=True)
+
+            self._metrics.cache_misses += 1
+            if not self._circuit_breaker.allow():
+                self._metrics.circuit_rejections += 1
+                return _LookupResult(
+                    state=state,
+                    finding=ResearchFinding(
+                        notes=(
+                            "Research adapter temporarily paused after repeated failures."
+                        )
+                    ),
+                )
+
+            try:
+                finding, retries = await self._attempt_lookup(state)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # pragma: no cover - defensive guard
+                self._metrics.failures += 1
+                self._circuit_breaker.record_failure()
+                logger.warning(
+                    "Research adapter failed for %s (%s): %s",
+                    state.working_record.name,
+                    state.working_record.province,
+                    exc,
+                    exc_info=exc,
+                )
+                self._listener.on_error(exc, state.position)
+                return _LookupResult(
+                    state=state,
+                    finding=ResearchFinding(notes=f"Research adapter failed: {exc}"),
+                    error=exc,
+                )
+
+            if self._cache_ttl_hours is not None:
+                global_cache.store(cache_key, finding)
+            return _LookupResult(
+                state=state,
+                finding=finding,
+                retries=retries,
+            )
+
+    def _load_from_cache(
+        self, key: tuple[str, str]
+    ) -> ResearchFinding | None:
+        if self._cache_ttl_hours is None:
+            return None
+        cached = global_cache.load(key, max_age_hours=self._cache_ttl_hours)
+        if isinstance(cached, ResearchFinding):
+            return cached
+        return None
+
+    async def _attempt_lookup(
+        self, state: _RowState
+    ) -> tuple[ResearchFinding, int]:
+        retries = 0
+        max_delay = 5.0
+        while True:
+            try:
+                finding = await lookup_with_adapter_async(
+                    self._adapter,
+                    state.working_record.name,
+                    state.working_record.province,
+                    executor=self._executor,
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                retries += 1
+                self._metrics.retries += 1
+                self._circuit_breaker.record_failure()
+                if retries > self._max_retries:
+                    raise
+                delay = min(max_delay, self._retry_backoff_base * (2 ** (retries - 1)))
+                if delay > 0:
+                    await asyncio.sleep(delay)
+                continue
+            else:
+                self._circuit_breaker.record_success()
+                return finding, retries
 @dataclass
 class Pipeline(PipelineService):
     """Coordinate validation, enrichment, and evidence logging."""
@@ -246,6 +496,7 @@ class Pipeline(PipelineService):
 
         listener.on_start(len(working_frame))
 
+        row_states: list[_RowState] = []
         for position, (idx, row) in enumerate(working_frame.iterrows()):
             original_row = row.copy()
             original_record = SchoolRecord.from_dataframe_row(row)
@@ -254,22 +505,44 @@ class Pipeline(PipelineService):
             working_frame_cast.at[idx, "Province"] = record.province
             row_id = position + 2
             row_number_lookup[idx] = row_id
+            row_states.append(
+                _RowState(
+                    position=position,
+                    index=idx,
+                    row_id=row_id,
+                    original_row=original_row,
+                    original_record=original_record,
+                    working_record=record,
+                )
+            )
 
-            try:
-                finding = await lookup_with_adapter_async(
-                    self.research_adapter, record.name, record.province
-                )
-            except Exception as exc:  # pragma: no cover - defensive guard
-                adapter_failures += 1
-                logger.warning(
-                    "Research adapter failed for %s (%s): %s",
-                    record.name,
-                    record.province,
-                    exc,
-                    exc_info=exc,
-                )
-                listener.on_error(exc, position)
-                finding = ResearchFinding(notes=f"Research adapter failed: {exc}")
+        circuit_breaker = _CircuitBreaker(
+            failure_threshold=config.RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+            reset_seconds=config.RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS,
+        )
+        coordinator = _LookupCoordinator(
+            adapter=self.research_adapter,
+            listener=listener,
+            concurrency=config.RESEARCH_CONCURRENCY_LIMIT,
+            cache_ttl_hours=config.RESEARCH_CACHE_TTL_HOURS,
+            max_retries=config.RESEARCH_MAX_RETRIES,
+            retry_backoff_base_seconds=config.RESEARCH_RETRY_BACKOFF_BASE_SECONDS,
+            circuit_breaker=circuit_breaker,
+        )
+        async with coordinator:
+            lookup_results = await coordinator.run(row_states)
+        lookup_metrics = coordinator.metrics
+        adapter_failures = lookup_metrics.failures
+
+        for result in lookup_results:
+            state = result.state
+            position = state.position
+            idx = state.index
+            row_id = state.row_id
+            original_row = state.original_row
+            original_record = state.original_record
+            record = replace(state.working_record)
+            finding = result.finding
 
             sources = self._merge_sources(record, finding)
             (
@@ -450,6 +723,20 @@ class Pipeline(PipelineService):
             self._detect_duplicate_schools(working_frame, row_number_lookup)
         )
 
+        cache_requests = lookup_metrics.cache_hits + lookup_metrics.cache_misses
+        cache_hit_rate = (
+            lookup_metrics.cache_hits / cache_requests if cache_requests else 0.0
+        )
+        avg_queue_latency = (
+            mean(lookup_metrics.queue_latencies)
+            if lookup_metrics.queue_latencies
+            else 0.0
+        )
+        p95_queue_latency = _p95(lookup_metrics.queue_latencies)
+        max_queue_latency = (
+            max(lookup_metrics.queue_latencies) if lookup_metrics.queue_latencies else 0.0
+        )
+
         metrics = {
             "rows_total": len(working_frame),
             "enriched_rows": enriched_rows,
@@ -459,6 +746,14 @@ class Pipeline(PipelineService):
             "sanity_issues": len(sanity_findings),
             "quality_rejections": quality_rejections,
             "quality_issues": len(quality_issues),
+            "research_cache_hits": lookup_metrics.cache_hits,
+            "research_cache_misses": lookup_metrics.cache_misses,
+            "research_cache_hit_rate": cache_hit_rate,
+            "research_queue_latency_avg_ms": avg_queue_latency * 1000,
+            "research_queue_latency_p95_ms": p95_queue_latency * 1000,
+            "research_queue_latency_max_ms": max_queue_latency * 1000,
+            "adapter_retry_attempts": lookup_metrics.retries,
+            "adapter_circuit_rejections": lookup_metrics.circuit_rejections,
         }
         report = PipelineReport(
             refined_dataframe=working_frame,

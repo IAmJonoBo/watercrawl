@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import Executor
 import logging
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -370,14 +371,24 @@ def _build_firecrawl_adapter() -> ResearchAdapter | None:
 
 
 async def lookup_with_adapter_async(
-    adapter: ResearchAdapter, organisation: str, province: str
+    adapter: ResearchAdapter,
+    organisation: str,
+    province: str,
+    *,
+    executor: Executor | None = None,
 ) -> ResearchFinding:
     if isinstance(adapter, SupportsAsyncLookup):
         result = adapter.lookup_async(organisation, province)
         if isinstance(result, Awaitable):
             return await result
         return result  # type: ignore[return-value]
-    return await asyncio.to_thread(adapter.lookup, organisation, province)
+    loop = asyncio.get_running_loop()
+    candidate_executor = executor
+    if candidate_executor is None:
+        candidate_executor = getattr(adapter, "_lookup_executor", None)
+    return await loop.run_in_executor(
+        candidate_executor, adapter.lookup, organisation, province
+    )
 
 
 def _extract_urls(payload: object) -> list[str]:
