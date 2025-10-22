@@ -60,6 +60,12 @@ jobs:
           # Set pip timeout for Poetry's use
           PIP_TIMEOUT: 60
           PIP_RETRIES: 5
+      - name: Bootstrap vendored Python dependencies
+        # Run the repo-provided provisioning script inside the Poetry venv.
+        # This prefers vendored wheels (tools/vendor/...) or a wheelhouse artifact
+        # and avoids network installs when an appropriate wheel is available.
+        run: |
+          poetry run python scripts/ensure_deps.py || true
       - name: Run isort check
         if: matrix.python-version == '3.13'
         run: poetry run isort --profile black --check-only .

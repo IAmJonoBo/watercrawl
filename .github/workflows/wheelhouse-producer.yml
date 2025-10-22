@@ -1,0 +1,29 @@
+name: build-wheelhouse
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'poetry.lock'
+      - 'pyproject.toml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - name: Install poetry
+        run: pip install poetry
+      - name: Export requirements (locked)
+        run: |
+          poetry export --format requirements.txt --output wheel-reqs.txt
+      - name: Create wheelhouse
+        run: |
+          python scripts/provision_wheelhouse.py --output wheelhouse --python 3.13 --dev
+      - name: Upload wheelhouse artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheelhouse-3.13
+          path: wheelhouse

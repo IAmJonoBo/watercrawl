@@ -332,3 +332,90 @@ def install_wheel_into_env(wheel_path: Path, python_executable: str = "python") 
         subprocess.check_call(cmd)
     except subprocess.CalledProcessError as exc:
         raise BootstrapError(f"Failed to install wheel {wheel_path}: {exc}") from exc
+
+
+def ensure_python_package(
+    package_name: str,
+    version: str | None = None,
+    python_executable: str = "python",
+    allow_network: bool = True,
+) -> None:
+    """Ensure a python package is available in the current environment.
+
+    Strategy:
+    1. If a vendored wheel exists under tools/vendor/<package>/<version>/, install it.
+    2. If WHEELHOUSE_URL is set, try to download and extract a wheelhouse archive and use it.
+    3. As a last resort (if allow_network=True), call pip install package[==version].
+
+    Raises BootstrapError if the package cannot be installed.
+    """
+    # 1) Try vendored wheel
+    if version:
+        wheel = locate_vendor_wheel(package_name, version)
+        if wheel is not None:
+            install_wheel_into_env(wheel, python_executable=python_executable)
+            return
+
+    # 2) Try WHEELHOUSE_URL (expects a tar.gz or zip of a directory containing wheels)
+    wheelhouse_url = os.getenv("WHEELHOUSE_URL")
+    if wheelhouse_url:
+        try:
+            # download to cache and extract
+            dest = CACHE_ROOT / "external_wheelhouse"
+            dest.mkdir(parents=True, exist_ok=True)
+            archive = dest / "wheelhouse_archive"
+            _download(wheelhouse_url, archive)
+
+            # Try extracting common formats safely
+            def _safe_extract_tar(tar_obj: tarfile.TarFile, path: Path) -> None:
+                for member in tar_obj.getmembers():
+                    member_path = Path(path) / member.name
+                    if not str(member_path.resolve()).startswith(str(path.resolve())):
+                        raise BootstrapError(
+                            "Tar archive contains path outside extraction directory"
+                        )
+                tar_obj.extractall(path=path)
+
+            def _safe_extract_zip(zf, path: Path) -> None:
+                for member in zf.namelist():
+                    member_path = Path(path) / member
+                    if not str(member_path.resolve()).startswith(str(path.resolve())):
+                        raise BootstrapError(
+                            "Zip archive contains path outside extraction directory"
+                        )
+                zf.extractall(path=path)
+
+            try:
+                with tarfile.open(archive) as tar:
+                    _safe_extract_tar(tar, dest)
+            except tarfile.ReadError:
+                # try zip
+                import zipfile
+
+                with zipfile.ZipFile(archive) as z:
+                    _safe_extract_zip(z, dest)
+
+            # Look for wheel
+            for p in dest.rglob("*.whl"):
+                install_wheel_into_env(p, python_executable=python_executable)
+                return
+        except Exception as exc:  # pragma: no cover - network/runtime
+            # fall through to network install if allowed
+            if not allow_network:
+                raise BootstrapError(
+                    f"Failed to use wheelhouse at {wheelhouse_url}: {exc}"
+                ) from exc
+
+    # 3) Fallback to network pip install
+    if not allow_network:
+        raise BootstrapError(
+            f"No vendored wheel found for {package_name}=={version} and network installs are disabled"
+        )
+
+    # Build pip install command
+    pkg = package_name if not version else f"{package_name}=={version}"
+    cmd = [python_executable, "-m", "pip", "install", pkg]
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as exc:
+        raise BootstrapError(f"Failed to pip install {pkg}: {exc}") from exc

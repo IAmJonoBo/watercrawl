@@ -3,9 +3,18 @@
 import warnings
 from importlib import import_module
 
-from marshmallow.warnings import ChangedInMarshmallow4Warning
+try:
+    # Some Marshmallow versions expose a specific warning class introduced
+    # in later releases. Import it if present and filter it; otherwise fall
+    # back to ignoring generic Marshmallow deprecation warnings so tests
+    # and tools remain resilient across minor version differences.
+    from marshmallow.warnings import ChangedInMarshmallow4Warning  # type: ignore
 
-warnings.filterwarnings("ignore", category=ChangedInMarshmallow4Warning)
+    warnings.filterwarnings("ignore", category=ChangedInMarshmallow4Warning)
+except Exception:
+    # Best-effort fallback: ignore known Marshmallow deprecation warnings by
+    # message text to avoid import failures on older/newer versions.
+    warnings.filterwarnings("ignore", "marshmallow", category=Warning)
 
 _SUBMODULES = (
     "core",
