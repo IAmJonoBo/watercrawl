@@ -9,7 +9,6 @@ from collections.abc import Hashable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
-from datetime import UTC, datetime
 from math import ceil
 from pathlib import Path
 from statistics import mean
