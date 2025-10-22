@@ -82,48 +82,49 @@ def _write_response(response: BinaryIO, destination: Path) -> None:
         if temp_path is not None:
             temp_path.unlink(missing_ok=True)
 
-    def ensure_hadolint(version: str = "v2.12.0") -> Path:
-        """Ensure the hadolint binary is available and return its path."""
 
-        override = os.getenv("HADOLINT_PATH")
-        if override:
-            return Path(override)
+def ensure_hadolint(version: str = "v2.12.0") -> Path:
+    """Ensure the hadolint binary is available and return its path."""
 
-        # Detect platform and architecture
-        system = platform.system().lower()
-        machine = platform.machine().lower()
+    override = os.getenv("HADOLINT_PATH")
+    if override:
+        return Path(override)
 
-        if system == "darwin":
-            if machine == "arm64":
-                binary_name = "hadolint-macos-arm64"
-            else:
-                binary_name = "hadolint-macos-x86_64"
-        elif system == "linux":
-            if machine == "aarch64":
-                binary_name = "hadolint-linux-arm64"
-            else:
-                binary_name = "hadolint-linux-x86_64"
+    # Detect platform and architecture
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == "darwin":
+        if machine == "arm64":
+            binary_name = "hadolint-macos-arm64"
         else:
-            raise BootstrapError(f"Unsupported platform: {system} {machine}")
+            binary_name = "hadolint-macos-x86_64"
+    elif system == "linux":
+        if machine == "aarch64":
+            binary_name = "hadolint-linux-arm64"
+        else:
+            binary_name = "hadolint-linux-x86_64"
+    else:
+        raise BootstrapError(f"Unsupported platform: {system} {machine}")
 
-        # Check for bundled binary first (for offline/ephemeral environments)
-        skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
-        bundled_path = BUNDLED_BIN_ROOT / binary_name
-        if not skip_bundled and bundled_path.exists():
-            return bundled_path
+    # Check for bundled binary first (for offline/ephemeral environments)
+    skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
+    bundled_path = BUNDLED_BIN_ROOT / binary_name
+    if not skip_bundled and bundled_path.exists():
+        return bundled_path
 
-        target = CACHE_ROOT / f"hadolint-{version}-{system}-{machine}"
-        if not target.exists():
-            url = (
-                "https://github.com/hadolint/hadolint/releases/download/"
-                f"{version}/{binary_name}"
-            )
-            try:
-                _download(url, target)
-            except OSError as exc:  # pragma: no cover - network/runtime failures
-                raise BootstrapError(f"Failed to download hadolint: {exc}") from exc
-            target.chmod(target.stat().st_mode | stat.S_IEXEC)
-        return target
+    target = CACHE_ROOT / f"hadolint-{version}-{system}-{machine}"
+    if not target.exists():
+        url = (
+            "https://github.com/hadolint/hadolint/releases/download/"
+            f"{version}/{binary_name}"
+        )
+        try:
+            _download(url, target)
+        except OSError as exc:  # pragma: no cover - network/runtime failures
+            raise BootstrapError(f"Failed to download hadolint: {exc}") from exc
+        target.chmod(target.stat().st_mode | stat.S_IEXEC)
+    return target
 
 
 def ensure_actionlint(version: str = "v1.7.1") -> Path:
@@ -432,7 +433,7 @@ def ensure_python_package(
                     _safe_extract_tar(tar, dest)
             except tarfile.ReadError:
                 # try zip
-                import zipfile
+                pass
 
             # Look for wheel matching the requested package and version
             import re

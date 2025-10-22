@@ -115,6 +115,22 @@ compliance:
     - "{name} {province} Civil Aviation Authority"
     - "{name} training accreditation"
     - "{name} SACAA site:.za"
+  lawful_basis:
+    legitimate_interest: "Legitimate interest in supporting accredited aviation training"
+    consent: "Documented consent from the contact or organisation"
+  default_lawful_basis: legitimate_interest
+  contact_purposes:
+    transparency_notice: "Send POPIA transparency notice after enrichment"
+    outreach: "Initial outreach regarding ACES Aerodynamics flight training services"
+  default_contact_purpose: transparency_notice
+  opt_out_statuses:
+    - Do Not Contact (Compliance)
+  revalidation_days: 120
+  notification_templates:
+    transparency_notice: templates/transparency_notice.md
+  audit_exports:
+    - csv
+    - jsonl
 contact:
   phone:
     country_code: "+27"

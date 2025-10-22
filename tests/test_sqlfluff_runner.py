@@ -5,13 +5,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-import duckdb
 import pytest
 
 from firecrawl_demo.integrations.contracts.shared_config import (
     environment_payload,
 )
 from tools.sql import sqlfluff_runner
+
+duckdb = pytest.importorskip("duckdb")
 
 
 def _assert_valid_duckdb(path: Path) -> None:

@@ -85,6 +85,14 @@ class ComplianceProfile:
     min_evidence_sources: int
     official_source_keywords: tuple[str, ...] = ()
     evidence_queries: tuple[str, ...] = ()
+    lawful_basis: Mapping[str, str] = field(default_factory=dict)
+    default_lawful_basis: str = "legitimate_interest"
+    contact_purposes: Mapping[str, str] = field(default_factory=dict)
+    default_contact_purpose: str = "transparency_notice"
+    opt_out_statuses: tuple[str, ...] = ()
+    revalidation_days: int = 90
+    notification_templates: Mapping[str, str] = field(default_factory=dict)
+    audit_exports: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -100,7 +108,7 @@ class ResearchProfile:
     circuit_breaker_reset_seconds: float = 30.0
     allow_personal_data: bool = False
     rate_limit_seconds: float = 0.0
-    connectors: Mapping[str, "ConnectorSettings"] = field(default_factory=dict)
+    connectors: Mapping[str, ConnectorSettings] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -197,7 +205,9 @@ def _load_dataset(payload: Mapping[str, Any]) -> DatasetProfile:
             )
         expected_columns = [descriptor.name for descriptor in columns]
     if not expected_columns:
-        raise ProfileError("Dataset profiles require either 'expected_columns' or 'columns'")
+        raise ProfileError(
+            "Dataset profiles require either 'expected_columns' or 'columns'"
+        )
     return DatasetProfile(
         expected_columns=tuple(str(column) for column in expected_columns),
         numeric_units=numeric_units,
@@ -251,11 +261,40 @@ def _load_compliance(payload: Mapping[str, Any]) -> ComplianceProfile:
         raise ProfileError("Compliance profile requires 'min_evidence_sources'")
     keywords = tuple(str(item) for item in payload.get("official_source_keywords", ()))
     queries = tuple(str(item) for item in payload.get("evidence_queries", ()))
+    lawful_basis_raw = payload.get("lawful_basis") or {}
+    lawful_basis = {str(key): str(value) for key, value in lawful_basis_raw.items()}
+    default_lawful_basis = str(
+        payload.get("default_lawful_basis")
+        or (next(iter(lawful_basis.keys()), "legitimate_interest"))
+    )
+    contact_purposes_raw = payload.get("contact_purposes") or {}
+    contact_purposes = {
+        str(key): str(value) for key, value in contact_purposes_raw.items()
+    }
+    default_contact_purpose = str(
+        payload.get("default_contact_purpose")
+        or (next(iter(contact_purposes.keys()), "transparency_notice"))
+    )
+    opt_out_statuses = tuple(str(item) for item in payload.get("opt_out_statuses", ()))
+    revalidation_days = int(payload.get("revalidation_days", 90))
+    notification_templates_raw = payload.get("notification_templates") or {}
+    notification_templates = {
+        str(key): str(value) for key, value in notification_templates_raw.items()
+    }
+    audit_exports = tuple(str(item) for item in payload.get("audit_exports", ()))
     return ComplianceProfile(
         default_confidence={str(k): int(v) for k, v in default_confidence.items()},
         min_evidence_sources=int(min_sources),
         official_source_keywords=keywords,
         evidence_queries=queries,
+        lawful_basis=lawful_basis,
+        default_lawful_basis=default_lawful_basis,
+        contact_purposes=contact_purposes,
+        default_contact_purpose=default_contact_purpose,
+        opt_out_statuses=opt_out_statuses,
+        revalidation_days=revalidation_days,
+        notification_templates=notification_templates,
+        audit_exports=audit_exports,
     )
 
 

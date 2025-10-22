@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence
+from typing import Any, Protocol
 
 from firecrawl_demo.core import config
 from firecrawl_demo.core.external_sources import (
@@ -13,8 +14,11 @@ from firecrawl_demo.core.external_sources import (
     query_regulator_api,
 )
 from firecrawl_demo.domain.compliance import normalize_phone
+from firecrawl_demo.integrations.crawl_policy import CrawlPolicyManager
 
 logger = logging.getLogger(__name__)
+
+_POLITENESS_MANAGER = CrawlPolicyManager()
 
 
 @dataclass(frozen=True)
@@ -124,6 +128,7 @@ class BaseConnector:
         observation, sources, notes, filtered = self._parse_payload(
             request, payload or {}
         )
+        sources = self._apply_politeness(request, list(sources), notes, payload or {})
         latency = monotonic() - start if payload is not None else None
         return ConnectorResult(
             connector=self.name,
@@ -136,6 +141,54 @@ class BaseConnector:
             privacy_filtered_fields=tuple(filtered),
         )
 
+    def _apply_politeness(
+        self,
+        _request: ConnectorRequest,
+        sources: list[str],
+        notes: list[str],
+        payload: Mapping[str, Any],
+    ) -> list[str]:
+        """Filter sources that violate robots.txt or ToS guidance."""
+
+        allowed: list[str] = []
+        tos_blocked: set[str] = set()
+        for key in ("tos_forbidden_sources", "terms_of_service_blocked"):
+            value = payload.get(key)
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+                tos_blocked.update(str(item) for item in value if item)
+            elif isinstance(value, str) and value:
+                tos_blocked.add(value)
+
+        skipped_for_policy: list[str] = []
+        skipped_for_tos: list[str] = []
+        for source in sources:
+            canonical = _POLITENESS_MANAGER.canonicalize_url(source)
+            if canonical != source:
+                notes.append(f"Canonicalized {source} to {canonical}")
+            if canonical in tos_blocked:
+                skipped_for_tos.append(canonical)
+                continue
+            if not _POLITENESS_MANAGER.can_fetch(canonical):
+                skipped_for_policy.append(canonical)
+                continue
+            allowed.append(canonical)
+
+        if skipped_for_policy:
+            sample = ", ".join(skipped_for_policy[:2])
+            notes.append(
+                f"Skipped {len(skipped_for_policy)} sources blocked by robots.txt or crawl policy ({sample})"
+            )
+        if skipped_for_tos:
+            suggestion = next(
+                iter(config.EVIDENCE_QUERIES), "official regulator search"
+            )
+            notes.append(
+                "Terms of Service restrictions prevented {count} sources; suggested alternate query: {query}".format(
+                    count=len(skipped_for_tos), query=suggestion
+                )
+            )
+        return allowed
+
     def _fetch_payload(self, request: ConnectorRequest) -> Mapping[str, Any] | None:
         if self._requester_factory is not None:
             return self._requester_factory(request)
@@ -143,7 +196,9 @@ class BaseConnector:
             return None
         return self._call_external_source(request)
 
-    def _call_external_source(self, request: ConnectorRequest) -> Mapping[str, Any] | None:
+    def _call_external_source(
+        self, request: ConnectorRequest
+    ) -> Mapping[str, Any] | None:
         raise NotImplementedError
 
     def _parse_payload(
@@ -163,7 +218,9 @@ class RegulatorConnector(BaseConnector):
     ) -> None:
         super().__init__(requester=requester, timeout=timeout)
 
-    def _call_external_source(self, request: ConnectorRequest) -> Mapping[str, Any] | None:
+    def _call_external_source(
+        self, request: ConnectorRequest
+    ) -> Mapping[str, Any] | None:
         return query_regulator_api(request.organisation)
 
     def _parse_payload(
@@ -185,13 +242,15 @@ class RegulatorConnector(BaseConnector):
             sources.append(possible_source)
         notes.append("Regulator registry corroboration")
         if not request.allow_personal_data:
-            filtered.extend(_prune_personal_fields(
-                {
-                    "contact_person": contact_person,
-                    "contact_email": contact_email,
-                    "contact_phone": contact_phone,
-                }
-            ))
+            filtered.extend(
+                _prune_personal_fields(
+                    {
+                        "contact_person": contact_person,
+                        "contact_email": contact_email,
+                        "contact_phone": contact_phone,
+                    }
+                )
+            )
             if "contact_person" in filtered:
                 contact_person = None
             if "contact_email" in filtered:
@@ -219,7 +278,9 @@ class RegulatorConnector(BaseConnector):
 class PressConnector(BaseConnector):
     name = "press"
 
-    def _call_external_source(self, request: ConnectorRequest) -> Mapping[str, Any] | None:
+    def _call_external_source(
+        self, request: ConnectorRequest
+    ) -> Mapping[str, Any] | None:
         return query_press(request.organisation)
 
     def _parse_payload(
@@ -246,7 +307,9 @@ class PressConnector(BaseConnector):
 class CorporateFilingsConnector(BaseConnector):
     name = "corporate_filings"
 
-    def _call_external_source(self, request: ConnectorRequest) -> Mapping[str, Any] | None:
+    def _call_external_source(
+        self, request: ConnectorRequest
+    ) -> Mapping[str, Any] | None:
         return query_professional_directory(request.organisation)
 
     def _parse_payload(
@@ -266,7 +329,9 @@ class CorporateFilingsConnector(BaseConnector):
                 sources.append(url)
                 website = website or url
             address = address or entry.get("address")
-            contact_person = contact_person or entry.get("contact") or entry.get("contactPerson")
+            contact_person = (
+                contact_person or entry.get("contact") or entry.get("contactPerson")
+            )
             contact_email = contact_email or entry.get("email")
             contact_phone = contact_phone or entry.get("phone")
         if sources:
@@ -307,7 +372,9 @@ class CorporateFilingsConnector(BaseConnector):
 class SocialConnector(BaseConnector):
     name = "social"
 
-    def _call_external_source(self, request: ConnectorRequest) -> Mapping[str, Any] | None:
+    def _call_external_source(
+        self, request: ConnectorRequest
+    ) -> Mapping[str, Any] | None:
         directory_payload = query_professional_directory(request.organisation)
         if directory_payload:
             return directory_payload

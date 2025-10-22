@@ -9,10 +9,15 @@ apply in bulk.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field, replace
+from typing import Any
 from urllib.parse import urlparse
 
+from firecrawl_demo.application.compliance_review import (
+    ComplianceReview,
+    ComplianceReviewOutcome,
+)
 from firecrawl_demo.application.quality import (
     QualityFinding,
     QualityGate,
@@ -62,6 +67,8 @@ class RowProcessingResult:
     rollback_action: RollbackAction | None
     quality_rejected: bool
     decision: QualityGateDecision | None
+    compliance: ComplianceReviewOutcome | None = None
+    follow_up_records: list[EvidenceRecord] = field(default_factory=list)
 
 
 def process_row(
@@ -136,13 +143,14 @@ def process_row(
         previous_email=previous_email,
     )
 
-    changed_columns = collect_changed_columns(original_record, proposed_record)
+    changed_columns = dict(collect_changed_columns(original_record, proposed_record))
     decision: QualityGateDecision | None = None
     quality_issues: list[QualityIssue] = []
     rollback_action: RollbackAction | None = None
-    evidence_record: EvidenceRecord | None = None
     quality_rejected = False
     final_record = proposed_record
+    evidence_confidence: int | None = None
+    evidence_notes_parts: list[str] = []
 
     if changed_columns:
         decision = quality_gate.evaluate(
@@ -180,40 +188,84 @@ def process_row(
         final_record = fallback_record
         rejection_reason = format_quality_rejection_reason(quality_issues)
         attempted_changes_text = describe_changes(request.original_row, proposed_record)
-        final_changes_text = describe_changes(request.original_row, final_record)
         notes = compose_quality_rejection_notes(
             rejection_reason,
             attempted_changes_text,
             decision.findings,
             sanity_result.notes,
         )
-        evidence_record = EvidenceRecord(
-            row_id=request.row_id,
-            organisation=final_record.name,
-            changes=final_changes_text or "No changes",
-            sources=sanity_result.normalized_sources,
-            notes=notes,
-            confidence=0,
-        )
+        evidence_notes_parts.append(notes)
+        evidence_confidence = 0
     elif changed_columns:
-        confidence = finding.confidence or confidence_for_status(
-            final_record.status, len(phone_issues) + len(filtered_email_issues)
+        evidence_confidence = finding.confidence or confidence_for_status(
+            proposed_record.status, len(phone_issues) + len(filtered_email_issues)
         )
-        evidence_record = EvidenceRecord(
-            row_id=request.row_id,
-            organisation=final_record.name,
-            changes=describe_changes(request.original_row, final_record),
-            sources=sanity_result.normalized_sources,
-            notes=compose_evidence_notes(
+        evidence_notes_parts.append(
+            compose_evidence_notes(
                 finding,
                 request.original_row,
-                final_record,
+                proposed_record,
                 has_official_source=has_official_source,
                 total_source_count=total_source_count,
                 fresh_source_count=fresh_source_count,
                 sanity_notes=sanity_result.notes,
-            ),
-            confidence=confidence,
+            )
+        )
+
+    raw_mx_failures = request.original_row.get("MX Failure Count")
+    previous_mx_failures = 0
+    if raw_mx_failures is not None:
+        try:
+            previous_mx_failures = int(raw_mx_failures)
+        except (TypeError, ValueError):  # pragma: no cover - defensive parsing
+            previous_mx_failures = 0
+
+    raw_opt_out = str(request.original_row.get("Opt-out Status", ""))
+    opt_out_flag = original_record.status == "Do Not Contact (Compliance)" or (
+        raw_opt_out.strip().lower() in {"1", "true", "yes", "opt-out", "suppressed"}
+    )
+
+    reviewer = ComplianceReview()
+    compliance_outcome = reviewer.review(
+        row_id=request.row_id,
+        organisation=final_record.name or original_record.name,
+        record=final_record,
+        finding=finding,
+        sources=sanity_result.normalized_sources,
+        changed_columns=changed_columns,
+        phone_issues=phone_issues,
+        email_issues=filtered_email_issues,
+        previous_mx_failures=previous_mx_failures,
+        opt_out_flag=opt_out_flag,
+    )
+
+    follow_up_records = list(compliance_outcome.follow_up_records)
+    if (
+        compliance_outcome.downgraded_status
+        and final_record.status != compliance_outcome.downgraded_status
+    ):
+        previous_status = final_record.status
+        final_record = replace(
+            final_record, status=compliance_outcome.downgraded_status
+        )
+        changed_columns["Status"] = (previous_status, final_record.status)
+
+    if compliance_outcome.disclosures:
+        evidence_notes_parts.extend(compliance_outcome.disclosures)
+
+    evidence_record: EvidenceRecord | None = None
+    if evidence_confidence is not None:
+        evidence_changes = describe_changes(request.original_row, final_record)
+        evidence_notes = "; ".join(
+            dict.fromkeys(part for part in evidence_notes_parts if part)
+        )
+        evidence_record = EvidenceRecord(
+            row_id=request.row_id,
+            organisation=final_record.name,
+            changes=evidence_changes or "No changes",
+            sources=sanity_result.normalized_sources,
+            notes=evidence_notes,
+            confidence=evidence_confidence,
         )
 
     updated = final_record != original_record
@@ -233,6 +285,8 @@ def process_row(
         rollback_action=rollback_action,
         quality_rejected=quality_rejected,
         decision=decision,
+        compliance=compliance_outcome,
+        follow_up_records=follow_up_records,
     )
 
 

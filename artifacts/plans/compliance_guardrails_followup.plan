@@ -1,0 +1,21 @@
+{
+  "instructions": "Stabilise compliance guardrail changes and clean auxiliary files before commit.",
+  "changes": [
+    {
+      "path": "tests/test_sqlfluff_runner.py",
+      "description": "Import sys for version checks and ensure helper imports stay organised"
+    },
+    {
+      "path": "tests/test_graph_semantics.py",
+      "description": "Deduplicate pathlib import and tidy header layout to satisfy lint expectations"
+    },
+    {
+      "path": "data/interim/normalization_report.json",
+      "description": "Remove generated artefact from tracking to keep repo clean"
+    },
+    {
+      "path": "Next_Steps.md",
+      "description": "Log iteration progress and outstanding follow-ups"
+    }
+  ]
+}
