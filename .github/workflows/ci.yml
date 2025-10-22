@@ -64,8 +64,20 @@ jobs:
         # Run the repo-provided provisioning script inside the Poetry venv.
         # This prefers vendored wheels (tools/vendor/...) or a wheelhouse artifact
         # and avoids network installs when an appropriate wheel is available.
+        uses: actions/cache@v4
+        with:
+          path: wheelhouse
+          key: wheelhouse-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+      - name: Bootstrap vendored Python dependencies
         run: |
-          poetry run python scripts/ensure_deps.py || true
+          set -euo pipefail
+          mkdir -p wheelhouse
+          # Attempt to download the latest wheelhouse artifact for this runner
+          export PYTHON_VERSION=${{ matrix.python-version }}
+          export GITHUB_REPOSITORY=${{ github.repository }}
+          # GITHUB_TOKEN is available automatically in Actions; pass through
+          poetry run python scripts/download_wheelhouse_artifact.py || true
+          poetry run python scripts/ensure_deps.py
       - name: Run isort check
         if: matrix.python-version == '3.13'
         run: poetry run isort --profile black --check-only .

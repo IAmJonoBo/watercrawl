@@ -1,29 +1,39 @@
-name: build-wheelhouse
+name: Wheelhouse Producer
 on:
-  workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - 'poetry.lock'
       - 'pyproject.toml'
+  workflow_dispatch: {}
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-wheelhouse:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.13", "3.14", "3.15"]
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
-      - name: Install poetry
-        run: pip install poetry
-      - name: Export requirements (locked)
+          python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
         run: |
-          poetry export --format requirements.txt --output wheel-reqs.txt
+          python -m pip install --upgrade pip --timeout 60 --retries 5
+          python -m pip install poetry --timeout 60 --retries 5
       - name: Create wheelhouse
         run: |
-          python scripts/provision_wheelhouse.py --output wheelhouse --python 3.13 --dev
+          python scripts/provision_wheelhouse.py --output wheelhouse --python ${{ matrix.python-version }}
       - name: Upload wheelhouse artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wheelhouse-3.13
+          name: wheelhouse-${{ matrix.os }}-py${{ matrix.python-version }}
           path: wheelhouse
+      - name: Cache wheelhouse
+        uses: actions/cache@v4
+        with:
+          path: wheelhouse
+          key: wheelhouse-${{ matrix.os }}-py${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}

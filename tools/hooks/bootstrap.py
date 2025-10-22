@@ -349,6 +349,17 @@ def ensure_python_package(
 
     Raises BootstrapError if the package cannot be installed.
     """
+    # 0) If a local wheelhouse directory exists in the repository, prefer it
+    # (this is populated by a CI producer artifact or can be created locally).
+    repo_root = Path(__file__).parent.parent.parent
+    local_wheelhouse = repo_root / "wheelhouse"
+    if local_wheelhouse.exists():
+        for p in local_wheelhouse.rglob("*.whl"):
+            name = p.name.lower()
+            if package_name.lower() in name and (not version or str(version) in name):
+                install_wheel_into_env(p, python_executable=python_executable)
+                return
+
     # 1) Try vendored wheel
     if version:
         wheel = locate_vendor_wheel(package_name, version)

@@ -29,9 +29,9 @@ from firecrawl_demo.domain.models import (
     EvidenceRecord,
     QualityIssue,
     RollbackAction,
+    SanityCheckFinding,
     SchoolRecord,
 )
-from firecrawl_demo.domain.validation import SanityCheckFinding
 from firecrawl_demo.integrations.adapters.research import ResearchFinding
 
 _OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
@@ -179,9 +179,7 @@ def process_row(
         )
         final_record = fallback_record
         rejection_reason = format_quality_rejection_reason(quality_issues)
-        attempted_changes_text = describe_changes(
-            request.original_row, proposed_record
-        )
+        attempted_changes_text = describe_changes(request.original_row, proposed_record)
         final_changes_text = describe_changes(request.original_row, final_record)
         notes = compose_quality_rejection_notes(
             rejection_reason,
@@ -285,7 +283,9 @@ def run_sanity_checks(
             )
 
     if previous_phone and record.contact_number is None and phone_issues:
-        notes.append("Removed invalid contact number after it failed +27 E.164 validation.")
+        notes.append(
+            "Removed invalid contact number after it failed +27 E.164 validation."
+        )
         findings.append(
             SanityCheckFinding(
                 row_id=row_id,
@@ -451,9 +451,7 @@ def compose_evidence_notes(
                 notes.append(alias_note)
 
         if finding.physical_address:
-            address_note = (
-                f"Latest address intelligence: {finding.physical_address}"
-            )
+            address_note = f"Latest address intelligence: {finding.physical_address}"
             if address_note not in notes:
                 notes.append(address_note)
 
@@ -546,7 +544,9 @@ def compose_quality_rejection_notes(
     notes: list[str] = [f"Quality gate rejected enrichment: {reason}"]
     if attempted_changes:
         notes.append(f"Attempted updates: {attempted_changes}")
-    remediation = sorted({finding.remediation for finding in findings if finding.remediation})
+    remediation = sorted(
+        {finding.remediation for finding in findings if finding.remediation}
+    )
     if remediation:
         notes.append("Remediation: " + "; ".join(remediation))
     if sanity_notes:
