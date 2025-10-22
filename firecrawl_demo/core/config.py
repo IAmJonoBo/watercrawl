@@ -223,7 +223,6 @@ except NameError:
     RESEARCH_RETRY_BACKOFF_BASE_SECONDS = 1.0
 
 
-
 def switch_profile(
     *,
     profile_id: str | None = None,
