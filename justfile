@@ -73,11 +73,6 @@ coverage:
     @echo "Checking contract coverage..."
     poetry run python -m apps.analyst.cli coverage --format json
 
-# Aggregate problems report
-problems:
-    @echo "Generating problems report..."
-    poetry run python scripts/collect_problems.py --output problems_report.json
-
 # Clean build artifacts and caches
 clean:
     @echo "Cleaning artifacts..."

@@ -132,10 +132,10 @@ pnpm dlx markdownlint-cli2 '**/*.md'
 
 2. **Verify the setup**:
 
-   ```bash
-   poetry run pytest -q
-   poetry run python scripts/collect_problems.py
-   ```
+    ```bash
+    poetry run pytest -q
+    poetry run ruff check .
+    ```
 
 ### For CI/Ephemeral Runners
 
@@ -226,10 +226,7 @@ poetry run pytest tests/test_pipeline.py -v
 ### Code Quality
 
 ```bash
-# Run all quality checks
-poetry run python scripts/collect_problems.py
-
-# Individual checks
+# Run individual checks
 poetry run ruff check .
 poetry run black --check .
 poetry run isort --check-only .

@@ -172,9 +172,6 @@ Mirror CI locally before pushing:
 # Full QA suite (mirrors CI)
 poetry run python -m dev.cli qa all --dry-run
 
-# Generate problems report
-poetry run python scripts/collect_problems.py
-
 # Check evidence logging
 poetry run python -m firecrawl_demo.interfaces.cli validate data/sample.csv --evidence-log data/interim/evidence_log.csv
 ```
