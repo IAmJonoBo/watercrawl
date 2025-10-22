@@ -132,6 +132,7 @@ class ComplianceReview:
             outcome.next_review_due = self._now + timedelta(
                 days=config.COMPLIANCE_REVALIDATION_DAYS
             )
+            assert outcome.next_review_due is not None, "next_review_due should not be None here"
             outcome.disclosures.append(
                 f"Verification logged {self._now.date().isoformat()} with revalidation due "
                 f"{outcome.next_review_due.date().isoformat()}"
