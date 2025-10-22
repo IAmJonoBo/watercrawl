@@ -7,7 +7,7 @@ import logging
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from concurrent.futures import Executor
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from firecrawl_demo.core import config
 from firecrawl_demo.core.external_sources import triangulate_organisation
@@ -16,6 +16,10 @@ from firecrawl_demo.domain.compliance import normalize_phone
 from ..firecrawl_client import FirecrawlClient, summarize_extract_payload
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:  # pragma: no cover - typing helpers
+    from .connectors import ConnectorEvidence
+    from .validators import ValidationReport
 
 
 @runtime_checkable
@@ -47,6 +51,10 @@ class ResearchFinding:
     alternate_names: list[str] = field(default_factory=list)
     investigation_notes: list[str] = field(default_factory=list)
     physical_address: str | None = None
+    evidence_by_connector: dict[str, "ConnectorEvidence"] = field(
+        default_factory=dict
+    )
+    validation: "ValidationReport | None" = None
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
         """Normalise collection fields for deterministic comparisons."""
@@ -60,6 +68,9 @@ class ResearchFinding:
             normalized, _ = normalize_phone(self.contact_phone)
             if normalized:
                 object.__setattr__(self, "contact_phone", normalized)
+        object.__setattr__(
+            self, "evidence_by_connector", dict(self.evidence_by_connector)
+        )
 
 
 class NullResearchAdapter:
@@ -283,6 +294,8 @@ def merge_findings(*findings: ResearchFinding) -> ResearchFinding:
     alternate_names: list[str] = []
     investigation_notes: list[str] = []
     physical_address: str | None = None
+    evidence_by_connector: dict[str, "ConnectorEvidence"] = {}
+    validation: "ValidationReport | None" = None
 
     for finding in findings:
         if finding.website_url:
@@ -307,6 +320,10 @@ def merge_findings(*findings: ResearchFinding) -> ResearchFinding:
             if note not in investigation_notes:
                 investigation_notes.append(note)
         confidence = max(confidence, finding.confidence)
+        if finding.evidence_by_connector:
+            evidence_by_connector.update(finding.evidence_by_connector)
+        if finding.validation is not None:
+            validation = finding.validation
 
     return ResearchFinding(
         website_url=website_url,
@@ -319,6 +336,8 @@ def merge_findings(*findings: ResearchFinding) -> ResearchFinding:
         alternate_names=alternate_names,
         investigation_notes=investigation_notes,
         physical_address=physical_address,
+        evidence_by_connector=evidence_by_connector,
+        validation=validation,
     )
 
 
@@ -342,12 +361,16 @@ def build_research_adapter() -> ResearchAdapter:
     """Assemble the default adapter stack declared in configuration."""
 
     from .registry import AdapterLoaderSettings, load_enabled_adapters
+    from .multi_source import MultiSourceResearchAdapter
 
     settings = AdapterLoaderSettings(provider=config.SECRETS_PROVIDER)
     adapters = load_enabled_adapters(settings)
 
-    if not adapters:
-        adapters = [NullResearchAdapter()]
+    base_connectors = MultiSourceResearchAdapter()
+    if adapters:
+        adapters = [base_connectors, *adapters]
+    else:
+        adapters = [base_connectors]
 
     if len(adapters) == 1:
         base: ResearchAdapter = adapters[0]

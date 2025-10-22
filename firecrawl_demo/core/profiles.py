@@ -86,6 +86,18 @@ class ResearchProfile:
     retry_backoff_base_seconds: float = 0.25
     circuit_breaker_failure_threshold: int = 5
     circuit_breaker_reset_seconds: float = 30.0
+    allow_personal_data: bool = False
+    rate_limit_seconds: float = 0.0
+    connectors: Mapping[str, "ConnectorSettings"] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ConnectorSettings:
+    """Profile-level overrides for connector behaviour."""
+
+    enabled: bool = True
+    rate_limit_seconds: float | None = None
+    allow_personal_data: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -193,6 +205,19 @@ def _load_compliance(payload: Mapping[str, Any]) -> ComplianceProfile:
     )
 
 
+def _load_connector(payload: Mapping[str, Any]) -> ConnectorSettings:
+    rate_limit = payload.get("rate_limit_seconds")
+    rate_limit_seconds = float(rate_limit) if rate_limit is not None else None
+    allow_personal = payload.get("allow_personal_data")
+    if allow_personal is not None:
+        allow_personal = bool(allow_personal)
+    return ConnectorSettings(
+        enabled=bool(payload.get("enabled", True)),
+        rate_limit_seconds=rate_limit_seconds,
+        allow_personal_data=allow_personal,
+    )
+
+
 def _load_research(payload: Mapping[str, Any]) -> ResearchProfile:
     queries = tuple(str(item) for item in payload.get("queries", ()))
     concurrency_limit = int(payload.get("concurrency_limit", 4) or 1)
@@ -225,6 +250,15 @@ def _load_research(payload: Mapping[str, Any]) -> ResearchProfile:
             "research.circuit_breaker.reset_seconds must be non-negative"
         )
 
+    allow_personal = bool(payload.get("allow_personal_data", False))
+    rate_limit = float(payload.get("rate_limit_seconds", 0.0) or 0.0)
+    connectors_payload = payload.get("connectors") or {}
+    connectors = {
+        str(name): _load_connector(payload)
+        for name, payload in connectors_payload.items()
+        if isinstance(payload, Mapping)
+    }
+
     return ResearchProfile(
         queries=queries,
         concurrency_limit=concurrency_limit,
@@ -233,6 +267,9 @@ def _load_research(payload: Mapping[str, Any]) -> ResearchProfile:
         retry_backoff_base_seconds=retry_backoff_base,
         circuit_breaker_failure_threshold=failure_threshold,
         circuit_breaker_reset_seconds=reset_seconds,
+        allow_personal_data=allow_personal,
+        rate_limit_seconds=rate_limit,
+        connectors=connectors,
     )
 
 

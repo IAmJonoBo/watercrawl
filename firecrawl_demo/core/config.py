@@ -108,6 +108,9 @@ RESEARCH_MAX_RETRIES: int
 RESEARCH_RETRY_BACKOFF_BASE_SECONDS: float
 RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int
 RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS: float
+RESEARCH_ALLOW_PERSONAL_DATA: bool
+RESEARCH_RATE_LIMIT_SECONDS: float
+RESEARCH_CONNECTOR_SETTINGS: dict[str, dict[str, object]]
 
 NUMERIC_UNIT_RULES: tuple[NumericUnitRule, ...]
 
@@ -120,6 +123,8 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
     global PHONE_NATIONAL_PREFIXES, PHONE_NATIONAL_NUMBER_LENGTH
     global EMAIL_REGEX, ROLE_INBOX_PREFIXES, EMAIL_REQUIRE_DOMAIN_MATCH
     global RESEARCH_QUERIES, NUMERIC_UNIT_RULES
+    global RESEARCH_ALLOW_PERSONAL_DATA, RESEARCH_RATE_LIMIT_SECONDS
+    global RESEARCH_CONNECTOR_SETTINGS
 
     PROFILE = profile
     PROFILE_PATH = profile_path
@@ -157,10 +162,31 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
         0.0, float(profile.research.circuit_breaker_reset_seconds)
     )
     NUMERIC_UNIT_RULES = tuple(profile.dataset.numeric_units)
+    RESEARCH_ALLOW_PERSONAL_DATA = bool(profile.research.allow_personal_data)
+    RESEARCH_RATE_LIMIT_SECONDS = float(profile.research.rate_limit_seconds)
+    RESEARCH_CONNECTOR_SETTINGS = {
+        name: {
+            "enabled": settings.enabled,
+            "rate_limit_seconds": settings.rate_limit_seconds,
+            "allow_personal_data": settings.allow_personal_data,
+        }
+        for name, settings in profile.research.connectors.items()
+    }
 
 
 _profile_init, _profile_path_init = _resolve_profile_from_env()
 _apply_profile(_profile_init, _profile_path_init)
+
+RESEARCH_ALLOW_PERSONAL_DATA = bool(
+    globals().get("RESEARCH_ALLOW_PERSONAL_DATA", False)
+)
+RESEARCH_RATE_LIMIT_SECONDS = float(
+    globals().get("RESEARCH_RATE_LIMIT_SECONDS", 0.0)
+)
+_connector_defaults = globals().get("RESEARCH_CONNECTOR_SETTINGS", {})
+if not isinstance(_connector_defaults, dict):
+    _connector_defaults = {}
+RESEARCH_CONNECTOR_SETTINGS = dict(_connector_defaults)
 
 # Safety defaults: ensure tests and runtime environments that load this module
 # without explicitly populated profile fields still have reasonable values.
@@ -195,6 +221,7 @@ try:
     RESEARCH_RETRY_BACKOFF_BASE_SECONDS  # type: ignore[name-defined]
 except NameError:
     RESEARCH_RETRY_BACKOFF_BASE_SECONDS = 1.0
+
 
 
 def switch_profile(

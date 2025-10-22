@@ -12,6 +12,17 @@ from firecrawl_demo.integrations.integration_plugins import (
 )
 
 from . import exemplars as _exemplar_adapters  # noqa: F401
+from .connectors import (
+    ConnectorEvidence,
+    ConnectorObservation,
+    ConnectorRequest,
+    ConnectorResult,
+    CorporateFilingsConnector,
+    PressConnector,
+    RegulatorConnector,
+    ResearchConnector,
+    SocialConnector,
+)
 from .core import (
     CompositeResearchAdapter,
     FirecrawlResearchAdapter,
@@ -26,23 +37,45 @@ from .core import (
     merge_findings,
     triangulate_via_sources,
 )
+from .multi_source import MultiSourceResearchAdapter, build_default_connectors
 from .registry import (
     AdapterContext,
     AdapterLoaderSettings,
     load_enabled_adapters,
     register_adapter,
 )
+from .validators import (
+    ValidationCheck,
+    ValidationReport,
+    ValidationSeverity,
+    cross_validate_findings,
+)
 
 __all__ = [
     "CompositeResearchAdapter",
+    "ConnectorEvidence",
+    "ConnectorObservation",
+    "ConnectorRequest",
+    "ConnectorResult",
+    "CorporateFilingsConnector",
     "FirecrawlResearchAdapter",
+    "MultiSourceResearchAdapter",
     "NullResearchAdapter",
+    "PressConnector",
+    "RegulatorConnector",
     "ResearchAdapter",
+    "ResearchConnector",
     "ResearchFinding",
+    "SocialConnector",
     "StaticResearchAdapter",
     "SupportsAsyncLookup",
     "TriangulatingResearchAdapter",
+    "ValidationCheck",
+    "ValidationReport",
+    "ValidationSeverity",
+    "build_default_connectors",
     "build_research_adapter",
+    "cross_validate_findings",
     "lookup_with_adapter_async",
     "merge_findings",
     "triangulate_via_sources",
