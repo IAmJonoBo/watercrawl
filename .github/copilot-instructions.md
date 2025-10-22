@@ -10,6 +10,7 @@ Project quick-start (what Copilot should use when running or testing locally)
   - Tests: `poetry run pytest -q`
   - Type-checking: `./scripts/run_with_stubs.sh -- poetry run mypy . --show-error-codes`
   - Lint & format: `poetry run ruff . && poetry run black . && poetry run isort .`
+  - Quick autofix: `python3 scripts/autofix.py --poetry` or `python3 scripts/autofix.py ruff --poetry`
 
 - Node tooling (docs/front-end):
   - Enable corepack and pnpm: `corepack enable && corepack prepare pnpm@latest --activate`
@@ -41,12 +42,19 @@ How to present changes when creating PRs
 Useful commands (for Copilot's ephemeral environment)
 - Run tests: `poetry run pytest -q`
 - Run mypy: `./scripts/run_with_stubs.sh -- poetry run mypy . --show-error-codes`
-- Run collector (regenerate problems report): `poetry run python scripts/collect_problems.py`
+- Run collector (regenerate problems report): `poetry run python scripts/collect_problems.py` or `python3 scripts/collect_problems.py --summary`
+- Run autofix for all tools: `python3 scripts/autofix.py --dry-run` (inspect first), then `python3 scripts/autofix.py`
+- Run autofix for specific tool: `python3 scripts/autofix.py ruff` or `python3 scripts/autofix.py black`
 
 Copilot-specific workflow: run-and-triage the problems reporter
 - Run the problems reporter at the start of any fresh session and before opening or updating a PR. This keeps the Problems pane and `problems_report.json` up to date and avoids noisy or surprise failures in CI.
+- The problems reporter now includes:
+  - Early detection of unavailable tools with setup guidance
+  - Performance metrics showing which tools are slowest
+  - Actionable autofix commands for supported tools
+  - Human-readable summary output with `--summary` flag
 - Recommended cadence:
-  - At session start: `poetry run python scripts/collect_problems.py` (or `./scripts/collect_problems.sh` if available).
+  - At session start: `python3 scripts/collect_problems.py --summary` (works without Poetry)
   - Before creating/updating a PR: run the collector and address any new or bumped issues shown in `problems_report.json`.
   - After making a set of edits locally (especially to workflows, linters, type stubs, or packaging): re-run the collector and ensure the report does not introduce new high-severity items.
 
