@@ -12,21 +12,42 @@ import structlog
 from structlog.typing import FilteringBoundLogger
 
 from firecrawl_demo.core import config
-from firecrawl_demo.domain.models import EvidenceRecord
+from firecrawl_demo.domain.contracts import EvidenceRecordContract
+from firecrawl_demo.domain.models import EvidenceRecord, evidence_record_from_contract, evidence_record_to_contract
 
 if TYPE_CHECKING:
     from firecrawl_demo.application.interfaces import EvidenceSink
 else:  # pragma: no cover - runtime protocol for loose coupling
 
     class EvidenceSink(Protocol):
-        def record(self, entries: Iterable[EvidenceRecord]) -> None: ...
+        def record(
+            self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]
+        ) -> None: ...
+
+
+def _ensure_contract_records(
+    entries: Iterable[EvidenceRecord | EvidenceRecordContract]
+) -> list[EvidenceRecordContract]:
+    """Normalise evidence entries into validated contract instances."""
+
+    contracts: list[EvidenceRecordContract] = []
+    for entry in entries:
+        if isinstance(entry, EvidenceRecordContract):
+            contracts.append(entry)
+        elif isinstance(entry, EvidenceRecord):
+            contracts.append(evidence_record_to_contract(entry))
+        else:
+            raise TypeError(
+                "Evidence sinks accept EvidenceRecord dataclasses or EvidenceRecordContract instances"
+            )
+    return contracts
 
 
 class NullEvidenceSink:
     """No-op sink used for tests or scenarios where persistence is disabled."""
 
     def record(
-        self, entries: Iterable[EvidenceRecord]
+        self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]
     ) -> None:  # pragma: no cover - no-op
         return
 
@@ -47,10 +68,12 @@ class CSVEvidenceSink:
         "Confidence",
     )
 
-    def record(self, entries: Iterable[EvidenceRecord]) -> None:
-        records = list(entries)
-        if not records:
+    def record(self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]) -> None:
+        contracts = _ensure_contract_records(entries)
+        if not contracts:
             return
+
+        records = [evidence_record_from_contract(contract) for contract in contracts]
 
         self.path.parent.mkdir(parents=True, exist_ok=True)
         file_exists = self.path.exists()
@@ -75,13 +98,15 @@ class StreamingEvidenceSink:
         default_factory=lambda: structlog.get_logger(__name__)
     )
 
-    def record(self, entries: Iterable[EvidenceRecord]) -> None:
-        records = list(entries)
-        if not records or not self.enabled:
+    def record(
+        self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]
+    ) -> None:
+        contracts = _ensure_contract_records(entries)
+        if not contracts or not self.enabled:
             return
 
-        for record in records:
-            payload = record.as_dict()
+        for contract in contracts:
+            payload = contract.model_dump()
             if self.transport == "kafka":
                 self.logger.info(
                     "evidence_sink.kafka_publish",
@@ -102,12 +127,14 @@ class CompositeEvidenceSink:
 
     sinks: Sequence[EvidenceSink]
 
-    def record(self, entries: Iterable[EvidenceRecord]) -> None:
-        records = list(entries)
-        if not records:
+    def record(
+        self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]
+    ) -> None:
+        contracts = _ensure_contract_records(entries)
+        if not contracts:
             return
         for sink in self.sinks:
-            sink.record(records)
+            sink.record(contracts)
 
 
 def build_evidence_sink(

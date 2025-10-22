@@ -6,7 +6,11 @@ import pytest
 from structlog.typing import FilteringBoundLogger
 
 from firecrawl_demo.core import config
-from firecrawl_demo.domain.models import EvidenceRecord
+from firecrawl_demo.domain.models import (
+    EvidenceRecord,
+    evidence_record_from_contract,
+    evidence_record_to_contract,
+)
 from firecrawl_demo.infrastructure.evidence import (
     CompositeEvidenceSink,
     CSVEvidenceSink,
@@ -93,7 +97,7 @@ def test_streaming_evidence_sink_emits_rest_payloads() -> None:
             "evidence_sink.rest_publish",
             {
                 "endpoint": "https://audit.example/api",
-                "payload": record.as_dict(),
+                "payload": evidence_record_to_contract(record).model_dump(),
             },
         )
     ]
@@ -116,7 +120,7 @@ def test_streaming_evidence_sink_emits_kafka_payloads() -> None:
             "evidence_sink.kafka_publish",
             {
                 "topic": "audit.events",
-                "payload": record.as_dict(),
+                "payload": evidence_record_to_contract(record).model_dump(),
             },
         )
     ]
@@ -139,7 +143,13 @@ def test_composite_sink_broadcasts_records() -> None:
             self.received: list[list[EvidenceRecord]] = []
 
         def record(self, entries) -> None:
-            self.received.append(list(entries))
+            normalised: list[EvidenceRecord] = []
+            for entry in entries:
+                if isinstance(entry, EvidenceRecord):
+                    normalised.append(entry)
+                else:
+                    normalised.append(evidence_record_from_contract(entry))
+            self.received.append(normalised)
 
     first = _StubSink()
     second = _StubSink()

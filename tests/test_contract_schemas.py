@@ -24,16 +24,24 @@ from firecrawl_demo.domain.contracts import (
     SchoolRecordContract,
     ValidationIssueContract,
     ValidationReportContract,
+    export_all_avro_schemas,
     export_all_schemas,
+    export_contract_registry,
     export_json_schema,
 )
 from firecrawl_demo.domain.models import (
     EvidenceRecord,
+    PipelineReport,
     QualityIssue,
+    RollbackPlan,
+    SanityCheckFinding,
     SchoolRecord,
     ValidationIssue,
+    ValidationReport,
     evidence_record_from_contract,
     evidence_record_to_contract,
+    pipeline_report_from_contract,
+    pipeline_report_to_contract,
     quality_issue_from_contract,
     quality_issue_to_contract,
     school_record_from_contract,
@@ -356,6 +364,12 @@ class TestContractAdapters:
             quality_issue_from_contract("not a contract")
 
 
+SNAPSHOT_DIR = Path(__file__).parent / "data" / "contracts"
+JSON_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "json_v1.json"
+AVRO_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "avro_v1.json"
+REGISTRY_SNAPSHOT = SNAPSHOT_DIR / "registry_v1.json"
+
+
 class TestSchemaExport:
     """Tests for JSON Schema export functionality."""
 
@@ -377,27 +391,21 @@ class TestSchemaExport:
         assert "ValidationIssue" in all_schemas
         assert "PipelineReport" in all_schemas
 
-    def test_schema_stability_regression(self, tmp_path: Path):
-        """Test that schemas don't change unexpectedly (regression test).
+    def test_schema_stability_regression(self):
+        """Compare exported JSON schemas against the checked-in snapshot."""
 
-        This test snapshots the current schemas and will fail if they change,
-        forcing us to consciously update the schema version when making
-        breaking changes.
-        """
         all_schemas = export_all_schemas()
-        snapshot_path = tmp_path / "schema_snapshot.json"
+        snapshot = json.loads(JSON_SCHEMA_SNAPSHOT.read_text(encoding="utf-8"))
+        assert json.dumps(all_schemas, sort_keys=True) == json.dumps(
+            snapshot, sort_keys=True
+        )
 
-        # Write snapshot
-        with snapshot_path.open("w") as f:
-            json.dump(all_schemas, f, indent=2, sort_keys=True)
+    def test_avro_schema_regression(self):
+        """Compare exported Avro schemas against the snapshot."""
 
-        # Re-export and compare (should be identical)
-        all_schemas_again = export_all_schemas()
-        with snapshot_path.open("r") as f:
-            snapshot = json.load(f)
-
-        # Normalize for comparison (sort keys)
-        assert json.dumps(all_schemas_again, sort_keys=True) == json.dumps(
+        all_avro = export_all_avro_schemas()
+        snapshot = json.loads(AVRO_SCHEMA_SNAPSHOT.read_text(encoding="utf-8"))
+        assert json.dumps(all_avro, sort_keys=True) == json.dumps(
             snapshot, sort_keys=True
         )
 
@@ -407,6 +415,15 @@ class TestSchemaExport:
         for schema_name, schema in all_schemas.items():
             assert "version" in schema, f"{schema_name} missing version"
             assert schema["version"] == CONTRACT_VERSION
+
+    def test_registry_snapshot(self):
+        """Ensure the public registry metadata remains stable."""
+
+        registry = export_contract_registry()
+        snapshot = json.loads(REGISTRY_SNAPSHOT.read_text(encoding="utf-8"))
+        assert json.dumps(registry, sort_keys=True) == json.dumps(
+            snapshot, sort_keys=True
+        )
 
 
 class TestContractSerialization:
@@ -468,3 +485,58 @@ class TestContractSerialization:
         parsed = PipelineReportContract.model_validate_json(json_str)
         assert len(parsed.evidence_log) == 1
         assert parsed.metrics["processed"] == 10
+
+
+class TestPipelineReportAdapters:
+    """Tests for converting pipeline reports between legacy and contracts."""
+
+    def test_pipeline_report_roundtrip(self):
+        """PipelineReport converts to contract and back without loss."""
+
+        validation = ValidationReport(issues=[], rows=5)
+        evidence = [
+            EvidenceRecord(
+                row_id=1,
+                organisation="Test School",
+                changes="Updated website",
+                sources=["https://example.com"],
+                notes="Confirmed",
+                confidence=90,
+            )
+        ]
+        quality = [
+            QualityIssue(
+                row_id=1,
+                organisation="Test School",
+                code="missing_phone",
+                severity="warn",
+                message="Missing phone",
+                remediation="Call back",
+            )
+        ]
+        sanity = [
+            SanityCheckFinding(
+                row_id=1,
+                organisation="Test School",
+                issue="Duplicate",
+                remediation="Merge duplicates",
+            )
+        ]
+        report = PipelineReport(
+            refined_dataframe=None,
+            validation_report=validation,
+            evidence_log=evidence,
+            metrics={"rows_total": 1},
+            sanity_findings=sanity,
+            quality_issues=quality,
+            rollback_plan=RollbackPlan(actions=[]),
+        )
+
+        contract = pipeline_report_to_contract(report)
+        restored = pipeline_report_from_contract(contract)
+
+        assert restored.validation_report.rows == report.validation_report.rows
+        assert restored.metrics == report.metrics
+        assert restored.quality_issues[0].code == quality[0].code
+        assert restored.sanity_findings[0].issue == sanity[0].issue
+

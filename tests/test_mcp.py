@@ -10,7 +10,12 @@ import yaml
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.core import config
-from firecrawl_demo.domain.models import EvidenceRecord
+from firecrawl_demo.domain.contracts import CONTRACT_VERSION
+from firecrawl_demo.domain.contracts import EvidenceRecordContract
+from firecrawl_demo.domain.models import (
+    EvidenceRecord,
+    evidence_record_from_contract,
+)
 from firecrawl_demo.infrastructure.planning import PlanCommitContract
 from firecrawl_demo.integrations.adapters.research import (
     ResearchAdapter,
@@ -56,6 +61,11 @@ def _write_plan(tmp_path: Path, name: str = "change") -> Path:
             }
         ],
         "instructions": "Promote verified contact details",
+        "contract": {
+            "name": "PlanArtifact",
+            "version": CONTRACT_VERSION,
+            "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/plan-artifact",
+        },
     }
     plan_path.write_text(json.dumps(plan_payload), encoding="utf-8")
     return plan_path
@@ -76,6 +86,11 @@ def _write_commit(
             "faithfulness": 0.94,
             "context_precision": 0.91,
             "answer_relevancy": 0.92,
+        },
+        "contract": {
+            "name": "CommitArtifact",
+            "version": CONTRACT_VERSION,
+            "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/commit-artifact",
         },
     }
     commit_path.write_text(json.dumps(commit_payload), encoding="utf-8")
@@ -218,9 +233,15 @@ class RecordingSink:
     calls: list[list[EvidenceRecord]]
 
     def record(
-        self, entries: Iterable[EvidenceRecord]
+        self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]
     ) -> None:  # pragma: no cover - passthrough
-        self.calls.append(list(entries))
+        normalised: list[EvidenceRecord] = []
+        for entry in entries:
+            if isinstance(entry, EvidenceRecord):
+                normalised.append(entry)
+            else:
+                normalised.append(evidence_record_from_contract(entry))
+        self.calls.append(normalised)
 
 
 class SimpleAdapter(ResearchAdapter):

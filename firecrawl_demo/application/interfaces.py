@@ -15,6 +15,7 @@ except ImportError:
     pd = None  # type: ignore
     _PANDAS_AVAILABLE = False
 
+from firecrawl_demo.domain.contracts import EvidenceRecordContract, PipelineReportContract
 from firecrawl_demo.domain.models import EvidenceRecord, PipelineReport
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext
 
@@ -25,7 +26,7 @@ class EvidenceSink(Protocol):
     """Protocol for recording evidence entries."""
 
     def record(
-        self, entries: Iterable[EvidenceRecord]
+        self, entries: Iterable[EvidenceRecord | EvidenceRecordContract]
     ) -> None:  # pragma: no cover - interface
         """Persist a batch of evidence entries."""
 
@@ -85,3 +86,9 @@ class PipelineService(ABC):
     @abstractmethod
     def last_report(self) -> PipelineReport | None:
         """Return the most recent pipeline report, if any."""
+
+    @property
+    def last_contract(self) -> PipelineReportContract | None:  # pragma: no cover - optional helper
+        """Return the most recent pipeline report contract, if available."""
+        report = self.last_report
+        return report.to_contract() if report is not None else None

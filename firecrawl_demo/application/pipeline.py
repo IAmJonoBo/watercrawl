@@ -51,6 +51,7 @@ from firecrawl_demo.domain.compliance import (
     normalize_province,
     validate_email,
 )
+from firecrawl_demo.domain.contracts import PipelineReportContract
 from firecrawl_demo.domain.models import (
     EvidenceRecord,
     PipelineReport,
@@ -59,6 +60,8 @@ from firecrawl_demo.domain.models import (
     RollbackPlan,
     SanityCheckFinding,
     SchoolRecord,
+    evidence_record_to_contract,
+    pipeline_report_to_contract,
 )
 from firecrawl_demo.domain.validation import DatasetValidator
 from firecrawl_demo.infrastructure.evidence import NullEvidenceSink
@@ -173,12 +176,25 @@ class Pipeline(PipelineService):
         default_factory=lambda: _load_drift_tools()
     )
     _last_report: PipelineReport | None = field(default=None, init=False, repr=False)
+    _last_contract: PipelineReportContract | None = field(
+        default=None, init=False, repr=False
+    )
 
     @property
     def last_report(self) -> PipelineReport | None:
         """Return the most recent pipeline report, if available."""
 
         return self._last_report
+
+    @property
+    def last_contract(self) -> PipelineReportContract | None:
+        """Return the most recent pipeline report contract, if available."""
+
+        if self._last_contract is not None:
+            return self._last_contract
+        if self._last_report is not None:
+            self._last_contract = pipeline_report_to_contract(self._last_report)
+        return self._last_contract
 
     def run_dataframe(
         self,
@@ -425,7 +441,10 @@ class Pipeline(PipelineService):
             listener.on_row_processed(position, final_updated, final_record)
 
         if evidence_records:
-            self.evidence_sink.record(evidence_records)
+            contract_entries = [
+                evidence_record_to_contract(record) for record in evidence_records
+            ]
+            self.evidence_sink.record(contract_entries)
 
         sanity_findings.extend(
             self._detect_duplicate_schools(working_frame, row_number_lookup)
@@ -692,6 +711,7 @@ class Pipeline(PipelineService):
                     report.drift_report = drift_report
 
         self._last_report = report
+        self._last_contract = pipeline_report_to_contract(report)
         listener.on_complete(metrics)
         return report
 

@@ -8,6 +8,12 @@ import pandas as pd
 from click.testing import CliRunner
 
 from firecrawl_demo.application.progress import PipelineProgressListener
+from firecrawl_demo.domain.contracts import (
+    CONTRACT_VERSION,
+    PipelineReportContract,
+    ValidationIssueContract,
+    ValidationReportContract,
+)
 from firecrawl_demo.domain.models import SchoolRecord
 from firecrawl_demo.interfaces import cli
 from firecrawl_demo.interfaces.cli import cli as cli_group
@@ -38,6 +44,11 @@ def _write_plan(tmp_path: Path) -> Path:
             }
         ],
         "instructions": "Promote verified website",
+        "contract": {
+            "name": "PlanArtifact",
+            "version": CONTRACT_VERSION,
+            "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/plan-artifact",
+        },
     }
     plan_path.write_text(json.dumps(plan_payload), encoding="utf-8")
     return plan_path
@@ -53,6 +64,11 @@ def _write_commit(tmp_path: Path) -> Path:
             "faithfulness": 0.92,
             "context_precision": 0.88,
             "answer_relevancy": 0.9,
+        },
+        "contract": {
+            "name": "CommitArtifact",
+            "version": CONTRACT_VERSION,
+            "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/commit-artifact",
         },
     }
     commit_path.write_text(json.dumps(commit_payload), encoding="utf-8")
@@ -85,6 +101,9 @@ def test_cli_validate_reports_issues(tmp_path):
     payload = json.loads(result.output)
     assert payload["rows"] == 1
     assert payload["issues"][0]["code"] == "missing_column"
+    metadata = payload["contracts"]["validation"]
+    assert metadata["version"] == CONTRACT_VERSION
+    assert metadata["schema_uri"].endswith("/validation-report")
 
 
 def test_cli_enrich_creates_output(tmp_path):
@@ -123,6 +142,9 @@ def test_cli_enrich_creates_output(tmp_path):
     assert payload["commit_artifacts"] == [str(commit_path)]
     lineage_dir = Path(payload["lineage_artifacts"]["openlineage"]).parent
     assert lineage_dir.exists()
+    pipeline_contract = payload["contracts"]["pipeline_report"]
+    assert pipeline_contract["version"] == CONTRACT_VERSION
+    assert pipeline_contract["schema_uri"].endswith("/pipeline-report")
 
 
 def test_cli_enrich_requires_plan(tmp_path):
@@ -451,6 +473,20 @@ def test_cli_validate_progress_path(tmp_path):
         is_valid = True
         issues = [DummyIssue()]
 
+        def to_contract(self) -> ValidationReportContract:
+            return ValidationReportContract(
+                issues=[
+                    ValidationIssueContract(
+                        code=issue.code,
+                        message=issue.message,
+                        column=issue.column,
+                        row=None,
+                    )
+                    for issue in self.issues
+                ],
+                rows=self.rows,
+            )
+
     class DummyValidator:
         def validate_dataframe(self, frame: pd.DataFrame) -> DummyReport:
             assert len(frame) == 1
@@ -510,6 +546,13 @@ def test_cli_enrich_warns_on_adapter_failures(tmp_path):
         lineage_artifacts = None
         lakehouse_manifest = None
         version_info = None
+
+        def to_contract(self) -> PipelineReportContract:
+            return PipelineReportContract(
+                validation_report=ValidationReportContract(issues=[], rows=5),
+                evidence_log=[],
+                metrics=self.metrics,
+            )
 
     class DummyProgress:
         def __init__(self, description: str) -> None:

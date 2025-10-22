@@ -21,6 +21,7 @@ from rich.table import Table
 from rich.text import Text
 
 from firecrawl_demo.core import config
+from firecrawl_demo.domain.contracts import CommitArtifactContract, PlanArtifactContract
 from firecrawl_demo.integrations.contracts.shared_config import (
     environment_payload as contracts_environment_payload,
 )
@@ -29,6 +30,7 @@ from firecrawl_demo.interfaces.cli_base import (
     PlanCommitGuard,
     load_cli_environment,
 )
+from firecrawl_demo.integrations.integration_plugins import contract_registry
 from scripts import bootstrap_python, collect_problems
 
 CLI_ENVIRONMENT = load_cli_environment()
@@ -80,7 +82,13 @@ def _build_plan_payload(
     payload: dict[str, Any] = {"changes": changes, "instructions": instructions}
     if include_generated_at:
         payload["generated_at"] = datetime.now(UTC).isoformat()
-    return payload
+    metadata = contract_registry()["PlanArtifact"]
+    payload["contract"] = {
+        "name": "PlanArtifact",
+        "version": metadata["version"],
+        "schema_uri": metadata["schema_uri"],
+    }
+    return PlanArtifactContract.model_validate(payload).model_dump(mode="json")
 
 
 def _build_commit_payload(
@@ -98,7 +106,8 @@ def _build_commit_payload(
         + f"\n\nPlan instructions: {instructions}"
     )
     token = if_match_token or f"qa-suite-{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}"
-    return {
+    metadata = contract_registry()["CommitArtifact"]
+    payload = {
         "if_match": f'"{token}"',
         "diff_summary": diff_summary,
         "diff_format": diff_format,
@@ -107,7 +116,13 @@ def _build_commit_payload(
             "context_precision": rag_score,
             "answer_relevancy": rag_score,
         },
+        "contract": {
+            "name": "CommitArtifact",
+            "version": metadata["version"],
+            "schema_uri": metadata["schema_uri"],
+        },
     }
+    return CommitArtifactContract.model_validate(payload).model_dump(mode="json")
 
 
 def _ensure_unique_path(path: Path) -> Path:

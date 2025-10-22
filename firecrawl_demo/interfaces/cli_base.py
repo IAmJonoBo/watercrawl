@@ -17,6 +17,7 @@ from firecrawl_demo.governance.safety import (
     SafetyPolicy,
     evaluate_plan_commit,
 )
+from firecrawl_demo.domain.contracts import CommitArtifactContract, PlanArtifactContract
 from firecrawl_demo.infrastructure.planning import (
     PlanCommitContract,
     build_infrastructure_plan,
@@ -214,7 +215,8 @@ class PlanCommitGuard:
                 raise PlanCommitError(
                     f"Plan artefact {path.as_posix()} must contain a JSON object"
                 )
-            payloads.append(data)
+            contract = PlanArtifactContract.model_validate(data)
+            payloads.append(contract.model_dump())
         return payloads
 
     def _load_commit_payloads(
@@ -248,7 +250,8 @@ class PlanCommitGuard:
                     f"Commit artefact {path.as_posix()} reports diff_format "
                     f"{diff_format!r} but policy requires {self.contract.diff_format!r}"
                 )
-            payloads.append(data)
+            contract = CommitArtifactContract.model_validate(data)
+            payloads.append(contract.model_dump())
         return payloads
 
     def _aggregate_plan(
