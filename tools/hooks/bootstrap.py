@@ -7,6 +7,7 @@ import platform
 import shutil
 import ssl
 import stat
+import subprocess
 import tarfile
 import tempfile
 import urllib.error
@@ -300,3 +301,34 @@ def ensure_nodejs(version: str = "v20.10.0") -> Path:
         raise BootstrapError(f"Failed to download or extract Node.js: {exc}") from exc
 
     return node_target
+
+
+def locate_vendor_wheel(package_name: str, version: str) -> Path | None:
+    """Return the path to a vendored wheel for package_name==version if present.
+
+    Looks under repository `tools/vendor/<package_name>/<version>/` for a file
+    ending with `.whl` and returns the first match. Returns None if not found.
+    """
+    repo_root = Path(__file__).parent.parent.parent
+    vendor_dir = repo_root / "tools" / "vendor" / package_name / version
+    if not vendor_dir.exists():
+        return None
+    for p in vendor_dir.iterdir():
+        if p.is_file() and p.suffix == ".whl":
+            return p
+    return None
+
+
+def install_wheel_into_env(wheel_path: Path, python_executable: str = "python") -> None:
+    """Install a wheel into the specified Python environment using pip.
+
+    This uses subprocess to call `python -m pip install <wheel>` so it's
+    compatible with virtual environments. Raises BootstrapError on failure.
+    """
+    if not wheel_path.exists():
+        raise BootstrapError(f"Wheel not found: {wheel_path}")
+    cmd = [python_executable, "-m", "pip", "install", "--no-deps", str(wheel_path)]
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as exc:
+        raise BootstrapError(f"Failed to install wheel {wheel_path}: {exc}") from exc
