@@ -72,6 +72,8 @@ ENRICHED_JSONL = PROCESSED_DIR / "firecrawl_enriched.jsonl"
 PROVENANCE_CSV = PROCESSED_DIR / "firecrawl_provenance.csv"
 EVIDENCE_LOG = INTERIM_DIR / "evidence_log.csv"
 RELATIONSHIPS_CSV = PROJECT_ROOT / "data" / "processed" / "relationships.csv"
+RELATIONSHIPS_GRAPHML = PROJECT_ROOT / "data" / "processed" / "relationships.graphml"
+RELATIONSHIPS_EDGES_CSV = PROJECT_ROOT / "data" / "processed" / "relationships_edges.csv"
 SUMMARY_TXT = PROCESSED_DIR / "enrichment_summary.txt"
 
 

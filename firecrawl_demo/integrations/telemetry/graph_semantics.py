@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 import re
+import csv
+import json
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+try:
+    import networkx as nx
+except ImportError:  # pragma: no cover - optional dependency
+    nx = None  # type: ignore
 
 try:
     import pandas as pd
@@ -14,6 +22,14 @@ except ImportError:
     _PANDAS_AVAILABLE = False
 
 from firecrawl_demo.core import config
+from firecrawl_demo.domain.relationships import (
+    EvidenceLink,
+    Organisation,
+    Person,
+    RelationshipAnomaly,
+    RelationshipGraphSnapshot,
+    SourceDocument,
+)
 from firecrawl_demo.integrations.integration_plugins import (
     IntegrationPlugin,
     PluginConfigSchema,
@@ -372,7 +388,213 @@ def generate_graph_semantics_report(
     )
 
 
+def _json_dump(value: Any) -> str:
+    return json.dumps(value, sort_keys=True)
+
+
+def _write_csv(rows: list[dict[str, Any]], path: Path) -> None:
+    if not rows:
+        path.write_text("", encoding="utf-8")
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if _PANDAS_AVAILABLE and pd is not None:
+        frame = pd.DataFrame(rows)
+        frame.to_csv(path, index=False)
+    else:  # pragma: no cover - exercised when pandas unavailable
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(rows)
+
+
+def _stringify_collection(values: Iterable[Any]) -> str:
+    return ";".join(sorted(str(value) for value in values if value))
+
+
+def build_relationship_graph(
+    *,
+    organisations: Iterable[Organisation],
+    people: Iterable[Person],
+    sources: Iterable[SourceDocument],
+    evidence: Iterable[EvidenceLink],
+    graphml_path: Path,
+    nodes_csv_path: Path,
+    edges_csv_path: Path,
+) -> RelationshipGraphSnapshot:
+    """Materialise the relationship intelligence graph and derived metrics."""
+
+    if nx is None:  # pragma: no cover - optional dependency guard
+        raise RuntimeError("networkx is required to build the relationship graph")
+
+    graphml_path.parent.mkdir(parents=True, exist_ok=True)
+    nodes_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    edges_csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+    graph = nx.MultiDiGraph()
+    node_rows: list[dict[str, Any]] = []
+    for organisation in organisations:
+        provenance = [tag.as_dict() for tag in organisation.provenance]
+        graph.add_node(
+            organisation.identifier,
+            type="organisation",
+            name=organisation.name,
+            provinces=_stringify_collection(organisation.provinces),
+            statuses=_stringify_collection(organisation.statuses),
+            website=organisation.website_url or "",
+            aliases=_stringify_collection(organisation.aliases),
+            contacts=_stringify_collection(organisation.contacts),
+            provenance=_json_dump(provenance),
+        )
+        node_rows.append(
+            {
+                "id": organisation.identifier,
+                "type": "organisation",
+                "name": organisation.name,
+                "provinces": _stringify_collection(organisation.provinces),
+                "statuses": _stringify_collection(organisation.statuses),
+                "website": organisation.website_url or "",
+                "aliases": _stringify_collection(organisation.aliases),
+                "contacts": _stringify_collection(organisation.contacts),
+                "provenance": _json_dump(provenance),
+            }
+        )
+
+    for person in people:
+        provenance = [tag.as_dict() for tag in person.provenance]
+        graph.add_node(
+            person.identifier,
+            type="person",
+            name=person.name,
+            role=person.role or "",
+            emails=_stringify_collection(person.emails),
+            phones=_stringify_collection(person.phones),
+            organisations=_stringify_collection(person.organisations),
+            provenance=_json_dump(provenance),
+        )
+        node_rows.append(
+            {
+                "id": person.identifier,
+                "type": "person",
+                "name": person.name,
+                "role": person.role or "",
+                "emails": _stringify_collection(person.emails),
+                "phones": _stringify_collection(person.phones),
+                "organisations": _stringify_collection(person.organisations),
+                "provenance": _json_dump(provenance),
+            }
+        )
+
+    for source in sources:
+        provenance = [tag.as_dict() for tag in source.provenance]
+        graph.add_node(
+            source.identifier,
+            type="source",
+            uri=source.uri,
+            title=source.title or "",
+            publisher=source.publisher or "",
+            connector=source.connector or "",
+            tags=_stringify_collection(source.tags),
+            summary=source.summary or "",
+            provenance=_json_dump(provenance),
+        )
+        node_rows.append(
+            {
+                "id": source.identifier,
+                "type": "source",
+                "uri": source.uri,
+                "title": source.title or "",
+                "publisher": source.publisher or "",
+                "connector": source.connector or "",
+                "tags": _stringify_collection(source.tags),
+                "summary": source.summary or "",
+                "provenance": _json_dump(provenance),
+            }
+        )
+
+    edge_rows: list[dict[str, Any]] = []
+    for link in evidence:
+        if not graph.has_node(link.source) or not graph.has_node(link.target):
+            continue
+        provenance = [tag.as_dict() for tag in link.provenance]
+        attributes = {key: value for key, value in link.attributes.items() if value is not None}
+        graph.add_edge(
+            link.source,
+            link.target,
+            key=link.kind,
+            kind=link.kind,
+            weight=link.weight or 0.0,
+            provenance=_json_dump(provenance),
+            attributes=_json_dump(attributes),
+        )
+        edge_rows.append(
+            {
+                "source": link.source,
+                "target": link.target,
+                "kind": link.kind,
+                "weight": link.weight or 0.0,
+                "provenance": _json_dump(provenance),
+                "attributes": _json_dump(attributes),
+            }
+        )
+
+    nx.write_graphml(graph, graphml_path)
+    _write_csv(node_rows, nodes_csv_path)
+    _write_csv(edge_rows, edges_csv_path)
+
+    simple_graph = nx.Graph(graph)
+    if simple_graph.number_of_nodes():
+        centrality = nx.degree_centrality(simple_graph)
+        betweenness = nx.betweenness_centrality(simple_graph)
+        try:
+            communities = list(
+                nx.algorithms.community.greedy_modularity_communities(simple_graph)
+            )
+        except Exception:  # pragma: no cover - community detection optional
+            communities = []
+    else:
+        centrality = {}
+        betweenness = {}
+        communities = []
+
+    community_assignments: dict[str, int] = {}
+    for index, community in enumerate(communities):
+        for node in community:
+            community_assignments[str(node)] = index
+
+    anomalies: list[RelationshipAnomaly] = []
+    for organisation in organisations:
+        if len(organisation.provinces) > 1:
+            anomalies.append(
+                RelationshipAnomaly(
+                    code="CONFLICTING_PROVINCE",
+                    message=(
+                        f"Organisation '{organisation.name}' has conflicting provinces"
+                        f" {sorted(organisation.provinces)}"
+                    ),
+                    details={
+                        "organisation": organisation.name,
+                        "provinces": sorted(organisation.provinces),
+                        "identifier": organisation.identifier,
+                    },
+                )
+            )
+
+    return RelationshipGraphSnapshot(
+        graphml_path=graphml_path,
+        node_summary_path=nodes_csv_path,
+        edge_summary_path=edges_csv_path,
+        node_count=graph.number_of_nodes(),
+        edge_count=graph.number_of_edges(),
+        centrality=centrality,
+        betweenness=betweenness,
+        community_assignments=community_assignments,
+        anomalies=anomalies,
+        graph=graph,
+    )
+
+
 __all__ = [
+    "build_relationship_graph",
     "GraphMetrics",
     "GraphSemanticsReport",
     "GraphValidationIssue",
@@ -385,7 +607,7 @@ __all__ = [
 def _graph_health_probe(context: PluginContext) -> PluginHealthStatus:
     details = {
         "metadata_context": "csvw",
-        "optional_dependencies": ["pandas"],
+        "optional_dependencies": ["pandas", "networkx"],
     }
     return PluginHealthStatus(
         healthy=True,
@@ -402,9 +624,10 @@ register_plugin(
             "build_csvw_metadata": build_csvw_metadata,
             "build_r2rml_mapping": build_r2rml_mapping,
             "generate_graph_semantics_report": generate_graph_semantics_report,
+            "build_relationship_graph": build_relationship_graph,
         },
         config_schema=PluginConfigSchema(
-            optional_dependencies=("pandas",),
+            optional_dependencies=("pandas", "networkx"),
             description="Generate CSVW metadata and R2RML mappings for curated datasets.",
         ),
         health_probe=_graph_health_probe,

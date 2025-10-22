@@ -2,15 +2,30 @@ from __future__ import annotations
 
 from pathlib import Path
 
+
 import pandas as pd
 
 from firecrawl_demo.core.excel import EXPECTED_COLUMNS
+from firecrawl_demo.domain.relationships import (
+    EvidenceLink,
+    Organisation,
+    Person,
+    ProvenanceTag,
+    SourceDocument,
+    canonical_id,
+)
 from firecrawl_demo.integrations.telemetry.graph_semantics import (
     GraphSemanticsReport,
     GraphValidationIssue,
     build_csvw_metadata,
     build_r2rml_mapping,
+    build_relationship_graph,
     generate_graph_semantics_report,
+)
+
+
+def _prov(source: str, connector: str | None = None) -> ProvenanceTag:
+    return ProvenanceTag(source=source, connector=connector)
 )
 
 
@@ -104,3 +119,64 @@ def test_generate_graph_semantics_report_flags_low_average_degree() -> None:
 
     issue_codes = [issue.code for issue in report.issues]
     assert "AVG_DEGREE_UNDERFLOW" in issue_codes
+
+
+def test_build_relationship_graph_exports_and_flags_conflicts(tmp_path: Path) -> None:
+    org = Organisation(
+        identifier=canonical_id("organisation", "Aero Example"),
+        name="Aero Example",
+        provinces={"Gauteng", "Western Cape"},
+        statuses={"Verified"},
+        website_url="https://aero.example",
+        provenance={_prov("dataset")},
+    )
+    person = Person(
+        identifier=canonical_id("person", "Sam Analyst"),
+        name="Sam Analyst",
+        role="Head of Training",
+        emails={"sam@aero.example"},
+        phones={"+27115550123"},
+        organisations={org.identifier},
+        provenance={_prov("dataset")},
+    )
+    source = SourceDocument(
+        identifier=canonical_id("source", "https://sacaa.gov.za/aero"),
+        uri="https://sacaa.gov.za/aero",
+        publisher="South African Civil Aviation Authority",
+        connector="regulator",
+        provenance={_prov("regulator", connector="regulator")},
+    )
+    graphml_path = tmp_path / "relationships.graphml"
+    nodes_path = tmp_path / "relationships.csv"
+    edges_path = tmp_path / "relationships_edges.csv"
+    snapshot = build_relationship_graph(
+        organisations=[org],
+        people=[person],
+        sources=[source],
+        evidence=[
+            EvidenceLink(
+                source=org.identifier,
+                target=person.identifier,
+                kind="has_contact",
+                provenance={_prov("dataset")},
+            ),
+            EvidenceLink(
+                source=org.identifier,
+                target=source.identifier,
+                kind="corroborated_by",
+                provenance=source.provenance,
+            ),
+        ],
+        graphml_path=graphml_path,
+        nodes_csv_path=nodes_path,
+        edges_csv_path=edges_path,
+    )
+
+    assert graphml_path.exists()
+    assert nodes_path.exists()
+    assert edges_path.exists()
+    assert snapshot.node_count == 3
+    assert snapshot.edge_count == 2
+    assert org.identifier in snapshot.centrality
+    assert snapshot.anomalies
+    assert snapshot.anomalies[0].code == "CONFLICTING_PROVINCE"
