@@ -15,6 +15,7 @@ description: System design, layered architecture, and component relationships
    - Emits structured `ValidationReport`, `EvidenceRecord`, and `QualityIssue` objects that can be consumed without referencing persistence concerns.
 3. **Application Layer** (`firecrawl_demo.application`)
    - Coordinates orchestration through the `pipeline`, `quality`, and `progress` modules.
+   - Provides row-level transformation services via `row_processing` and `change_tracking` modules for testable, reusable enrichment logic.
    - Defines interfaces in `application.interfaces` so pipelines and evidence sinks can be swapped or decorated without touching domain logic.
 4. **Integrations** (`firecrawl_demo.integrations`)
    - Adapter, telemetry, storage, and contract integrations register themselves with the shared plugin registry.
@@ -109,11 +110,66 @@ flowchart LR
     J --> K[Exports & Lakehouse]
 ```
 
+## Row Processing Architecture
+
+The application layer separates row-level transformation logic from DataFrame manipulation to improve testability, performance, and maintainability.
+
+### Key Components
+
+1. **`firecrawl_demo.application.row_processing.RowProcessor`**
+   - Processes individual rows through normalization, validation, and quality gates
+   - Returns structured `RowProcessingResult` containing final record state and all side effects
+   - Does not directly mutate DataFrames, enabling bulk vectorized updates
+   - Testable in isolation without pandas infrastructure
+
+2. **`firecrawl_demo.application.change_tracking`**
+   - `collect_changed_columns()` - Detects column-level differences between records
+   - `describe_changes()` - Generates deterministic string descriptions of changes
+   - `build_rollback_action()` - Constructs rollback actions with sorted outputs for deterministic ordering
+
+3. **Bulk Update Strategy**
+   - Row processing builds a list of update instructions
+   - DataFrame columns are converted to object dtype once (not per-row)
+   - Updates are applied in a vectorized pass using `_apply_bulk_updates()`
+   - Preserves dtype stability and avoids repeated `.astype("object")` conversions
+
+### Using Row Processing for New Enrichments
+
+When adding new enrichment steps:
+
+```python
+from firecrawl_demo.application.row_processing import RowProcessor
+from firecrawl_demo.application.quality import QualityGate
+
+# Initialize processor
+processor = RowProcessor(quality_gate=QualityGate())
+
+# Process a single row
+result = processor.process_row(
+    original_record=original,
+    finding=research_finding,
+    row_id=row_id,
+)
+
+# Access results
+final_record = result.final_record  # Transformed record
+updated = result.updated  # Whether changes were made
+sanity_findings = result.sanity_findings  # Sanity check issues
+quality_issues = result.quality_issues  # Quality gate issues
+```
+
+**Benefits:**
+- Unit testable without DataFrame setup
+- Consistent normalization across all enrichment paths
+- Clear separation of concerns (transformation vs. DataFrame updates)
+- Reusable for batch and streaming pipelines
+
 ## Extensibility Points
 
 - Implement a new `ResearchAdapter` to integrate additional data sources (SACAA APIs, commercial datasets, etc.).
 - Provide an alternate `EvidenceSink` implementation in `firecrawl_demo.infrastructure.evidence` to stream audit events to Kafka, REST endpoints, or other telemetry systems.
 - Override `Pipeline.run_task` to expose additional automation actions (province-only audits, contract summaries, etc.).
+- Extend `RowProcessor` to add new normalization or validation steps for future enrichment requirements.
 - Extend MkDocs with new ADRs to document architectural decisions as the stack evolves.
 
 ### Research Adapter Registry
