@@ -5,17 +5,22 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import os
 import re
 import shlex
 import subprocess  # nosec B404 - subprocess usage is for controlled QA tool execution
 import sys
+import threading
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from importlib import import_module
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 try:
@@ -26,6 +31,122 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreter
     from tomli import TOMLDecodeError  # type: ignore
 
 from urllib.parse import unquote, urlparse
+
+CACHE_TOOL_AVAILABILITY: dict[str, bool] = {}
+CACHE_LOCK = threading.Lock()
+
+
+_bootstrap: ModuleType | None
+
+try:  # pragma: no cover - bootstrap helpers may be unavailable on minimal installs
+    _bootstrap = import_module("tools.hooks.bootstrap")
+except Exception:  # pragma: no cover - minimal fallback when bootstrap is unavailable
+    _bootstrap = None
+
+
+class _FallbackBootstrapError(RuntimeError):
+    """Fallback BootstrapError when hooks module is unavailable."""
+
+
+BootstrapError: type[Exception] = _FallbackBootstrapError
+_ensure_python_package: Callable[..., None] | None = None
+_ensure_trunk: Callable[..., Path] | None = None
+
+if _bootstrap is not None:
+    if hasattr(_bootstrap, "BootstrapError"):
+        BootstrapError = _bootstrap.BootstrapError  # type: ignore[attr-defined]
+    _ensure_python_package = getattr(_bootstrap, "ensure_python_package", None)
+    _ensure_trunk = getattr(_bootstrap, "ensure_trunk", None)
+
+
+BOOTSTRAP_AVAILABLE = any(
+    helper is not None for helper in (_ensure_python_package, _ensure_trunk)
+)
+
+
+def ensure_python_package(
+    package_name: str,
+    version: str | None = None,
+    python_executable: str = sys.executable,
+    allow_network: bool = True,
+) -> None:
+    installer = _ensure_python_package
+    if installer is None:
+        raise BootstrapError(
+            "Bootstrap helpers unavailable; cannot ensure python package "
+            f"{package_name!r}."
+        )
+    installer(
+        package_name,
+        version,
+        python_executable=python_executable,
+        allow_network=allow_network,
+    )
+
+
+def ensure_trunk(version: str = "latest") -> Path:
+    installer = _ensure_trunk
+    if installer is None:
+        raise BootstrapError("Bootstrap helpers unavailable; cannot ensure trunk CLI.")
+    return installer(version)
+
+
+def _python_package_installer(package: str, version: str) -> Callable[[], None]:
+    def _install() -> None:
+        ensure_python_package(
+            package,
+            version,
+            python_executable=sys.executable,
+            allow_network=True,
+        )
+
+    return _install
+
+
+def _trunk_installer(version: str = "latest") -> Callable[[], None]:
+    def _install() -> None:
+        ensure_trunk(version)
+
+    return _install
+
+
+TOOL_INSTALLERS: dict[str, tuple[Callable[[], None], ...]] = {
+    "pytest": (_python_package_installer("pytest", "8.4.2"),),
+    "ruff": (_python_package_installer("ruff", "0.14.1"),),
+    "mypy": (_python_package_installer("mypy", "1.18.2"),),
+    "bandit": (_python_package_installer("bandit", "1.8.6"),),
+    "black": (_python_package_installer("black", "25.9.0"),),
+    "isort": (_python_package_installer("isort", "7.0.0"),),
+    "yamllint": (
+        _python_package_installer("yamllint", "1.37.1"),
+        _python_package_installer("yamlfix", "1.16.0"),
+    ),
+    "yamlfix": (_python_package_installer("yamlfix", "1.16.0"),),
+    "sqlfluff": (
+        _python_package_installer("sqlfluff", "3.5.0"),
+        _python_package_installer("sqlfluff-templater-dbt", "3.5.0"),
+    ),
+    "pre-commit": (_python_package_installer("pre-commit", "4.3.0"),),
+}
+
+if _ensure_trunk is not None:
+    TOOL_INSTALLERS["trunk"] = (_trunk_installer(),)
+else:
+    TOOL_INSTALLERS["trunk"] = ()
+
+CORE_TOOLCHAIN = ("pytest", "ruff", "mypy", "bandit", "black", "isort", "trunk")
+
+
+@functools.lru_cache(maxsize=None)
+def ensure_tool_dependencies(tool_name: str) -> None:
+    if not BOOTSTRAP_AVAILABLE:
+        return
+    installers = TOOL_INSTALLERS.get(tool_name)
+    if not installers:
+        return
+    for installer in installers:
+        installer()
+
 
 # Optional dependency on firecrawl_demo for contract environment - graceful fallback
 try:
@@ -83,6 +204,20 @@ else:  # pragma: no cover - placeholders for type checking when disabled
 # Bandit doesn't support Python 3.14 yet (ast.Num removed)
 BANDIT_AVAILABLE = sys.version_info < (3, 14)
 
+PYTHON_TOOL_MODULES: dict[str, str] = {
+    "ruff": "ruff",
+    "mypy": "mypy",
+    "black": "black",
+    "isort": "isort",
+    "bandit": "bandit",
+    "yamllint": "yamllint",
+    "yamlfix": "yamlfix",
+    "pytest": "pytest",
+}
+
+PRE_COMMIT_CONFIG = Path(".pre-commit-config.yaml")
+MAX_PARALLELISM = max(4, os.cpu_count() or 4)
+
 REPORT_PATH = Path("problems_report.json")
 TOOLS_CONFIG_PATH = Path("presets/problems_tools.toml")
 VSCODE_PROBLEMS_ENV = "VSCODE_PROBLEMS_EXPORT"
@@ -96,13 +231,17 @@ AUTOFIX_COMMANDS: dict[str, list[str]] = {
     "ruff": ["ruff", "check", ".", "--fix"],
     "black": ["black", "."],
     "isort": ["isort", "."],
+    "yamllint": ["yamlfix", "."],
     "biome": ["npx", "biome", "check", "--apply", "--reporter", "json"],
     "trunk": ["trunk", "fmt"],
+    "pre-commit": ["pre-commit", "run", "--all-files"],
 }
 AUTOFIX_WITH_POETRY: dict[str, list[str]] = {
     "ruff": ["poetry", "run", "ruff", "check", ".", "--fix"],
     "black": ["poetry", "run", "black", "."],
     "isort": ["poetry", "run", "isort", "."],
+    "yamllint": ["poetry", "run", "yamlfix", "."],
+    "pre-commit": ["poetry", "run", "pre-commit", "run", "--all-files"],
 }
 WARNING_HIGHLIGHT_LIMIT = 10
 TRUNK_CONFIG_PATH = Path(".trunk/trunk.yaml")
@@ -443,26 +582,27 @@ def _sqlfluff_command() -> tuple[list[str], Mapping[str, str], None]:
     return cmd, env, None
 
 
-def _check_tool_available(tool_name: str) -> bool:
-    """Check if a tool is available in PATH or as a Python module."""
-    # Check if it's available as a command
+def _probe_tool_command(tool_name: str) -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - controlled arguments
             [tool_name, "--version"],
             capture_output=True,
             text=True,
             check=False,
             timeout=5,
         )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+        if result.returncode == 0:
+            return True
+    except FileNotFoundError:
         pass
-    
-    # For Python tools, check if they can be run as modules
-    if tool_name in ("ruff", "mypy", "black", "isort", "pytest", "bandit"):
+    except subprocess.TimeoutExpired:
+        return False
+
+    module = PYTHON_TOOL_MODULES.get(tool_name)
+    if module:
         try:
-            result = subprocess.run(
-                [sys.executable, "-m", tool_name, "--version"],
+            result = subprocess.run(  # nosec B603 - controlled arguments
+                [sys.executable, "-m", module, "--version"],
                 capture_output=True,
                 text=True,
                 check=False,
@@ -470,9 +610,19 @@ def _check_tool_available(tool_name: str) -> bool:
             )
             return result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
-            pass
-    
+            return False
     return False
+
+
+def _check_tool_available(tool_name: str) -> bool:
+    with CACHE_LOCK:
+        cached = CACHE_TOOL_AVAILABILITY.get(tool_name)
+    if cached is not None:
+        return cached
+    available = _probe_tool_command(tool_name)
+    with CACHE_LOCK:
+        CACHE_TOOL_AVAILABILITY[tool_name] = available
+    return available
 
 
 def _run_subprocess(
@@ -508,6 +658,7 @@ def parse_ruff_output(result: CompletedProcess) -> dict[str, Any]:
             # __init__ re-export patterns commonly trigger false positives; skip them.
             continue
         filtered.append(item)
+        # TODO: Extract filename from "would reformat <path>" messages and add synthetic issues.
 
     issues: list[dict[str, Any]] = []
     fixable = sum(1 for item in filtered if item.get("fix"))
@@ -589,6 +740,35 @@ def parse_mypy_output(result: CompletedProcess) -> dict[str, Any]:
         "notes": trimmed_notes,
         "summary": summary,
     }
+
+
+def parse_pre_commit_output(result: CompletedProcess) -> dict[str, Any]:
+    stdout = result.stdout or ""
+    issues: list[dict[str, Any]] = []
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.lower().endswith("failed") or stripped.endswith("FAIL"):
+            hook_name = stripped.split(" ", 1)[0]
+            issues.append(
+                {
+                    "message": stripped,
+                    "severity": "error",
+                    "code": "pre-commit",
+                    "hook": hook_name,
+                }
+            )
+    if result.returncode != 0 and not issues:
+        issues.append(
+            {
+                "message": "pre-commit reported failures; inspect the stdout preview.",
+                "severity": "error",
+                "code": "pre-commit",
+            }
+        )
+    summary = {"issue_count": len(issues)}
+    return {"issues": issues[:MAX_ISSUES], "summary": summary}
 
 
 def parse_pylint_output(result: CompletedProcess) -> dict[str, Any]:
@@ -680,23 +860,22 @@ _YAMLLINT_PATTERN = re.compile(
 def parse_black_output(result: CompletedProcess) -> dict[str, Any]:
     """Parse black check output (text-based)."""
     issues: list[dict[str, Any]] = []
-    
     # Black uses exit code 1 when files need reformatting
     if result.returncode == 1:
         # Parse "would reformat" messages
         for line in (result.stderr or result.stdout or "").splitlines():
             if "would reformat" in line.lower():
                 # Extract filename from "would reformat <path>"
-                parts = line.split()
+                parts = line.strip().split()
                 if len(parts) >= 3:
-                    path = parts[2]
-                    issues.append({
-                        "path": path,
-                        "message": "File needs reformatting",
-                        "code": "black-reformat",
-                        "fixable": True,
-                    })
-    
+                    issues.append(
+                        {
+                            "path": parts[-1],
+                            "message": "File needs reformatting",
+                            "code": "black-reformat",
+                            "fixable": True,
+                        }
+                    )
     return {
         "issues": issues,
         "summary": {
@@ -709,24 +888,36 @@ def parse_black_output(result: CompletedProcess) -> dict[str, Any]:
 def parse_isort_output(result: CompletedProcess) -> dict[str, Any]:
     """Parse isort check output (text-based)."""
     issues: list[dict[str, Any]] = []
-    
-    # isort uses exit code 1 when imports need sorting
-    if result.returncode == 1:
-        # Parse "would reformat" or "Fixing" messages
-        for line in (result.stderr or result.stdout or "").splitlines():
-            if "would fix" in line.lower() or "skipped" in line.lower():
-                # Extract filename from "ERROR: <path> Imports are incorrectly sorted"
-                parts = line.strip().split()
-                for i, part in enumerate(parts):
-                    if part.endswith(".py"):
-                        issues.append({
-                            "path": part,
-                            "message": "Imports need sorting",
-                            "code": "isort-unsorted",
-                            "fixable": True,
-                        })
-                        break
-    
+    if result.returncode != 0:
+        seen_paths: set[str] = set()
+        payload = result.stderr or result.stdout or ""
+        for line in payload.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            lower = stripped.lower()
+            if (
+                "imports are incorrectly sorted" not in lower
+                and "would reformat" not in lower
+            ):
+                continue
+            candidate: str | None = None
+            for token in stripped.replace(",", " ").split():
+                normalized = token.strip(":")
+                if normalized.endswith(".py"):
+                    candidate = normalized
+                    break
+            if not candidate or candidate in seen_paths:
+                continue
+            seen_paths.add(candidate)
+            issues.append(
+                {
+                    "path": candidate,
+                    "message": "Imports need sorting",
+                    "code": "isort-unsorted",
+                    "fixable": True,
+                }
+            )
     return {
         "issues": issues,
         "summary": {
@@ -994,6 +1185,7 @@ PARSER_REGISTRY: dict[str, Callable[[CompletedProcess], dict[str, Any]]] = {
     "sqlfluff": parse_sqlfluff_output,
     "trunk": parse_trunk_output,
     "biome": parse_biome_output,
+    "pre-commit": parse_pre_commit_output,
 }
 
 
@@ -1243,102 +1435,134 @@ def collect(
     ) = None,
 ) -> list[dict[str, Any]]:
     if tools is None:
-        specs = build_tool_registry().values()
+        specs = list(build_tool_registry().values())
     else:
         specs = list(tools)
     run = runner or _run_subprocess
-    aggregated: list[dict[str, Any]] = []
 
-    # Track tool execution times for performance diagnostics
-    from datetime import datetime, timezone
+    preflight_results: list[dict[str, Any]] = []
+    for tool in CORE_TOOLCHAIN:
+        try:
+            ensure_tool_dependencies(tool)
+        except BootstrapError as exc:
+            preflight_results.append(
+                {
+                    "tool": tool,
+                    "status": "provision_failed",
+                    "summary": {"issue_count": 0},
+                    "issues": [],
+                    "error": _truncate(str(exc)),
+                }
+            )
 
-    for spec in specs:
+    def _execute_tool_spec(index: int, spec: ToolSpec) -> tuple[int, dict[str, Any]]:
         start_time = datetime.now(timezone.utc)
-        
-        # Early availability check to improve performance
+        try:
+            ensure_tool_dependencies(spec.name)
+        except BootstrapError as exc:
+            return (
+                index,
+                {
+                    "tool": spec.name,
+                    "status": "provision_failed",
+                    "summary": {"issue_count": 0},
+                    "issues": [],
+                    "error": _truncate(str(exc)),
+                },
+            )
+
         try:
             cmd, env, cwd = spec.command()
-        except (
-            Exception
-        ) as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
-            aggregated.append(
+        except Exception as exc:  # pragma: no cover - defensive guard
+            return (
+                index,
                 {
                     "tool": spec.name,
                     "status": "failed_to_prepare",
                     "error": _truncate(str(exc)),
-                }
+                    "summary": {"issue_count": 0},
+                    "issues": [],
+                },
             )
-            continue
-        
-        # Check if the tool is available before running
-        if cmd and not _check_tool_available(cmd[0]):
+
+        primary_cmd = cmd[0] if cmd else None
+        should_check_tool = run is _run_subprocess
+        if should_check_tool and primary_cmd and not _check_tool_available(primary_cmd):
             status = "not_installed" if spec.optional else "not_available"
-            aggregated.append(
+            return (
+                index,
                 {
                     "tool": spec.name,
                     "status": status,
-                    "error": f"Tool '{cmd[0]}' is not available in PATH. Install it with: poetry install --no-root --with dev",
                     "summary": {"issue_count": 0},
                     "issues": [],
-                }
+                    "error": (
+                        f"Tool '{primary_cmd}' is not available in PATH after provisioning."
+                        " Install dependencies with: poetry install --no-root --with dev"
+                    ),
+                },
             )
-            continue
-        
+
         try:
             completed = run(spec, cmd, env, cwd)
         except FileNotFoundError as exc:
-            aggregated.append(
+            return (
+                index,
                 {
                     "tool": spec.name,
                     "status": "not_installed" if spec.optional else "failed",
-                    "error": str(exc),
                     "summary": {"issue_count": 0},
                     "issues": [],
-                }
+                    "error": str(exc),
+                },
             )
-            continue
-        except (
-            Exception
-        ) as exc:  # pragma: no cover - defensive guard  # pylint: disable=broad-except
-            aggregated.append(
+        except Exception as exc:  # pragma: no cover - defensive guard
+            return (
+                index,
                 {
                     "tool": spec.name,
                     "status": "failed",
-                    "error": _truncate(str(exc)),
                     "summary": {"issue_count": 0},
                     "issues": [],
-                }
+                    "error": _truncate(str(exc)),
+                },
             )
-            continue
 
-        end_time = datetime.now(timezone.utc)
-        duration_seconds = (end_time - start_time).total_seconds()
-
+        duration_seconds = (datetime.now(timezone.utc) - start_time).total_seconds()
         parsed = spec.parser(completed)
         status = (
             "completed" if completed.returncode == 0 else "completed_with_exit_code"
         )
-        entry: dict[str, Any] = {
+        result_entry: dict[str, Any] = {
             "tool": spec.name,
             "status": status,
             "returncode": completed.returncode,
             "duration_seconds": round(duration_seconds, 3),
         }
-        entry.update(parsed)
-        entry.setdefault("issues", [])
-        summary_block = entry.get("summary")
+        result_entry.update(parsed)
+        existing_issues = result_entry.get("issues")
+        if isinstance(existing_issues, list):
+            issues_list = existing_issues
+        elif existing_issues is None:
+            issues_list = []
+            result_entry["issues"] = issues_list
+        else:
+            issues_list = list(existing_issues)
+            result_entry["issues"] = issues_list
+        summary_obj = result_entry.get("summary")
+        if isinstance(summary_obj, dict):
+            summary_block: dict[str, Any] = summary_obj
+        else:
+            summary_block = {}
+            result_entry["summary"] = summary_block
         if completed.returncode != 0:
-            if not isinstance(summary_block, dict):
-                summary_block = {}
-                entry["summary"] = summary_block
             if summary_block.get("issue_count", 0) == 0:
-                message = (
-                    f"{spec.name} exited with status {completed.returncode} but "
-                    "did not report any findings."
-                )
-                entry["issues"].append(
+                issues_list.append(
                     {
-                        "message": message,
+                        "message": (
+                            f"{spec.name} exited with status {completed.returncode}"
+                            " but did not report any findings."
+                        ),
                         "severity": "error",
                         "code": "tool_exit_non_zero",
                         "tool": spec.name,
@@ -1346,21 +1570,28 @@ def collect(
                 )
                 summary_block["issue_count"] = 1
                 severity_counts = summary_block.setdefault("severity_counts", {})
+                if not isinstance(severity_counts, dict):
+                    severity_counts = {}
+                    summary_block["severity_counts"] = severity_counts
                 severity_counts["error"] = severity_counts.get("error", 0) + 1
         if completed.stderr:
-            _attach_preview(entry, "stderr_preview", completed.stderr)
+            _attach_preview(result_entry, "stderr_preview", completed.stderr)
         warnings, omitted_warnings = _extract_warnings(
             completed.stdout, completed.stderr
         )
         if warnings:
-            entry["warnings"] = warnings
+            result_entry["warnings"] = list(warnings)
         if spec.autofix:
-            entry["autofix_commands"] = [shlex.join(cmd) for cmd in spec.autofix]
+            result_entry["autofix_commands"] = [
+                shlex.join(value) for value in spec.autofix
+            ]
         if warnings or omitted_warnings:
-            summary_block = entry.get("summary")
-            if not isinstance(summary_block, dict):
+            summary_obj = result_entry.get("summary")
+            if isinstance(summary_obj, dict):
+                summary_block = summary_obj
+            else:
                 summary_block = {}
-                entry["summary"] = summary_block
+                result_entry["summary"] = summary_block
             summary_block["warning_count"] = (
                 summary_block.get("warning_count", 0) + len(warnings) + omitted_warnings
             )
@@ -1368,7 +1599,41 @@ def collect(
                 summary_block["omitted_warnings"] = (
                     summary_block.get("omitted_warnings", 0) + omitted_warnings
                 )
-        aggregated.append(entry)
+        return index, result_entry
+
+    if not specs:
+        aggregated = preflight_results
+    else:
+        results: list[tuple[int, dict[str, Any]]] = []
+        max_workers = min(MAX_PARALLELISM, max(1, len(specs)))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_map = {
+                executor.submit(_execute_tool_spec, idx, spec): idx
+                for idx, spec in enumerate(specs)
+            }
+            for future in as_completed(future_map):
+                try:
+                    results.append(future.result())
+                except (
+                    Exception
+                ) as exc:  # pragma: no cover - guard against executor errors
+                    idx = future_map[future]
+                    results.append(
+                        (
+                            idx,
+                            {
+                                "tool": specs[idx].name,
+                                "status": "failed",
+                                "summary": {"issue_count": 0},
+                                "issues": [],
+                                "error": _truncate(str(exc)),
+                            },
+                        )
+                    )
+        results.sort(key=lambda item: item[0])
+        aggregated = [entry for _, entry in results]
+
+    aggregated = preflight_results + aggregated
     aggregated = _expand_trunk_results(aggregated)
     if tools is None:
         aggregated.extend(_collect_vscode_problems_fallback(dict(os.environ)))
@@ -1610,9 +1875,7 @@ def build_overall_summary(
     stubs_available = (repo_root / "stubs").exists()
 
     def _add_action(action: dict[str, Any]) -> None:
-        if action not in actions:
-            actions.append(action)
-        return None
+        actions.append(action)
 
     for entry in results:
         tool = entry.get("tool")
@@ -1691,7 +1954,6 @@ def build_overall_summary(
         "warning_count": warning_total,
         "warning_insights": warning_highlights,
     }
-    
     # Add guidance for unavailable tools
     if tools_not_available:
         summary_payload["tools_not_available"] = tools_not_available
@@ -1890,67 +2152,65 @@ def print_summary(report_path: Path) -> None:
     except (OSError, json.JSONDecodeError) as exc:
         print(f"Error reading report: {exc}", file=sys.stderr)
         return
-    
+
     summary = data.get("summary", {})
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("PROBLEMS REPORT SUMMARY")
-    print("="*70)
-    
-    # Issue counts
+    print("=" * 70)
+
     issue_count = summary.get("issue_count", 0)
     fixable = summary.get("fixable_count", 0)
     dead_code = summary.get("potential_dead_code", 0)
-    
+
     print(f"\nIssues found: {issue_count}")
     if fixable:
         print(f"  - Fixable: {fixable}")
     if dead_code:
         print(f"  - Potential dead code: {dead_code}")
-    
-    # Tools status
+
     tools_run = summary.get("tools_run", [])
     tools_missing = summary.get("tools_missing", [])
     tools_not_available = summary.get("tools_not_available", [])
-    
+
     if tools_run:
         print(f"\nTools executed successfully: {', '.join(tools_run)}")
     if tools_not_available:
-        print(f"\nTools not available (need installation): {', '.join(tools_not_available)}")
+        print(
+            f"\nTools not available (need installation): {', '.join(tools_not_available)}"
+        )
     if tools_missing:
         print(f"\nOptional tools missing: {', '.join(tools_missing)}")
-    
-    # Setup guidance
+
     setup_guidance = summary.get("setup_guidance", [])
     if setup_guidance:
-        print("\n" + "-"*70)
+        print("\n" + "-" * 70)
         print("SETUP GUIDANCE")
-        print("-"*70)
+        print("-" * 70)
         for guide in setup_guidance:
             print(f"\nIssue: {guide.get('issue')}")
             print(f"Tools affected: {', '.join(guide.get('tools', []))}")
             print(f"Solution: {guide.get('solution')}")
-            if guide.get('alternative'):
-                print(f"Alternative: {guide.get('alternative')}")
-    
-    # Actions
+            alternative = guide.get("alternative")
+            if alternative:
+                print(f"Alternative: {alternative}")
+
     actions = summary.get("actions", [])
-    autofix_actions = [a for a in actions if a.get("type") == "autofix"]
+    autofix_actions = [action for action in actions if action.get("type") == "autofix"]
     if autofix_actions:
-        print("\n" + "-"*70)
+        print("\n" + "-" * 70)
         print("AUTOFIX COMMANDS AVAILABLE")
-        print("-"*70)
+        print("-" * 70)
         for action in autofix_actions:
             print(f"\n{action.get('tool')}: {action.get('command')}")
-    
-    # Performance
+
     perf = summary.get("performance", {})
     if perf:
         total = perf.get("total_duration_seconds", 0)
         print(f"\nTotal execution time: {total:.2f}s")
-    
-    print("\n" + "="*70)
+
+    print("\n" + "=" * 70)
     print(f"Full report: {report_path}")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -1961,10 +2221,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     results = collect()
     write_report(results, autofixes=autofix_results, output_path=args.output)
     print(f"Problems report written to {args.output}")
-    
     if args.summary:
         print_summary(args.output)
-    
+
     return None
 
 

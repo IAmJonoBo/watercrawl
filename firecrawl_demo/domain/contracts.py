@@ -10,7 +10,7 @@ legacy dataclass models in models.py, enabling:
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -212,7 +212,8 @@ class PipelineReportContract(BaseModel):
     @property
     def issues(self) -> list[ValidationIssueContract]:
         """Get validation issues from the report."""
-        return self.validation_report.issues
+        # Use getattr to fetch the runtime attribute value (avoids the class-level FieldInfo)
+        return cast(ValidationReportContract, getattr(self, "validation_report")).issues
 
     model_config = {
         "json_schema_extra": {

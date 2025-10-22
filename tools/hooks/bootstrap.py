@@ -79,53 +79,51 @@ def _write_response(response: BinaryIO, destination: Path) -> None:
         raise BootstrapError(
             f"Failed to persist download to {destination}: {exc}"
         ) from exc
-    else:
         if temp_path is not None:
             temp_path.unlink(missing_ok=True)
 
+    def ensure_hadolint(version: str = "v2.12.0") -> Path:
+        """Ensure the hadolint binary is available and return its path."""
 
-def ensure_hadolint(version: str = "v2.14.0") -> Path:
-    """Ensure the hadolint binary is available and return its path."""
+        override = os.getenv("HADOLINT_PATH")
+        if override:
+            return Path(override)
 
-    override = os.getenv("HADOLINT_PATH")
-    if override:
-        return Path(override)
+        # Detect platform and architecture
+        system = platform.system().lower()
+        machine = platform.machine().lower()
 
-    # Detect platform and architecture
-    system = platform.system().lower()
-    machine = platform.machine().lower()
-
-    if system == "darwin":
-        if machine == "arm64":
-            binary_name = "hadolint-macos-arm64"
+        if system == "darwin":
+            if machine == "arm64":
+                binary_name = "hadolint-macos-arm64"
+            else:
+                binary_name = "hadolint-macos-x86_64"
+        elif system == "linux":
+            if machine == "aarch64":
+                binary_name = "hadolint-linux-arm64"
+            else:
+                binary_name = "hadolint-linux-x86_64"
         else:
-            binary_name = "hadolint-macos-x86_64"
-    elif system == "linux":
-        if machine == "aarch64":
-            binary_name = "hadolint-linux-arm64"
-        else:
-            binary_name = "hadolint-linux-x86_64"
-    else:
-        raise BootstrapError(f"Unsupported platform: {system} {machine}")
+            raise BootstrapError(f"Unsupported platform: {system} {machine}")
 
-    # Check for bundled binary first (for offline/ephemeral environments)
-    skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
-    bundled_path = BUNDLED_BIN_ROOT / binary_name
-    if not skip_bundled and bundled_path.exists():
-        return bundled_path
+        # Check for bundled binary first (for offline/ephemeral environments)
+        skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
+        bundled_path = BUNDLED_BIN_ROOT / binary_name
+        if not skip_bundled and bundled_path.exists():
+            return bundled_path
 
-    target = CACHE_ROOT / f"hadolint-{version}-{system}-{machine}"
-    if not target.exists():
-        url = (
-            "https://github.com/hadolint/hadolint/releases/download/"
-            f"{version}/{binary_name}"
-        )
-        try:
-            _download(url, target)
-        except OSError as exc:  # pragma: no cover - network/runtime failures
-            raise BootstrapError(f"Failed to download hadolint: {exc}") from exc
-        target.chmod(target.stat().st_mode | stat.S_IEXEC)
-    return target
+        target = CACHE_ROOT / f"hadolint-{version}-{system}-{machine}"
+        if not target.exists():
+            url = (
+                "https://github.com/hadolint/hadolint/releases/download/"
+                f"{version}/{binary_name}"
+            )
+            try:
+                _download(url, target)
+            except OSError as exc:  # pragma: no cover - network/runtime failures
+                raise BootstrapError(f"Failed to download hadolint: {exc}") from exc
+            target.chmod(target.stat().st_mode | stat.S_IEXEC)
+        return target
 
 
 def ensure_actionlint(version: str = "v1.7.1") -> Path:
@@ -240,13 +238,16 @@ def ensure_nodejs(version: str = "v20.10.0") -> Path:
     # Check for bundled binary first (for offline/ephemeral environments)
     skip_bundled = os.getenv("WATERCRAWL_BOOTSTRAP_SKIP_BUNDLED")
     bundled_dir = BUNDLED_BIN_ROOT
+    bundled_dir = BUNDLED_BIN_ROOT
     bundled_node = bundled_dir / f"node-{platform_label}-{arch}"
     # Some projects may include a pre-extracted node binary location
     if not skip_bundled and bundled_node.exists():
-        node_path = bundled_node / "bin" / "node"
-        if node_path.exists():
-            return node_path
-
+        if bundled_node.is_dir():
+            node_path = bundled_node / "bin" / "node"
+            if node_path.exists():
+                return node_path
+        elif bundled_node.is_file():
+            return bundled_node
     ver = version.lstrip("v")
     archive_name = f"node-v{ver}-{platform_label}-{arch}.tar.xz"
     url = f"https://nodejs.org/dist/v{ver}/{archive_name}"
@@ -314,7 +315,7 @@ def locate_vendor_wheel(package_name: str, version: str) -> Path | None:
     if not vendor_dir.exists():
         return None
     for p in vendor_dir.iterdir():
-        if p.is_file() and p.suffix == ".whl":
+        if p.is_file() and p.name.endswith(".whl"):
             return p
     return None
 
@@ -401,7 +402,17 @@ def ensure_python_package(
                         raise BootstrapError(
                             "Tar archive contains path outside extraction directory"
                         )
-                tar_obj.extractall(path=path)
+                    # Disallow symlinks and hard links in archives to avoid unexpected
+                    # filesystem modifications and link-following attacks.
+                    if member.issym() or member.islnk():
+                        raise BootstrapError(
+                            "Tar archive contains symlink or hardlink members which are not allowed"
+                        )
+                    # Ensure parent directories exist before extraction of the member.
+                    member_parent = member_path.parent
+                    member_parent.mkdir(parents=True, exist_ok=True)
+                    # Extract each member individually (safer than extractall).
+                    tar_obj.extract(member, path=path)
 
             def _safe_extract_zip(zf, path: Path) -> None:
                 for member in zf.namelist():
@@ -410,7 +421,11 @@ def ensure_python_package(
                         raise BootstrapError(
                             "Zip archive contains path outside extraction directory"
                         )
-                zf.extractall(path=path)
+                    # Ensure parent directories exist before extraction of the member.
+                    member_parent = member_path.parent
+                    member_parent.mkdir(parents=True, exist_ok=True)
+                    # Extract each member individually (safer than extractall).
+                    zf.extract(member, path=path)
 
             try:
                 with tarfile.open(archive) as tar:
@@ -419,13 +434,17 @@ def ensure_python_package(
                 # try zip
                 import zipfile
 
-                with zipfile.ZipFile(archive) as z:
-                    _safe_extract_zip(z, dest)
+            # Look for wheel matching the requested package and version
+            import re
 
-            # Look for wheel
+            wheel_pattern = re.compile(
+                rf"^{re.escape(package_name.replace('-', '_'))}-"
+                rf"{re.escape(version or '')}(-|\.|$)"
+            )
             for p in dest.rglob("*.whl"):
-                install_wheel_into_env(p, python_executable=python_executable)
-                return
+                if wheel_pattern.search(p.name):
+                    install_wheel_into_env(p, python_executable=python_executable)
+                    return
         except Exception as exc:  # pragma: no cover - network/runtime
             # fall through to network install if allowed
             if not allow_network:
@@ -433,13 +452,21 @@ def ensure_python_package(
                     f"Failed to use wheelhouse at {wheelhouse_url}: {exc}"
                 ) from exc
 
-    # 3) Fallback to network pip install
-    if not allow_network:
-        raise BootstrapError(
-            f"No vendored wheel found for {package_name}=={version} and network installs are disabled"
-        )
-
     # Build pip install command
+    pkg = package_name if not version else f"{package_name}=={version}"
+    cmd = [
+        python_executable,
+        "-m",
+        "pip",
+        "install",
+        "--no-cache-dir",
+        "--upgrade",
+        pkg,
+    ]
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as exc:
+        raise BootstrapError(f"Failed to pip install {pkg}: {exc}") from exc
     pkg = package_name if not version else f"{package_name}=={version}"
     cmd = [python_executable, "-m", "pip", "install", pkg]
     try:

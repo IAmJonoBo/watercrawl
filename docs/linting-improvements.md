@@ -5,6 +5,7 @@ This document describes the recent improvements to the linting and formatting pi
 ## Overview
 
 The problems reporting and autofix pipeline has been significantly enhanced to provide:
+
 - Better handling of missing tools in ephemeral environments
 - Improved performance through early availability detection
 - Actionable autofix commands for supported tools
@@ -23,6 +24,7 @@ def _check_tool_available(tool_name: str) -> bool:
 ```
 
 This provides:
+
 - Faster execution by skipping unavailable tools early
 - Clear error messages indicating which tools need installation
 - Setup guidance in the problems report
@@ -86,6 +88,7 @@ python3 scripts/autofix.py --dry-run
 ```
 
 Supported tools:
+
 - `ruff`: Fix auto-fixable linting issues
 - `black`: Format code
 - `isort`: Sort imports
@@ -103,10 +106,12 @@ Added parsers for `black` and `isort` to properly detect formatting issues:
 ### 5. Enhanced Autofix Support
 
 All Python formatting tools now have multiple autofix command variants:
+
 - Poetry-prefixed commands for managed environments
 - Direct commands for system installations
 
 Example:
+
 ```python
 autofix=(
     ("poetry", "run", "black", "."),
@@ -167,6 +172,7 @@ New test coverage includes:
 - Autofix script functionality (`tests/test_autofix.py`)
 
 Run tests with:
+
 ```bash
 poetry run pytest tests/test_collect_problems.py tests/test_autofix.py -v
 ```

@@ -162,17 +162,17 @@ class ContentCleaner:
 
         # Filter by length
         if len(text) < self.config.min_content_length:
-            logger.debug(f"Content too short ({len(text)} chars), discarding")
+            logger.debug("Content too short (%d chars), discarding", len(text))
             return ""
 
         # Filter by word count
         word_count = len(text.split())
         if word_count < self.config.min_word_count:
-            logger.debug(f"Too few words ({word_count}), discarding")
+            logger.debug("Too few words (%d), discarding", word_count)
             return ""
 
         if word_count > self.config.max_word_count:
-            logger.warning(f"Too many words ({word_count}), truncating")
+            logger.warning("Too many words (%d), truncating", word_count)
             words = text.split()[: self.config.max_word_count]
             text = " ".join(words)
 
@@ -378,9 +378,11 @@ class MinHash:
                 containment = len(s1 & s2) / min_len
                 if containment >= threshold:
                     return True
-        except Exception:
-            # If shingles are not available for some reason, ignore this step
-            pass
+        except (AttributeError, TypeError) as exc:
+            # If shingles are missing or of an unexpected type, ignore this step
+            logger.debug(
+                "Skipping containment check due to missing/invalid shingles: %s", exc
+            )
 
         return self.jaccard_similarity(other) >= threshold
 
@@ -426,15 +428,19 @@ class Deduplicator:
 
         # Check near-duplicates with SimHash
         simhash = SimHash(text)
-        for existing_hash, _ in self._simhashes:
-            if simhash.is_duplicate(existing_hash, self.config.simhash_threshold):
+        for existing_simhash, _ in self._simhashes:
+            if simhash.is_duplicate(existing_simhash, self.config.simhash_threshold):
                 logger.debug("Duplicate detected via SimHash")
                 return True
 
         # Check near-duplicates with MinHash
-        minhash = MinHash(text, shingle_size=self.config.shingle_size)
-        for existing_hash, _ in self._minhashes:
-            if minhash.is_duplicate(existing_hash, self.config.minhash_threshold):
+        mh = MinHash(text, shingle_size=self.config.shingle_size)
+        # Local import to avoid changing top-level imports; cast helps the type checker
+        from typing import cast
+
+        for existing_minhash, _ in self._minhashes:
+            existing_minhash = cast(MinHash, existing_minhash)
+            if mh.is_duplicate(existing_minhash, self.config.minhash_threshold):
                 logger.debug("Duplicate detected via MinHash")
                 return True
 

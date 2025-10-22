@@ -18,6 +18,13 @@ if TYPE_CHECKING:
         GraphSemanticsReport,
     )
     from firecrawl_demo.integrations.telemetry.lineage import LineageArtifacts
+else:  # pragma: no cover - optional integrations may be unavailable at runtime
+    try:
+        from firecrawl_demo.integrations.telemetry.graph_semantics import (
+            GraphSemanticsReport,
+        )
+    except Exception:  # pragma: no cover - fallback when telemetry module missing
+        GraphSemanticsReport = Any  # type: ignore[misc, assignment]
 
 EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import defaultdict
-from collections.abc import Hashable, Iterable, Sequence
+from collections.abc import Hashable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -31,6 +31,7 @@ from firecrawl_demo.application.progress import (
 from firecrawl_demo.application.quality import QualityGate
 from firecrawl_demo.application.row_processing import (
     RowProcessingRequest,
+    compose_evidence_notes,
     process_row,
 )
 from firecrawl_demo.core import cache as global_cache
@@ -82,6 +83,9 @@ from firecrawl_demo.integrations.telemetry.alerts import send_slack_alert
 from firecrawl_demo.integrations.telemetry.drift_dashboard import (
     append_alert_report,
     write_prometheus_metrics,
+)
+from firecrawl_demo.integrations.telemetry.graph_semantics import (
+    GraphSemanticsReport,
 )
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
 
@@ -238,7 +242,8 @@ def _share_executor_with_adapter(
                 if hasattr(target, "_lookup_executor"):
                     delattr(target, "_lookup_executor")
             else:
-                setattr(target, "_lookup_executor", executor)
+                # prefer direct attribute assignment instead of setattr with a constant name
+                target._lookup_executor = executor
         except AttributeError:
             pass
 
@@ -436,6 +441,29 @@ class Pipeline(PipelineService):
         if self._last_report is not None:
             self._last_contract = pipeline_report_to_contract(self._last_report)
         return self._last_contract
+
+    def _compose_evidence_notes(
+        self,
+        finding: ResearchFinding,
+        original_row: Mapping[str, Any],
+        record: SchoolRecord,
+        *,
+        has_official_source: bool,
+        total_source_count: int,
+        fresh_source_count: int,
+        sanity_notes: Sequence[str] | None = None,
+    ) -> str:
+        """Backward-compatible shim delegating to row_processing.compose_evidence_notes."""
+
+        return compose_evidence_notes(
+            finding,
+            original_row,
+            record,
+            has_official_source=has_official_source,
+            total_source_count=total_source_count,
+            fresh_source_count=fresh_source_count,
+            sanity_notes=sanity_notes,
+        )
 
     def run_dataframe(
         self,
@@ -669,9 +697,11 @@ class Pipeline(PipelineService):
                     evidence_log_uri=evidence_uri,
                     table_name=config.LAKEHOUSE.table_name,
                 )
-                report.graph_semantics = graph_report
-                if graph_report and graph_report.issues:
-                    metrics["graph_semantics_issues"] = len(graph_report.issues)
+                report.graph_semantics = cast(GraphSemanticsReport | None, graph_report)
+                if graph_report and getattr(graph_report, "issues", None):
+                    metrics["graph_semantics_issues"] = len(
+                        getattr(graph_report, "issues", [])
+                    )
         manifest = None
         version_info = None
         if self.lakehouse_writer and active_context:
@@ -750,10 +780,13 @@ class Pipeline(PipelineService):
                     logger.warning("drift.baseline_load_failed", exc_info=exc)
                     baseline = None
                 if baseline is not None:
-                    drift_report = comparator(
-                        frame=report.refined_dataframe,
-                        baseline=baseline,
-                        threshold=config.DRIFT.threshold,
+                    drift_report = cast(
+                        Any,
+                        comparator(
+                            frame=report.refined_dataframe,
+                            baseline=baseline,
+                            threshold=config.DRIFT.threshold,
+                        ),
                     )
                     log_profile_fn = self.drift_tools.get("log_whylogs_profile")
                     load_meta_fn = self.drift_tools.get("load_whylogs_metadata")
@@ -982,7 +1015,8 @@ class Pipeline(PipelineService):
                 raise NotImplementedError(
                     "DataFrame creation requires pandas (Python < 3.14)"
                 )
-            return pd.DataFrame(list(rows_obj), columns=list(EXPECTED_COLUMNS))  # type: ignore
+            # type: ignore
+            return pd.DataFrame(list(rows_obj), columns=list(EXPECTED_COLUMNS))
         raise ValueError("Payload must include 'path' or 'rows'")
 
     def _detect_duplicate_schools(
