@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-22T03:49:55.014552+00:00",
+  "generated_at": "2025-10-22T03:53:10.567898+00:00",
   "summary": {
     "issue_count": 0,
     "note_count": 0,
@@ -36,15 +36,15 @@
       }
     ],
     "performance": {
-      "total_duration_seconds": 1.875,
+      "total_duration_seconds": 1.894,
       "slowest_tools": [
         {
           "tool": "biome",
-          "duration_seconds": 1.555
+          "duration_seconds": 1.579
         },
         {
           "tool": "yamllint",
-          "duration_seconds": 0.32
+          "duration_seconds": 0.315
         }
       ]
     },
@@ -117,7 +117,7 @@
       "tool": "yamllint",
       "status": "completed",
       "returncode": 0,
-      "duration_seconds": 0.32,
+      "duration_seconds": 0.315,
       "issues": [],
       "summary": {
         "issue_count": 0
@@ -145,7 +145,7 @@
       "tool": "biome",
       "status": "completed",
       "returncode": 0,
-      "duration_seconds": 1.555,
+      "duration_seconds": 1.579,
       "issues": [],
       "summary": {
         "issue_count": 0
