@@ -31,11 +31,23 @@ class NumericUnitRule:
 
 
 @dataclass(frozen=True)
+class ColumnDescriptor:
+    """Declarative metadata describing how to normalise a dataset column."""
+
+    name: str
+    semantic_type: str = "text"
+    required: bool = False
+    allowed_values: tuple[str, ...] = ()
+    format_hints: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class DatasetProfile:
     """Dataset-level configuration for refinement."""
 
     expected_columns: tuple[str, ...]
     numeric_units: tuple[NumericUnitRule, ...] = ()
+    columns: tuple[ColumnDescriptor, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -139,15 +151,57 @@ def _load_numeric_rule(payload: Mapping[str, Any]) -> NumericUnitRule:
     )
 
 
+def _load_column_descriptor(payload: Mapping[str, Any]) -> ColumnDescriptor:
+    name = payload.get("name")
+    if not name:
+        raise ProfileError("dataset.columns entries require a 'name'")
+    semantic_type = str(payload.get("type", "text"))
+    required = bool(payload.get("required", False))
+    allowed_values = tuple(str(item) for item in payload.get("allowed_values", ()))
+    hints_raw = payload.get("format_hints") or {}
+    if hints_raw and not isinstance(hints_raw, Mapping):
+        raise ProfileError("dataset.columns.format_hints must be a mapping if provided")
+    format_hints = {str(key): value for key, value in dict(hints_raw).items()}
+    return ColumnDescriptor(
+        name=str(name),
+        semantic_type=semantic_type,
+        required=required,
+        allowed_values=allowed_values,
+        format_hints=format_hints,
+    )
+
+
 def _load_dataset(payload: Mapping[str, Any]) -> DatasetProfile:
-    expected_columns = payload.get("expected_columns") or []
-    if not expected_columns:
-        raise ProfileError("Dataset profiles require 'expected_columns'")
+    expected_columns_raw = payload.get("expected_columns")
+    if expected_columns_raw is None:
+        expected_columns: list[str] = []
+    else:
+        expected_columns = [str(column) for column in expected_columns_raw]
     numeric_payload = payload.get("numeric_units") or []
     numeric_units = tuple(_load_numeric_rule(rule) for rule in numeric_payload)
+    columns_payload = payload.get("columns") or []
+    columns = tuple(
+        _load_column_descriptor(descriptor)
+        for descriptor in columns_payload
+        if isinstance(descriptor, Mapping)
+    )
+    if not expected_columns and columns:
+        expected_columns = [descriptor.name for descriptor in columns]
+    elif expected_columns and columns:
+        declared = {descriptor.name for descriptor in columns}
+        missing = [column for column in expected_columns if column not in declared]
+        if missing:
+            raise ProfileError(
+                "dataset.expected_columns must match dataset.columns names; missing "
+                + ", ".join(missing)
+            )
+        expected_columns = [descriptor.name for descriptor in columns]
+    if not expected_columns:
+        raise ProfileError("Dataset profiles require either 'expected_columns' or 'columns'")
     return DatasetProfile(
         expected_columns=tuple(str(column) for column in expected_columns),
         numeric_units=numeric_units,
+        columns=columns,
     )
 
 
