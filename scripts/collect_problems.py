@@ -94,8 +94,15 @@ MAX_PREVIEW_CHUNKS = 40
 TRUNK_ENV_VAR = "TRUNK_CHECK_OPTS"
 AUTOFIX_COMMANDS: dict[str, list[str]] = {
     "ruff": ["ruff", "check", ".", "--fix"],
+    "black": ["black", "."],
+    "isort": ["isort", "."],
     "biome": ["npx", "biome", "check", "--apply", "--reporter", "json"],
     "trunk": ["trunk", "fmt"],
+}
+AUTOFIX_WITH_POETRY: dict[str, list[str]] = {
+    "ruff": ["poetry", "run", "ruff", "check", ".", "--fix"],
+    "black": ["poetry", "run", "black", "."],
+    "isort": ["poetry", "run", "isort", "."],
 }
 WARNING_HIGHLIGHT_LIMIT = 10
 TRUNK_CONFIG_PATH = Path(".trunk/trunk.yaml")
@@ -434,6 +441,38 @@ def _sqlfluff_command() -> tuple[list[str], Mapping[str, str], None]:
         "json",
     ]
     return cmd, env, None
+
+
+def _check_tool_available(tool_name: str) -> bool:
+    """Check if a tool is available in PATH or as a Python module."""
+    # Check if it's available as a command
+    try:
+        result = subprocess.run(
+            [tool_name, "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    
+    # For Python tools, check if they can be run as modules
+    if tool_name in ("ruff", "mypy", "black", "isort", "pytest", "bandit"):
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", tool_name, "--version"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=5,
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+    
+    return False
 
 
 def _run_subprocess(
@@ -945,7 +984,30 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
         name="ruff",
         command=_static_command("ruff", "check", ".", "--output-format", "json"),
         parser=parse_ruff_output,
-        autofix=(("poetry", "run", "ruff", "check", ".", "--fix"),),
+        autofix=(
+            ("poetry", "run", "ruff", "check", ".", "--fix"),
+            ("ruff", "check", ".", "--fix"),
+        ),
+    )
+    yield ToolSpec(
+        name="black",
+        command=_static_command("black", ".", "--check"),
+        parser=parse_ruff_output,  # black doesn't have JSON output, but we can parse text
+        autofix=(
+            ("poetry", "run", "black", "."),
+            ("black", "."),
+        ),
+        optional=True,
+    )
+    yield ToolSpec(
+        name="isort",
+        command=_static_command("isort", ".", "--check-only"),
+        parser=parse_ruff_output,  # isort doesn't have JSON output, but we can parse text
+        autofix=(
+            ("poetry", "run", "isort", "."),
+            ("isort", "."),
+        ),
+        optional=True,
     )
     yield ToolSpec(
         name="mypy",
@@ -1133,6 +1195,8 @@ def collect(
 
     for spec in specs:
         start_time = datetime.now(timezone.utc)
+        
+        # Early availability check to improve performance
         try:
             cmd, env, cwd = spec.command()
         except (
@@ -1146,6 +1210,21 @@ def collect(
                 }
             )
             continue
+        
+        # Check if the tool is available before running
+        if cmd and not _check_tool_available(cmd[0]):
+            status = "not_installed" if spec.optional else "not_available"
+            aggregated.append(
+                {
+                    "tool": spec.name,
+                    "status": status,
+                    "error": f"Tool '{cmd[0]}' is not available in PATH. Install it with: poetry install --no-root --with dev",
+                    "summary": {"issue_count": 0},
+                    "issues": [],
+                }
+            )
+            continue
+        
         try:
             completed = run(spec, cmd, env, cwd)
         except FileNotFoundError as exc:
@@ -1154,6 +1233,8 @@ def collect(
                     "tool": spec.name,
                     "status": "not_installed" if spec.optional else "failed",
                     "error": str(exc),
+                    "summary": {"issue_count": 0},
+                    "issues": [],
                 }
             )
             continue
@@ -1165,6 +1246,8 @@ def collect(
                     "tool": spec.name,
                     "status": "failed",
                     "error": _truncate(str(exc)),
+                    "summary": {"issue_count": 0},
+                    "issues": [],
                 }
             )
             continue
@@ -1457,6 +1540,7 @@ def build_overall_summary(
     severity_total: Counter[str] = Counter()
     tools_run: list[str] = []
     tools_missing: list[str] = []
+    tools_not_available: list[str] = []
     highlight_insights: list[dict[str, Any]] = []
     warning_total = 0
     warning_highlights: list[dict[str, Any]] = []
@@ -1476,6 +1560,9 @@ def build_overall_summary(
         status = entry.get("status")
         if status == "not_installed" and tool:
             tools_missing.append(tool)
+            continue
+        if status == "not_available" and tool:
+            tools_not_available.append(tool)
             continue
         if tool:
             tools_run.append(tool)
@@ -1545,6 +1632,18 @@ def build_overall_summary(
         "warning_count": warning_total,
         "warning_insights": warning_highlights,
     }
+    
+    # Add guidance for unavailable tools
+    if tools_not_available:
+        summary_payload["tools_not_available"] = tools_not_available
+        summary_payload.setdefault("setup_guidance", []).append(
+            {
+                "issue": "Required QA tools not available",
+                "tools": tools_not_available,
+                "solution": "Install dependencies with: poetry install --no-root --with dev",
+                "alternative": "Or use Python directly: python3 -m pip install ruff mypy black isort bandit yamllint",
+            }
+        )
 
     # Add performance diagnostics for ephemeral runner optimization
     tool_durations = {
@@ -1569,6 +1668,8 @@ def build_overall_summary(
         _add_action({"type": "warnings", "count": warning_total})
     for missing_tool in tools_missing:
         _add_action({"type": "missing_tool", "tool": missing_tool})
+    for unavailable_tool in tools_not_available:
+        _add_action({"type": "install_required", "tool": unavailable_tool})
     configured_tools: dict[str, Any] = {}
     trunk_linters = _discover_trunk_linters()
     if trunk_linters:
@@ -1714,7 +1815,83 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         dest="autofix_tools",
         help="Limit autofix to specific tools (can be repeated).",
     )
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print a quick summary to stdout after generating the report.",
+    )
     return parser.parse_args(argv)
+
+
+def print_summary(report_path: Path) -> None:
+    """Print a human-readable summary of the problems report."""
+    try:
+        with report_path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"Error reading report: {exc}", file=sys.stderr)
+        return
+    
+    summary = data.get("summary", {})
+    print("\n" + "="*70)
+    print("PROBLEMS REPORT SUMMARY")
+    print("="*70)
+    
+    # Issue counts
+    issue_count = summary.get("issue_count", 0)
+    fixable = summary.get("fixable_count", 0)
+    dead_code = summary.get("potential_dead_code", 0)
+    
+    print(f"\nIssues found: {issue_count}")
+    if fixable:
+        print(f"  - Fixable: {fixable}")
+    if dead_code:
+        print(f"  - Potential dead code: {dead_code}")
+    
+    # Tools status
+    tools_run = summary.get("tools_run", [])
+    tools_missing = summary.get("tools_missing", [])
+    tools_not_available = summary.get("tools_not_available", [])
+    
+    if tools_run:
+        print(f"\nTools executed successfully: {', '.join(tools_run)}")
+    if tools_not_available:
+        print(f"\nTools not available (need installation): {', '.join(tools_not_available)}")
+    if tools_missing:
+        print(f"\nOptional tools missing: {', '.join(tools_missing)}")
+    
+    # Setup guidance
+    setup_guidance = summary.get("setup_guidance", [])
+    if setup_guidance:
+        print("\n" + "-"*70)
+        print("SETUP GUIDANCE")
+        print("-"*70)
+        for guide in setup_guidance:
+            print(f"\nIssue: {guide.get('issue')}")
+            print(f"Tools affected: {', '.join(guide.get('tools', []))}")
+            print(f"Solution: {guide.get('solution')}")
+            if guide.get('alternative'):
+                print(f"Alternative: {guide.get('alternative')}")
+    
+    # Actions
+    actions = summary.get("actions", [])
+    autofix_actions = [a for a in actions if a.get("type") == "autofix"]
+    if autofix_actions:
+        print("\n" + "-"*70)
+        print("AUTOFIX COMMANDS AVAILABLE")
+        print("-"*70)
+        for action in autofix_actions:
+            print(f"\n{action.get('tool')}: {action.get('command')}")
+    
+    # Performance
+    perf = summary.get("performance", {})
+    if perf:
+        total = perf.get("total_duration_seconds", 0)
+        print(f"\nTotal execution time: {total:.2f}s")
+    
+    print("\n" + "="*70)
+    print(f"Full report: {report_path}")
+    print("="*70 + "\n")
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -1725,6 +1902,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     results = collect()
     write_report(results, autofixes=autofix_results, output_path=args.output)
     print(f"Problems report written to {args.output}")
+    
+    if args.summary:
+        print_summary(args.output)
+    
     return None
 
 
