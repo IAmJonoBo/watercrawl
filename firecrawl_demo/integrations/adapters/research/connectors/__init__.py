@@ -183,9 +183,7 @@ class BaseConnector:
                 iter(config.EVIDENCE_QUERIES), "official regulator search"
             )
             notes.append(
-                "Terms of Service restrictions prevented {count} sources; suggested alternate query: {query}".format(
-                    count=len(skipped_for_tos), query=suggestion
-                )
+                f"Terms of Service restrictions prevented {len(skipped_for_tos)} sources; suggested alternate query: {suggestion}"
             )
         return allowed
 
