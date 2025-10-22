@@ -16,6 +16,7 @@ description: System design, layered architecture, and component relationships
 3. **Application Layer** (`firecrawl_demo.application`)
    - Coordinates orchestration through the `pipeline`, `quality`, and `progress` modules.
    - Defines interfaces in `application.interfaces` so pipelines and evidence sinks can be swapped or decorated without touching domain logic.
+   - Centralises row-level enrichment inside `application.row_processing`, which exposes a deterministic `process_row` service. All future enrichment steps must depend on this service instead of mutating DataFrames directly so change descriptions, sanity checks, and quality-gate artefacts stay consistent and testable.
 4. **Integrations** (`firecrawl_demo.integrations`)
    - Adapter, telemetry, storage, and contract integrations register themselves with the shared plugin registry.
    - External systems plug into the application layer via protocols so deterministic offline adapters continue to drive the QA suite.

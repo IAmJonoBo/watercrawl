@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Iterable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,13 @@ import pandas as pd
 import pytest
 
 from firecrawl_demo.application.pipeline import Pipeline
-from firecrawl_demo.application.quality import QualityGate
+from firecrawl_demo.application.quality import QualityFinding, QualityGate
+from firecrawl_demo.application.row_processing import (
+    RowProcessingRequest,
+    compose_quality_rejection_notes,
+    describe_changes,
+    process_row,
+)
 from firecrawl_demo.core import cache as cache_module, config
 from firecrawl_demo.domain.contracts import EvidenceRecordContract
 from firecrawl_demo.domain.models import (
@@ -61,6 +68,27 @@ def _frame_with_rows(count: int) -> pd.DataFrame:
     frame = pd.concat([_minimal_frame() for _ in range(count)], ignore_index=True)
     for idx in range(count):
         frame.at[idx, "Name of Organisation"] = f"Example Flight School {idx}"
+    return frame
+
+
+@pytest.fixture()
+def typed_bulk_frame() -> pd.DataFrame:
+    rows = [
+        {
+            "Name of Organisation": f"Typed Org {idx}",
+            "Province": "Gauteng" if idx % 2 == 0 else "Western Cape",
+            "Status": "Candidate",
+            "Website URL": "",
+            "Contact Person": "",
+            "Contact Number": "",
+            "Contact Email Address": "",
+        }
+        for idx in range(4)
+    ]
+    frame = pd.DataFrame(rows)
+    string_dtype = pd.StringDtype()
+    for column in frame.columns:
+        frame[column] = frame[column].astype(string_dtype)
     return frame
 
 
@@ -316,6 +344,79 @@ async def test_pipeline_preserves_order_with_concurrency_one(monkeypatch) -> Non
     assert [record.organisation for record in report.evidence_log] == names
     assert report.metrics["adapter_circuit_rejections"] == 0
     assert report.metrics["research_cache_misses"] == len(names)
+
+
+def test_process_row_quality_rejection_produces_deterministic_artifacts(
+    typed_bulk_frame: pd.DataFrame,
+) -> None:
+    source_row = typed_bulk_frame.iloc[0].copy()
+    original_record = SchoolRecord.from_dataframe_row(source_row)
+    working_record = replace(original_record)
+    finding = ResearchFinding(
+        website_url="https://unverified.example",  # not official
+        contact_person="Test Contact",
+        contact_email="contact@example.net",
+        contact_phone="011 555 0100",
+        sources=["https://directory.example.net/listing"],
+        notes="Single directory source",
+        confidence=25,
+    )
+    request = RowProcessingRequest(
+        row_id=2,
+        original_row=source_row,
+        original_record=original_record,
+        working_record=working_record,
+        finding=finding,
+    )
+    gate = QualityGate(min_confidence=80, require_official_source=True)
+
+    result = process_row(request, quality_gate=gate)
+
+    assert result.quality_rejected is True
+    assert result.rollback_action is not None
+    assert result.quality_issues
+    assert result.evidence_record is not None
+    assert "Quality gate rejected" in result.evidence_record.notes
+    # Notes and rollback columns should be deterministically ordered
+    assert result.rollback_action.columns == sorted(result.rollback_action.columns)
+    repeated_summary = describe_changes(source_row, result.proposed_record)
+    assert repeated_summary == describe_changes(source_row, result.proposed_record)
+    rejection_notes = compose_quality_rejection_notes(
+        "insufficient evidence",
+        repeated_summary,
+        [QualityFinding(code="x", severity="block", message="m", remediation="r")],
+        ["Sanity note B", "Sanity note A"],
+    )
+    assert "Sanity note A" in rejection_notes
+    assert "Sanity note B" in rejection_notes
+
+
+def test_pipeline_bulk_updates_preserve_string_dtype(
+    typed_bulk_frame: pd.DataFrame,
+) -> None:
+    findings: dict[str, ResearchFinding] = {}
+    for idx, name in enumerate(typed_bulk_frame["Name of Organisation"].tolist()):
+        slug = name.lower().replace(" ", "-")
+        findings[name] = ResearchFinding(
+            website_url=f"https://{slug}.za",  # ensures normalization adds https only once
+            contact_person=f"Analyst {idx}",
+            contact_email=f"{slug}@official.gov.za",
+            contact_phone="+27 10 555 01{:02d}".format(idx),
+            sources=[f"https://{slug}.za/about", "https://gov.za/register"],
+            confidence=90,
+        )
+
+    adapter = StaticResearchAdapter(findings)
+    pipe = Pipeline(
+        research_adapter=adapter,
+        quality_gate=QualityGate(min_confidence=0, require_official_source=False),
+    )
+
+    report = asyncio.run(pipe.run_dataframe_async(typed_bulk_frame.copy()))
+
+    result_frame = report.refined_dataframe
+    for column in typed_bulk_frame.columns:
+        assert result_frame[column].dtype == typed_bulk_frame[column].dtype
 
 
 def test_pipeline_sends_slack_alert_on_drift(tmp_path: Path, monkeypatch) -> None:

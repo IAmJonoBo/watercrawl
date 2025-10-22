@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import defaultdict
 from collections.abc import Hashable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
@@ -13,7 +14,6 @@ from pathlib import Path
 from statistics import mean
 from time import monotonic
 from typing import Any, cast
-from urllib.parse import urlparse
 
 try:
     import pandas as pd
@@ -28,10 +28,10 @@ from firecrawl_demo.application.progress import (
     NullPipelineProgressListener,
     PipelineProgressListener,
 )
-from firecrawl_demo.application.quality import (
-    QualityFinding,
-    QualityGate,
-    QualityGateDecision,
+from firecrawl_demo.application.quality import QualityGate
+from firecrawl_demo.application.row_processing import (
+    RowProcessingRequest,
+    process_row,
 )
 from firecrawl_demo.core import cache as global_cache, config
 
@@ -47,14 +47,7 @@ else:
         raise NotImplementedError("Dataset operations require pandas (Python < 3.14)")
 
 
-from firecrawl_demo.domain.compliance import (
-    canonical_domain,
-    confidence_for_status,
-    determine_status,
-    normalize_phone,
-    normalize_province,
-    validate_email,
-)
+from firecrawl_demo.domain.compliance import normalize_province
 from firecrawl_demo.domain.contracts import PipelineReportContract
 from firecrawl_demo.domain.models import (
     EvidenceRecord,
@@ -90,8 +83,6 @@ from firecrawl_demo.integrations.telemetry.drift_dashboard import (
     write_prometheus_metrics,
 )
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext, LineageManager
-
-_OFFICIAL_KEYWORDS = (".gov.za", "caa.co.za", ".ac.za", ".org.za", ".mil.za")
 logger = logging.getLogger(__name__)
 
 
@@ -497,12 +488,15 @@ class Pipeline(PipelineService):
         listener.on_start(len(working_frame))
 
         row_states: list[_RowState] = []
-        for position, (idx, row) in enumerate(working_frame.iterrows()):
-            original_row = row.copy()
-            original_record = SchoolRecord.from_dataframe_row(row)
+        column_updates: dict[str, dict[Hashable, Any]] = defaultdict(dict)
+        cleared_cells: dict[str, set[Hashable]] = defaultdict(set)
+        for position, row in enumerate(working_frame.itertuples(index=True, name=None)):
+            idx = row[0]
+            row_values = dict(zip(working_frame.columns, row[1:]))
+            original_record = SchoolRecord.from_dataframe_row(row_values)
             record = replace(original_record)
             record.province = normalize_province(record.province)
-            working_frame_cast.at[idx, "Province"] = record.province
+            column_updates["Province"][idx] = record.province
             row_id = position + 2
             row_number_lookup[idx] = row_id
             row_states.append(
@@ -510,7 +504,7 @@ class Pipeline(PipelineService):
                     position=position,
                     index=idx,
                     row_id=row_id,
-                    original_row=original_row,
+                    original_row=row_values,
                     original_record=original_record,
                     working_record=record,
                 )
@@ -539,179 +533,60 @@ class Pipeline(PipelineService):
             position = state.position
             idx = state.index
             row_id = state.row_id
-            original_row = state.original_row
             original_record = state.original_record
-            record = replace(state.working_record)
-            finding = result.finding
-
-            sources = self._merge_sources(record, finding)
-            (
-                total_source_count,
-                fresh_source_count,
-                official_source_count,
-                official_fresh_source_count,
-            ) = self._summarize_sources(
-                original=original_record, merged_sources=sources
-            )
-
-            if finding.website_url:
-                current_domain = canonical_domain(record.website_url)
-                proposed_domain = canonical_domain(finding.website_url)
-                if not record.website_url or (
-                    proposed_domain and proposed_domain != current_domain
-                ):
-                    record.website_url = finding.website_url
-
-            if not record.contact_person and finding.contact_person:
-                record.contact_person = finding.contact_person
-
-            previous_phone = record.contact_number
-            phone_candidate = finding.contact_phone or record.contact_number
-            normalized_phone, phone_issues = normalize_phone(phone_candidate)
-            if normalized_phone and normalized_phone != record.contact_number:
-                record.contact_number = normalized_phone
-            elif not normalized_phone and record.contact_number:
-                record.contact_number = None
-
-            previous_email = record.contact_email
-            email_candidate = finding.contact_email or record.contact_email
-            validated_email, email_issues = validate_email(
-                email_candidate, canonical_domain(record.website_url)
-            )
-            filtered_email_issues = [
-                issue for issue in email_issues if issue != "MX lookup unavailable"
-            ]
-            if validated_email and validated_email != record.contact_email:
-                record.contact_email = validated_email
-            elif not validated_email and record.contact_email:
-                record.contact_email = None
-
-            has_named_contact = bool(record.contact_person)
-            has_official_domain = official_source_count > 0
-            has_multiple_sources = total_source_count >= 2
-            status = determine_status(
-                bool(record.website_url),
-                has_named_contact,
-                phone_issues,
-                filtered_email_issues,
-                has_multiple_sources,
-            )
-            if status != record.status:
-                record.status = status
-
-            (
-                _sanity_updated,
-                sanity_notes,
-                row_findings,
-                sources,
-                cleared_columns,
-            ) = self._run_sanity_checks(
-                record=record,
+            request = RowProcessingRequest(
                 row_id=row_id,
-                sources=sources,
-                phone_issues=phone_issues,
-                email_issues=filtered_email_issues,
-                previous_phone=previous_phone,
-                previous_email=previous_email,
+                original_row=state.original_row,
+                original_record=original_record,
+                working_record=replace(state.working_record),
+                finding=result.finding,
             )
-            if row_findings:
-                sanity_findings.extend(row_findings)
-            for column in cleared_columns:
-                # Ensure column is object dtype to avoid pandas incompatibility warnings
-                if working_frame_cast[column].dtype != "object":
-                    working_frame_cast[column] = working_frame_cast[column].astype(
-                        "object"
-                    )
-                working_frame_cast.at[idx, column] = ""
+            row_result = process_row(request, quality_gate=self.quality_gate)
 
-            changed_columns = self._collect_changed_columns(original_record, record)
-            final_record = record
-            final_updated = bool(changed_columns)
-            decision: QualityGateDecision | None = None
-            if changed_columns:
-                decision = self.quality_gate.evaluate(
-                    original=original_record,
-                    proposed=record,
-                    finding=finding,
-                    changed_columns=changed_columns,
-                    phone_issues=phone_issues,
-                    email_issues=filtered_email_issues,
-                    total_source_count=total_source_count,
-                    fresh_source_count=fresh_source_count,
-                    official_source_count=official_source_count,
-                    official_fresh_source_count=official_fresh_source_count,
-                )
-
-            if decision and not decision.accepted:
+            if row_result.sanity_findings:
+                sanity_findings.extend(row_result.sanity_findings)
+            if row_result.quality_rejected:
                 quality_rejections += 1
-                issues = [
-                    self._quality_issue_from_finding(
-                        row_id=row_id,
-                        organisation=original_record.name,
-                        finding=finding_detail,
-                    )
-                    for finding_detail in decision.findings
-                ]
-                quality_issues.extend(issues)
-                rollback_actions.append(
-                    self._build_rollback_action(
-                        row_id=row_id,
-                        organisation=original_record.name,
-                        attempted_changes=changed_columns,
-                        issues=issues,
-                    )
-                )
-                final_record = decision.fallback_record or replace(
-                    original_record, status="Needs Review"
-                )
-                final_updated = final_record != original_record
-                attempted_changes_text = self._describe_changes(original_row, record)
-                final_changes_text = self._describe_changes(original_row, final_record)
-                rejection_reason = self._format_rejection_reason(issues)
-                notes = self._compose_quality_rejection_notes(
-                    rejection_reason,
-                    attempted_changes_text,
-                    decision.findings,
-                    sanity_notes,
-                )
-                evidence_records.append(
-                    EvidenceRecord(
-                        row_id=row_id,
-                        organisation=final_record.name,
-                        changes=final_changes_text or "No changes",
-                        sources=sources,
-                        notes=notes,
-                        confidence=0,
-                    )
-                )
-            else:
-                if final_updated:
-                    confidence = finding.confidence or confidence_for_status(
-                        final_record.status,
-                        len(phone_issues) + len(filtered_email_issues),
-                    )
-                    evidence_records.append(
-                        EvidenceRecord(
-                            row_id=row_id,
-                            organisation=final_record.name,
-                            changes=self._describe_changes(original_row, final_record),
-                            sources=sources,
-                            notes=self._compose_evidence_notes(
-                                finding,
-                                original_row,
-                                final_record,
-                                has_official_source=has_official_domain,
-                                total_source_count=total_source_count,
-                                fresh_source_count=fresh_source_count,
-                                sanity_notes=sanity_notes,
-                            ),
-                            confidence=confidence,
-                        )
-                    )
-                    enriched_rows += 1
+            if row_result.quality_issues:
+                quality_issues.extend(row_result.quality_issues)
+            if row_result.rollback_action:
+                rollback_actions.append(row_result.rollback_action)
+            if row_result.evidence_record is not None:
+                evidence_records.append(row_result.evidence_record)
+            if row_result.updated and not row_result.quality_rejected:
+                enriched_rows += 1
 
-            self._apply_record(working_frame, idx, final_record)
-            listener.on_row_processed(position, final_updated, final_record)
+            cleared_for_row = set(row_result.cleared_columns)
+            for column in cleared_for_row:
+                cleared_cells[column].add(idx)
+            record_map = row_result.record.as_dict()
+            for column, value in record_map.items():
+                if column in cleared_for_row:
+                    continue
+                if value is not None:
+                    column_updates[column][idx] = value
+
+            listener.on_row_processed(position, row_result.updated, row_result.record)
+
+        if column_updates or cleared_cells:
+            touched_columns = set(column_updates) | set(cleared_cells)
+            if _PANDAS_AVAILABLE:
+                for column in touched_columns:
+                    series = working_frame_cast[column]
+                    dtype = series.dtype
+                    if not (
+                        pd.api.types.is_object_dtype(dtype)
+                        or pd.api.types.is_string_dtype(dtype)
+                    ):
+                        working_frame_cast[column] = series.astype("object")
+            for column, entries in column_updates.items():
+                if not entries:
+                    continue
+                indices, values = zip(*entries.items())
+                working_frame_cast.loc[list(indices), column] = list(values)
+            for column, indices in cleared_cells.items():
+                if indices:
+                    working_frame_cast.loc[list(indices), column] = ""
 
         if evidence_records:
             contract_entries = [
@@ -1107,319 +982,6 @@ class Pipeline(PipelineService):
                 )
             return pd.DataFrame(list(rows_obj), columns=list(EXPECTED_COLUMNS))  # type: ignore
         raise ValueError("Payload must include 'path' or 'rows'")
-
-    def _apply_record(self, frame: Any, index: Hashable, record: SchoolRecord) -> None:
-        frame_cast = cast(Any, frame)
-        for column, value in record.as_dict().items():
-            if value is not None:
-                # Ensure column is object dtype to avoid pandas incompatibility warnings
-                if frame_cast[column].dtype != "object":
-                    frame_cast[column] = frame_cast[column].astype("object")
-                frame_cast.at[index, column] = value
-
-    def _collect_changed_columns(
-        self, original: SchoolRecord, proposed: SchoolRecord
-    ) -> dict[str, tuple[str | None, str | None]]:
-        changes: dict[str, tuple[str | None, str | None]] = {}
-        original_map = original.as_dict()
-        proposed_map = proposed.as_dict()
-        for column, original_value in original_map.items():
-            proposed_value = proposed_map.get(column)
-            if (original_value or "") != (proposed_value or ""):
-                changes[column] = (original_value, proposed_value)
-        return changes
-
-    def _quality_issue_from_finding(
-        self,
-        *,
-        row_id: int,
-        organisation: str,
-        finding: QualityFinding,
-    ) -> QualityIssue:
-        return QualityIssue(
-            row_id=row_id,
-            organisation=organisation,
-            code=finding.code,
-            severity=finding.severity,
-            message=finding.message,
-            remediation=finding.remediation,
-        )
-
-    def _build_rollback_action(
-        self,
-        *,
-        row_id: int,
-        organisation: str,
-        attempted_changes: dict[str, tuple[str | None, str | None]],
-        issues: Sequence[QualityIssue],
-    ) -> RollbackAction:
-        columns = sorted(attempted_changes.keys())
-        previous_values = {column: attempted_changes[column][0] for column in columns}
-        reason_parts = [issue.message for issue in issues if issue.message]
-        reason_text = "; ".join(reason_parts) or "Quality gate rejection"
-        remediation = sorted(
-            {issue.remediation for issue in issues if issue.remediation}
-        )
-        if remediation:
-            reason_text += ". Remediation: " + "; ".join(remediation)
-        return RollbackAction(
-            row_id=row_id,
-            organisation=organisation,
-            columns=columns,
-            previous_values=previous_values,
-            reason=reason_text,
-        )
-
-    def _format_rejection_reason(self, issues: Sequence[QualityIssue]) -> str:
-        blocking = [issue.message for issue in issues if issue.severity == "block"]
-        if blocking:
-            return "; ".join(blocking)
-        fallback = [issue.message for issue in issues if issue.message]
-        return "; ".join(fallback) or "Quality gate rejected enrichment"
-
-    def _compose_quality_rejection_notes(
-        self,
-        reason: str,
-        attempted_changes: str,
-        findings: Sequence[QualityFinding],
-        sanity_notes: Sequence[str],
-    ) -> str:
-        notes: list[str] = [f"Quality gate rejected enrichment: {reason}"]
-        if attempted_changes:
-            notes.append(f"Attempted updates: {attempted_changes}")
-        remediation = sorted(
-            {finding.remediation for finding in findings if finding.remediation}
-        )
-        if remediation:
-            notes.append("Remediation: " + "; ".join(remediation))
-        if sanity_notes:
-            notes.extend(sanity_notes)
-        return "; ".join(notes)
-
-    def _merge_sources(
-        self, record: SchoolRecord, finding: ResearchFinding
-    ) -> list[str]:
-        sources: list[str] = []
-        if record.website_url:
-            sources.append(record.website_url)
-        if finding.website_url and finding.website_url not in sources:
-            sources.append(finding.website_url)
-        for source in finding.sources:
-            if source not in sources:
-                sources.append(source)
-        if not sources:
-            sources.append("internal://record")
-        return sources
-
-    def _summarize_sources(
-        self, *, original: SchoolRecord, merged_sources: Sequence[str]
-    ) -> tuple[int, int, int, int]:
-        original_keys = {
-            self._normalize_source_key(source)
-            for source in self._collect_original_sources(original)
-        }
-        seen_keys: set[str] = set()
-        total_sources = 0
-        fresh_sources = 0
-        official_sources = 0
-        official_fresh_sources = 0
-        for source in merged_sources:
-            key = self._normalize_source_key(source)
-            if key in seen_keys:
-                continue
-            seen_keys.add(key)
-            total_sources += 1
-            is_official = self._is_official_source(source)
-            if is_official:
-                official_sources += 1
-            if key not in original_keys:
-                fresh_sources += 1
-                if is_official:
-                    official_fresh_sources += 1
-        return total_sources, fresh_sources, official_sources, official_fresh_sources
-
-    def _collect_original_sources(self, record: SchoolRecord) -> Sequence[str]:
-        sources: list[str] = []
-        if record.website_url:
-            sources.append(record.website_url)
-        return sources
-
-    def _normalize_source_key(self, source: str) -> str:
-        domain = canonical_domain(source)
-        if domain:
-            return f"domain:{domain}"
-        return source.strip().lower()
-
-    def _is_official_source(self, source: str) -> bool:
-        candidate = source.lower()
-        return any(keyword in candidate for keyword in _OFFICIAL_KEYWORDS)
-
-    def _describe_changes(self, original_row: Any, record: SchoolRecord) -> str:
-        changes: list[str] = []
-        mapping = {
-            "Website URL": record.website_url,
-            "Contact Person": record.contact_person,
-            "Contact Number": record.contact_number,
-            "Contact Email Address": record.contact_email,
-            "Status": record.status,
-            "Province": record.province,
-        }
-        for column, new_value in mapping.items():
-            original_value = str(original_row.get(column, "") or "").strip()
-            if new_value and original_value != new_value:
-                changes.append(f"{column} -> {new_value}")
-        return "; ".join(changes) or "No changes"
-
-    def _compose_evidence_notes(
-        self,
-        finding: ResearchFinding,
-        original_row: Any,
-        record: SchoolRecord,
-        *,
-        has_official_source: bool,
-        total_source_count: int,
-        fresh_source_count: int,
-        sanity_notes: Sequence[str] | None = None,
-    ) -> str:
-        notes: list[str] = []
-        if finding.notes:
-            notes.append(finding.notes)
-
-        if sanity_notes:
-            for note in sanity_notes:
-                if note and note not in notes:
-                    notes.append(note)
-
-        if config.FEATURE_FLAGS.investigate_rebrands:
-            for note in finding.investigation_notes:
-                if note and note not in notes:
-                    notes.append(note)
-
-            prior_domain = canonical_domain(str(original_row.get("Website URL", "")))
-            current_domain = canonical_domain(record.website_url)
-            if prior_domain and current_domain and prior_domain != current_domain:
-                rename_note = f"Website changed from {prior_domain} to {current_domain}; investigate potential rename or ownership change."
-                if rename_note not in notes:
-                    notes.append(rename_note)
-
-            if finding.alternate_names:
-                alias_block = ", ".join(sorted(set(finding.alternate_names)))
-                alias_note = f"Known aliases: {alias_block}"
-                if alias_note not in notes:
-                    notes.append(alias_note)
-
-            if finding.physical_address:
-                address_note = (
-                    f"Latest address intelligence: {finding.physical_address}"
-                )
-                if address_note not in notes:
-                    notes.append(address_note)
-
-        if not notes:
-            notes_text = ""
-        else:
-            notes_text = "; ".join(notes)
-
-        remediation_reasons: list[str] = []
-        if total_source_count < 2:
-            remediation_reasons.append("add a second independent source")
-        if fresh_source_count == 0:
-            remediation_reasons.append("capture a fresh supporting source")
-        if not has_official_source:
-            remediation_reasons.append(
-                "confirm an official (.gov.za/.caa.co.za/.ac.za/.org.za/.mil.za) source"
-            )
-        if remediation_reasons:
-            shortfall_note = "Evidence shortfall: " + "; ".join(remediation_reasons)
-            if not shortfall_note.endswith("."):
-                shortfall_note += "."
-            if notes_text:
-                notes_text = "; ".join(filter(None, [notes_text, shortfall_note]))
-            else:
-                notes_text = shortfall_note
-
-        return notes_text
-
-    def _run_sanity_checks(
-        self,
-        *,
-        record: SchoolRecord,
-        row_id: int,
-        sources: list[str],
-        phone_issues: Sequence[str],
-        email_issues: Sequence[str],
-        previous_phone: str | None,
-        previous_email: str | None,
-    ) -> tuple[bool, list[str], list[SanityCheckFinding], list[str], list[str]]:
-        updated = False
-        notes: list[str] = []
-        findings: list[SanityCheckFinding] = []
-        normalized_sources = list(sources)
-        cleared_columns: list[str] = []
-
-        if record.website_url:
-            parsed = urlparse(record.website_url)
-            if not parsed.scheme:
-                original_url = record.website_url
-                normalized_url = f"https://{original_url.lstrip('/')}"
-                record.website_url = normalized_url
-                normalized_sources = [
-                    normalized_url if source == original_url else source
-                    for source in normalized_sources
-                ]
-                updated = True
-                notes.append("Auto-normalised website URL to include https scheme.")
-                findings.append(
-                    SanityCheckFinding(
-                        row_id=row_id,
-                        organisation=record.name,
-                        issue="website_url_missing_scheme",
-                        remediation="Added an https:// prefix to the website URL for consistency.",
-                    )
-                )
-
-        if previous_phone and record.contact_number is None and phone_issues:
-            notes.append(
-                "Removed invalid contact number after it failed +27 E.164 validation."
-            )
-            findings.append(
-                SanityCheckFinding(
-                    row_id=row_id,
-                    organisation=record.name,
-                    issue="contact_number_invalid",
-                    remediation="Capture a verified +27-format contact number before publishing.",
-                )
-            )
-            updated = True
-            cleared_columns.append("Contact Number")
-
-        if previous_email and record.contact_email is None and email_issues:
-            notes.append("Removed invalid contact email after validation failures.")
-            findings.append(
-                SanityCheckFinding(
-                    row_id=row_id,
-                    organisation=record.name,
-                    issue="contact_email_invalid",
-                    remediation="Source a named contact email on the official organisation domain.",
-                )
-            )
-            updated = True
-            cleared_columns.append("Contact Email Address")
-
-        if record.province == "Unknown":
-            findings.append(
-                SanityCheckFinding(
-                    row_id=row_id,
-                    organisation=record.name,
-                    issue="province_unknown",
-                    remediation=(
-                        "Confirm the organisation's South African province and update the dataset."
-                    ),
-                )
-            )
-            notes.append("Province remains Unknown pending analyst confirmation.")
-
-        return updated, notes, findings, normalized_sources, cleared_columns
 
     def _detect_duplicate_schools(
         self, frame: Any, row_lookup: dict[Hashable, int]
