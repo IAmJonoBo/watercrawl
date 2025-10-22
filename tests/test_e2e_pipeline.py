@@ -7,6 +7,11 @@ import pandas as pd
 import pytest
 
 from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.application.quality import QualityGate
+from firecrawl_demo.application.row_processing import (
+    RowProcessingRequest,
+    process_row,
+)
 from firecrawl_demo.application.progress import PipelineProgressListener
 from firecrawl_demo.core import config
 from firecrawl_demo.integrations.adapters.research import (
@@ -18,6 +23,7 @@ from firecrawl_demo.integrations.telemetry.drift import (
     log_whylogs_profile,
     save_baseline,
 )
+from firecrawl_demo.domain.models import SchoolRecord
 
 
 class StubResearchAdapter(ResearchAdapter):
@@ -51,6 +57,51 @@ class RecordingProgress(PipelineProgressListener):
 
     def on_error(self, error: Exception, index: int | None = None) -> None:
         self.events.append(("error", index, str(error)))
+
+
+def test_process_row_accepts_valid_enrichment() -> None:
+    row = pd.Series(
+        {
+            "Name of Organisation": "SkyReach Aero",
+            "Province": "gauteng",
+            "Status": "Candidate",
+            "Website URL": "skyreachaero.co.za",
+            "Contact Person": "",
+            "Contact Number": "(011) 555 0100",
+            "Contact Email Address": "",
+        }
+    )
+    original_record = SchoolRecord.from_dataframe_row(row)
+    request = RowProcessingRequest(
+        row_id=2,
+        original_row=row,
+        original_record=original_record,
+        working_record=replace(original_record),
+        finding=ResearchFinding(
+            website_url="https://www.skyreachaero.co.za",
+            contact_person="Captain Neo Masuku",
+            contact_email="neo.masuku@skyreachaero.co.za",
+            contact_phone="011 555 0100",
+            sources=[
+                "https://www.skyreachaero.co.za/contact",
+                "https://www.caa.co.za/operators/skyreachaero",
+            ],
+            notes="Directory + regulator corroboration",
+            confidence=92,
+        ),
+    )
+    gate = QualityGate(min_confidence=70, require_official_source=True)
+
+    result = process_row(request, quality_gate=gate)
+
+    assert result.quality_rejected is False
+    assert result.updated is True
+    assert result.record.website_url == "https://www.skyreachaero.co.za"
+    assert result.record.status == "Verified"
+    assert result.evidence_record is not None
+    assert result.evidence_record.confidence >= 70
+    assert not result.cleared_columns
+    assert not result.sanity_findings
 
 
 def test_pipeline_enriches_missing_fields():
