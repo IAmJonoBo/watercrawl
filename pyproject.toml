@@ -5,7 +5,10 @@ description = "Modular, async-ready, compliance-driven enrichment pipeline for F
 authors = ["ACES Aerodynamics Analyst <info@acesaero.co.za>"]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "firecrawl_demo" }]
+packages = [
+  { include = "firecrawl_demo" },
+  { include = "crawlkit" },
+]
 exclude = [
   "apps",
   "codex",
@@ -118,13 +121,13 @@ extend-exclude = '''
 [tool.isort]
 profile = "black"
 line_length = 88
-known_first_party = ["apps", "firecrawl_demo", "scripts"]
+known_first_party = ["apps", "crawlkit", "firecrawl_demo", "scripts"]
 skip_glob = [".trunk/plugins/**/*"]
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-src = ["apps", "firecrawl_demo", "scripts", "tests"]
+src = ["apps", "crawlkit", "firecrawl_demo", "scripts", "tests"]
 extend-exclude = ["stubs/third_party"]
 
 [tool.ruff.lint]
