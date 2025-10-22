@@ -408,14 +408,15 @@ class _LookupCoordinator:
                 retries += 1
                 self._metrics.retries += 1
                 self._circuit_breaker.record_failure()
-                logger.debug(
-                    "Retrying research lookup (%s/%s) for %s (%s): %s",
-                    retries,
-                    self._max_retries,
-                    state.working_record.name,
-                    state.working_record.province,
-                    exc,
-                )
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        "Retrying research lookup (%s/%s) for %s (%s): %s",
+                        retries,
+                        self._max_retries,
+                        state.working_record.name,
+                        state.working_record.province,
+                        exc,
+                    )
                 if retries > self._max_retries:
                     raise
                 delay = min(max_delay, self._retry_backoff_base * (2 ** (retries - 1)))
