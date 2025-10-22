@@ -240,10 +240,7 @@ class PressConnector(BaseConnector):
                 coverage_notes.append(f"Press coverage: {headline}")
             if summary and not headline:
                 coverage_notes.append(f"Press coverage: {summary}")
-        notes = list(coverage_notes)
-        if coverage_notes:
-            notes.append("Press monitoring located supporting coverage")
-        return ConnectorObservation(notes=coverage_notes), sources, notes, []
+        return ConnectorObservation(notes=coverage_notes), sources, coverage_notes, []
 
 
 class CorporateFilingsConnector(BaseConnector):
