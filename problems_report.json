@@ -1,776 +1,141 @@
 {
-  "generated_at": "2025-10-21T23:43:46.396834+00:00",
+  "generated_at": "2025-10-22T03:49:55.014552+00:00",
   "summary": {
-    "issue_count": 47,
-    "note_count": 15,
+    "issue_count": 0,
+    "note_count": 0,
     "fixable_count": 0,
-    "potential_dead_code": 14,
-    "severity_counts": {
-      "error": 2
-    },
+    "potential_dead_code": 0,
+    "severity_counts": {},
     "tools_run": [
-      "ruff",
-      "mypy",
       "yamllint",
-      "bandit",
-      "sqlfluff",
       "biome"
     ],
     "tools_missing": [
+      "black",
+      "isort",
       "trunk"
     ],
-    "insights": [
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
-        "line": 25,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
-        "line": 27,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/observability.py",
-        "line": 22,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
-        "line": 15,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
-        "line": 39,
-        "code": "F841",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
-        "line": 175,
-        "code": "F841",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_content_hygiene.py",
-        "line": 5,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
-        "line": 6,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
-        "line": 8,
-        "code": "F401",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      },
-      {
-        "tool": "ruff",
-        "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
-        "line": 131,
-        "code": "F841",
-        "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-      }
-    ],
+    "insights": [],
     "warning_count": 0,
     "warning_insights": [],
+    "tools_not_available": [
+      "ruff",
+      "mypy",
+      "bandit"
+    ],
+    "setup_guidance": [
+      {
+        "issue": "Required QA tools not available",
+        "tools": [
+          "ruff",
+          "mypy",
+          "bandit"
+        ],
+        "solution": "Install dependencies with: poetry install --no-root --with dev",
+        "alternative": "Or use Python directly: python3 -m pip install ruff mypy black isort bandit yamllint"
+      }
+    ],
     "performance": {
-      "total_duration_seconds": 13.659,
+      "total_duration_seconds": 1.875,
       "slowest_tools": [
         {
-          "tool": "mypy",
-          "duration_seconds": 5.443
-        },
-        {
-          "tool": "sqlfluff",
-          "duration_seconds": 4.904
-        },
-        {
           "tool": "biome",
-          "duration_seconds": 1.556
-        },
-        {
-          "tool": "bandit",
-          "duration_seconds": 1.276
+          "duration_seconds": 1.555
         },
         {
           "tool": "yamllint",
-          "duration_seconds": 0.465
+          "duration_seconds": 0.32
         }
       ]
     },
-    "configured_tools": {
-      "trunk_enabled": [
-        "mypy",
-        "shellcheck",
-        "shfmt",
-        "svgo",
-        "markdownlint-cli2",
-        "sqlfluff",
-        "actionlint",
-        "hadolint",
-        "taplo",
-        "bandit",
-        "black",
-        "checkov",
-        "dotenv-linter",
-        "git-diff-check",
-        "isort",
-        "markdownlint",
-        "osv-scanner",
-        "renovate",
-        "ruff",
-        "trufflehog",
-        "yamllint"
-      ],
-      "missing": [
-        "trunk"
-      ]
-    },
     "stubs_available": true,
-    "ephemeral_runner_notes": [
-      "Type stubs are properly configured for mypy via MYPYPATH"
-    ],
     "actions": [
       {
-        "type": "autofix",
-        "tool": "ruff",
-        "command": "poetry run ruff check . --fix"
+        "type": "missing_tool",
+        "tool": "black"
       },
       {
-        "type": "review",
-        "tool": "mypy"
-      },
-      {
-        "type": "review",
-        "tool": "yamllint"
-      },
-      {
-        "type": "review",
-        "tool": "bandit"
-      },
-      {
-        "type": "review",
-        "tool": "sqlfluff"
+        "type": "missing_tool",
+        "tool": "isort"
       },
       {
         "type": "missing_tool",
         "tool": "trunk"
       },
       {
-        "type": "run_tool",
-        "tool": "trunk"
+        "type": "install_required",
+        "tool": "ruff"
+      },
+      {
+        "type": "install_required",
+        "tool": "mypy"
+      },
+      {
+        "type": "install_required",
+        "tool": "bandit"
       }
     ]
   },
   "tools": [
     {
       "tool": "ruff",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "duration_seconds": 0.015,
-      "issues": [
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
-          "line": 25,
-          "column": 21,
-          "code": "F401",
-          "message": "`pathlib.Path` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/crawl_policy.py",
-          "line": 27,
-          "column": 26,
-          "code": "F401",
-          "message": "`urllib.parse.urljoin` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/firecrawl_demo/integrations/observability.py",
-          "line": 22,
-          "column": 22,
-          "code": "F401",
-          "message": "`datetime.datetime` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
-          "line": 15,
-          "column": 5,
-          "code": "F401",
-          "message": "`firecrawl_demo.testing.chaos.create_default_orchestrator` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
-          "line": 39,
-          "column": 9,
-          "code": "F841",
-          "message": "Local variable `injection` is assigned to but never used",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_chaos.py",
-          "line": 175,
-          "column": 51,
-          "code": "F841",
-          "message": "Local variable `result` is assigned to but never used",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_content_hygiene.py",
-          "line": 5,
-          "column": 8,
-          "code": "F401",
-          "message": "`pytest` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
-          "line": 6,
-          "column": 22,
-          "code": "F401",
-          "message": "`datetime.timedelta` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_crawl_policy.py",
-          "line": 8,
-          "column": 8,
-          "code": "F401",
-          "message": "`pytest` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
-          "line": 131,
-          "column": 52,
-          "code": "F841",
-          "message": "Local variable `span` is assigned to but never used",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
-          "line": 167,
-          "column": 69,
-          "code": "F841",
-          "message": "Local variable `span` is assigned to but never used",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_observability.py",
-          "line": 259,
-          "column": 54,
-          "code": "F841",
-          "message": "Local variable `span` is assigned to but never used",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_telemetry.py",
-          "line": 11,
-          "column": 5,
-          "code": "F401",
-          "message": "`firecrawl_demo.interfaces.telemetry.DevExMetrics` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        },
-        {
-          "path": "/home/runner/work/watercrawl/watercrawl/tests/test_telemetry.py",
-          "line": 13,
-          "column": 5,
-          "code": "F401",
-          "message": "`firecrawl_demo.interfaces.telemetry.create_default_collector` imported but unused",
-          "insight": "Unused symbol detected; confirm whether a planned feature was fully implemented."
-        }
-      ],
+      "status": "not_available",
+      "error": "Tool 'ruff' is not available in PATH. Install it with: poetry install --no-root --with dev",
       "summary": {
-        "issue_count": 14,
-        "fixable": 14,
-        "potential_dead_code": 14
+        "issue_count": 0
       },
-      "autofix_commands": [
-        "poetry run ruff check . --fix"
-      ]
+      "issues": []
+    },
+    {
+      "tool": "black",
+      "status": "not_installed",
+      "error": "Tool 'black' is not available in PATH. Install it with: poetry install --no-root --with dev",
+      "summary": {
+        "issue_count": 0
+      },
+      "issues": []
+    },
+    {
+      "tool": "isort",
+      "status": "not_installed",
+      "error": "Tool 'isort' is not available in PATH. Install it with: poetry install --no-root --with dev",
+      "summary": {
+        "issue_count": 0
+      },
+      "issues": []
     },
     {
       "tool": "mypy",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "duration_seconds": 5.443,
-      "issues": [
-        {
-          "path": "firecrawl_demo/testing/chaos.py",
-          "line": 439,
-          "message": "Argument 1 to \"inject_transient_failure\" of \"ChaosOrchestrator\" has incompatible type \"object\"; expected \"FailureMode\" ",
-          "severity": "error",
-          "code": "arg-type"
-        },
-        {
-          "path": "firecrawl_demo/testing/chaos.py",
-          "line": 439,
-          "message": "Argument 2 to \"inject_transient_failure\" of \"ChaosOrchestrator\" has incompatible type \"object\"; expected \"str\" ",
-          "severity": "error",
-          "code": "arg-type"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 29,
-          "message": "Cannot find implementation or library stub for module named \"opentelemetry\" ",
-          "severity": "error",
-          "code": "import-not-found"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 30,
-          "message": "Cannot find implementation or library stub for module named \"opentelemetry.exporter.otlp.proto.grpc.trace_exporter\" ",
-          "severity": "error",
-          "code": "import-not-found"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 31,
-          "message": "Cannot find implementation or library stub for module named \"opentelemetry.exporter.prometheus\" ",
-          "severity": "error",
-          "code": "import-not-found"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 32,
-          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.metrics\" ",
-          "severity": "error",
-          "code": "import-not-found"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 33,
-          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.resources\" ",
-          "severity": "error",
-          "code": "import-not-found"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 34,
-          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.trace\" ",
-          "severity": "error",
-          "code": "import-not-found"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 35,
-          "message": "Cannot find implementation or library stub for module named \"opentelemetry.sdk.trace.export\" ",
-          "severity": "error",
-          "code": "import-not-found"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 217,
-          "message": "\"None\" has no attribute \"create_counter\" ",
-          "severity": "error",
-          "code": "attr-defined"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 223,
-          "message": "\"None\" has no attribute \"create_histogram\" ",
-          "severity": "error",
-          "code": "attr-defined"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 229,
-          "message": "\"None\" has no attribute \"create_counter\" ",
-          "severity": "error",
-          "code": "attr-defined"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 233,
-          "message": "\"None\" has no attribute \"create_observable_gauge\" ",
-          "severity": "error",
-          "code": "attr-defined"
-        },
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 243,
-          "message": "The return type of a generator function should be \"Generator\" or one of its supertypes ",
-          "severity": "error",
-          "code": "misc"
-        },
-        {
-          "path": "firecrawl_demo/integrations/content_hygiene.py",
-          "line": 295,
-          "message": "Incompatible return value type (got \"list[float]\", expected \"list[int]\") ",
-          "severity": "error",
-          "code": "return-value"
-        },
-        {
-          "path": "firecrawl_demo/integrations/content_hygiene.py",
-          "line": 375,
-          "message": "Incompatible types in assignment (expression has type \"MinHash\", variable has type \"SimHash\") ",
-          "severity": "error",
-          "code": "assignment"
-        },
-        {
-          "path": "firecrawl_demo/integrations/content_hygiene.py",
-          "line": 376,
-          "message": "Argument 1 to \"is_duplicate\" of \"MinHash\" has incompatible type \"SimHash\"; expected \"MinHash\" ",
-          "severity": "error",
-          "code": "arg-type"
-        },
-        {
-          "path": "tests/test_chaos.py",
-          "line": 222,
-          "message": "Incompatible types in assignment (expression has type \"dict[Any, Any]\", variable has type \"GameDayResult\") ",
-          "severity": "error",
-          "code": "assignment"
-        },
-        {
-          "path": "tests/test_chaos.py",
-          "line": 224,
-          "message": "Value of type \"GameDayResult\" is not indexable ",
-          "severity": "error",
-          "code": "index"
-        },
-        {
-          "path": "tests/test_chaos.py",
-          "line": 225,
-          "message": "Value of type \"GameDayResult\" is not indexable ",
-          "severity": "error",
-          "code": "index"
-        },
-        {
-          "path": "tests/test_chaos.py",
-          "line": 226,
-          "message": "Unsupported right operand type for in (\"GameDayResult\") ",
-          "severity": "error",
-          "code": "operator"
-        },
-        {
-          "path": "tests/test_chaos.py",
-          "line": 227,
-          "message": "Value of type \"GameDayResult\" is not indexable ",
-          "severity": "error",
-          "code": "index"
-        }
-      ],
-      "notes": [
-        {
-          "path": "firecrawl_demo/integrations/observability.py",
-          "line": 30,
-          "message": "See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports",
-          "severity": "note"
-        },
-        {
-          "path": "tests/test_cache.py",
-          "line": 12,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cache.py",
-          "line": 18,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cache.py",
-          "line": 26,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cache.py",
-          "line": 34,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cache.py",
-          "line": 47,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 186,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_compliance.py",
-          "line": 208,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cli.py",
-          "line": 245,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cli.py",
-          "line": 299,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cli.py",
-          "line": 300,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cli.py",
-          "line": 301,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cli.py",
-          "line": 345,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cli.py",
-          "line": 376,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        },
-        {
-          "path": "tests/test_cli.py",
-          "line": 393,
-          "message": "By default the bodies of untyped functions are not checked, consider using --check-untyped-defs ",
-          "severity": "note",
-          "code": "annotation-unchecked"
-        }
-      ],
+      "status": "not_available",
+      "error": "Tool 'mypy' is not available in PATH. Install it with: poetry install --no-root --with dev",
       "summary": {
-        "issue_count": 22,
-        "note_count": 15
-      }
+        "issue_count": 0
+      },
+      "issues": []
     },
     {
       "tool": "yamllint",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "duration_seconds": 0.465,
-      "issues": [
-        {
-          "path": "./docker-compose.yml",
-          "line": 10,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./docker-compose.yml",
-          "line": 17,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./docker-compose.yml",
-          "line": 22,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./docker-compose.yml",
-          "line": 28,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./docker-compose.yml",
-          "line": 33,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./docker-compose.yml",
-          "line": 43,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./docker-compose.yml",
-          "line": 51,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./docker-compose.yml",
-          "line": 55,
-          "column": 1,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        },
-        {
-          "path": "./mkdocs.yml",
-          "line": 4,
-          "column": 2,
-          "severity": "error",
-          "message": "trailing spaces (trailing-spaces)"
-        }
-      ],
+      "status": "completed",
+      "returncode": 0,
+      "duration_seconds": 0.32,
+      "issues": [],
       "summary": {
-        "issue_count": 9
+        "issue_count": 0
       }
     },
     {
       "tool": "bandit",
-      "status": "completed_with_exit_code",
-      "returncode": 1,
-      "duration_seconds": 1.276,
-      "issues": [
-        {
-          "message": "bandit exited with status 1 but did not report any findings.",
-          "severity": "error",
-          "code": "tool_exit_non_zero",
-          "tool": "bandit"
-        }
-      ],
+      "status": "not_available",
+      "error": "Tool 'bandit' is not available in PATH. Install it with: poetry install --no-root --with dev",
       "summary": {
-        "issue_count": 1,
-        "severity_counts": {
-          "error": 1
-        }
+        "issue_count": 0
       },
-      "raw_preview": {
-        "chunks": [
-          "Working... \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 100% 0:00:01",
-          "{",
-          "  \"errors\": [],",
-          "  \"generated_at\": \"2025-10-21T23:43:39Z\",",
-          "  \"metrics\": {",
-          "    \"_totals\": {",
-          "      \"CONFIDENCE.HIGH\": 2,",
-          "      \"CONFIDENCE.LOW\": 0,",
-          "      \"CONFIDENCE.MEDIUM\": 0,",
-          "      \"CONFIDENCE.UNDEFINED\": 0,",
-          "      \"SEVERITY.HIGH\": 2,",
-          "      \"SEVERITY.LOW\": 0,",
-          "      \"SEVERITY.MEDIUM\": 0,",
-          "      \"SEVERITY.UNDEFINED\": 0,",
-          "      \"loc\": 11798,",
-          "      \"nosec\": 0,",
-          "      \"skipped_tests\": 3",
-          "    },",
-          "    \"firecrawl_demo/__init__.py\": {",
-          "      \"CONFIDENCE.HIGH\": 0,",
-          "      \"CONFIDENCE.LOW\": 0,",
-          "      \"CONFIDENCE.MEDIUM\": 0,",
-          "      \"CONFIDENCE.UNDEFINED\": 0,",
-          "      \"SEVERITY.HIGH\": 0,",
-          "      \"SEVERITY.LOW\": 0,",
-          "      \"SEVERITY.MEDIUM\": 0,",
-          "      \"SEVERITY.UNDEFINED\": 0,",
-          "      \"loc\": 15,",
-          "      \"nosec\": 0,",
-          "      \"skipped_tests\": 0",
-          "    },",
-          "    \"firecrawl_demo/application/__init__.py\": {",
-          "      \"CONFIDENCE.HIGH\": 0,",
-          "      \"CONFIDENCE.LOW\": 0,",
-          "      \"CONFIDENCE.MEDIUM\": 0,",
-          "      \"CONFIDENCE.UNDEFINED\": 0,",
-          "      \"SEVERITY.HIGH\": 0,",
-          "      \"SEVERITY.LOW\": 0,",
-          "      \"SEVERITY.MEDIUM\": 0,",
-          "      \"SEVERITY.UNDEFINED\": 0,\u2026"
-        ],
-        "truncated": true,
-        "omitted_characters": 21959,
-        "omitted_chunks": 36
-      },
-      "stderr_preview": {
-        "chunks": [
-          "[main]\tINFO\tprofile include tests: None",
-          "[main]\tINFO\tprofile exclude tests: None",
-          "[main]\tINFO\tcli include tests: None",
-          "[main]\tINFO\tcli exclude tests: None",
-          ""
-        ]
-      }
-    },
-    {
-      "tool": "sqlfluff",
-      "status": "completed_with_exit_code",
-      "returncode": 2,
-      "duration_seconds": 4.904,
-      "issues": [
-        {
-          "message": "sqlfluff exited with status 2 but did not report any findings.",
-          "severity": "error",
-          "code": "tool_exit_non_zero",
-          "tool": "sqlfluff"
-        }
-      ],
-      "summary": {
-        "issue_count": 1,
-        "files_with_issues": 0,
-        "severity_counts": {
-          "error": 1
-        }
-      },
-      "stderr_preview": {
-        "chunks": [
-          "User Error: dbt failed during project compilation. Consider  running  `dbt debug` or `dbt compile` to get more information from dbt. dbt_common.exceptions.base.CompilationError: Compilation Error in t",
-          "est contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
-          "  CONTRACTS_CANONICAL_JSON must be set before running contracts macros.",
-          "  ",
-          "  > in macro _contracts_canonical_payload (macros/contracts_shared.sql)",
-          "  > called by macro contracts_evidence_min_confidence (macros/contracts_shared.sql)",
-          "  > called by macro test_contracts_min_confidence (macros/contracts_shared.sql)",
-          "  > called by test contracts_min_confidence_stg_curated_dataset_confidence (models/staging/stg_curated_dataset.yml)",
-          ""
-        ]
-      }
+      "issues": []
     },
     {
       "tool": "trunk",
       "status": "not_installed",
-      "error": "[Errno 2] No such file or directory: 'trunk'",
+      "error": "Tool 'trunk' is not available in PATH. Install it with: poetry install --no-root --with dev",
       "summary": {
         "issue_count": 0
       },
@@ -780,7 +145,7 @@
       "tool": "biome",
       "status": "completed",
       "returncode": 0,
-      "duration_seconds": 1.556,
+      "duration_seconds": 1.555,
       "issues": [],
       "summary": {
         "issue_count": 0
