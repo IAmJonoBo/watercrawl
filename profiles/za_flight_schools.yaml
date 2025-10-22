@@ -10,6 +10,61 @@ dataset:
     - Contact Person
     - Contact Number
     - Contact Email Address
+  columns:
+    - name: Name of Organisation
+      type: text
+      format_hints:
+        case: title
+        collapse_whitespace: true
+    - name: Province
+      type: enum
+      allowed_values:
+        - Eastern Cape
+        - Free State
+        - Gauteng
+        - KwaZulu-Natal
+        - Limpopo
+        - Mpumalanga
+        - Northern Cape
+        - North West
+        - Western Cape
+      format_hints:
+        default: Unknown
+    - name: Status
+      type: enum
+      allowed_values:
+        - Verified
+        - Candidate
+        - Needs Review
+        - Duplicate
+        - Do Not Contact (Compliance)
+      format_hints:
+        default: Needs Review
+    - name: Website URL
+      type: url
+      format_hints:
+        ensure_https: true
+        strip_query: true
+        strip_fragment: true
+        strip_trailing_slash: true
+    - name: Contact Person
+      type: text
+      format_hints:
+        case: title
+        collapse_whitespace: true
+    - name: Contact Number
+      type: phone
+      required: true
+    - name: Contact Email Address
+      type: email
+      format_hints:
+        case: lower
+    - name: Fleet Size
+      type: numeric_with_units
+    - name: Runway Length
+      type: numeric_with_units
+    - name: Runway Length (m)
+      type: numeric_with_units
   numeric_units:
     - column: Fleet Size
       canonical_unit: count

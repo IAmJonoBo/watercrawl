@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from decimal import Decimal
-from numbers import Real
 from pathlib import Path
 from typing import Any
 
+import json
 import pandas as pd
-from pint import UnitRegistry
-from pint.errors import DimensionalityError, RedefinitionError, UndefinedUnitError
 
 from firecrawl_demo.domain.models import (
     EnrichmentResult,
@@ -20,28 +17,9 @@ from firecrawl_demo.domain.models import (
 )
 
 from . import config  # type: ignore
+from .normalization import ColumnNormalizationRegistry, normalize_numeric_value
 
 EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
-
-
-UNIT_REGISTRY = UnitRegistry()
-for definition in ("count = []", "plane = count", "planes = count", "aircraft = count"):
-    try:
-        UNIT_REGISTRY.define(definition)
-    except (
-        RedefinitionError
-    ):  # pragma: no cover - ignore duplicate definitions during reloads
-        continue
-
-
-NUMERIC_UNIT_RULES: dict[str, dict[str, Any]] = {
-    rule.column: {
-        "canonical_unit": rule.canonical_unit,
-        "cast": rule.cast,
-        "allowed_units": set(rule.allowed_units),
-    }
-    for rule in config.NUMERIC_UNIT_RULES
-}
 
 
 class ExcelExporter:
@@ -63,7 +41,11 @@ class ExcelExporter:
         pd.DataFrame(list(provenance_rows)).to_csv(self.provenance_path, index=False)
 
 
-def read_dataset(path: Path) -> pd.DataFrame:
+def read_dataset(
+    path: Path,
+    *,
+    registry: ColumnNormalizationRegistry | None = None,
+) -> pd.DataFrame:
     """Read and normalize a dataset from the given path."""
     suffix = path.suffix.lower()
     if suffix in {".xlsx", ".xls"}:
@@ -73,8 +55,40 @@ def read_dataset(path: Path) -> pd.DataFrame:
     else:
         raise ValueError(f"Unsupported file format: {suffix}")
 
-    normalized = normalize_numeric_units(frame)
-    normalized = normalize_categorical_values(normalized)
+    active_registry = registry or getattr(config, "COLUMN_NORMALIZATION_REGISTRY", None)
+    descriptors = getattr(config, "COLUMN_DESCRIPTORS", ())
+    diagnostics: dict[str, Any] = {}
+    normalized_columns: set[str] = set()
+
+    if active_registry and descriptors:
+        working = frame.copy()
+        for descriptor in descriptors:
+            if descriptor.name not in working.columns:
+                continue
+            result = active_registry.normalize_series(descriptor, working[descriptor.name])
+            working[descriptor.name] = result.series
+            diagnostics[descriptor.name] = result.diagnostics.to_dict()
+            normalized_columns.add(descriptor.name)
+        frame = working
+
+    remaining_rules: dict[str, dict[str, Any]] | None = None
+    if active_registry is not None:
+        remaining_rules = {
+            name: rule
+            for name, rule in active_registry.numeric_rules.items()
+            if name not in normalized_columns
+        }
+
+    normalized = normalize_numeric_units(frame, rules=remaining_rules)
+    normalized = normalize_categorical_values(
+        normalized, skip_columns=normalized_columns
+    )
+
+    if diagnostics:
+        report_path = config.INTERIM_DIR / "normalization_report.json"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(diagnostics, indent=2, sort_keys=True))
+
     return normalized
 
 
@@ -111,112 +125,44 @@ def append_enrichment_columns(
     return combined
 
 
-def normalize_numeric_units(frame: pd.DataFrame) -> pd.DataFrame:
+def normalize_numeric_units(
+    frame: pd.DataFrame,
+    *,
+    rules: dict[str, dict[str, Any]] | None = None,
+) -> pd.DataFrame:
     """Normalize numeric units in the dataframe according to predefined rules."""
+
     normalized = frame.copy()
-    # Cache allowed units for each rule
-    allowed_units_cache = {}
-    for column, rule in NUMERIC_UNIT_RULES.items():
+    rule_lookup = rules if rules is not None else dict(config.NUMERIC_UNIT_LOOKUP)
+    if not rule_lookup:
+        return normalized
+
+    for column, rule in rule_lookup.items():
         if column not in normalized.columns:
             continue
-        if column not in allowed_units_cache:
-            allowed_units_cache[column] = {
-                str(UNIT_REGISTRY(unit).units)
-                for unit in rule.get("allowed_units", set())
-            }
+        allowed_units = set(rule.get("allowed_units", set()))
 
-        allowed_units = allowed_units_cache[column]
-        normalized[column] = normalized[column].apply(
-            _make_quantity_applier(column, rule, allowed_units)
-        )
+        def _apply(value: Any) -> Any:
+            return normalize_numeric_value(
+                value=value,
+                column=column,
+                rule=rule,
+                allowed_units=allowed_units,
+            )
+
+        normalized[column] = normalized[column].apply(_apply)
+
     return normalized
 
 
-def _make_quantity_applier(column: str, rule: dict[str, Any], allowed_units: set[str]):
-    """Create an applier function for normalizing quantities."""
-
-    def apply_rule(value):
-        return _normalize_quantity(value, column, rule, allowed_units)
-
-    return apply_rule
-
-
-def normalize_categorical_values(frame: pd.DataFrame) -> pd.DataFrame:
+def normalize_categorical_values(
+    frame: pd.DataFrame, *, skip_columns: Iterable[str] | None = None
+) -> pd.DataFrame:
     """Normalize categorical values in the dataframe."""
     normalized = frame.copy()
-    if "Province" in normalized.columns:
+    skip = set(skip_columns or ())
+    if "Province" in normalized.columns and "Province" not in skip:
         normalized["Province"] = normalized["Province"].apply(normalize_province)
-    if "Status" in normalized.columns:
+    if "Status" in normalized.columns and "Status" not in skip:
         normalized["Status"] = normalized["Status"].apply(normalize_status)
     return normalized
-
-
-def _normalize_quantity(
-    value: Any, column: str, rule: dict[str, Any], allowed_units: set[str]
-) -> Any:
-    """Normalize a quantity value according to the given rule."""
-    if _is_missing(value):
-        return None
-
-    canonical_unit = rule["canonical_unit"]
-    quantity = _coerce_to_quantity(value, canonical_unit, column)
-
-    if quantity is None:
-        return None
-
-    unit_name = str(quantity.units)  # type: ignore
-    # If the parsed quantity is 'dimensionless', it means the value was numeric without a unit;
-    # substitute the canonical unit so validation against allowed units works as expected.
-    if unit_name == "dimensionless":
-        unit_name = str(UNIT_REGISTRY(canonical_unit).units)
-    if unit_name not in allowed_units:
-        raise ValueError(f"{column} unit '{unit_name}' is not supported")
-
-    try:
-        converted = quantity.to(canonical_unit)  # type: ignore
-    except DimensionalityError as exc:  # pragma: no cover - defensive safety
-        raise ValueError(f"{column} value '{value}' has incompatible units") from exc
-
-    magnitude = converted.magnitude
-    caster = rule.get("cast", float)
-    if caster is int:
-        return int(round(magnitude))
-    return caster(magnitude)
-
-
-def _coerce_to_quantity(value: Any, canonical_unit: str, column: str) -> Any:
-    """Coerce a value to a quantity with the canonical unit."""
-    if isinstance(value, (int, float, Decimal)) and not _is_missing(value):
-        return UNIT_REGISTRY.Quantity(value, canonical_unit)
-
-    if isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return None
-        try:
-            quantity = UNIT_REGISTRY(text)
-        except (UndefinedUnitError, ValueError):
-            try:
-                magnitude = float(text)
-            except ValueError as exc:  # pragma: no cover - invalid literal
-                raise ValueError(f"{column} value '{value}' is not a number") from exc
-            return UNIT_REGISTRY.Quantity(magnitude, canonical_unit)
-        if hasattr(quantity, "magnitude"):
-            magnitude = quantity.magnitude  # type: ignore[attr-defined]
-            if isinstance(magnitude, Real):
-                if str(getattr(quantity, "units", "dimensionless")) == "dimensionless":
-                    return UNIT_REGISTRY.Quantity(magnitude, canonical_unit)
-                return quantity
-            return quantity
-        if isinstance(quantity, Real):
-            return UNIT_REGISTRY.Quantity(quantity, canonical_unit)
-        raise ValueError(f"{column} value '{value}' is not supported")
-
-    raise ValueError(f"{column} value '{value}' is not supported")
-
-
-def _is_missing(value: Any) -> bool:
-    """Check if a value is missing or empty."""
-    if isinstance(value, str):
-        return not value.strip()
-    return pd.isna(value)

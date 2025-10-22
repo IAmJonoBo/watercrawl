@@ -6,9 +6,10 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from firecrawl_demo.core.profiles import (
+    ColumnDescriptor,
     NumericUnitRule,
     ProfileError,
     RefinementProfile,
@@ -49,6 +50,12 @@ LOGS_DIR = DATA_DIR / "logs"
 # Profile loading -----------------------------------------------------------
 PROFILE: RefinementProfile
 PROFILE_PATH: Path
+COLUMN_DESCRIPTORS: tuple[ColumnDescriptor, ...]
+NUMERIC_UNIT_LOOKUP: dict[str, dict[str, Any]]
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from firecrawl_demo.core.normalization import ColumnNormalizationRegistry
+
+COLUMN_NORMALIZATION_REGISTRY: Any
 
 
 def _resolve_profile_from_env() -> tuple[RefinementProfile, Path]:
@@ -127,6 +134,7 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
     global RESEARCH_QUERIES, NUMERIC_UNIT_RULES
     global RESEARCH_ALLOW_PERSONAL_DATA, RESEARCH_RATE_LIMIT_SECONDS
     global RESEARCH_CONNECTOR_SETTINGS
+    global COLUMN_DESCRIPTORS, NUMERIC_UNIT_LOOKUP, COLUMN_NORMALIZATION_REGISTRY
 
     PROFILE = profile
     PROFILE_PATH = profile_path
@@ -174,6 +182,22 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
         }
         for name, settings in profile.research.connectors.items()
     }
+    COLUMN_DESCRIPTORS = tuple(profile.dataset.columns)
+
+    from firecrawl_demo.core.normalization import (  # local import to avoid cycles
+        build_default_registry,
+        build_numeric_rule_lookup,
+    )
+    from firecrawl_demo.domain.compliance import normalize_phone, validate_email
+
+    numeric_lookup = build_numeric_rule_lookup(NUMERIC_UNIT_RULES)
+    NUMERIC_UNIT_LOOKUP = numeric_lookup
+    registry = build_default_registry(
+        phone_normalizer=normalize_phone,
+        email_validator=validate_email,
+    )
+    registry.numeric_rules.update(numeric_lookup)
+    COLUMN_NORMALIZATION_REGISTRY = registry
 
 
 _profile_init, _profile_path_init = _resolve_profile_from_env()
@@ -223,6 +247,23 @@ try:
     RESEARCH_RETRY_BACKOFF_BASE_SECONDS  # type: ignore[name-defined]
 except NameError:
     RESEARCH_RETRY_BACKOFF_BASE_SECONDS = 1.0
+
+try:
+    COLUMN_DESCRIPTORS  # type: ignore[name-defined]
+except NameError:
+    COLUMN_DESCRIPTORS = ()
+
+try:
+    NUMERIC_UNIT_LOOKUP  # type: ignore[name-defined]
+except NameError:
+    NUMERIC_UNIT_LOOKUP = {}
+
+try:
+    COLUMN_NORMALIZATION_REGISTRY  # type: ignore[name-defined]
+except NameError:
+    from firecrawl_demo.core.normalization import build_default_registry
+
+    COLUMN_NORMALIZATION_REGISTRY = build_default_registry()
 
 
 def switch_profile(
