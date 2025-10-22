@@ -101,6 +101,7 @@ The repository includes comprehensive timeout and retry configurations for all d
 - **pnpm**: Configured via `.npmrc` with 60-second timeout and 5 retries with exponential backoff
 
 To verify all configurations are correct:
+
 ```bash
 ./scripts/test_dependency_config.sh
 ```

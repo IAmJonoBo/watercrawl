@@ -100,6 +100,7 @@ poetry run python -c "from firecrawl_demo.domain.contracts import export_all_avr
 ```
 
 **Contract guarantees:**
+
 - All domain models have versioned Pydantic equivalents in `firecrawl_demo/domain/contracts.py`
 - JSON Schema **and Avro** export available for integration testing, registries, and API docs
 - Backward compatibility adapters in `firecrawl_demo/domain/models.py`
@@ -108,6 +109,7 @@ poetry run python -c "from firecrawl_demo.domain.contracts import export_all_avr
 - Plan→commit artefacts must satisfy `PlanArtifactContract`/`CommitArtifactContract` before execution
 
 **When to update contract versions:**
+
 - Increment **patch** (1.0.x) for documentation or non-breaking clarifications
 - Increment **minor** (1.x.0) for backward-compatible additions (new optional fields)
 - Increment **major** (x.0.0) for breaking changes (removing fields, changing validation rules)
