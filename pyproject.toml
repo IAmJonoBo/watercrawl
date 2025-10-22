@@ -55,8 +55,6 @@ pandas-stubs = "*"
 types-requests = "2.28.11"
 jupyter = "1.1.1"
 great-expectations = { version = "1.7.1", python = ">=3.12,<3.14" }
-dbt-core = { version = "1.11.0", python = ">=3.12,<3.14" }
-dbt-duckdb = "^1.9.6"
 hypothesis = "6.142.2"
 pydocstyle = "^6.3.0"
 safety = "^3.6.2"
@@ -77,6 +75,16 @@ axe-selenium-python = "^2.1.6"
 selenium = "^4.37.0"
 mutmut = "3.3.1"
 tomli = "^2.3.0"
+
+[tool.poetry.group.dbt]
+optional = true
+
+[tool.poetry.group.dbt.dependencies]
+# dbt dependencies are heavy and platform-specific. Keep them in an optional group
+# so the baseline dev environment can resolve on machines where dbt-core 1.11.0
+# (or platform wheels) are not available. To enable locally: `poetry install --with dbt`.
+dbt-core = { version = "1.10.13", python = ">=3.12,<3.15" }
+dbt-duckdb = "^1.9.6"
 
 [tool.poetry.group.ui]
 optional = true

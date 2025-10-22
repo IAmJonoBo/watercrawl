@@ -15,7 +15,10 @@ except ImportError:
     pd = None  # type: ignore
     _PANDAS_AVAILABLE = False
 
-from firecrawl_demo.domain.contracts import EvidenceRecordContract, PipelineReportContract
+from firecrawl_demo.domain.contracts import (
+    EvidenceRecordContract,
+    PipelineReportContract,
+)
 from firecrawl_demo.domain.models import EvidenceRecord, PipelineReport
 from firecrawl_demo.integrations.telemetry.lineage import LineageContext
 
@@ -88,7 +91,9 @@ class PipelineService(ABC):
         """Return the most recent pipeline report, if any."""
 
     @property
-    def last_contract(self) -> PipelineReportContract | None:  # pragma: no cover - optional helper
+    def last_contract(
+        self,
+    ) -> PipelineReportContract | None:  # pragma: no cover - optional helper
         """Return the most recent pipeline report contract, if available."""
         report = self.last_report
         return report.to_contract() if report is not None else None

@@ -5,4 +5,9 @@
 # runners without requiring manual stub configuration.
 set -euo pipefail
 
-poetry run python scripts/collect_problems.py "$@"
+# Add --summary by default if no arguments provided or if not already present
+if [[ $# -eq 0 ]] || [[ ! "$*" =~ --summary ]]; then
+    poetry run python scripts/collect_problems.py "$@" --summary
+else
+    poetry run python scripts/collect_problems.py "$@"
+fi

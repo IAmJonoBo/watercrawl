@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from collections.abc import Iterable
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
-
-import time
 
 import pandas as pd
 import pytest
@@ -20,7 +19,8 @@ from firecrawl_demo.application.row_processing import (
     describe_changes,
     process_row,
 )
-from firecrawl_demo.core import cache as cache_module, config
+from firecrawl_demo.core import cache as cache_module
+from firecrawl_demo.core import config
 from firecrawl_demo.domain.contracts import EvidenceRecordContract
 from firecrawl_demo.domain.models import (
     EvidenceRecord,
@@ -263,9 +263,7 @@ async def test_pipeline_lookup_concurrency_improves_throughput(monkeypatch) -> N
     monkeypatch.setattr(config, "RESEARCH_CACHE_TTL_HOURS", None)
     monkeypatch.setattr(config, "RESEARCH_MAX_RETRIES", 0)
     monkeypatch.setattr(config, "RESEARCH_RETRY_BACKOFF_BASE_SECONDS", 0.0)
-    monkeypatch.setattr(
-        config, "RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD", 5
-    )
+    monkeypatch.setattr(config, "RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD", 5)
     monkeypatch.setattr(config, "RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS", 30.0)
 
     class SlowAdapter(ResearchAdapter):

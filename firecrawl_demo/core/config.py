@@ -162,6 +162,40 @@ def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
 _profile_init, _profile_path_init = _resolve_profile_from_env()
 _apply_profile(_profile_init, _profile_path_init)
 
+# Safety defaults: ensure tests and runtime environments that load this module
+# without explicitly populated profile fields still have reasonable values.
+# These are conservative defaults and can be overridden by calling switch_profile
+# or setting environment/profile values.
+try:
+    RESEARCH_CONCURRENCY_LIMIT  # type: ignore[name-defined]
+except NameError:
+    RESEARCH_CONCURRENCY_LIMIT = 4
+
+try:
+    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD  # type: ignore[name-defined]
+except NameError:
+    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
+
+try:
+    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS  # type: ignore[name-defined]
+except NameError:
+    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS = 60.0
+
+try:
+    RESEARCH_CACHE_TTL_HOURS  # type: ignore[name-defined]
+except NameError:
+    RESEARCH_CACHE_TTL_HOURS = None
+
+try:
+    RESEARCH_MAX_RETRIES  # type: ignore[name-defined]
+except NameError:
+    RESEARCH_MAX_RETRIES = 3
+
+try:
+    RESEARCH_RETRY_BACKOFF_BASE_SECONDS  # type: ignore[name-defined]
+except NameError:
+    RESEARCH_RETRY_BACKOFF_BASE_SECONDS = 1.0
+
 
 def switch_profile(
     *,

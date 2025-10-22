@@ -539,4 +539,3 @@ class TestPipelineReportAdapters:
         assert restored.metrics == report.metrics
         assert restored.quality_issues[0].code == quality[0].code
         assert restored.sanity_findings[0].issue == sanity[0].issue
-

@@ -26,7 +26,7 @@ jobs:
           python -m pip install poetry --timeout 60 --retries 5
       - name: Create wheelhouse
         run: |
-          python scripts/provision_wheelhouse.py --output wheelhouse --python ${{ matrix.python-version }}
+          python scripts/provision_wheelhouse.py --output wheelhouse --python ${{ matrix.python-version }} --dev
       - name: Upload wheelhouse artifact
         uses: actions/upload-artifact@v4
         with:

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
-
 import asyncio
+from collections.abc import Iterable, Mapping
 from typing import Callable
 
 import pytest
 
 from firecrawl_demo.core import config
-
 from firecrawl_demo.core.external_sources import triangulate_organisation
 from firecrawl_demo.governance.secrets import EnvSecretsProvider
 from firecrawl_demo.integrations.adapters import research

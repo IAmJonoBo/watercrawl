@@ -7,30 +7,30 @@ services:
       dockerfile: Dockerfile
     image: watercrawl:latest
     container_name: watercrawl-app
-    
+
     # Security hardening per WC-13
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     read_only: true
-    
+
     # Writable temporary directories (required for Python)
     tmpfs:
       - /tmp:uid=1000,gid=1000,mode=1777,size=100m
       - /app/.cache:uid=1000,gid=1000,mode=0755,size=50m
-    
+
     # Environment configuration
     environment:
       - FEATURE_ENABLE_FIRECRAWL_SDK=${FEATURE_ENABLE_FIRECRAWL_SDK:-0}
       - ALLOW_NETWORK_RESEARCH=${ALLOW_NETWORK_RESEARCH:-0}
       - REFINEMENT_PROFILE=${REFINEMENT_PROFILE:-za_flight_schools}
-    
+
     # Volume mounts for data (read-only by default)
     volumes:
       - ./data:/app/data:ro
       - ./output:/app/output:rw
-    
+
     # Resource limits
     deploy:
       resources:
@@ -40,7 +40,7 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-    
+
     # Healthcheck
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
@@ -48,11 +48,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    
+
     # Network
     networks:
       - watercrawl-net
-    
+
     # User
     user: "1000:1000"
 

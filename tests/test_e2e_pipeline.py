@@ -7,13 +7,14 @@ import pandas as pd
 import pytest
 
 from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.application.progress import PipelineProgressListener
 from firecrawl_demo.application.quality import QualityGate
 from firecrawl_demo.application.row_processing import (
     RowProcessingRequest,
     process_row,
 )
-from firecrawl_demo.application.progress import PipelineProgressListener
 from firecrawl_demo.core import config
+from firecrawl_demo.domain.models import SchoolRecord
 from firecrawl_demo.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
@@ -23,7 +24,6 @@ from firecrawl_demo.integrations.telemetry.drift import (
     log_whylogs_profile,
     save_baseline,
 )
-from firecrawl_demo.domain.models import SchoolRecord
 
 
 class StubResearchAdapter(ResearchAdapter):

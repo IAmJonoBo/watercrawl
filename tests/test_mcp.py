@@ -10,8 +10,7 @@ import yaml
 
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.core import config
-from firecrawl_demo.domain.contracts import CONTRACT_VERSION
-from firecrawl_demo.domain.contracts import EvidenceRecordContract
+from firecrawl_demo.domain.contracts import CONTRACT_VERSION, EvidenceRecordContract
 from firecrawl_demo.domain.models import (
     EvidenceRecord,
     evidence_record_from_contract,

@@ -513,3 +513,128 @@ def test_collect_tracks_tool_execution_duration() -> None:
     assert "total_duration_seconds" in summary["performance"]
     assert "slowest_tools" in summary["performance"]
     assert isinstance(summary["performance"]["slowest_tools"], list)
+
+
+def test_check_tool_available() -> None:
+    """Test the tool availability checker."""
+    # Python should always be available
+    assert collect_problems._check_tool_available("python3") is True
+    # This fake tool should never exist
+    assert collect_problems._check_tool_available("nonexistent-tool-xyz") is False
+
+
+def test_black_parser_detects_reformatting_needed() -> None:
+    """Test that black parser correctly identifies files needing reformatting."""
+    # Simulate black --check output when files need reformatting
+    result = subprocess.CompletedProcess(
+        ["black", ".", "--check"],
+        returncode=1,
+        stdout="",
+        stderr="would reformat firecrawl_demo/core/example.py\nOh no! 💥 💔 💥\n1 file would be reformatted.",
+    )
+    parsed = collect_problems.parse_black_output(result)
+    assert parsed["summary"]["issue_count"] == 1
+    assert parsed["summary"]["fixable"] == 1
+    assert parsed["issues"][0]["path"] == "firecrawl_demo/core/example.py"
+    assert parsed["issues"][0]["fixable"] is True
+
+
+def test_black_parser_handles_clean_output() -> None:
+    """Test that black parser handles clean code correctly."""
+    result = subprocess.CompletedProcess(
+        ["black", ".", "--check"],
+        returncode=0,
+        stdout="All done! ✨ 🍰 ✨\n10 files would be left unchanged.",
+        stderr="",
+    )
+    parsed = collect_problems.parse_black_output(result)
+    assert parsed["summary"]["issue_count"] == 0
+
+
+def test_isort_parser_detects_unsorted_imports() -> None:
+    """Test that isort parser correctly identifies files with unsorted imports."""
+    result = subprocess.CompletedProcess(
+        ["isort", ".", "--check-only"],
+        returncode=1,
+        stdout="ERROR: firecrawl_demo/core/example.py Imports are incorrectly sorted\nSkipped 1 files",
+        stderr="",
+    )
+    parsed = collect_problems.parse_isort_output(result)
+    assert parsed["summary"]["issue_count"] == 1
+    assert parsed["summary"]["fixable"] == 1
+    assert parsed["issues"][0]["path"] == "firecrawl_demo/core/example.py"
+
+
+def test_isort_parser_handles_clean_output() -> None:
+    """Test that isort parser handles clean imports correctly."""
+    result = subprocess.CompletedProcess(
+        ["isort", ".", "--check-only"],
+        returncode=0,
+        stdout="",
+        stderr="",
+    )
+    parsed = collect_problems.parse_isort_output(result)
+    assert parsed["summary"]["issue_count"] == 0
+
+
+def test_summary_includes_tools_not_available() -> None:
+    """Test that summary includes list of tools that are not available."""
+    results = [
+        {
+            "tool": "ruff",
+            "status": "not_available",
+            "error": "Tool 'ruff' is not available in PATH",
+            "summary": {"issue_count": 0},
+            "issues": [],
+        },
+        {
+            "tool": "mypy",
+            "status": "not_available",
+            "error": "Tool 'mypy' is not available in PATH",
+            "summary": {"issue_count": 0},
+            "issues": [],
+        },
+        {
+            "tool": "yamllint",
+            "status": "completed",
+            "summary": {"issue_count": 0},
+            "issues": [],
+        },
+    ]
+    
+    summary = collect_problems.build_overall_summary(results)
+    
+    assert "tools_not_available" in summary
+    assert "ruff" in summary["tools_not_available"]
+    assert "mypy" in summary["tools_not_available"]
+    assert "yamllint" not in summary["tools_not_available"]
+    
+    # Should include setup guidance
+    assert "setup_guidance" in summary
+    guidance = summary["setup_guidance"][0]
+    assert "ruff" in guidance["tools"]
+    assert "mypy" in guidance["tools"]
+    assert "poetry install" in guidance["solution"]
+
+
+def test_builtin_specs_include_black_and_isort() -> None:
+    """Test that builtin tool specs include black and isort with autofix commands."""
+    registry = collect_problems.build_tool_registry()
+    tools_by_name = {spec.name: spec for spec in registry.values()}
+    
+    # Check black is included
+    if "black" in tools_by_name:
+        black_spec = tools_by_name["black"]
+        assert black_spec.optional is True
+        assert len(black_spec.autofix) > 0
+        # Should have both poetry and direct commands
+        assert any("poetry" in cmd for cmd in black_spec.autofix)
+        assert any("black" in cmd for cmd in black_spec.autofix)
+    
+    # Check isort is included
+    if "isort" in tools_by_name:
+        isort_spec = tools_by_name["isort"]
+        assert isort_spec.optional is True
+        assert len(isort_spec.autofix) > 0
+        assert any("poetry" in cmd for cmd in isort_spec.autofix)
+

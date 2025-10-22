@@ -354,11 +354,27 @@ def ensure_python_package(
     repo_root = Path(__file__).parent.parent.parent
     local_wheelhouse = repo_root / "wheelhouse"
     if local_wheelhouse.exists():
-        for p in local_wheelhouse.rglob("*.whl"):
-            name = p.name.lower()
-            if package_name.lower() in name and (not version or str(version) in name):
-                install_wheel_into_env(p, python_executable=python_executable)
-                return
+        # Use pip with --no-index --find-links so pip will resolve dependencies
+        # using the wheelhouse rather than hitting PyPI. This installs the
+        # package and any dependencies from the wheelhouse.
+        pkg = package_name if not version else f"{package_name}=={version}"
+        cmd = [
+            python_executable,
+            "-m",
+            "pip",
+            "install",
+            "--no-index",
+            "--find-links",
+            str(local_wheelhouse),
+            pkg,
+        ]
+        try:
+            subprocess.check_call(cmd)
+            return
+        except subprocess.CalledProcessError as exc:
+            raise BootstrapError(
+                f"Failed to install {pkg} from local wheelhouse: {exc}"
+            ) from exc
 
     # 1) Try vendored wheel
     if version:

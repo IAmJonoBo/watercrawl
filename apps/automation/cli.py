@@ -25,12 +25,12 @@ from firecrawl_demo.domain.contracts import CommitArtifactContract, PlanArtifact
 from firecrawl_demo.integrations.contracts.shared_config import (
     environment_payload as contracts_environment_payload,
 )
+from firecrawl_demo.integrations.integration_plugins import contract_registry
 from firecrawl_demo.interfaces.cli_base import (
     PlanCommitError,
     PlanCommitGuard,
     load_cli_environment,
 )
-from firecrawl_demo.integrations.integration_plugins import contract_registry
 from scripts import bootstrap_python, collect_problems
 
 CLI_ENVIRONMENT = load_cli_environment()
