@@ -138,17 +138,36 @@ Non-functional requirements
 
 Cut-over plan (Firecrawl → Crawlkit)
 
-Phase 0 — Identify callsites 1. Grep for any firecrawl\_ imports / firecrawl_demo references; list functions used. 2. Add the compatibility adapter fetch_markdown(url, depth, include_subpaths) in crawlkit.adapter.firecrawl_compat.
+Phase 0 — Discovery & guardrails
+1. Grep for any `firecrawl_` imports / `firecrawl_demo` references; catalogue call signatures and owning teams.
+2. Draft the compatibility adapter `fetch_markdown(url, depth, include_subpaths)` in `crawlkit.adapter.firecrawl_compat` and map return-shape parity gaps.
+3. Capture plan artefacts up front (`qa plan --generate-plan`) and log intended write targets per the [plan→commit guardrail](README.md#features).
+4. Baseline QA: execute the root [Tests & QA suite](README.md#tests--qa) in dry-run mode via `poetry run python -m apps.automation.cli qa all --dry-run` to log existing failures before changes.
 
-Phase 1 — Drop-in replacement 1. Implement adapter to call fetch → distill pipeline and assemble the same return shape (Markdown, link graph). 2. Feature flag FEATURE_ENABLE_FIRECRAWL_SDK → default off; new flag FEATURE_ENABLE_CRAWLKIT=1. 3. Keep tests green using golden-file Markdown comparisons on a fixed corpus.
+Phase 1 — Drop-in replacement with QA gates
+1. Implement adapter to call `fetch → distill → extract` and assemble the same return shape (Markdown, link graph).
+2. Feature flag `FEATURE_ENABLE_FIRECRAWL_SDK` → default off; introduce `FEATURE_ENABLE_CRAWLKIT=1` with telemetry proving parity.
+3. Enforce plan→commit artefacts with `poetry run python -m apps.automation.cli qa plan --write-plan --write-commit` so MCP and CLI runs satisfy audit requirements.
+4. Run mandatory QA before merge: `./scripts/run_pytest.sh ...`, `poetry run ruff check .`, `poetry run mypy .`, `poetry run bandit -r firecrawl_demo`, and the Promptfoo evaluation gate from [docs/mcp-promptfoo-gate.md](docs/mcp-promptfoo-gate.md) to unblock Copilot write access.
+5. Keep tests green using golden-file Markdown comparisons on a fixed corpus; update corpus fixtures as needed with plan artefacts attached.
 
-Phase 2 — Remove Firecrawl 1. Delete firecrawl_demo/ and any vendor stubs; remove env vars; update docs. 2. Lock dependency graph (poetry.lock) and CI matrices for 3.13. 3. Publish migration notes in CHANGELOG.md.
+Phase 2 — Firecrawl deprecation & documentation
+1. Delete `firecrawl_demo/` and vendor stubs, remove env vars, and update docs/CLI help to reference Crawlkit endpoints.
+2. Lock dependency graph (`poetry.lock`) and CI matrices for Python 3.13; regenerate SBOM/signature artefacts during build.
+3. Publish migration notes in `CHANGELOG.md` and surface roll-out steps in `Next_Steps.md` with QA evidence links.
+4. Confirm MCP Promptfoo scores meet thresholds; attach latest `promptfoo_results.json` to the migration evidence bundle.
+
+Phase 3 — Post-cut-over hardening
+1. Remove Firecrawl compatibility adapter after downstream consumers validate new APIs.
+2. Enable hard gate enforcement for MCP (no overrides) and monitor telemetry for regressions.
+3. Schedule regression QA runs (`qa lint`, `qa typecheck`, `qa mutation --dry-run`) nightly until the new stack is stable.
 
 Definition of Done
-• All Firecrawl callsites route through crawlkit.adapter.
-• CLI/API parity: /markdown and /entities endpoints produce stable outputs on corpus.
-• Robots decisions logged; DSAR endpoints present; region toggles applied.
-• Perf & resource budgets pass in CI.
+• All Firecrawl callsites route through `crawlkit.adapter` and legacy modules are removed.
+• CLI/API parity: `/markdown` and `/entities` endpoints produce stable outputs on the curated corpus, with evidence recorded via plan→commit artefacts.
+• Robots decisions logged; DSAR endpoints present; region toggles applied and validated in compliance logs.
+• Perf & resource budgets pass in CI; QA evidence includes passing `pytest`, `ruff`, `mypy`, `bandit`, `promptfoo eval`, and build artifacts noted in [README.md#tests--qa](README.md#tests--qa).
+• MCP gate enforcement meets [Promptfoo policy expectations](docs/mcp-promptfoo-gate.md).
 
 ⸻
 
@@ -199,6 +218,32 @@ Implement ComplianceGuard with decide_collection(kind, region) and DSAR export/d
 crawlkit.orchestrate
 • Celery chains: fetch.s → distill.s → extract.s → export.s
 • REST: FastAPI endpoints; streaming progress via SSE.
+
+### Codex prompt seed catalogue
+
+| Module | Prompt anchor | Notes |
+| --- | --- | --- |
+| `crawlkit.fetch` | “Generate a Scrapy spider PoliteSpider…” | Seed ensures polite crawling plus Playwright fallback; reuse when Copilot scaffolds fetch routines.
+| `crawlkit.distill` | “Implement distill(html, url, profile)…” | Guides DOM distillation and Markdown rendering; tune `profile="docs"` when preserving tables.
+| `crawlkit.extract` | “Build extract_entities(doc, enrich=True)…“ | Reinforces MX-only validation, aviation adapters, and provenance logging.
+| `crawlkit.compliance` | “Implement ComplianceGuard…” | Captures regional policy toggles, DSAR stubs, and compliance artifact locations.
+| `crawlkit.orchestrate` | “Wire Celery chains fetch → distill → extract…” | Keeps REST + Celery parity while satisfying plan→commit gating.
+
+Store these prompts with plan artefacts when Copilot generates code so reviewers can trace model inputs.
+
+### ML enrichment improvements roadmap
+
+• Upgrade entity extraction with JSON-LD-first strategy, fallback spaCy NER tuned for ZA aviation domains.
+• Expand ML scoring: evaluate enrichment precision/recall weekly; capture metrics in `artifacts/ml/enrichment_metrics.json`.
+• Integrate structured evidence weighting (press vs regulator) before contact promotion; log weights in evidence log.
+• Introduce anomaly detection for fleet data drift leveraging whylogs baselines referenced in [README.md#features](README.md#features).
+
+### MCP & Copilot workflow expectations
+
+• MCP sessions must validate Promptfoo scores before allowing writes (see [docs/mcp-promptfoo-gate.md](docs/mcp-promptfoo-gate.md)).
+• Plan→commit artefacts (`*.plan`/`*.commit`) are mandatory before invoking MCP write surfaces; generate via `poetry run python -m apps.automation.cli qa plan --write-plan --write-commit`.
+• Reference `Next_Steps.md` for current tasks, deliverables, and gate statuses; update after each migration tranche.
+• Copilot agents should run the QA suite enumerated in [README.md#tests--qa](README.md#tests--qa) prior to proposing patches and attach logs to plan artefacts.
 
 ⸻
 
