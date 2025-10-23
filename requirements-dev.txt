@@ -885,9 +885,9 @@ httpx==0.28.1 ; python_version >= "3.13" and python_version < "3.15" \
 hyperlink==21.0.0 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:427af957daa58bc909471c6c40f74c5450fa123dd093fc53efd2e91d2705a56b \
     --hash=sha256:e6b14c37ecb73e89c77d78cdb4c2cc8f3fb59a885c5b3f819ff4ed80f25af1b4
-hypothesis==6.142.2 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:c4204a2ce327e45fbaf83a2b58142a285135698dc1d08e368ae9901f06b49e64 \
-    --hash=sha256:cc6c6e66c06aff695dd255501a767b528e00d84ce3572160425a9ba5e4a47845
+hypothesis==6.142.3; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:2fc19a2824c9bdc3f8e39d87861fbdf1d766982b20d54646a642bce82bcac179 \
+    --hash=sha256:f1aaf83f6cc0c50f1b61e167974a8a67377dce13e0ea628b67a83f574ef30b85
 identify==2.6.15 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:1181ef7608e00704db228516541eb83a88a9f94433a8c80bb9b5bd54b1d81757 \
     --hash=sha256:e4f4864b96c6557ef2a1e1c951771838f4edc9df3a72ec7118b338801b11c7bf
