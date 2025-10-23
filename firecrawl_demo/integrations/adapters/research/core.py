@@ -253,9 +253,7 @@ class CrawlkitResearchAdapter:
         return baseline, _unique(urls)
 
     def _default_policy(self, organisation: str, province: str) -> Mapping[str, Any]:
-        policy = FetchPolicy(region="ZA")
-        policy.max_depth = 1
-        policy.max_pages = 5
+        policy = FetchPolicy(region="ZA", max_depth=1, max_pages=5)
         return policy.to_dict()
 
     def _build_finding_from_record(self, record: Mapping[str, Any]) -> ResearchFinding | None:
