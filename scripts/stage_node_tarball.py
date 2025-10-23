@@ -119,7 +119,7 @@ def verify_checksum(tarball_path: Path, checksum_file: Path) -> bool:
         print(f"✓ Checksum verified: {actual_checksum}")
         return True
 
-    print(f"✗ Checksum mismatch!")
+    print("✗ Checksum mismatch!")
     print(f"  Expected: {expected_checksum}")
     print(f"  Actual:   {actual_checksum}")
     return False
