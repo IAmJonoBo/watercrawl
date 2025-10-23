@@ -98,6 +98,11 @@ poetry run python -m tools.security.offline_safety --requirements requirements.t
 poetry run pre-commit run --all-files
 ```
 
+> `requirements-dev.txt` hashes refreshed on **2025-10-23 (UTC)** using
+> `poetry export -f requirements.txt --with dev --output requirements-dev.txt`.
+> Re-run the export whenever dependencies change to keep bootstrap installs
+> reproducible.
+
 ### Testing
 
 ```bash

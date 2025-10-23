@@ -43,6 +43,19 @@
 
 ## Steps (iteration log)
 
+- [x] 2025-10-23 — requirements-dev hash refresh (agent) — _Owner: Platform · Due: 2025-10-23_:
+  - Ran `poetry export -f requirements.txt --with dev --output requirements-dev.txt` after installing the export plugin.
+  - Verified hashes by syncing a clean uv virtualenv with `uv pip sync --python .hash-env/bin/python --require-hashes requirements-dev.txt`.
+  - Updated bootstrap docs (`README.md`, `docs/operations.md`, `docs-starlight/.../operations.md`) with the 2025-10-23 regeneration timestamp and marked the risk as resolved.
+  - Baseline QA prior to changes:
+    - `poetry run pytest --maxfail=1 --disable-warnings --cov -q` ❌ (`ModuleNotFoundError: duckdb` in tests/test_sqlfluff_runner.py)
+    - `poetry run ruff check .` ❌ (22 lint errors in legacy modules/tests)
+    - `poetry run mypy .` ❌ (44 errors across 20 files; legacy typing debt)
+    - `poetry run bandit -r .` ⚠️ (aborted after slow scan progress at 1%)
+    - `poetry build` ✅
+  - Post-change validation: `uv pip sync --require-hashes requirements-dev.txt` on fresh env ✅.
+  - Next: Address legacy duckdb/test typing debts during broader QA remediation sweep.
+
 - [ ] 2025-10-31 — Pipeline marshmallow extra fix (agent) — _Owner: QA/Platform · Due: 2025-11-07_:
   - Added a `pipeline` Poetry extra with marshmallow `<4`, refreshed the vendored wheel to 3.26.1, and taught
     `scripts/run_pytest.sh` to install the extra (falling back to vendored wheels when offline).
@@ -229,7 +242,7 @@ Execute in this order; each item must meet its gate before promotion.
 - **[DOCUMENTED]** ~~Block MCP/agent sessions in hardened platform distributions unless `promptfoo eval` has passed in the active branch.~~ Gate policy documented in `docs/mcp-promptfoo-gate.md`: Three-phase rollout (advisory→soft→hard gate) with minimum thresholds (faithfulness≥0.85, context_precision≥0.80, tool_use≥0.90) and 7-day freshness requirement.
 - Kafka lineage transport requires the optional `kafka-python` dependency; platform team to confirm packaging before enabling Kafka emission in CI/staging.
 - **[RESOLVED]** ~~Ensure developer images document/install external CLI deps (`markdownlint-cli2`, `actionlint`, `hadolint`) so pre-commit parity holds in clean environments.~~ `actionlint` and `hadolint` binaries are now bundled in `tools/bin/` for all platforms (Linux x86_64/arm64, macOS x86_64/arm64) to support ephemeral runners without internet access. Bootstrap utilities check for bundled binaries first. `markdownlint-cli2` still requires Node hooks via `pre-commit`'s bundled `nodeenv`.
-- **[ACTION REQUIRED]** Regenerate `requirements-dev.txt` hashes so transitive dependencies like `narwhals` resolve under `--require-hashes` installs. Command: `poetry export -f requirements.txt --with dev --output requirements-dev.txt` (requires network access for Poetry/PyPI).
+- **[RESOLVED 2025-10-23]** `requirements-dev.txt` hashes refreshed with `poetry export -f requirements.txt --with dev --output requirements-dev.txt`; rerun the export after dependency updates to keep offline installs reproducible.
 - Python 3.15 compatibility currently blocked by missing wheels for `argon2-cffi-bindings`, `cryptography`, `dbt-extractor`, `duckdb`, `psutil`, `tornado`, and other tracked packages; track expectations via `presets/dependency_blockers.toml`, ongoing findings in `tools/dependency_matrix/report.json`, and guard outputs in `tools/dependency_matrix/status.json`.
 - [x] 2025-10-21 — Implemented Sigstore signing guardrail: CI now signs artifacts in the build job and enforces `scripts.verify_artifact_signatures` to validate bundle identity before upload; supply-chain plan→commit gate updated accordingly.
 - Node tooling requires certificate pinning/offline cache: `pre-commit run markdownlint-cli2` and `scripts/collect_problems.py` fail under SSL `Missing Authority Key Identifier` when nodeenv resolves `index.json`; bundle cached Node tarballs or configure trusted CAs before treating markdownlint as blocking.

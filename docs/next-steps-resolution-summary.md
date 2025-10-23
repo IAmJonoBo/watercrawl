@@ -102,7 +102,7 @@ This document summarizes the resolution of active risks and open tasks from Next
 
 ### 3. Requirements-dev.txt Hash Regeneration (REQUIRES NETWORK)
 
-- **Status**: Needs `poetry export -f requirements.txt --with dev --output requirements-dev.txt`
+- **Status**: ✅ Completed 2025-10-23 (UTC) with `poetry export -f requirements.txt --with dev --output requirements-dev.txt`
 - **Blocker**: Current environment has network timeout issues with PyPI
 - **Owner**: Platform team
 - **Action**: Run export in environment with reliable network access
