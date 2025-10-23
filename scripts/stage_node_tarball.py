@@ -16,6 +16,7 @@ import sys
 import urllib.request
 from pathlib import Path
 from typing import NamedTuple
+from urllib.parse import urlparse
 
 
 class NodeRelease(NamedTuple):
@@ -82,11 +83,20 @@ def build_release_info(version: str) -> NodeRelease:
 def download_file(url: str, destination: Path) -> None:
     """Download a file from URL to destination path."""
     print(f"Downloading {url} → {destination}")
+
+    # Only allow explicit http/https schemes to avoid unexpected file: or custom schemes.
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise RuntimeError(
+            f"Unsupported URL scheme '{parsed.scheme}' for {url}; only http/https are allowed"
+        )
+
     try:
         with urllib.request.urlopen(url) as response:
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(response.read())
     except Exception as exc:
+        raise RuntimeError(f"Failed to download {url}: {exc}") from exc
         raise RuntimeError(f"Failed to download {url}: {exc}") from exc
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -18,9 +18,7 @@ def _seed_poetry_lock(
         monkeypatch.setattr(
             bootstrap_env.subprocess,
             "run",
-            lambda *args, **kwargs: SimpleNamespace(
-                returncode=0, stdout="", stderr=""
-            ),
+            lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="", stderr=""),
         )
 
 
@@ -159,8 +157,7 @@ def test_plan_includes_python_and_node(
     step_descriptions = [step.description for step in plan]
 
     assert any(
-        "Install Poetry environment" in description
-        for description in step_descriptions
+        "Install Poetry environment" in description for description in step_descriptions
     )
     assert any("docs-starlight" in step.description for step in plan)
 
@@ -404,11 +401,7 @@ def _seed_offline_caches(repo_root: Path) -> None:
         (playwright_cache / f"{browser}-cached").mkdir(parents=True, exist_ok=True)
 
     suffix_cache = (
-        repo_root
-        / "artifacts"
-        / "cache"
-        / "tldextract"
-        / "publicsuffix.org-tlds"
+        repo_root / "artifacts" / "cache" / "tldextract" / "publicsuffix.org-tlds"
     )
     suffix_cache.mkdir(parents=True, exist_ok=True)
     (suffix_cache / "snapshot.tldextract.json").write_text("{}", encoding="utf-8")
@@ -461,9 +454,7 @@ def test_dry_run_preflight_reports_missing_cache(
 
     _seed_poetry_lock(tmp_path, monkeypatch)
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
-    monkeypatch.setenv(
-        "UV_CACHE_DIR", str(tmp_path / "artifacts" / "cache" / "pip")
-    )
+    monkeypatch.setenv("UV_CACHE_DIR", str(tmp_path / "artifacts" / "cache" / "pip"))
 
     exit_code = bootstrap_env.main(
         ["--repo-root", str(tmp_path), "--offline", "--dry-run"]

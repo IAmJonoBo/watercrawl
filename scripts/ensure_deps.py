@@ -20,7 +20,7 @@ from tools.hooks import bootstrap
 def main() -> int:
     # Hard-coded minimal list for now — add packages as needed.
     deps = [
-        ("marshmallow", "3.19.0"),
+        ("marshmallow", "3.26.1"),
         ("pytest-cov", "7.0.0"),
     ]
 

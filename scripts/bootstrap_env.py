@@ -514,7 +514,9 @@ def _ensure_offline_caches(
         playwright_path = details["playwright"]["path"]
         missing_browsers = details["playwright"].get("missing_browsers")
         browser_hint = (
-            f" Missing archives: {', '.join(missing_browsers)}." if missing_browsers else ""
+            f" Missing archives: {', '.join(missing_browsers)}."
+            if missing_browsers
+            else ""
         )
         messages.append(
             "Playwright browser cache missing under "

@@ -13,6 +13,10 @@ from pydantic import ValidationError
 
 from firecrawl_demo.core import config
 from firecrawl_demo.domain.contracts import EvidenceRecordContract
+from firecrawl_demo.infrastructure.evidence import (
+    CSVEvidenceSink,
+    StreamingEvidenceSink,
+)
 from firecrawl_demo.integrations.contracts import (
     DBT_AVAILABLE,
     GREAT_EXPECTATIONS_AVAILABLE,
@@ -21,7 +25,6 @@ from firecrawl_demo.integrations.contracts import (
     validate_curated_dataframe,
 )
 from firecrawl_demo.interfaces.cli import cli
-from firecrawl_demo.infrastructure.evidence import CSVEvidenceSink, StreamingEvidenceSink
 
 
 def _valid_row() -> dict[str, str]:

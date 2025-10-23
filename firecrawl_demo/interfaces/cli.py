@@ -11,10 +11,8 @@ try:  # pragma: no cover - optional Crawlkit dependency
     from crawlkit.adapter.firecrawl_compat import (
         fetch_markdown as _CRAWLKIT_FETCH_MARKDOWN,
     )
-    from crawlkit.orchestrate.api import (
-        build_router as _CRAWLKIT_BUILD_ROUTER,
-        create_app as _CRAWLKIT_CREATE_APP,
-    )
+    from crawlkit.orchestrate.api import build_router as _CRAWLKIT_BUILD_ROUTER
+    from crawlkit.orchestrate.api import create_app as _CRAWLKIT_CREATE_APP
 except ImportError:  # pragma: no cover - optional dependency missing
     _CRAWLKIT_FETCH_MARKDOWN = None  # type: ignore
     _CRAWLKIT_BUILD_ROUTER = None  # type: ignore
@@ -100,11 +98,13 @@ __all__ = [
 
 
 if BaseModel is not None:  # pragma: no branch - definition depends on pydantic
+
     class _LegacyCrawlRequest(BaseModel):  # type: ignore[misc,valid-type]
         url: str
         policy: Mapping[str, Any] | None = None
 
 else:  # pragma: no cover - pydantic missing, router construction will fail earlier
+
     class _LegacyCrawlRequest:  # type: ignore[no-redef]
         def __init__(self, *args: object, **kwargs: object) -> None:
             raise RuntimeError("pydantic is required for the legacy router")

@@ -179,7 +179,11 @@ class CopilotMCPServer:
                     if contracts:
                         existing = result.get("contracts")
                         if isinstance(existing, dict):
-                            existing.update((k, v) for k, v in contracts.items() if k not in existing)
+                            existing.update(
+                                (k, v)
+                                for k, v in contracts.items()
+                                if k not in existing
+                            )
                         else:
                             result["contracts"] = contracts
             return {"jsonrpc": _JSONRPC, "id": request_id, "result": result}

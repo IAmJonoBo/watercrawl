@@ -2,7 +2,7 @@
 """Download Marshmallow wheel into repo vendor cache for offline runners.
 
 Usage:
-  python scripts/provision_marshmallow.py --version 3.19.0
+  python scripts/provision_marshmallow.py --version 3.26.1
 
 The script invokes `python -m pip download marshmallow==<version> --no-deps -d <dest>`
 so it works with whatever Python executable is used to run the script (use the
@@ -22,7 +22,7 @@ def main() -> int:
     parser.add_argument(
         "--version",
         required=False,
-        default="3.19.0",
+        default="3.26.1",
         help="Marshmallow version to download",
     )
     parser.add_argument(

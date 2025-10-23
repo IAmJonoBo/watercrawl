@@ -9,7 +9,9 @@ from click.testing import CliRunner
 from firecrawl_demo.core import config
 
 
-def _set_flags(monkeypatch, *, enable_crawlkit: bool, enable_firecrawl_sdk: bool) -> None:
+def _set_flags(
+    monkeypatch, *, enable_crawlkit: bool, enable_firecrawl_sdk: bool
+) -> None:
     monkeypatch.setattr(
         config,
         "FEATURE_FLAGS",
@@ -39,7 +41,9 @@ def test_fetch_markdown_uses_crawlkit_when_flag_enabled(monkeypatch):
 
     captured: dict[str, tuple[object, ...]] = {}
 
-    def fake_fetch(url: str, depth: int = 1, include_subpaths: bool = False, policy=None):
+    def fake_fetch(
+        url: str, depth: int = 1, include_subpaths: bool = False, policy=None
+    ):
         captured["args"] = (url, depth, include_subpaths, policy)
         return {"markdown": "ok", "metadata": {}, "entities": {}}
 
@@ -67,7 +71,9 @@ def test_fetch_markdown_uses_legacy_when_sdk_enabled(monkeypatch):
 
     called = False
 
-    def fake_legacy(url: str, depth: int = 1, include_subpaths: bool = False, policy=None):
+    def fake_legacy(
+        url: str, depth: int = 1, include_subpaths: bool = False, policy=None
+    ):
         nonlocal called
         called = True
         return {"markdown": "legacy", "metadata": {}, "entities": {}}
@@ -109,7 +115,10 @@ def test_crawlkit_status_reports_router(monkeypatch):
     monkeypatch.setattr(analyst_cli, "_feature_flags", lambda: flags)
 
     router = SimpleNamespace(
-        routes=[SimpleNamespace(path="/crawlkit/crawl"), SimpleNamespace(path="/crawlkit/entities")]
+        routes=[
+            SimpleNamespace(path="/crawlkit/crawl"),
+            SimpleNamespace(path="/crawlkit/entities"),
+        ]
     )
     monkeypatch.setattr(analyst_cli, "_build_crawlkit_router", lambda: router)
 

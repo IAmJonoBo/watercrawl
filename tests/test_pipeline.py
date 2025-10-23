@@ -509,12 +509,12 @@ async def test_lookup_coordinator_circuit_breaker_metrics(monkeypatch) -> None:
     assert coordinator.metrics.retries == 2
     assert coordinator.metrics.circuit_rejections == len(states) - adapter.calls
 
-    failure_notes = [
-        result.finding.notes for result in results[: adapter.calls]
-    ]
+    failure_notes = [result.finding.notes for result in results[: adapter.calls]]
     assert all("Research adapter failed" in note for note in failure_notes)
     paused_messages = [result.finding.notes for result in results[adapter.calls :]]
-    assert paused_messages and all("temporarily paused" in msg for msg in paused_messages)
+    assert paused_messages and all(
+        "temporarily paused" in msg for msg in paused_messages
+    )
 
 
 def test_process_row_quality_rejection_produces_deterministic_artifacts(

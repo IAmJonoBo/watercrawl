@@ -216,8 +216,17 @@ class ObservabilityManager:
         )
         metrics.set_meter_provider(meter_provider)
 
-        # Get meter
-        self.meter = metrics.get_meter(__name__)
+        # Get meter from the provider (preferred) and fall back to the global API if needed
+        self.meter = meter_provider.get_meter(__name__, self.config.service_version)
+        if self.meter is None:
+            # Fallback to the global metrics API (may still be None in some runtimes)
+            self.meter = metrics.get_meter(__name__, self.config.service_version)
+
+        if self.meter is None:
+            logger.warning(
+                "Failed to obtain a Meter instance - metrics instruments will be no-op"
+            )
+            return
 
         # Create metric instruments
         self._request_counter = self.meter.create_counter(
@@ -246,7 +255,7 @@ class ObservabilityManager:
             f"Metrics initialized with Prometheus on port {self.config.prometheus_port}"
         )
 
-    def _observe_slo(self, options) -> None:
+    def _observe_slo(self, options) -> Generator[Any, None, None]:
         """Callback to observe SLO metrics."""
         yield metrics.Observation(
             self.slo_metrics.availability(), {"sli": "availability"}

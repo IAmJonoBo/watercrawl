@@ -95,7 +95,7 @@ def run_autofix(tool: str, use_poetry: bool = False, dry_run: bool = False) -> i
         print(f"Warning: Tool '{primary_tool}' not found in PATH", file=sys.stderr)
         if use_poetry:
             print(
-                f"Hint: Run 'poetry install --no-root --with dev' first",
+                "Hint: Run 'poetry install --no-root --with dev' first",
                 file=sys.stderr,
             )
         return 1

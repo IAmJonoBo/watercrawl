@@ -9,8 +9,8 @@ from rich.console import Console
 from rich.table import Table
 
 from firecrawl_demo.core import config
-from firecrawl_demo.interfaces import analyst_cli
 from firecrawl_demo.integrations.integration_plugins import contract_registry
+from firecrawl_demo.interfaces import analyst_cli
 
 _USER_FACING_COMMANDS = {
     "validate": "Inspect a dataset and report quality issues before enrichment.",
@@ -53,7 +53,12 @@ def overview() -> None:
     contract_table.add_column("Contract", style="cyan", no_wrap=True)
     contract_table.add_column("Version", style="green", no_wrap=True)
     contract_table.add_column("Schema URI", style="magenta")
-    for contract_name in ("ValidationReport", "PipelineReport", "PlanArtifact", "CommitArtifact"):
+    for contract_name in (
+        "ValidationReport",
+        "PipelineReport",
+        "PlanArtifact",
+        "CommitArtifact",
+    ):
         metadata = registry.get(contract_name)
         if metadata is None:
             continue
@@ -88,14 +93,10 @@ def crawlkit_status() -> None:
         try:
             router = _build_crawlkit_router()
         except Exception as exc:  # pragma: no cover - defensive logging
-            console.print(
-                f"[red]Crawlkit router unavailable:[/red] {exc}"
-            )
+            console.print(f"[red]Crawlkit router unavailable:[/red] {exc}")
         else:
             endpoints = _format_router_routes(router)
-            console.print(
-                "[green]Crawlkit router ready[/green] → " + endpoints
-            )
+            console.print("[green]Crawlkit router ready[/green] → " + endpoints)
             console.print(
                 "[blue]Targeted QA:[/blue] poetry run pytest "
                 "tests/crawlkit tests/test_research_logic.py -q"

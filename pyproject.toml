@@ -52,6 +52,7 @@ opentelemetry-api = "^1.38.0"
 opentelemetry-sdk = "^1.38.0"
 opentelemetry-exporter-otlp-proto-grpc = "^1.38.0"
 opentelemetry-exporter-prometheus = "^0.59b0"
+marshmallow = { version = ">=3.26.1,<4", optional = true }
 
 [tool.poetry.group.contracts]
 optional = true
@@ -118,6 +119,9 @@ optional = true
 
 [tool.poetry.group.lakehouse.dependencies]
 deltalake = { version = "1.2.1", python = ">=3.13,<3.14" }
+
+[tool.poetry.extras]
+pipeline = ["marshmallow"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
