@@ -180,12 +180,12 @@ blinker==1.9.0 ; python_version >= "3.13" and python_version < "3.15" \
 boto3==1.40.57; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:4ceeac741b04cd5d9193c85d1707597a30f7482682733437454408ea755ee151 \
     --hash=sha256:717605170cb167e07462b7f033b26bc9c0fee34b78b5eac52edcd6149915e23f
-botocore-stubs==1.40.55 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:57c8978b0bbe40a9fa29fde564de8a04679a223f430a97d03ada62ec112231af \
-    --hash=sha256:fdc85df8960a6f156c57c5980d125c7467134ca8d612f32175cb88a49a0a6cf5
-botocore==1.40.57; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:39bb0570e10eb7a5d518974865aeebafe275498c8f132b23e3021b957babaf8a \
-    --hash=sha256:95dfd35e0863c3e33d458b0e74eb5a82d73521347c25651e1a0e18cf921ee010
+botocore-stubs==1.40.57; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:2a0c382d42b8847adb58552d3bc36dd10eef1b8a4f81ae89713076a3fa377be1 \
+    --hash=sha256:d82ccae25ddbfee9521fbeb64c3c1f1d8716a6fd76c2e0bb589df90958536e3c
+botocore==1.40.56 ; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:0962dfc9bfb0afa1855042a88a72cc722cc7f9c08f51d2c5c88181d525a59a27 \
+    --hash=sha256:b29df3418a299609632cab240ee79275463b176ebeb3adc841ba367a3fa0c4db
 cachetools==6.2.1 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:09868944b6dde876dfd44e1d47e18484541eaf12f26f29b7af91b26cc892d701 \
     --hash=sha256:3f391e4bd8f8bf0931169baf7456cc822705f4e2a31f840d218f445b9a854201
