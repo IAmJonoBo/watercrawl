@@ -68,12 +68,16 @@ If you don't want to pin the lockfile locally during development, omit `--frozen
 
 We include `pnpm-workspace.yaml` to manage the root project and the docs subproject as a workspace so you can run cross-package scripts with `pnpm -w`.
 
-**Firecrawl SDK integration:**
+**Crawlkit adapters + optional Firecrawl SDK:**
 
-- The [official Firecrawl Python SDK](https://docs.firecrawl.dev/sdks/python) is available as an optional dependency.
-- The CLI and pipeline default to deterministic research adapters so offline QA remains stable.
-- Set `FEATURE_ENABLE_FIRECRAWL_SDK=1`, `ALLOW_NETWORK_RESEARCH=1`, and your `FIRECRAWL_API_KEY` (via `.env` or the environment)
-  when you are ready to exercise the live SDK.
+- `crawlkit/` provides first-party fetch, render, distill, entity extraction, and Celery orchestration modules that replace the
+  former Firecrawl demos while remaining deterministic by default.
+- FastAPI surfaces under `/crawlkit` expose `/crawl`, `/markdown`, and `/entities` endpoints so automation clients and MCP tools
+  can reuse the same primitives as the CLI.
+- Feature flags keep migrations reversible: enable Crawlkit adapters with `FEATURE_ENABLE_CRAWLKIT=1` and opt into the
+  production Firecrawl SDK by additionally setting `FEATURE_ENABLE_FIRECRAWL_SDK=1`, `ALLOW_NETWORK_RESEARCH=1`, and
+  `FIRECRAWL_API_KEY` (via `.env` or the environment). Both flags default to `0` so offline QA and evidence gathering remain
+  deterministic until reviewers sign off.
 
 **Automation CLI auto-bootstrap:** `apps.automation.cli` now provisions Python 3.13 with uv whenever the active interpreter is older than 3.13. This keeps ephemeral runners and fresh shells aligned with the minimum supported version while installing project dependencies before QA commands run.
 
@@ -110,20 +114,30 @@ See [docs/dependency-resilience.md](docs/dependency-resilience.md) for complete 
 
 ## Features
 
+- **Crawlkit modules** provide end-to-end crawl orchestration: polite fetching with robots.txt compliance, deterministic
+  distillation to Markdown, entity extraction, and Celery task chaining (`crawlkit/fetch`, `crawlkit/distill`, `crawlkit/extract`,
+  `crawlkit/orchestrate`).
+- **FastAPI + CLI surfaces** expose Crawlkit functionality at `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities`
+  while keeping the analyst CLI backward compatible via `firecrawl_demo.interfaces.cli`.
+- **Research adapters** combine Crawlkit, regulator, press, and directory intelligence (`firecrawl_demo.integrations.research`)
+  with feature flags to toggle Firecrawl or offline-only modes.
 - **Dataset validation** with detailed issue reporting (`firecrawl_demo.domain.validation`).
-- **Research adapters** for deterministic enrichment and future OSINT integrations (`firecrawl_demo.integrations.research`).
-- **Feature-flagged Firecrawl integration** guarded by `FEATURE_ENABLE_FIRECRAWL_SDK` and `ALLOW_NETWORK_RESEARCH` so offline QA stays deterministic.
-- **Triangulated intelligence** that merges regulator, press, and directory evidence to spot rebrands or ownership changes.
 - **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.application.pipeline`).
-- **Configurable refinement profiles** living under `profiles/` to capture geography, taxonomy, evidence, and contact rules for any white-labeled deployment.
-- **CLI** commands for analysts and automation runs (`firecrawl_demo.interfaces.cli`).
+- **Configurable refinement profiles** living under `profiles/` to capture geography, taxonomy, evidence, and contact rules for
+  any white-labeled deployment.
 - **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
   remediation guidance into the evidence log and MCP.
-- **Graph semantics + drift observability** with CSVW/R2RML validation, configurable node/edge thresholds, and mandatory whylogs baselines that surface `drift_baseline_missing` / `whylogs_baseline_missing` sanity findings when artefacts are absent.
-- **Plan→commit safety gate** enforcing plan and commit artefacts (including `If-Match` headers and RAG metrics), prompt-injection heuristics, and append-only audit logs to `data/logs/plan_commit_audit.jsonl` for MCP and CLI writes.
+- **Graph semantics + drift observability** with CSVW/R2RML validation, configurable node/edge thresholds, and mandatory whylogs
+  baselines that surface `drift_baseline_missing` / `whylogs_baseline_missing` sanity findings when artefacts are absent.
+- **Plan→commit safety gate** enforcing plan and commit artefacts (including `If-Match` headers and RAG metrics),
+  prompt-injection heuristics, and append-only audit logs to `data/logs/plan_commit_audit.jsonl` for MCP and CLI writes.
 - **Data contracts** with a dual Great Expectations + dbt suite, executed via the `contracts`
   CLI command and archived as evidence artefacts for each dataset revision.
-- **Lineage + lakehouse artefacts** generated alongside every enrichment run (OpenLineage, PROV-O, DCAT, and snapshot manifests) so analysts can trace provenance and reproduce curated tables. PROV graphs record the enrichment agent, evidence counts, and quality metrics while DCAT entries expose reproducibility commands, contact metadata, and distribution links for manifests and lineage bundles. CLI runs now print the lineage directory plus lakehouse/version manifest paths for immediate runbook inclusion.
+- **Lineage + lakehouse artefacts** generated alongside every enrichment run (OpenLineage, PROV-O, DCAT, and snapshot manifests)
+  so analysts can trace provenance and reproduce curated tables. PROV graphs record the enrichment agent, evidence counts, and
+  quality metrics while DCAT entries expose reproducibility commands, contact metadata, and distribution links for manifests and
+  lineage bundles. CLI runs now print the lineage directory plus lakehouse/version manifest paths for immediate runbook
+  inclusion.
 - **Versioned lakehouse snapshots** with deterministic fingerprints and reproduce commands captured in `data/versioning/`.
 - **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.interfaces.mcp.server`).
 - **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
@@ -131,8 +145,9 @@ See [docs/dependency-resilience.md](docs/dependency-resilience.md) for complete 
 
 ## Feature Flags & Environment Variables
 
-- `FEATURE_ENABLE_FIRECRAWL_SDK=1` — prefer the production Firecrawl SDK when available.
-- `ALLOW_NETWORK_RESEARCH=1` — permit live network lookups (default: offline-only triangulation).
+- `FEATURE_ENABLE_CRAWLKIT=0` — toggle first-party Crawlkit adapters (fetch, distill, extract, orchestrate). Enable when ready to replace the legacy Firecrawl demos end-to-end.
+- `FEATURE_ENABLE_FIRECRAWL_SDK=0` — prefer the production Firecrawl SDK when available; requires Crawlkit to be enabled and network access to be explicitly allowed.
+- `ALLOW_NETWORK_RESEARCH=0` — permit live network lookups when set to `1` (default: offline-only triangulation).
 - `FEATURE_ENABLE_PRESS_RESEARCH=0` or `FEATURE_ENABLE_REGULATOR_LOOKUP=0` — disable specific intelligence sources.
 - `FEATURE_INVESTIGATE_REBRANDS=0` — skip rename/ownership heuristics.
 - `REFINEMENT_PROFILE=za_flight_schools` — select the profile identifier to load (defaults to the South African flight school profile).
@@ -247,7 +262,8 @@ pnpm run build
 ## Repository layout
 
 - `firecrawl_demo/core/` — canonical business logic, validation, pipeline orchestration, and shared models.
-- `firecrawl_demo/integrations/` — contracts, research adapters, lineage, lakehouse, drift, and Firecrawl client bindings.
+- `crawlkit/` — first-party fetch/distill/extract/orchestrate modules replacing the legacy demos.
+- `firecrawl_demo/integrations/` — contracts, research adapters, lineage, lakehouse, drift, and optional Firecrawl client bindings.
 - `firecrawl_demo/governance/` — safety, evaluation, and secrets providers isolated from crawler orchestration.
 - `firecrawl_demo/interfaces/` — CLI, analyst UI, and MCP orchestration entrypoints.
 - `apps/` — deployable application surfaces (`analyst` for humans, `automation` for CI orchestration).

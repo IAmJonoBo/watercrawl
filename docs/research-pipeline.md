@@ -47,8 +47,7 @@ immediate effect.
   defined in the profile.
 - `ALLOW_NETWORK_RESEARCH=1` must be set to permit live HTTP requests. Without
   it, connectors degrade gracefully and emit advisory notes.
-- `FEATURE_ENABLE_FIRECRAWL_SDK=1` enables optional Firecrawl lookups; otherwise
-  deterministic sources remain active.
+- `FEATURE_ENABLE_CRAWLKIT=1` enables the first-party Crawlkit adapters. `FEATURE_ENABLE_FIRECRAWL_SDK=1` then opts into the optional SDK once network research is authorised.
 
 ## Cross-validation and confidence scoring
 
@@ -83,7 +82,8 @@ available to downstream Prometheus exporters.
 | --- | --- |
 | `REFINEMENT_PROFILE` / `REFINEMENT_PROFILE_PATH` | Selects the profile that defines connector toggles and privacy policy. |
 | `ALLOW_NETWORK_RESEARCH` | Enables outbound HTTP requests for connectors. |
-| `FEATURE_ENABLE_FIRECRAWL_SDK` | Optional Firecrawl enrichment when credentials are supplied. |
+| `FEATURE_ENABLE_CRAWLKIT` | Toggle Crawlkit fetch/distill/orchestrate modules. |
+| `FEATURE_ENABLE_FIRECRAWL_SDK` | Optional Firecrawl enrichment once Crawlkit is enabled and credentials are supplied. |
 | `FEATURE_ENABLE_PRESS_RESEARCH`, `FEATURE_ENABLE_REGULATOR_LOOKUP` | Legacy feature flags remain honoured for compatibility. |
 
 When deploying to white-label tenants, ensure profiles document which

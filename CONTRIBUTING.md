@@ -4,6 +4,8 @@ Welcome! Watercrawl is a frontier-standard toolkit for validating and enriching 
 
 This guide outlines our conventions and standards. By contributing, you agree to uphold these frontier practices that prioritize evidence, compliance, and extensibility.
 
+Feature flags keep migrations reversible while we finish the Crawlkit cut-over. `FEATURE_ENABLE_CRAWLKIT` and `FEATURE_ENABLE_FIRECRAWL_SDK` default to `0`; enable them explicitly when you are ready to exercise Crawlkit adapters or the optional Firecrawl SDK in local branches, and document the QA evidence in your pull request.
+
 ## Getting Started
 
 ### Prerequisites
@@ -91,6 +93,7 @@ poetry run mypy .
 
 We adhere to a layered, hexagonal architecture that separates concerns and enables extensibility:
 
+- **Crawlkit** (`crawlkit`): Fetch, distill, extract, and orchestrate modules replacing the legacy Firecrawl demos.
 - **Core** (`firecrawl_demo.core`): Configuration, utilities, constants
 - **Domain** (`firecrawl_demo.domain`): Models, validation, compliance logic
 - **Application** (`firecrawl_demo.application`): Orchestration, pipelines, interfaces

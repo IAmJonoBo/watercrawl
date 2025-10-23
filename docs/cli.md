@@ -14,7 +14,7 @@ Both entry points run through Poetry: `poetry run python -m apps.analyst.cli ...
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
-> **Compatibility note:** `firecrawl_demo.interfaces.cli` remains available for backwards compatibility and simply re-exports the analyst CLI. Legacy automation that shells out to `python -m app.cli` continues to work via a compatibility shim that forwards to `apps.analyst.cli`.
+> **Compatibility note:** `firecrawl_demo.interfaces.cli` now re-exports the analyst CLI **and** Crawlkit FastAPI builders so legacy automation and MCP tooling can adopt the new `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints without importing the Crawlkit package directly. The shim preserves `python -m app.cli` entry points for older scripts while routing fetches through the Crawlkit adapters when feature flags permit.
 
 ## Analyst commands (`apps.analyst.cli`)
 
@@ -68,6 +68,19 @@ poetry run python -m apps.analyst.cli mcp-server
   `list_sanity_issues` for remediation queues — so Copilot can reason about pipeline
   health without parsing CSVs.
 
+## Crawlkit FastAPI Surface
+
+The compatibility shim now exposes `crawlkit.orchestrate.api.build_router` and `create_app` so teams can serve the new
+`/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints alongside the analyst CLI. Example:
+
+```bash
+poetry run python -m uvicorn firecrawl_demo.interfaces.cli:create_app --factory --reload
+```
+
+The endpoints return Crawlkit serialisable payloads (polite fetch results, Markdown distillation, and entity extraction)
+guarded by the same feature flags as the CLI. Automation clients should reference plan→commit artefacts and run
+`poetry run python -m apps.automation.cli qa lint` plus `qa typecheck` before deploying updated adapters.
+
 ## Exit Codes
 
 - `0`: Success.
@@ -75,7 +88,10 @@ poetry run python -m apps.analyst.cli mcp-server
 
 ## Environment Variables
 
-- `FIRECRAWL_API_KEY`: Loaded via `config.Settings` for future Firecrawl integrations.
+- `FEATURE_ENABLE_CRAWLKIT`: Enable first-party Crawlkit adapters. Defaults to `0` so CLI runs remain deterministic until reviewers approve the cut-over.
+- `FEATURE_ENABLE_FIRECRAWL_SDK`: Opt into the optional Firecrawl SDK once Crawlkit is enabled and network access is authorised.
+- `ALLOW_NETWORK_RESEARCH`: Set to `1` to permit live network calls; remains `0` for offline QA by default.
+- `FIRECRAWL_API_KEY`: Loaded via `config.Settings` when the Firecrawl SDK is enabled.
 - `FIRECRAWL_API_URL`: Override default API endpoint.
 
 ## Developer QA helpers (`apps.automation.cli`)

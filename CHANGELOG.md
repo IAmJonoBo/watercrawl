@@ -59,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `templates/golden-path/` scaffolds new services with plan→commit guardrails, TechDocs docs, and bootstrap scripts
   - Documentation updated (`README.md`, `docs/operations.md`, `CONTRIBUTING.md`) to reference Backstage onboarding
 
+### Documentation & CLI
+
+- Documented Crawlkit fetch/distill/extract/orchestrate modules and feature flags (`FEATURE_ENABLE_CRAWLKIT`, `FEATURE_ENABLE_FIRECRAWL_SDK`) across README, CONTRIBUTING, MkDocs, and Starlight docs.
+- Updated CLI shims, `main.py`, `examples.py`, and automation guidance to import Crawlkit adapters and describe the new `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` FastAPI endpoints.
+- Refreshed MCP Promptfoo gate documentation to require Crawlkit artefacts in evaluation fixtures and linked QA evidence in Next_Steps.
+
 ### Changed
 
 - Updated `firecrawl_demo.integrations.contracts.__init__.py` to export new modules
