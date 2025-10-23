@@ -66,7 +66,13 @@ jobs:
           mkdir -p artifacts/cache/playwright artifacts/cache/tldextract
           export PLAYWRIGHT_BROWSERS_PATH="${{ github.workspace }}/artifacts/cache/playwright"
           poetry run playwright install chromium firefox webkit
-          poetry run python -c "from pathlib import Path; import tldextract; cache = Path('${{ github.workspace }}/artifacts/cache/tldextract'); cache.mkdir(parents=True, exist_ok=True); tldextract.TLDExtract(cache_dir=str(cache), suffix_list_urls=())('example.com')"
+          poetry run python - <<'PY'
+          from pathlib import Path
+          import tldextract
+          cache = Path('${{ github.workspace }}/artifacts/cache/tldextract')
+          cache.mkdir(parents=True, exist_ok=True)
+          tldextract.TLDExtract(cache_dir=str(cache), suffix_list_urls=())('example.com')
+          PY
       - name: Bootstrap vendored Python dependencies
         # Run the repo-provided provisioning script inside the Poetry venv.
         # This prefers vendored wheels (tools/vendor/...) or a wheelhouse artifact

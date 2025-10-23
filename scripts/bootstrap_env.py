@@ -124,8 +124,15 @@ def build_bootstrap_plan(
         else:
             steps.append(
                 BootstrapStep(
-                    description="Install Poetry environment",
-                    command=("poetry", "install", "--no-root", "--sync"),
+                    description="Install Poetry environment (with dev dependencies)",
+                    command=(
+                        "poetry",
+                        "install",
+                        "--no-root",
+                        "--with",
+                        "dev",
+                        "--sync",
+                    ),
                     env={"PYO3_USE_ABI3_FORWARD_COMPATIBILITY": "1"},
                 )
             )
