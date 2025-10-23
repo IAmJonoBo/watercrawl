@@ -1,0 +1,32 @@
+{
+  "scenario_id": "F-004",
+  "name": "Network partition",
+  "owner": "Platform",
+  "executed_at": "2025-10-26T15:12:04Z",
+  "runbook": "docs/chaos-fmea-scenarios.md#fmea-register",
+  "outcome": "Successful failover to offline mode",
+  "detection_seconds": 34,
+  "recovery_seconds": 0,
+  "alerts_triggered": [
+    {
+      "channel": "pagerduty",
+      "target": "platform-oncall",
+      "latency_seconds": 90
+    }
+  ],
+  "observations": [
+    "Automation CLI respected FEATURE_ENABLE_CRAWLKIT default to offline",
+    "Manual checklist to verify cached Playwright bundles took 12 minutes",
+    "No unexpected outbound requests detected"
+  ],
+  "issues_found": [
+    "Offline cache validation not automated prior to run"
+  ],
+  "rpn_before": 3,
+  "rpn_after": 3,
+  "rpn_delta": 0,
+  "mitigation_actions": [
+    "Added bootstrap preflight to validate offline caches",
+    "Documented requirement to stage crawlkit Playwright archives in runbook"
+  ]
+}

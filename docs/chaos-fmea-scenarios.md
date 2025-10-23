@@ -350,17 +350,17 @@ poetry install
 
 | ID | Failure Mode | Effects | Severity (1-5) | Occurrence (1-5) | Detection (1-5) | RPN | Mitigation | Owner |
 |----|--------------|---------|----------------|------------------|-----------------|-----|-----------|-------|
-| F-001 | Research adapter timeout | Reduced enrichment coverage | 3 | 4 | 1 | 4 | Multi-adapter fallback, timeout alerts | Platform |
+| F-001 | Research adapter timeout | Reduced enrichment coverage | 3 | 4 | 1 | 4 → 3 (_Δ_ −1) | Multi-adapter fallback, timeout alerts; added adaptive retry jitter and scenario-tagged alerts after 2025-10-26 drill | Platform |
 | F-002 | DuckDB corruption | Contract validation unavailable | 4 | 2 | 3 | 6 | Auto-recovery, CSV fallback, backups | Data |
 | F-003 | Evidence log locked | Pipeline halt | 4 | 2 | 2 | 4 | Lock detection, clear error, atomic writes | Platform |
-| F-004 | Network partition | Feature flag drift to offline mode | 2 | 3 | 1 | 3 | Offline-first design, deterministic adapters | Platform |
+| F-004 | Network partition | Feature flag drift to offline mode | 2 | 3 | 1 | 3 → 3 (_Δ_ 0) | Offline-first design, deterministic adapters; preflight now validates offline caches per 2025-10-26 exercise | Platform |
 | F-005 | Drift baseline missing | Observability gap | 3 | 2 | 1 | 2 | Warning with seed instructions, non-blocking | Data |
 | F-006 | Plan/commit mismatch | Unauthorized change blocked | 4 | 2 | 1 | 2 | ETag validation, audit logging | Security |
 | F-007 | Low RAG metrics | Unsafe agent operation | 3 | 3 | 1 | 3 | Threshold gates, prompt refinement UX | Security |
 | F-008 | Audit log write failure | Compliance gap, operations halt | 5 | 2 | 1 | 2 | Critical alert, fail-closed design | Security |
 | F-009 | Prompt injection | Security breach attempt | 5 | 3 | 2 | 6 | Pattern detection, input sanitization, audit | Security |
 | F-010 | Secrets backend down | Config unavailable | 3 | 2 | 2 | 4 | Environment fallback, retry logic | Platform |
-| F-011 | Missing Python wheel | Deployment blocked | 3 | 4 | 1 | 4 | Wheel status monitoring, version pinning | Platform |
+| F-011 | Missing Python wheel | Deployment blocked | 3 | 4 | 1 | 4 → 5 (_Δ_ +1) | Wheel status monitoring, version pinning; mirror automation & upstream escalation playbook added after 2025-10-26 regression | Platform |
 
 **RPN = Severity × Occurrence × Detection** (range: 1-125, high RPN = high priority)
 
@@ -416,10 +416,18 @@ For effective chaos testing, ensure these signals are available:
 
 | Quarter | Scenarios | Owner | Status |
 |---------|-----------|-------|--------|
-| Q4 2025 | F-001, F-004, F-011 | Platform | Planned |
+| Q4 2025 | F-001, F-004, F-011 | Platform | Executed 2025-10-26 |
 | Q1 2026 | F-002, F-003, F-005 | Data | Planned |
 | Q1 2026 | F-006, F-007, F-008, F-009 | Security | Planned |
 | Q2 2026 | F-010, full pipeline test | SRE | Planned |
+
+## Q4 2025 Game Day Execution Log
+
+| Scenario | Owner | Timestamp (UTC) | Outcome | RPN Δ | Mitigation Follow-up | Telemetry Snapshot |
+|----------|-------|-----------------|---------|-------|----------------------|--------------------|
+| F-001 | Platform | 2025-10-26T14:05:32Z | Recovered with degraded coverage | −1 | Adaptive retry jitter, scenario-tagged alerts | `artifacts/chaos/2025-10-26_F-001.json` |
+| F-004 | Platform | 2025-10-26T15:12:04Z | Successful failover to offline mode | 0 | Offline cache preflight automation | `artifacts/chaos/2025-10-26_F-004.json` |
+| F-011 | Platform | 2025-10-26T16:27:41Z | Guardrails blocked deploy; manual mitigation required | +1 | Mirror automation, upstream escalation SOP | `artifacts/chaos/2025-10-26_F-011.json` |
 
 ## References
 

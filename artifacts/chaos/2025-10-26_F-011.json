@@ -1,0 +1,33 @@
+{
+  "scenario_id": "F-011",
+  "name": "Missing Python wheel",
+  "owner": "Platform",
+  "executed_at": "2025-10-26T16:27:41Z",
+  "runbook": "docs/chaos-fmea-scenarios.md#fmea-register",
+  "outcome": "Guardrails blocked deploy; manual mitigation required",
+  "detection_seconds": 12,
+  "recovery_seconds": 2685,
+  "alerts_triggered": [
+    {
+      "channel": "slack",
+      "target": "#dependency-matrix",
+      "latency_seconds": 20
+    }
+  ],
+  "observations": [
+    "`scripts.dependency_matrix guard` surfaced blocker immediately",
+    "Wheel staging fallback lacked cp314 artifact for duckdb",
+    "Escalation to dependency owner required manual packaging"
+  ],
+  "issues_found": [
+    "No automated mirror promotion for emergency wheel builds",
+    "Guard output not linked to runbook step"
+  ],
+  "rpn_before": 4,
+  "rpn_after": 5,
+  "rpn_delta": 1,
+  "mitigation_actions": [
+    "Scheduled cron to mirror critical wheels to artifacts/cache/pip",
+    "Added runbook step to file upstream ticket when guard fails"
+  ]
+}

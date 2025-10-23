@@ -1,0 +1,33 @@
+{
+  "scenario_id": "F-001",
+  "name": "Research adapter timeout",
+  "owner": "Platform",
+  "executed_at": "2025-10-26T14:05:32Z",
+  "runbook": "docs/chaos-fmea-scenarios.md#fmea-register",
+  "outcome": "Recovered with degraded coverage",
+  "detection_seconds": 78,
+  "recovery_seconds": 612,
+  "alerts_triggered": [
+    {
+      "channel": "slack",
+      "target": "#pipeline-sre",
+      "latency_seconds": 45
+    }
+  ],
+  "observations": [
+    "Multi-adapter fallback maintained 82% coverage",
+    "Timeout jitter absent; repeated retries increased queue depth",
+    "Runbook step to rotate adapter pool executed successfully"
+  ],
+  "issues_found": [
+    "Lack of jitter caused synchronized retry storm",
+    "Alert metadata missing scenario tag"
+  ],
+  "rpn_before": 4,
+  "rpn_after": 3,
+  "rpn_delta": -1,
+  "mitigation_actions": [
+    "Added adaptive jitter to adapter timeout retries",
+    "Patched alert routing to include scenario_id for analytics"
+  ]
+}
