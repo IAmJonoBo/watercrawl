@@ -22,6 +22,59 @@ python scripts/collect_problems.py --output problems_report.json
 python -m json.tool problems_report.json | less
 ```
 
+## Offline Node.js Runtime Support
+
+For environments with restricted internet access, Node.js tooling (markdownlint, biome) can run from cached tarballs:
+
+### Staging Node.js Tarballs
+
+```bash
+# Download and verify official Node.js release tarball
+python -m scripts.stage_node_tarball --version v20.19.5
+
+# The tarball is staged under artifacts/cache/node/ with checksum verification
+# Optionally verify GPG signature (requires gpg in PATH)
+python -m scripts.stage_node_tarball --version v20.19.5 --verify-signature
+```
+
+The staging script:
+- Downloads the official Node.js tarball from nodejs.org
+- Verifies SHA256 checksum against SHASUMS256.txt
+- Optionally verifies GPG signature for supply-chain security
+- Stages the tarball under `artifacts/cache/node/`
+
+### Using Cached Node Runtime
+
+The bootstrap environment automatically detects and validates cached Node.js tarballs:
+
+```bash
+# Bootstrap with offline mode (requires pre-staged tarballs)
+python -m scripts.bootstrap_env --offline
+
+# The bootstrap will fail if tarballs are missing or invalid
+# Run the staging script first to seed the cache
+```
+
+When `--offline` is enabled:
+- Bootstrap validates cached tarballs using SHA256 checksums
+- If validation fails, bootstrap raises a clear error with remediation steps
+- Node dependencies (markdownlint-cli2, etc.) install from the local tarball
+
+### Running QA with Cached Node
+
+```bash
+# Run problems collector (includes markdownlint via pre-commit)
+poetry run python -m apps.automation.cli qa problems --summary
+
+# Run full QA suite with offline bootstrap
+poetry run python -m apps.automation.cli qa all --offline
+
+# Run just linting (includes markdownlint)
+poetry run python -m apps.automation.cli qa lint
+```
+
+The `qa problems` command aggregates findings from all configured tools including Node-based linters.
+
 ## What Works Without Full Dependencies
 
 The problems reporter (`scripts/collect_problems.py`) has several features that make it resilient on ephemeral runners:

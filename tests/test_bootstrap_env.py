@@ -121,3 +121,109 @@ def test_offline_plan_uses_cached_resources(tmp_path: Path) -> None:
     assert any(cmd[:3] == ("uv", "pip", "sync") for cmd in commands)
     assert not any("playwright" in " ".join(cmd) for cmd in commands)
     assert any(cmd[0] in {"pnpm", "npm", "yarn"} for cmd in commands)
+
+
+def test_validate_node_tarball_checksum_success(tmp_path: Path) -> None:
+    """Test checksum validation succeeds with valid tarball and checksum."""
+    tarball_path = tmp_path / "node-v20.0.0-linux-x64.tar.gz"
+    checksum_path = tmp_path / "SHASUMS256.txt"
+
+    # Create a dummy tarball
+    tarball_path.write_bytes(b"fake tarball content")
+
+    # Calculate the actual checksum
+    import hashlib
+
+    sha256 = hashlib.sha256(b"fake tarball content")
+    expected_checksum = sha256.hexdigest()
+
+    # Create checksum file
+    checksum_path.write_text(
+        f"{expected_checksum}  node-v20.0.0-linux-x64.tar.gz\n",
+        encoding="utf-8",
+    )
+
+    result = bootstrap_env._validate_node_tarball_checksum(tarball_path)
+    assert result is True
+
+
+def test_validate_node_tarball_checksum_failure(tmp_path: Path) -> None:
+    """Test checksum validation fails with mismatched checksum."""
+    tarball_path = tmp_path / "node-v20.0.0-linux-x64.tar.gz"
+    checksum_path = tmp_path / "SHASUMS256.txt"
+
+    tarball_path.write_bytes(b"fake tarball content")
+
+    # Create checksum file with wrong checksum
+    checksum_path.write_text(
+        "deadbeef00000000000000000000000000000000000000000000000000000000  node-v20.0.0-linux-x64.tar.gz\n",
+        encoding="utf-8",
+    )
+
+    result = bootstrap_env._validate_node_tarball_checksum(tarball_path)
+    assert result is False
+
+
+def test_validate_node_tarball_checksum_missing_file(tmp_path: Path) -> None:
+    """Test checksum validation fails when SHASUMS256.txt is missing."""
+    tarball_path = tmp_path / "node-v20.0.0-linux-x64.tar.gz"
+    tarball_path.write_bytes(b"fake tarball content")
+
+    result = bootstrap_env._validate_node_tarball_checksum(tarball_path)
+    assert result is False
+
+
+def test_validate_node_tarball_cache_with_valid_tarball(tmp_path: Path) -> None:
+    """Test cache validation succeeds when tarball and checksum are valid."""
+    cache_dir = tmp_path / "artifacts" / "cache" / "node"
+    cache_dir.mkdir(parents=True)
+
+    tarball_path = cache_dir / "node-v20.0.0-linux-x64.tar.gz"
+    checksum_path = cache_dir / "SHASUMS256.txt"
+
+    tarball_path.write_bytes(b"fake tarball content")
+
+    import hashlib
+
+    sha256 = hashlib.sha256(b"fake tarball content")
+    expected_checksum = sha256.hexdigest()
+
+    checksum_path.write_text(
+        f"{expected_checksum}  node-v20.0.0-linux-x64.tar.gz\n",
+        encoding="utf-8",
+    )
+
+    result = bootstrap_env._validate_node_tarball_cache(tmp_path)
+    assert result is True
+
+
+def test_validate_node_tarball_cache_missing_directory(tmp_path: Path) -> None:
+    """Test cache validation fails when cache directory doesn't exist."""
+    result = bootstrap_env._validate_node_tarball_cache(tmp_path)
+    assert result is False
+
+
+def test_validate_node_tarball_cache_no_tarballs(tmp_path: Path) -> None:
+    """Test cache validation fails when no tarballs are found."""
+    cache_dir = tmp_path / "artifacts" / "cache" / "node"
+    cache_dir.mkdir(parents=True)
+
+    result = bootstrap_env._validate_node_tarball_cache(tmp_path)
+    assert result is False
+
+
+def test_offline_bootstrap_requires_validated_cache(tmp_path: Path) -> None:
+    """Test offline bootstrap raises error when Node cache validation fails."""
+    (tmp_path / "package.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(
+        bootstrap_env.BootstrapError,
+        match="Offline bootstrap requires validated Node package tarballs",
+    ):
+        bootstrap_env.build_bootstrap_plan(
+            repo_root=tmp_path,
+            enable_python=False,
+            enable_node=True,
+            enable_docs=False,
+            offline=True,
+        )

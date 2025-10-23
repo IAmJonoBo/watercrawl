@@ -1195,5 +1195,68 @@ def qa_contracts(dry_run: bool, auto_bootstrap: bool) -> None:
     raise SystemExit(exit_code)
 
 
+@qa.command("problems")
+@click.option(
+    "--output",
+    type=click.Path(path_type=Path),
+    default=Path("problems_report.json"),
+    help="Write problems report to this path (default: problems_report.json)",
+)
+@click.option(
+    "--summary",
+    is_flag=True,
+    help="Print a human-readable summary to stdout after generating the report.",
+)
+@click.option(
+    "--autofix",
+    is_flag=True,
+    help="Attempt to run autofix commands for supported tools before collection.",
+)
+@click.option(
+    "--clear-cache",
+    is_flag=True,
+    help="Clear cached tool metadata and persisted stream logs before execution.",
+)
+def qa_problems(
+    output: Path,
+    summary: bool,
+    autofix: bool,
+    clear_cache: bool,
+) -> None:
+    """Aggregate QA findings into a compact problems_report.json artifact.
+
+    This command runs all configured QA tools (ruff, mypy, yamllint, etc.)
+    and collects their findings into a unified JSON report for triage.
+    Useful for ephemeral runners and offline environments.
+    """
+    import subprocess
+
+    args = [
+        "python",
+        "-m",
+        "scripts.collect_problems",
+        "--output",
+        str(output),
+    ]
+    if summary:
+        args.append("--summary")
+    if autofix:
+        args.append("--autofix")
+    if clear_cache:
+        args.append("--clear-cache")
+
+    console = Console()
+    console.print(
+        Text.assemble(
+            ("→", "cyan"),
+            " Running problems collector: ",
+            " ".join(args),
+        )
+    )
+
+    result = subprocess.run(args, check=False)
+    raise SystemExit(result.returncode)
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
     cli()
