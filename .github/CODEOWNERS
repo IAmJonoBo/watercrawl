@@ -8,17 +8,18 @@
 /mkdocs.yml @ACES-Aerodynamics/docs-team
 
 # Core runtime packages
-/firecrawl_demo/core/ @ACES-Aerodynamics/platform-team
-/firecrawl_demo/domain/ @ACES-Aerodynamics/platform-team
-/firecrawl_demo/application/ @ACES-Aerodynamics/platform-team
-/firecrawl_demo/integrations/ @ACES-Aerodynamics/data-engineering
-/firecrawl_demo/governance/ @ACES-Aerodynamics/security
-/firecrawl_demo/interfaces/ @ACES-Aerodynamics/automation
+/watercrawl/core/ @ACES-Aerodynamics/platform-team
+/watercrawl/domain/ @ACES-Aerodynamics/platform-team
+/watercrawl/application/ @ACES-Aerodynamics/platform-team
+/watercrawl/integrations/ @ACES-Aerodynamics/data-engineering
+/watercrawl/governance/ @ACES-Aerodynamics/security
+/watercrawl/interfaces/ @ACES-Aerodynamics/automation
+/crawlkit/ @ACES-Aerodynamics/platform-team
 
 # Infrastructure and analytics
 /platform/ @ACES-Aerodynamics/platform-team
 /analytics/ @ACES-Aerodynamics/data-engineering
-/firecrawl_demo/infrastructure/ @ACES-Aerodynamics/platform-team
+/watercrawl/infrastructure/ @ACES-Aerodynamics/platform-team
 
 # Tests
 /tests/ @ACES-Aerodynamics/qa
