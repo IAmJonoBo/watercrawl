@@ -10,6 +10,7 @@ from typing import Any
 from firecrawl_demo.application.pipeline import Pipeline
 from firecrawl_demo.core import config
 from firecrawl_demo.core.profiles import ProfileError
+from firecrawl_demo.integrations.integration_plugins import contract_registry
 from firecrawl_demo.interfaces.cli_base import (
     PlanCommitError,
     PlanCommitGuard,
@@ -43,6 +44,20 @@ class CopilotMCPServer:
             "path": str(config.PROFILE_PATH),
         }
 
+    @staticmethod
+    def _contract_metadata(*names: str) -> dict[str, dict[str, str]]:
+        registry = contract_registry()
+        payload: dict[str, dict[str, str]] = {}
+        for name in names:
+            metadata = registry.get(name)
+            if metadata is None:
+                continue
+            payload[name] = {
+                "version": str(metadata.get("version", "")),
+                "schema_uri": metadata.get("schema_uri", ""),
+            }
+        return payload
+
     def _reload_pipeline(self) -> None:
         if self._pipeline_builder is not None:
             self.pipeline = self._pipeline_builder()
@@ -66,6 +81,12 @@ class CopilotMCPServer:
                         "selectProfile": True,
                     },
                     "profile": self._profile_payload(),
+                    "contracts": self._contract_metadata(
+                        "ValidationReport",
+                        "PipelineReport",
+                        "PlanArtifact",
+                        "CommitArtifact",
+                    ),
                 },
             }
 
@@ -129,13 +150,14 @@ class CopilotMCPServer:
                         "id": request_id,
                         "error": {"code": -32001, "message": str(exc)},
                     }
+            task_name = str(task)
             try:
-                result = self.pipeline.run_task(str(task), payload)
+                result = self.pipeline.run_task(task_name, payload)
             except KeyError:
                 return {
                     "jsonrpc": _JSONRPC,
                     "id": request_id,
-                    "error": {"code": -32601, "message": f"Unknown task '{task}'"},
+                    "error": {"code": -32601, "message": f"Unknown task '{task_name}'"},
                 }
             except (ValueError, RuntimeError) as exc:
                 return {
@@ -143,6 +165,23 @@ class CopilotMCPServer:
                     "id": request_id,
                     "error": {"code": -32000, "message": str(exc)},
                 }
+            if isinstance(result, dict):
+                if task_name == "validate_dataset":
+                    result.setdefault(
+                        "contracts",
+                        self._contract_metadata("ValidationReport"),
+                    )
+                elif task_name == "enrich_dataset":
+                    contracts = self._contract_metadata(
+                        "PipelineReport",
+                        "EvidenceRecord",
+                    )
+                    if contracts:
+                        existing = result.get("contracts")
+                        if isinstance(existing, dict):
+                            existing.update({k: v for k, v in contracts.items() if k not in existing})
+                        else:
+                            result["contracts"] = contracts
             return {"jsonrpc": _JSONRPC, "id": request_id, "result": result}
 
         if method == "shutdown":

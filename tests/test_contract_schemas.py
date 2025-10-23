@@ -18,6 +18,7 @@ from pydantic import ValidationError
 
 from firecrawl_demo.domain.contracts import (
     CONTRACT_VERSION,
+    SCHEMA_URI_BASE,
     EvidenceRecordContract,
     PipelineReportContract,
     QualityIssueContract,
@@ -364,9 +365,9 @@ class TestContractAdapters:
             quality_issue_from_contract("not a contract")
 
 
-SNAPSHOT_DIR = Path(__file__).parent / "data" / "contracts"
-JSON_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "json_v1.json"
-AVRO_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "avro_v1.json"
+SNAPSHOT_DIR = Path(__file__).resolve().parents[2] / "data_contracts" / "registry"
+JSON_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "json_schemas_v1.json"
+AVRO_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "avro_schemas_v1.json"
 REGISTRY_SNAPSHOT = SNAPSHOT_DIR / "registry_v1.json"
 
 
@@ -415,6 +416,25 @@ class TestSchemaExport:
         for schema_name, schema in all_schemas.items():
             assert "version" in schema, f"{schema_name} missing version"
             assert schema["version"] == CONTRACT_VERSION
+
+    def test_all_schemas_include_schema_uri(self):
+        """Ensure each exported JSON schema exposes a canonical URI."""
+
+        all_schemas = export_all_schemas()
+        for schema_name, schema in all_schemas.items():
+            uri = schema.get("schema_uri")
+            assert uri, f"{schema_name} missing schema URI"
+            assert str(uri).startswith(SCHEMA_URI_BASE)
+
+    def test_avro_schemas_include_metadata(self):
+        """Avro exports should include schema URIs and the contract version."""
+
+        all_avro = export_all_avro_schemas()
+        for schema_name, schema in all_avro.items():
+            assert schema.get("watercrawl_version") == CONTRACT_VERSION
+            uri = schema.get("schema_uri")
+            assert uri, f"{schema_name} missing schema URI"
+            assert str(uri).startswith(SCHEMA_URI_BASE)
 
     def test_registry_snapshot(self):
         """Ensure the public registry metadata remains stable."""

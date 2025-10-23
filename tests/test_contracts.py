@@ -9,8 +9,10 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from click.testing import CliRunner
+from pydantic import ValidationError
 
 from firecrawl_demo.core import config
+from firecrawl_demo.domain.contracts import EvidenceRecordContract
 from firecrawl_demo.integrations.contracts import (
     DBT_AVAILABLE,
     GREAT_EXPECTATIONS_AVAILABLE,
@@ -19,6 +21,7 @@ from firecrawl_demo.integrations.contracts import (
     validate_curated_dataframe,
 )
 from firecrawl_demo.interfaces.cli import cli
+from firecrawl_demo.infrastructure.evidence import CSVEvidenceSink, StreamingEvidenceSink
 
 
 def _valid_row() -> dict[str, str]:
@@ -251,3 +254,70 @@ def test_contracts_cli_persists_artifacts(
         if isinstance(entry, dict)
     }
     assert statuses.issubset({"success", "pass", "warn", "skipped"})
+
+
+def test_csv_evidence_sink_validates_mappings(tmp_path: Path) -> None:
+    """Evidence sinks should coerce mappings through the contract model."""
+
+    sink = CSVEvidenceSink(path=tmp_path / "evidence.csv")
+    sink.record(
+        [
+            {
+                "row_id": 1,
+                "organisation": "Test School",
+                "changes": "Initial contract export",
+                "sources": ["https://example.com", "https://gov.za"],
+                "notes": "Automated QA",
+                "confidence": 90,
+            }
+        ]
+    )
+    assert sink.path.exists()
+
+    with pytest.raises(ValidationError):
+        sink.record(
+            [
+                {
+                    "row_id": -1,
+                    "organisation": "Test School",
+                    "changes": "Invalid contract",
+                    "sources": [],
+                    "confidence": 150,
+                }
+            ]
+        )
+
+
+def test_evidence_sink_revalidates_contract_instances(tmp_path: Path) -> None:
+    """Contracts created without validation should still be enforced."""
+
+    contract = EvidenceRecordContract.model_construct(
+        row_id=-1,
+        organisation="Test School",
+        changes="Invalid contract",
+        sources=[],
+        confidence=50,
+    )
+    sink = CSVEvidenceSink(path=tmp_path / "log.csv")
+    with pytest.raises(ValidationError):
+        sink.record([contract])
+
+
+def test_streaming_evidence_sink_rejects_invalid_payloads() -> None:
+    """Streaming sinks apply the same contract validation pipeline."""
+
+    sink = StreamingEvidenceSink(enabled=True)
+    with pytest.raises(TypeError):
+        sink.record(["not a contract"])  # type: ignore[list-item]
+    with pytest.raises(ValidationError):
+        sink.record(
+            [
+                {
+                    "row_id": 0,
+                    "organisation": "Test",
+                    "changes": "Invalid",
+                    "sources": [],
+                    "confidence": -1,
+                }
+            ]
+        )
