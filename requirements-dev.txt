@@ -900,9 +900,9 @@ importlib-metadata==8.7.0 ; python_version >= "3.13" and python_version < "3.15"
 incremental==24.7.2 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:8cb2c3431530bec48ad70513931a760f446ad6c25e8333ca5d95e24b0ed7b8fe \
     --hash=sha256:fb4f1d47ee60efe87d4f6f0ebb5f70b9760db2b2574c59c8e8912be4ebd464c9
-iniconfig==2.1.0 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7 \
-    --hash=sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760
+iniconfig==2.3.0; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730 \
+    --hash=sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12
 ipykernel==7.0.1 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:2d3fd7cdef22071c2abbad78f142b743228c5d59cd470d034871ae0ac359533c \
     --hash=sha256:87182a8305e28954b6721087dec45b171712610111d494c17bb607befa1c4000
