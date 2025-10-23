@@ -7,13 +7,15 @@ import logging
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from concurrent.futures import Executor
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from urllib.parse import urlparse
+
+from crawlkit.adapter.firecrawl_compat import fetch_markdown
+from crawlkit.types import Entities, FetchPolicy
 
 from firecrawl_demo.core import config
 from firecrawl_demo.core.external_sources import triangulate_organisation
 from firecrawl_demo.domain.compliance import normalize_phone
-
-from ..firecrawl_client import FirecrawlClient, summarize_extract_payload
 
 logger = logging.getLogger(__name__)
 
@@ -141,143 +143,168 @@ class TriangulatingResearchAdapter:
         return merge_findings(baseline, triangulated)
 
 
-class FirecrawlResearchAdapter:
-    """Adapter that queries the Firecrawl SDK when feature flags allow."""
+class CrawlkitResearchAdapter:
+    """Adapter that uses Crawlkit fetch/distill/extract pipelines for enrichment."""
 
-    def __init__(self, client: FirecrawlClient | None = None) -> None:
-        self._client = client or FirecrawlClient()
+    SeedProvider = Callable[[str, str], tuple[ResearchFinding, list[str]]]
+    PolicyFactory = Callable[[str, str], Mapping[str, Any]]
+
+    def __init__(
+        self,
+        fetcher: Callable[[str, int, bool, Mapping[str, Any] | None], Mapping[str, Any]] | None = None,
+        *,
+        seed_url_provider: SeedProvider | None = None,
+        policy_factory: PolicyFactory | None = None,
+    ) -> None:
+        self._fetcher = fetcher or fetch_markdown
+        self._seed_urls = seed_url_provider or self._default_seed_urls
+        self._policy_factory = policy_factory or self._default_policy
 
     def lookup(self, organisation: str, province: str) -> ResearchFinding:
         return self._lookup_sync(organisation, province)
 
     async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
-        return await self._lookup_async(organisation, province)
+        return await asyncio.to_thread(self._lookup_sync, organisation, province)
 
     def _lookup_sync(self, organisation: str, province: str) -> ResearchFinding:
-        if not config.FEATURE_FLAGS.enable_firecrawl_sdk:
-            return ResearchFinding(notes="Firecrawl SDK disabled by feature flag.")
+        if not config.FEATURE_FLAGS.enable_crawlkit:
+            return ResearchFinding(notes="Crawlkit adapter disabled by feature flag.")
         if not config.ALLOW_NETWORK_RESEARCH:
             return ResearchFinding(
                 notes=(
-                    "Firecrawl SDK available but network research disabled. "
-                    "Run with ALLOW_NETWORK_RESEARCH=1 to enable live enrichment."
+                    "Crawlkit adapter available but network research disabled. "
+                    "Set ALLOW_NETWORK_RESEARCH=1 to enable live enrichment."
                 )
             )
 
-        query = f"{organisation} {province} South Africa flight school"
-        sources: list[str] = []
+        baseline, urls = self._seed_urls(organisation, province)
+        if not urls:
+            note = baseline.notes or "Crawlkit found no candidate URLs"
+            return merge_findings(baseline, ResearchFinding(notes=note))
+
+        findings: list[ResearchFinding] = []
+        policy = self._policy_factory(organisation, province)
+        seen: set[str] = set()
+        failures: list[str] = []
+
+        for url in _unique(urls):
+            if not isinstance(url, str) or not url:
+                continue
+            if url in seen:
+                continue
+            seen.add(url)
+            try:
+                result = self._fetcher(url, policy=policy)
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logger.warning("Crawlkit fetch failed for %s (%s): %s", organisation, url, exc)
+                failures.append(url)
+                continue
+
+            records: list[Mapping[str, Any]]
+            if isinstance(result.get("items"), list):
+                records = [item for item in result.get("items", []) if isinstance(item, Mapping)]
+            else:
+                records = [result]
+
+            for item in records:
+                finding = self._build_finding_from_record(item)
+                if finding:
+                    findings.append(finding)
+
+        if not findings:
+            notes: list[str] = [
+                baseline.notes or "Crawlkit returned no enrichments"
+            ]
+            if failures:
+                notes.append(_format_failure_note(failures))
+            return merge_findings(
+                baseline,
+                ResearchFinding(notes="; ".join(notes)),
+            )
+
+        enriched = merge_findings(*findings)
+        if failures:
+            enriched = merge_findings(
+                enriched,
+                ResearchFinding(notes=_format_failure_note(failures)),
+            )
+        return merge_findings(baseline, enriched)
+
+    def _default_seed_urls(
+        self, organisation: str, province: str
+    ) -> tuple[ResearchFinding, list[str]]:
+        try:
+            baseline = triangulate_organisation(
+                organisation,
+                province,
+                ResearchFinding(),
+                include_press=config.FEATURE_FLAGS.enable_press_research,
+                include_regulator=config.FEATURE_FLAGS.enable_regulator_lookup,
+                investigate_rebrands=config.FEATURE_FLAGS.investigate_rebrands,
+            )
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.warning("Triangulation failed for %s: %s", organisation, exc)
+            baseline = ResearchFinding(notes=f"Triangulation failed: {exc}")
+
+        urls: list[str] = []
+        if baseline.website_url:
+            urls.append(baseline.website_url)
+        urls.extend([source for source in baseline.sources if isinstance(source, str)])
+        return baseline, _unique(urls)
+
+    def _default_policy(self, organisation: str, province: str) -> Mapping[str, Any]:
+        policy = FetchPolicy(region="ZA")
+        policy.max_depth = 1
+        policy.max_pages = 5
+        return policy.to_dict()
+
+    def _build_finding_from_record(self, record: Mapping[str, Any]) -> ResearchFinding | None:
+        url = _coerce_url(record)
+        entities = Entities.from_mapping(record.get("entities"))
+        emails = entities.emails
+        phones = entities.phones
+        people = entities.people
+
+        contact_email = _first_str(emails, "address")
+        contact_phone = _first_str(phones, "number")
+        contact_person = _first_str(people, "name")
+
         notes: list[str] = []
-        confidence = 0
+        if contact_email:
+            notes.append("Email extracted via Crawlkit")
+        if contact_phone:
+            notes.append("Phone extracted via Crawlkit")
+        if contact_person:
+            notes.append("Contact person referenced in content")
 
-        try:
-            search_result = self._client.search(
-                query,
-                limit=config.FIRECRAWL.behaviour.search_limit,
-            )
-        except Exception as exc:  # pragma: no cover - defensive guard
-            logger.warning("Firecrawl search failed for %s: %s", organisation, exc)
-            notes.append(f"Firecrawl search failed: {exc}")
-        else:
-            sources.extend(_extract_urls(search_result))
+        description = _metadata_value(record, "description")
+        investigation_notes: list[str] = []
+        if description:
+            investigation_notes.append(description)
 
-        if not sources:
-            notes.append("Firecrawl search returned no actionable URLs")
-            return ResearchFinding(notes="; ".join(notes))
+        if not (contact_email or contact_phone or contact_person):
+            notes.append("Crawlkit fetch completed with no direct contacts")
 
-        extract_payload: dict[str, object] = {}
-        try:
-            extract_payload = self._client.extract(
-                urls=sources[: config.FIRECRAWL.behaviour.map_limit],
-                prompt=(
-                    "Summarise contact information, official website, and any recent "
-                    "ownership or brand changes for {organisation} in {province}, "
-                    "South Africa."
-                ).format(organisation=organisation, province=province),
-            )
-        except Exception as exc:  # pragma: no cover - defensive guard
-            logger.warning("Firecrawl extract failed for %s: %s", organisation, exc)
-            notes.append(f"Firecrawl extract failed: {exc}")
-        else:
-            confidence = 70
+        domain_hint = urlparse(url).netloc if isinstance(url, str) else None
+        if entities.emails and not contact_email and domain_hint:
+            contact_email = entities.emails[0].get("address")  # type: ignore[assignment]
 
-        return self._finalise_result(sources, notes, extract_payload, confidence)
+        confidence = 70 if (contact_email or contact_phone) else 50
 
-    async def _lookup_async(self, organisation: str, province: str) -> ResearchFinding:
-        if not config.FEATURE_FLAGS.enable_firecrawl_sdk:
-            return ResearchFinding(notes="Firecrawl SDK disabled by feature flag.")
-        if not config.ALLOW_NETWORK_RESEARCH:
-            return ResearchFinding(
-                notes=(
-                    "Firecrawl SDK available but network research disabled. "
-                    "Run with ALLOW_NETWORK_RESEARCH=1 to enable live enrichment."
-                )
-            )
-
-        query = f"{organisation} {province} South Africa flight school"
-        sources: list[str] = []
-        notes: list[str] = []
-        confidence = 0
-
-        try:
-            search_result = await asyncio.to_thread(
-                self._client.search,
-                query,
-                limit=config.FIRECRAWL.behaviour.search_limit,
-            )
-        except Exception as exc:  # pragma: no cover - defensive guard
-            logger.warning("Firecrawl search failed for %s: %s", organisation, exc)
-            notes.append(f"Firecrawl search failed: {exc}")
-        else:
-            sources.extend(_extract_urls(search_result))
-
-        if not sources:
-            notes.append("Firecrawl search returned no actionable URLs")
-            return ResearchFinding(notes="; ".join(notes))
-
-        extract_payload: dict[str, object] = {}
-        try:
-            extract_payload = await asyncio.to_thread(
-                self._client.extract,
-                sources[: config.FIRECRAWL.behaviour.map_limit],
-                (
-                    "Summarise contact information, official website, and any recent "
-                    "ownership or brand changes for {organisation} in {province}, "
-                    "South Africa."
-                ).format(organisation=organisation, province=province),
-            )
-        except Exception as exc:  # pragma: no cover - defensive guard
-            logger.warning("Firecrawl extract failed for %s: %s", organisation, exc)
-            notes.append(f"Firecrawl extract failed: {exc}")
-        else:
-            confidence = 70
-
-        return self._finalise_result(sources, notes, extract_payload, confidence)
-
-    def _finalise_result(
-        self,
-        sources: Sequence[str],
-        notes: Sequence[str],
-        extract_payload: Mapping[str, object],
-        confidence: int,
-    ) -> ResearchFinding:
-        summary = summarize_extract_payload(dict(extract_payload))
-        investigation: list[str] = []
-        for key in ("ownership_change", "rebrand_note"):
-            value = summary.get(key)
-            if isinstance(value, str) and value:
-                investigation.append(value)
-
-        message = "; ".join(notes) if notes else "Firecrawl insight gathered"
         return ResearchFinding(
-            website_url=summary.get("website_url"),
-            contact_person=summary.get("contact_person"),
-            contact_email=summary.get("contact_email"),
-            contact_phone=summary.get("contact_phone"),
-            sources=_unique(list(sources)),
-            notes=message,
+            website_url=url,
+            contact_person=contact_person,
+            contact_email=contact_email,
+            contact_phone=contact_phone,
+            sources=[url] if isinstance(url, str) else [],
+            notes="; ".join(notes) if notes else "Crawlkit insight gathered",
             confidence=confidence,
-            investigation_notes=investigation,
-            physical_address=summary.get("physical_address"),
+            alternate_names=[
+                str(person.get("name"))
+                for person in people[1:4]
+                if isinstance(person.get("name"), str)
+            ],
+            investigation_notes=investigation_notes,
         )
 
 
@@ -341,6 +368,18 @@ def merge_findings(*findings: ResearchFinding) -> ResearchFinding:
     )
 
 
+def _format_failure_note(failures: Sequence[str]) -> str:
+    """Summarise Crawlkit fetch failures for analyst visibility."""
+
+    display = [url for url in failures if url][:3]
+    more = max(len(failures) - len(display), 0)
+    summary = ", ".join(display)
+    if more:
+        summary = f"{summary}, … (+{more} more)" if summary else f"… (+{more} more)"
+    urls_fragment = f": {summary}" if summary else ""
+    return f"Crawlkit skipped {len(failures)} URL(s) due to fetch errors{urls_fragment}."
+
+
 def triangulate_via_sources(
     organisation: str, province: str, baseline: ResearchFinding
 ) -> ResearchFinding:
@@ -383,14 +422,10 @@ def build_research_adapter() -> ResearchAdapter:
 
 
 def _build_firecrawl_adapter() -> ResearchAdapter | None:
-    try:
-        client = FirecrawlClient()
-        if config.ALLOW_NETWORK_RESEARCH:
-            client._client()
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.info("Firecrawl adapter unavailable: %s", exc)
+    if not config.FEATURE_FLAGS.enable_crawlkit:
+        logger.info("Crawlkit adapter disabled via feature flag")
         return None
-    return FirecrawlResearchAdapter(client)
+    return CrawlkitResearchAdapter()
 
 
 async def lookup_with_adapter_async(
@@ -451,3 +486,34 @@ def _unique(values: Iterable[str]) -> list[str]:
         seen.add(value)
         unique_values.append(value)
     return unique_values
+
+
+def _metadata_value(record: Mapping[str, Any], key: str) -> str | None:
+    metadata = record.get("metadata")
+    if not isinstance(metadata, Mapping):
+        return None
+    value = metadata.get(key)
+    return str(value) if isinstance(value, str) and value else None
+
+
+def _first_str(items: Iterable[Mapping[str, Any]], key: str) -> str | None:
+    for item in items:
+        if not isinstance(item, Mapping):
+            continue
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def _coerce_url(record: Mapping[str, Any]) -> str | None:
+    raw = record.get("url")
+    if isinstance(raw, str) and raw:
+        return raw
+    metadata = record.get("metadata")
+    if isinstance(metadata, Mapping):
+        for candidate in ("canonical_url", "url", "source_url"):
+            value = metadata.get(candidate)
+            if isinstance(value, str) and value:
+                return value
+    return None

@@ -10,7 +10,6 @@ from firecrawl_demo.core import config
 from firecrawl_demo.core.external_sources import triangulate_organisation
 from firecrawl_demo.governance.secrets import EnvSecretsProvider
 from firecrawl_demo.integrations.adapters import research
-from firecrawl_demo.integrations.adapters.firecrawl_client import FirecrawlClient
 from firecrawl_demo.integrations.adapters.research import (
     AdapterLoaderSettings,
     NullResearchAdapter,
@@ -100,7 +99,7 @@ def test_load_enabled_adapters_reads_yaml_configuration(tmp_path):
 
 def test_firecrawl_factory_respects_feature_flags(monkeypatch):
     flags = config.FeatureFlags(
-        enable_firecrawl_sdk=False,
+        enable_crawlkit=False,
         enable_press_research=True,
         enable_regulator_lookup=True,
         enable_ml_inference=True,
@@ -113,7 +112,7 @@ def test_firecrawl_factory_respects_feature_flags(monkeypatch):
     )
 
     assert all(
-        not isinstance(adapter, research.FirecrawlResearchAdapter)
+        not isinstance(adapter, research.CrawlkitResearchAdapter)
         for adapter in adapters
     )
     assert any(isinstance(adapter, NullResearchAdapter) for adapter in adapters)
@@ -128,7 +127,7 @@ def test_firecrawl_factory_activates_when_feature_enabled(monkeypatch):
     )
 
     flags = config.FeatureFlags(
-        enable_firecrawl_sdk=True,
+        enable_crawlkit=True,
         enable_press_research=True,
         enable_regulator_lookup=True,
         enable_ml_inference=True,
@@ -160,9 +159,9 @@ def test_default_sequence_defers_firecrawl_until_opt_in(monkeypatch):
 
     adapters = load_enabled_adapters(AdapterLoaderSettings())
 
-    assert not called, "Firecrawl factory should not run without explicit opt-in"
+    assert not called, "Crawlkit factory should not run without explicit opt-in"
     assert all(
-        not isinstance(adapter, research.FirecrawlResearchAdapter)
+        not isinstance(adapter, research.CrawlkitResearchAdapter)
         for adapter in adapters
     )
     assert isinstance(adapters[-1], NullResearchAdapter)
@@ -250,12 +249,12 @@ async def test_lookup_with_adapter_async_uses_adapter_executor(monkeypatch) -> N
     assert result.confidence == 88
 
 
-@pytest.mark.parametrize("enable_firecrawl", [True, False])
-def test_build_research_adapter_handles_missing_firecrawl(
-    monkeypatch, enable_firecrawl
+@pytest.mark.parametrize("enable_crawlkit", [True, False])
+def test_build_research_adapter_handles_missing_crawlkit(
+    monkeypatch, enable_crawlkit
 ):
     flags = config.FeatureFlags(
-        enable_firecrawl_sdk=enable_firecrawl,
+        enable_crawlkit=enable_crawlkit,
         enable_press_research=True,
         enable_regulator_lookup=True,
         enable_ml_inference=True,
@@ -335,7 +334,7 @@ def test_triangulate_organisation_merges_live_sources(monkeypatch):
 
 def test_exemplar_adapters_enrich_from_registry(monkeypatch):
     flags = config.FeatureFlags(
-        enable_firecrawl_sdk=False,
+        enable_crawlkit=False,
         enable_press_research=True,
         enable_regulator_lookup=True,
         enable_ml_inference=True,
@@ -425,58 +424,9 @@ async def test_lookup_with_adapter_async_wraps_sync_adapter() -> None:
     assert result.notes == "sync-path"
 
 
-def test_firecrawl_research_adapter_respects_feature_flag(monkeypatch) -> None:
+def test_crawlkit_research_adapter_respects_feature_flag(monkeypatch) -> None:
     flags = config.FeatureFlags(
-        enable_firecrawl_sdk=False,
-        enable_press_research=True,
-        enable_regulator_lookup=True,
-        enable_ml_inference=True,
-        investigate_rebrands=True,
-    )
-    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
-
-    adapter = research.FirecrawlResearchAdapter()
-    result = adapter.lookup("Example Org", "Gauteng")
-    assert "disabled by feature flag" in result.notes
-
-
-def test_firecrawl_research_adapter_blocks_when_network_disabled(monkeypatch) -> None:
-    flags = config.FeatureFlags(
-        enable_firecrawl_sdk=True,
-        enable_press_research=True,
-        enable_regulator_lookup=True,
-        enable_ml_inference=True,
-        investigate_rebrands=True,
-    )
-    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
-    monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", False)
-
-    class GuardClient(FirecrawlClient):
-        def __init__(self) -> None:
-            super().__init__(api_key=None, api_url=None)
-            self.search_called = False
-
-        def search(
-            self, query: str, *, limit: int = 5
-        ) -> dict[str, object]:  # pragma: no cover - should not run
-            self.search_called = True
-            raise AssertionError("network calls should be skipped")
-
-        def extract(
-            self, urls: Iterable[str], prompt: str
-        ) -> dict[str, object]:  # pragma: no cover - should not run
-            raise AssertionError("network calls should be skipped")
-
-    client = GuardClient()
-    adapter = research.FirecrawlResearchAdapter(client)
-    result = adapter.lookup("Example Org", "Gauteng")
-    assert "network research disabled" in result.notes
-    assert not client.search_called
-
-
-def test_firecrawl_research_adapter_collects_sources(monkeypatch) -> None:
-    flags = config.FeatureFlags(
-        enable_firecrawl_sdk=True,
+        enable_crawlkit=False,
         enable_press_research=True,
         enable_regulator_lookup=True,
         enable_ml_inference=True,
@@ -485,64 +435,222 @@ def test_firecrawl_research_adapter_collects_sources(monkeypatch) -> None:
     monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
     monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", True)
 
-    def _summary_override(payload: Mapping[str, object]) -> dict[str, str | None]:
-        def _maybe(value: object) -> str | None:
-            return value if isinstance(value, str) else None
+    adapter = research.CrawlkitResearchAdapter()
+    result = adapter.lookup("Example Org", "Gauteng")
+    assert "disabled by feature flag" in result.notes
 
+
+def test_crawlkit_research_adapter_blocks_when_network_disabled(monkeypatch) -> None:
+    flags = config.FeatureFlags(
+        enable_crawlkit=True,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+    monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", False)
+
+    calls: list[str] = []
+
+    def seed(_: str, __: str) -> tuple[ResearchFinding, list[str]]:  # pragma: no cover
+        calls.append("seed")
+        return ResearchFinding(), ["https://example.org"]
+
+    adapter = research.CrawlkitResearchAdapter(seed_url_provider=seed)
+    result = adapter.lookup("Example Org", "Gauteng")
+    assert "network research disabled" in result.notes
+    assert not calls
+
+
+def test_crawlkit_research_adapter_collects_sources(monkeypatch) -> None:
+    flags = config.FeatureFlags(
+        enable_crawlkit=True,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+    monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", True)
+
+    def seed(_: str, __: str) -> tuple[ResearchFinding, list[str]]:
+        baseline = ResearchFinding(website_url="https://official.gov.za/profile")
+        return baseline, ["https://official.gov.za/profile"]
+
+    def fake_fetch(
+        url: str,
+        *,
+        policy: Mapping[str, object] | None = None,
+        depth: int = 1,
+        include_subpaths: bool = False,
+    ) -> Mapping[str, object]:  # pragma: no cover - deterministic stub
+        assert policy is not None
+        assert depth == 1
+        assert not include_subpaths
         return {
-            "contact_person": _maybe(payload.get("contact_person")),
-            "contact_email": _maybe(payload.get("contact_email")),
-            "contact_phone": _maybe(payload.get("contact_phone")),
-            "website_url": _maybe(payload.get("website_url")),
-            "physical_address": _maybe(payload.get("physical_address")),
-            "ownership_change": _maybe(payload.get("ownership_change")),
-            "rebrand_note": _maybe(payload.get("rebrand_note")),
+            "url": url,
+            "markdown": "",
+            "text": "",
+            "metadata": {"description": "Verified contact"},
+            "entities": {
+                "emails": [
+                    {"address": "thabo.ndlovu@official.gov.za", "status": "mx_only"}
+                ],
+                "phones": [{"number": "+27 10 555 0100", "kind": "business"}],
+                "people": [{"name": "Thabo Ndlovu", "role": "Director"}],
+            },
         }
 
-    monkeypatch.setattr(research.core, "summarize_extract_payload", _summary_override)
-
-    class TrackingClient(FirecrawlClient):
-        def __init__(self) -> None:
-            super().__init__(api_key=None, api_url=None)
-            self.search_args: tuple[str, int] | None = None
-            self.extract_args: tuple[tuple[str, ...], str] | None = None
-
-        def search(self, query: str, *, limit: int = 5) -> dict[str, object]:
-            self.search_args = (query, limit)
-            return {
-                "data": {
-                    "results": [
-                        {"url": "https://example.org/contact"},
-                        {"link": "https://official.gov.za/profile"},
-                    ]
-                }
-            }
-
-        def extract(self, urls: Iterable[str], prompt: str) -> dict[str, object]:
-            self.extract_args = (tuple(urls), prompt)
-            return {
-                "contact_person": "Thabo Ndlovu",
-                "contact_email": "thabo.ndlovu@official.gov.za",
-                "contact_phone": "+27 10 555 0100",
-                "website_url": "https://official.gov.za/profile",
-                "physical_address": "123 Aviation Way",
-                "ownership_change": "Ownership updated in 2024",
-                "rebrand_note": "Rebrand announced in March 2024",
-            }
-
-    client = TrackingClient()
-    adapter = research.FirecrawlResearchAdapter(client)
+    adapter = research.CrawlkitResearchAdapter(
+        fetcher=fake_fetch,
+        seed_url_provider=seed,
+    )
     result = adapter.lookup("Example Org", "Gauteng")
 
-    assert client.search_args is not None
-    assert client.extract_args is not None
-    assert "https://official.gov.za/profile" in result.sources
     assert result.contact_person == "Thabo Ndlovu"
+    assert result.contact_email == "thabo.ndlovu@official.gov.za"
+    assert result.contact_phone == "+27105550100"
+    assert "https://official.gov.za/profile" in result.sources
     assert result.confidence == 70
-    assert result.physical_address == "123 Aviation Way"
-    assert any(
-        "Ownership" in note or "Rebrand" in note for note in result.investigation_notes
+    assert "Verified contact" in result.investigation_notes
+
+
+def test_crawlkit_research_adapter_merges_multiple_seed_urls(monkeypatch) -> None:
+    flags = config.FeatureFlags(
+        enable_crawlkit=True,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
     )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+    monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", True)
+
+    baseline = ResearchFinding(
+        website_url="https://primary.example.za",
+        sources=[
+            "https://press.example.za/article",
+            "https://regulator.example.za/profile",
+        ],
+    )
+
+    def seed(_: str, __: str) -> tuple[ResearchFinding, list[str]]:
+        return baseline, [
+            "https://primary.example.za",
+            "https://press.example.za/article",
+            "https://regulator.example.za/profile",
+            "https://press.example.za/article",
+        ]
+
+    seen: list[str] = []
+
+    def fake_fetch(
+        url: str,
+        *,
+        policy: Mapping[str, object] | None = None,
+        depth: int = 1,
+        include_subpaths: bool = False,
+    ) -> Mapping[str, object]:  # pragma: no cover - deterministic stub
+        assert policy is not None
+        assert depth == 1
+        assert not include_subpaths
+        seen.append(url)
+        if "press" in url:
+            return {
+                "items": [
+                    {
+                        "url": url,
+                        "entities": {
+                            "people": [{"name": "Press Liaison", "role": "Spokesperson"}],
+                            "phones": [{"number": "+27 12 555 0101", "kind": "media"}],
+                        },
+                    }
+                ]
+            }
+        if "regulator" in url:
+            return {
+                "url": url,
+                "entities": {
+                    "emails": [{"address": "compliance@regulator.example.za"}],
+                },
+            }
+        return {
+            "url": url,
+            "entities": {
+                "people": [{"name": "Amina Dlamini", "role": "Managing Director"}],
+                "phones": [{"number": "+27 11 555 0123", "kind": "switchboard"}],
+            },
+        }
+
+    adapter = research.CrawlkitResearchAdapter(
+        fetcher=fake_fetch,
+        seed_url_provider=seed,
+    )
+
+    result = adapter.lookup("Example Org", "Gauteng")
+
+    assert seen == [
+        "https://primary.example.za",
+        "https://press.example.za/article",
+        "https://regulator.example.za/profile",
+    ]
+    assert result.contact_person == "Press Liaison"
+    assert result.contact_phone == "+27125550101"
+    assert result.contact_email == "compliance@regulator.example.za"
+    assert result.sources == [
+        "https://press.example.za/article",
+        "https://regulator.example.za/profile",
+        "https://primary.example.za",
+    ]
+
+
+def test_crawlkit_research_adapter_reports_failed_urls(monkeypatch) -> None:
+    flags = config.FeatureFlags(
+        enable_crawlkit=True,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    monkeypatch.setattr(config, "FEATURE_FLAGS", flags)
+    monkeypatch.setattr(config, "ALLOW_NETWORK_RESEARCH", True)
+
+    def seed(_: str, __: str) -> tuple[ResearchFinding, list[str]]:
+        return ResearchFinding(), [
+            "https://success.example.za",
+            "https://failure.example.za",
+        ]
+
+    def fake_fetch(
+        url: str,
+        *,
+        policy: Mapping[str, object] | None = None,
+        depth: int = 1,
+        include_subpaths: bool = False,
+    ) -> Mapping[str, object]:  # pragma: no cover - deterministic stub
+        assert policy is not None
+        assert depth == 1
+        assert not include_subpaths
+        if "failure" in url:
+            raise RuntimeError("boom")
+        return {
+            "url": url,
+            "entities": {
+                "emails": [{"address": "contact@success.example.za"}],
+            },
+        }
+
+    adapter = research.CrawlkitResearchAdapter(
+        fetcher=fake_fetch,
+        seed_url_provider=seed,
+    )
+
+    result = adapter.lookup("Example Org", "Gauteng")
+
+    assert result.contact_email == "contact@success.example.za"
+    assert "Crawlkit skipped 1 URL" in result.notes
+    assert "https://failure.example.za" in result.notes
 
 
 def test_extract_urls_and_unique_filters_duplicates() -> None:

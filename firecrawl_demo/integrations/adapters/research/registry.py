@@ -246,7 +246,7 @@ def _normalize_name(name: str) -> str:
 
 
 def _firecrawl_factory(context: AdapterContext) -> ResearchAdapter | None:
-    if not context.config.FEATURE_FLAGS.enable_firecrawl_sdk:
+    if not context.config.FEATURE_FLAGS.enable_crawlkit:
         return None
     return _build_firecrawl_adapter()
 
@@ -257,6 +257,7 @@ def _null_factory(_: AdapterContext) -> ResearchAdapter:
 
 # Register built-in adapters immediately for default behaviour.
 register_adapter("firecrawl", _firecrawl_factory)
+register_adapter("crawlkit", _firecrawl_factory)
 register_adapter("null", _null_factory)
 
 # Ensure exemplar adapters are registered alongside built-ins.

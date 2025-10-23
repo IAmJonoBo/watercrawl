@@ -62,6 +62,7 @@ from firecrawl_demo.core.config import get_config
 
 config = get_config()
 print(config.feature_enable_firecrawl_sdk)  # bool
+print(config.feature_enable_crawlkit)  # bool
 print(config.refinement_profile)  # str
 ```
 
@@ -71,6 +72,7 @@ print(config.refinement_profile)  # str
 @dataclass
 class Config:
     # Feature flags
+    feature_enable_crawlkit: bool
     feature_enable_firecrawl_sdk: bool
     allow_network_research: bool
     feature_enable_press_research: bool
