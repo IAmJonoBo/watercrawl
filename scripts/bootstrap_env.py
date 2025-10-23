@@ -9,6 +9,9 @@ from os import environ
 from pathlib import Path
 
 
+PLAYWRIGHT_BROWSERS: tuple[str, ...] = ("chromium", "firefox", "webkit")
+
+
 class BootstrapError(RuntimeError):
     """Raised when one of the bootstrap steps fails."""
 
@@ -105,6 +108,7 @@ def build_bootstrap_plan(
                 command=("poetry", "run", "python", "-m", "scripts.sync_type_stubs"),
             )
         )
+        steps.extend(_build_artifact_cache_steps(repo_root))
 
     if enable_node:
         root_package = repo_root / "package.json"
@@ -129,6 +133,67 @@ def build_bootstrap_plan(
             )
 
     return steps
+
+
+def _build_artifact_cache_steps(repo_root: Path) -> list[BootstrapStep]:
+    """Return bootstrap steps that seed heavyweight runtime caches."""
+
+    steps: list[BootstrapStep] = []
+    steps.extend(_playwright_cache_steps(repo_root))
+    steps.extend(_tldextract_cache_steps(repo_root))
+    return steps
+
+
+def _playwright_cache_steps(repo_root: Path) -> list[BootstrapStep]:
+    """Pre-download Playwright browsers when they are not already cached."""
+
+    cache_dir = repo_root / "artifacts" / "cache" / "playwright"
+    if all(_playwright_browser_cached(cache_dir, browser) for browser in PLAYWRIGHT_BROWSERS):
+        return []
+    return [
+        BootstrapStep(
+            description="Seed Playwright browser cache (chromium/firefox/webkit)",
+            command=("poetry", "run", "playwright", "install", *PLAYWRIGHT_BROWSERS),
+            env={"PLAYWRIGHT_BROWSERS_PATH": str(cache_dir)},
+        )
+    ]
+
+
+def _playwright_browser_cached(cache_dir: Path, browser: str) -> bool:
+    """Return True if the requested browser artefact is already cached."""
+
+    search_roots = [cache_dir, cache_dir / "ms-playwright"]
+    pattern = f"{browser}-*"
+    for root in search_roots:
+        if not root.exists():
+            continue
+        if any(root.glob(pattern)):
+            return True
+    return False
+
+
+def _tldextract_cache_steps(repo_root: Path) -> list[BootstrapStep]:
+    """Create steps that pre-populate the public suffix cache for offline runs."""
+
+    cache_dir = repo_root / "artifacts" / "cache" / "tldextract"
+    if cache_dir.exists() and any(
+        cache_dir.glob("publicsuffix.org-tlds/*.tldextract.json")
+    ):
+        return []
+
+    script = (
+        "from pathlib import Path; import tldextract; "
+        f"cache = Path(r\"{cache_dir.as_posix()}\"); "
+        "cache.mkdir(parents=True, exist_ok=True); "
+        "tldextract.TLDExtract(cache_dir=str(cache), suffix_list_urls=())('example.com')"
+    )
+
+    return [
+        BootstrapStep(
+            description="Seed tldextract public suffix cache",
+            command=("poetry", "run", "python", "-c", script),
+        )
+    ]
 
 
 def execute_plan(steps: Iterable[BootstrapStep], *, dry_run: bool) -> None:

@@ -34,6 +34,8 @@ from firecrawl_demo.interfaces.cli_base import (
 from scripts import bootstrap_python
 
 CLI_ENVIRONMENT = load_cli_environment()
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PLAYWRIGHT_CACHE_DIR = (REPO_ROOT / "artifacts" / "cache" / "playwright").resolve()
 
 
 @dataclass(frozen=True)
@@ -275,7 +277,7 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
                 "pytest",
                 "--maxfail=1",
                 "--disable-warnings",
-                "--cov=firecrawl_demo",
+                "--cov=crawlkit",
                 "--cov-report=term-missing",
             ),
             description="Execute the unit test suite with coverage reporting.",
@@ -517,8 +519,15 @@ if sys.version_info < (3, 14):
         0,
         CommandSpec(
             name="Bandit",
-            args=("poetry", "run", "bandit", "-r", "firecrawl_demo"),
-            description="Security lint the core package with Bandit.",
+            args=(
+                "poetry",
+                "run",
+                "bandit",
+                "-r",
+                "crawlkit",
+                "firecrawl_demo",
+            ),
+            description="Security lint the Crawlkit and legacy Firecrawl packages with Bandit.",
         ),
     )
 
@@ -678,6 +687,7 @@ def _run_command_specs(
         console.print(Text.assemble(("→", "cyan"), " ", spec.name, ": ", command_str))
         start = time.perf_counter()
         env = os.environ.copy()
+        env.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(PLAYWRIGHT_CACHE_DIR))
         if spec.env:
             env.update(spec.env)
         result = subprocess.run(spec.args, env=env, check=False)

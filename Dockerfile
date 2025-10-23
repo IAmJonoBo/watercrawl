@@ -5,7 +5,25 @@ FROM python:3.13-slim@sha256:2ec5a4a5c3e919570f57675471f081d6299668d909feabd8d48
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential=12.9 \
-        curl=7.88.1-10+deb12u8 && \
+        curl=7.88.1-10+deb12u8 \
+        libnss3 \
+        libatk1.0-0 \
+        libatk-bridge2.0-0 \
+        libdrm2 \
+        libxcb1 \
+        libxkbcommon0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libxfixes3 \
+        libxrender1 \
+        libx11-6 \
+        libxss1 \
+        libxshmfence1 \
+        libgtk-3-0 \
+        libgbm1 \
+        libasound2 \
+        fonts-liberation && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Poetry with retry configuration
@@ -13,11 +31,13 @@ RUN python -m pip install --no-cache-dir --timeout 60 --retries 5 "poetry==1.9.6
 
 WORKDIR /build
 COPY pyproject.toml poetry.lock poetry.toml ./
+COPY crawlkit ./crawlkit
 COPY firecrawl_demo ./firecrawl_demo
 COPY scripts ./scripts
 COPY tools ./tools
 COPY data ./data
 COPY profiles ./profiles
+COPY artifacts ./artifacts
 COPY README.md LICENSE ./
 
 # Install dependencies in a virtual environment with timeout/retry configuration
@@ -26,13 +46,37 @@ ENV PIP_TIMEOUT=60 \
 RUN poetry config virtualenvs.in-project true && \
     poetry install --no-root --no-dev --no-interaction --no-ansi
 
+# Pre-cache Playwright browsers and public suffix data for offline execution
+RUN mkdir -p artifacts/cache/playwright artifacts/cache/tldextract && \
+    PLAYWRIGHT_BROWSERS_PATH="/build/artifacts/cache/playwright" \
+        poetry run playwright install chromium firefox webkit && \
+    poetry run python -c "from pathlib import Path; import tldextract; cache = Path('/build/artifacts/cache/tldextract'); cache.mkdir(parents=True, exist_ok=True); tldextract.TLDExtract(cache_dir=str(cache), suffix_list_urls=())('example.com')"
+
 # Stage 2: Runtime - minimal production image
 FROM python:3.13-slim@sha256:2ec5a4a5c3e919570f57675471f081d6299668d909feabd8d4803c6c61af666c
 
 # Install minimal runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates && \
+        ca-certificates \
+        libnss3 \
+        libatk1.0-0 \
+        libatk-bridge2.0-0 \
+        libdrm2 \
+        libxcb1 \
+        libxkbcommon0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libxfixes3 \
+        libxrender1 \
+        libx11-6 \
+        libxss1 \
+        libxshmfence1 \
+        libgtk-3-0 \
+        libgbm1 \
+        libasound2 \
+        fonts-liberation && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and group with explicit UID/GID
@@ -43,8 +87,10 @@ WORKDIR /app
 
 # Copy virtual environment from builder
 COPY --from=builder --chown=app:app /build/.venv /app/.venv
+COPY --from=builder --chown=app:app /build/artifacts/cache /app/artifacts/cache
 
 # Copy application code
+COPY --chown=app:app crawlkit ./crawlkit
 COPY --chown=app:app firecrawl_demo ./firecrawl_demo
 COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app tools ./tools
@@ -56,7 +102,8 @@ COPY --chown=app:app main.py pyproject.toml README.md LICENSE ./
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    PLAYWRIGHT_BROWSERS_PATH=/app/artifacts/cache/playwright
 
 # Switch to non-root user
 USER app:app
