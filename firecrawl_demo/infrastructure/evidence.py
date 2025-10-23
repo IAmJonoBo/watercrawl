@@ -37,7 +37,11 @@ def _ensure_contract_records(
     contracts: list[EvidenceRecordContract] = []
     for entry in entries:
         if isinstance(entry, EvidenceRecordContract):
-            validated = EvidenceRecordContract.model_validate(entry.model_dump())
+            # Only revalidate if constructed via model_construct (fields_set is empty)
+            if not getattr(entry, "__pydantic_fields_set__", None):
+                validated = EvidenceRecordContract.model_validate(entry.model_dump())
+            else:
+                validated = entry
         elif isinstance(entry, EvidenceRecord):
             validated = evidence_record_to_contract(entry)
         elif isinstance(entry, Mapping):
