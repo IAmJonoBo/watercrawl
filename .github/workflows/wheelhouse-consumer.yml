@@ -5,9 +5,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download wheelhouse
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: wheelhouse-3.13
           path: wheelhouse
