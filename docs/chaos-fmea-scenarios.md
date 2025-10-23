@@ -353,7 +353,7 @@ poetry install
 | F-001 | Research adapter timeout | Reduced enrichment coverage | 3 | 4 | 1 | 4 → 3 (_Δ_ −1) | Multi-adapter fallback, timeout alerts; added adaptive retry jitter and scenario-tagged alerts after 2025-10-26 drill | Platform |
 | F-002 | DuckDB corruption | Contract validation unavailable | 4 | 2 | 3 | 6 | Auto-recovery, CSV fallback, backups | Data |
 | F-003 | Evidence log locked | Pipeline halt | 4 | 2 | 2 | 4 | Lock detection, clear error, atomic writes | Platform |
-| F-004 | Network partition | Feature flag drift to offline mode | 2 | 3 | 1 | 3 → 3 (_Δ_ 0) | Offline-first design, deterministic adapters; preflight now validates offline caches per 2025-10-26 exercise | Platform |
+| F-004 | Network partition | Feature flag drift to offline mode | 2 | 3 | 1 | 3 → 3 (_Δ_ 0) | Offline-first design, deterministic adapters; `qa dependencies` emits `artifacts/chaos/preflight/<ts>.json` validating offline caches before drills | Platform |
 | F-005 | Drift baseline missing | Observability gap | 3 | 2 | 1 | 2 | Warning with seed instructions, non-blocking | Data |
 | F-006 | Plan/commit mismatch | Unauthorized change blocked | 4 | 2 | 1 | 2 | ETag validation, audit logging | Security |
 | F-007 | Low RAG metrics | Unsafe agent operation | 3 | 3 | 1 | 3 | Threshold gates, prompt refinement UX | Security |
@@ -369,6 +369,7 @@ poetry install
 ### Pre-Game Checklist
 - [ ] Notify team of scheduled chaos drill
 - [ ] Ensure all monitoring and alerting active
+- [ ] Run `python -m scripts.bootstrap_env --offline --dry-run` (or `poetry run python -m apps.automation.cli qa dependencies`) and archive the emitted `artifacts/chaos/preflight/<timestamp>.json`
 - [ ] Prepare rollback plan
 - [ ] Document baseline metrics
 - [ ] Set up incident channel for coordination
@@ -428,6 +429,18 @@ For effective chaos testing, ensure these signals are available:
 | F-001 | Platform | 2025-10-26T14:05:32Z | Recovered with degraded coverage | −1 | Adaptive retry jitter, scenario-tagged alerts | `artifacts/chaos/2025-10-26_F-001.json` |
 | F-004 | Platform | 2025-10-26T15:12:04Z | Successful failover to offline mode | 0 | Offline cache preflight automation | `artifacts/chaos/2025-10-26_F-004.json` |
 | F-011 | Platform | 2025-10-26T16:27:41Z | Guardrails blocked deploy; manual mitigation required | +1 | Wheel mirror workflow + dry-run check wired into release gate; escalation contacts confirmed | `artifacts/chaos/2025-10-26_F-011.json` |
+
+### Offline cache remediation quick-reference
+
+- **pip wheel mirror** — `python scripts/mirror_wheels.py --python 3.14 --python 3.15`
+  regenerates the wheel cache; inspect the JSON preflight output for
+  `missing_caches: ["pip_cache"]` to confirm when to re-run.
+- **Node tarballs** — `python -m scripts.stage_node_tarball --version <LTS> --platform linux-x64`
+  hydrates the `artifacts/cache/node/` directory when the preflight reports
+  `missing_caches: ["node_tarballs"]`.
+- **Playwright browsers / tldextract suffixes** — execute the non-offline
+  bootstrap (`python -m scripts.bootstrap_env`) to repopulate caches whenever
+  the preflight JSON lists `playwright` or `tldextract`.
 
 ## References
 

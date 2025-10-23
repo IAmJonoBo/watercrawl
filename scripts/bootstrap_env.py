@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from os import environ
 from pathlib import Path
+from typing import Any
 
 PLAYWRIGHT_BROWSERS: tuple[str, ...] = ("chromium", "firefox", "webkit")
 NODE_CACHE_DIRNAME = "node"
@@ -352,6 +355,129 @@ def execute_plan(steps: Iterable[BootstrapStep], *, dry_run: bool) -> None:
             )
 
 
+def _resolve_pip_cache_dir(repo_root: Path) -> Path:
+    """Determine the pip cache directory that should be validated."""
+
+    uv_cache_dir = environ.get("UV_CACHE_DIR")
+    if not uv_cache_dir:
+        return repo_root / "artifacts" / "cache" / "pip"
+    candidate = Path(uv_cache_dir)
+    if candidate.is_absolute():
+        return candidate
+    return (repo_root / candidate).resolve()
+
+
+def _pip_cache_status(cache_dir: Path) -> dict[str, Any]:
+    """Return readiness information for the pip wheel cache."""
+
+    exists = cache_dir.exists()
+    mirror_state = (cache_dir / "mirror_state.json").exists() if exists else False
+    wheel_sample = None
+    if exists:
+        wheel_sample = next(cache_dir.rglob("*.whl"), None)
+    ready = exists and (mirror_state or wheel_sample is not None)
+    status: dict[str, Any] = {
+        "path": str(cache_dir),
+        "ready": ready,
+        "mirror_state": mirror_state,
+    }
+    if wheel_sample is not None:
+        status["sample_wheel"] = wheel_sample.name
+    return status
+
+
+def _collect_cache_status(repo_root: Path) -> dict[str, Any]:
+    """Inspect offline caches and return readiness metadata."""
+
+    pip_cache_dir = _resolve_pip_cache_dir(repo_root)
+    pip_status = _pip_cache_status(pip_cache_dir)
+
+    playwright_cache_dir = repo_root / "artifacts" / "cache" / "playwright"
+    playwright_missing = [
+        browser
+        for browser in PLAYWRIGHT_BROWSERS
+        if not _playwright_browser_cached(playwright_cache_dir, browser)
+    ]
+    playwright_status: dict[str, Any] = {
+        "path": str(playwright_cache_dir),
+        "ready": not playwright_missing,
+    }
+    if playwright_missing:
+        playwright_status["missing_browsers"] = sorted(playwright_missing)
+
+    suffix_cache_root = repo_root / "artifacts" / "cache" / "tldextract"
+    suffix_cache_dir = suffix_cache_root / "publicsuffix.org-tlds"
+    suffix_ready = suffix_cache_dir.exists() and any(
+        suffix_cache_dir.glob("*.tldextract.json")
+    )
+    tld_status = {
+        "path": str(suffix_cache_dir),
+        "ready": suffix_ready,
+    }
+
+    node_ready = _validate_node_tarball_cache(repo_root)
+    node_status = {
+        "path": str(repo_root / "artifacts" / "cache" / NODE_CACHE_DIRNAME),
+        "ready": node_ready,
+        "has_tarballs": _has_node_tarball_cache(repo_root),
+    }
+
+    missing: list[str] = []
+    if not pip_status["ready"]:
+        missing.append("pip_cache")
+    if not playwright_status["ready"]:
+        missing.append("playwright")
+    if not tld_status["ready"]:
+        missing.append("tldextract")
+    if not node_status["ready"]:
+        missing.append("node_tarballs")
+
+    return {
+        "details": {
+            "pip": pip_status,
+            "playwright": playwright_status,
+            "tldextract": tld_status,
+            "node": node_status,
+        },
+        "missing": missing,
+    }
+
+
+def _write_preflight_report(
+    repo_root: Path, report: dict[str, Any], recorded_at: datetime
+) -> Path:
+    """Persist the preflight report under the chaos artefacts directory."""
+
+    chaos_dir = repo_root / "artifacts" / "chaos" / "preflight"
+    chaos_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"preflight_{recorded_at.strftime('%Y%m%dT%H%M%SZ')}.json"
+    report_path = chaos_dir / filename
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report_path.relative_to(repo_root)
+
+
+def _build_preflight_report(
+    *, repo_root: Path, offline: bool, error: str | None
+) -> dict[str, Any]:
+    """Compose the structured JSON payload describing cache readiness."""
+
+    cache_status = _collect_cache_status(repo_root)
+    recorded_at = datetime.now(UTC)
+    status = "pass" if not cache_status["missing"] and error is None else "fail"
+    report: dict[str, Any] = {
+        "status": status,
+        "offline": offline,
+        "recorded_at": recorded_at.isoformat(),
+        "missing_caches": cache_status["missing"],
+        "details": cache_status["details"],
+    }
+    if error:
+        report["error"] = error
+    relative_path = _write_preflight_report(repo_root, report, recorded_at)
+    report["report_path"] = relative_path.as_posix()
+    return report
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Bootstrap the Python and Node.js tooling for the repository.",
@@ -395,18 +521,43 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    plan = build_bootstrap_plan(
-        repo_root=args.repo_root,
-        enable_python=args.enable_python,
-        enable_node=args.enable_node,
-        enable_docs=args.enable_docs,
-        offline=args.offline,
-    )
+    plan: list[BootstrapStep] | None = None
+    error_message: str | None = None
     try:
-        execute_plan(plan, dry_run=args.dry_run)
-    except BootstrapError as exc:  # pragma: no cover - CLI error handling
-        print(str(exc), file=sys.stderr)
-        return 1
+        plan = build_bootstrap_plan(
+            repo_root=args.repo_root,
+            enable_python=args.enable_python,
+            enable_node=args.enable_node,
+            enable_docs=args.enable_docs,
+            offline=args.offline,
+        )
+    except BootstrapError as exc:
+        if args.dry_run:
+            error_message = str(exc)
+        else:
+            print(str(exc), file=sys.stderr)
+            return 1
+    else:
+        try:
+            execute_plan(plan, dry_run=args.dry_run)
+        except BootstrapError as exc:  # pragma: no cover - CLI error handling
+            if args.dry_run:
+                error_message = str(exc)
+            else:
+                print(str(exc), file=sys.stderr)
+                return 1
+
+    if args.dry_run:
+        report = _build_preflight_report(
+            repo_root=args.repo_root,
+            offline=args.offline,
+            error=error_message,
+        )
+        print(json.dumps(report, sort_keys=True))
+        if error_message:
+            print(error_message, file=sys.stderr)
+        return 0 if report["status"] == "pass" else 1
+
     return 0
 
 
