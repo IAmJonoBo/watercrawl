@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Package Rename and Structure Elevation
+
+- **BREAKING: Package Renamed** `firecrawl_demo` → `watercrawl`
+  - Removed all traces of "firecrawl_demo" from the codebase to better reflect the project's purpose
+  - The package name now aligns with the repository name and project identity
+  - Updated 103 Python files, 84 documentation files, and all configuration files
+  - Preserved all functionality: business logic, pipelines, integrations, and interfaces remain intact
+  - External Firecrawl SDK integration remains available via `FEATURE_ENABLE_FIRECRAWL_SDK` flag
+  - Migration path: Update all imports from `firecrawl_demo.*` to `watercrawl.*`
+
+- **Crawlkit Elevated**: Crawlkit is now the primary crawling engine
+  - `crawlkit/` provides first-party fetch, distill, extract, and orchestration modules
+  - Replaces legacy dependency on external Firecrawl service with deterministic offline-first approach
+  - Compatibility adapter (`crawlkit.adapter.firecrawl_compat`) maintains backward compatibility
+  - Architecture: `watercrawl` (core enrichment toolkit) uses `crawlkit` (crawling primitives)
+
+- **Configuration Updates**:
+  - Updated `pyproject.toml`: packages list, known_first_party, src paths, ruff config, mutmut paths
+  - Updated `Dockerfile`: COPY commands reference watercrawl instead of firecrawl_demo
+  - Updated `justfile`: security, coverage, and metrics recipes use watercrawl paths
+  - Updated `.github/CODEOWNERS`: team ownership paths now reference watercrawl/* and crawlkit/
+
 ### Added - Phase 1: Data Contracts & Evidence Enforcement
 
 - **CI Enforcement**: Added contracts command to CI workflow that blocks publish on failures
