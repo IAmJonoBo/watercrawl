@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import time
+from dataclasses import asdict
+from pathlib import Path
 
 import click
 import networkx as nx
@@ -10,17 +13,23 @@ from rich.console import Console
 from rich.table import Table
 
 from firecrawl_demo.core import config
+from firecrawl_demo.domain import relationships
 
 _DEFAULT_THROTTLE = 0.2
 
 
-def _load_graph() -> nx.MultiDiGraph:
-    path = config.RELATIONSHIPS_GRAPHML
-    if not path.exists():
-        raise click.ClickException(
-            "Relationship graph snapshot not found. Run the enrichment pipeline first."
+def _load_snapshot() -> relationships.RelationshipGraphSnapshot:
+    try:
+        snapshot = relationships.load_graph_snapshot(
+            graphml_path=config.RELATIONSHIPS_GRAPHML,
+            node_csv_path=config.RELATIONSHIPS_CSV,
+            edge_csv_path=config.RELATIONSHIPS_EDGES_CSV,
         )
-    return nx.read_graphml(path)
+    except FileNotFoundError as exc:  # pragma: no cover - defensive guard
+        raise click.ClickException(str(exc)) from exc
+    except RuntimeError as exc:  # pragma: no cover - optional dependency guard
+        raise click.ClickException(str(exc)) from exc
+    return snapshot
 
 
 def _string_to_list(value: str) -> list[str]:
@@ -73,7 +82,10 @@ def cli() -> None:
 def contacts_by_regulator(regulator: str, throttle: float) -> None:
     """List contacts linked to sources from a specific regulator."""
 
-    graph = _load_graph()
+    snapshot = _load_snapshot()
+    if snapshot.graph is None:  # pragma: no cover - defensive guard
+        raise click.ClickException("Relationship graph has not been materialised yet.")
+    graph = snapshot.graph
     console = Console()
     regulator_key = regulator.casefold()
     rows: list[tuple[str, str, str]] = []
@@ -122,7 +134,10 @@ def contacts_by_regulator(regulator: str, throttle: float) -> None:
 def sources_for_phone(phone: str, throttle: float) -> None:
     """Show sources corroborating a specific phone number."""
 
-    graph = _load_graph()
+    snapshot = _load_snapshot()
+    if snapshot.graph is None:  # pragma: no cover - defensive guard
+        raise click.ClickException("Relationship graph has not been materialised yet.")
+    graph = snapshot.graph
     console = Console()
     normalized = phone.strip()
     matches: list[tuple[str, list[tuple[str, str]]]] = []
@@ -162,6 +177,29 @@ def sources_for_phone(phone: str, throttle: float) -> None:
         for index, (uri, publisher) in enumerate(sources):
             table.add_row(contact if index == 0 else "", uri or "—", publisher or "—")
     console.print(table)
+
+
+@cli.command("export-telemetry")
+@click.argument("output", type=click.Path(path_type=Path))
+def export_telemetry(output: Path) -> None:
+    """Export relationship graph telemetry (metrics and anomalies) to JSON."""
+
+    snapshot = _load_snapshot()
+    payload = {
+        "graphml_path": str(snapshot.graphml_path),
+        "node_summary_path": str(snapshot.node_summary_path),
+        "edge_summary_path": str(snapshot.edge_summary_path),
+        "node_count": snapshot.node_count,
+        "edge_count": snapshot.edge_count,
+        "centrality": snapshot.centrality,
+        "betweenness": snapshot.betweenness,
+        "community_assignments": snapshot.community_assignments,
+        "anomalies": [asdict(anomaly) for anomaly in snapshot.anomalies],
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    console = Console()
+    console.print(f"[green]Telemetry exported to {output}[/green]")
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
