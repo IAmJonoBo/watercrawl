@@ -329,15 +329,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+    plan = build_bootstrap_plan(
+        repo_root=args.repo_root,
+        enable_python=args.enable_python,
+        enable_node=args.enable_node,
+        enable_docs=args.enable_docs,
+        offline=args.offline,
+    )
     try:
-        args = parse_args(argv)
-        plan = build_bootstrap_plan(
-            repo_root=args.repo_root,
-            enable_python=args.enable_python,
-            enable_node=args.enable_node,
-            enable_docs=args.enable_docs,
-            offline=args.offline,
-        )
         execute_plan(plan, dry_run=args.dry_run)
     except BootstrapError as exc:  # pragma: no cover - CLI error handling
         print(str(exc), file=sys.stderr)
