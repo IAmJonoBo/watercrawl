@@ -552,7 +552,7 @@
       "owner": "Data Engineering",
       "package": "great-expectations",
       "requires_python": "<3.14,>=3.9",
-      "resolved": false,
+      "resolved": true,
       "targets": {
         "3.14": {
           "message": "Requires-Python '<3.14,>=3.9' excludes 3.14",
