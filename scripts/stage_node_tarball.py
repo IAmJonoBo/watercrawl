@@ -125,14 +125,14 @@ def verify_checksum(tarball_path: Path, checksum_file: Path) -> bool:
     return False
 
 
-def verify_gpg_signature(checksum_file: Path) -> bool:
+def verify_gpg_signature(checksum_file: Path, checksum_url: str) -> bool:
     """Verify GPG signature of SHASUMS256.txt (optional, requires gpg)."""
-    sig_url = f"{checksum_file.parent / 'SHASUMS256.txt.sig'}"
+    sig_url = checksum_url + ".sig"
     sig_file = checksum_file.with_suffix(".txt.sig")
 
     try:
         # Download signature file
-        download_file(str(sig_url).replace(str(checksum_file.parent), checksum_file.parent.as_uri()), sig_file)
+        download_file(sig_url, sig_file)
 
         # Verify with gpg
         result = subprocess.run(
