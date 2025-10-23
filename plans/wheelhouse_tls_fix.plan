@@ -1,0 +1,18 @@
+# Wheelhouse TLS and Poetry export remediation plan
+
+## Summary
+- Restore `scripts/provision_wheelhouse.py` by ensuring Poetry's export plugin is installed automatically and by routing pip downloads through a trusted cert bundle.
+- Harden `scripts/wheel_status.py` against TLS failures by using certifi-backed SSL contexts and by reporting richer diagnostics when PyPI metadata fetches fail.
+- Regenerate `tools/dependency_matrix/wheel_status.json` via the updated command to reflect current upstream wheel availability.
+- Update documentation/Next_Steps to capture remediation status and remaining blockers.
+
+## Scope
+- scripts/provision_wheelhouse.py
+- scripts/wheel_status.py
+- tools/dependency_matrix/wheel_status.json
+- Next_Steps.md (status update)
+
+## Validation
+- Run `poetry run python scripts/provision_wheelhouse.py --output wheelhouse-test --python 3.13 --dev` to confirm export and download succeed.
+- Run `poetry run python -m scripts.wheel_status --output tools/dependency_matrix/wheel_status.json --fail-on-missing` to refresh blocker data and ensure TLS succeeds.
+- Remove temporary wheelhouse directory after verification.
