@@ -146,9 +146,9 @@ Phase 0 — Discovery & guardrails
 
 Phase 1 — Drop-in replacement with QA gates
 1. Implement adapter to call `fetch → distill → extract` and assemble the same return shape (Markdown, link graph).
-2. Feature flag `FEATURE_ENABLE_FIRECRAWL_SDK` → default off; introduce `FEATURE_ENABLE_CRAWLKIT=1` with telemetry proving parity.
+2. Feature flag sequencing: flip `FEATURE_ENABLE_CRAWLKIT=1`, confirm `apps.analyst.cli crawlkit-status` reports the router (expects `/crawlkit/crawl`, `/crawlkit/markdown`, `/crawlkit/entities` in the route list) and prints the targeted QA command reminder. Only after `poetry run pytest tests/crawlkit tests/test_research_logic.py -q` returns green do we opt into the optional Firecrawl SDK with `FEATURE_ENABLE_FIRECRAWL_SDK=1`.
 3. Enforce plan→commit artefacts with `poetry run python -m apps.automation.cli qa plan --write-plan --write-commit` so MCP and CLI runs satisfy audit requirements.
-4. Run mandatory QA before merge: `./scripts/run_pytest.sh ...`, `poetry run ruff check .`, `poetry run mypy .`, `poetry run bandit -r firecrawl_demo`, and the Promptfoo evaluation gate from [docs/mcp-promptfoo-gate.md](docs/mcp-promptfoo-gate.md) to unblock Copilot write access.
+4. Run mandatory QA before merge: targeted suites (`poetry run pytest tests/crawlkit tests/test_research_logic.py -q`) to validate Crawlkit wiring, then the broader `./scripts/run_pytest.sh ...`, `poetry run ruff check .`, `poetry run mypy .`, `poetry run bandit -r firecrawl_demo`, and the Promptfoo evaluation gate from [docs/mcp-promptfoo-gate.md](docs/mcp-promptfoo-gate.md) to unblock Copilot write access.
 5. Keep tests green using golden-file Markdown comparisons on a fixed corpus; update corpus fixtures as needed with plan artefacts attached.
 
 Phase 2 — Firecrawl deprecation & documentation
@@ -305,7 +305,7 @@ watercrawl/
 
 Removed: firecrawl_demo/ and any imports of it.
 Feature flags:
- • FEATURE_ENABLE_CRAWLKIT=1 (default on)
+ • FEATURE_ENABLE_CRAWLKIT=1 (defaults off → opt-in once Crawlkit CLI passes targeted tests)
  • FEATURE_ENABLE_FIRECRAWL_SDK=0 (default off; delete later)
 
 ⸻

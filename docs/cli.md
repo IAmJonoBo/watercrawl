@@ -14,7 +14,7 @@ Both entry points run through Poetry: `poetry run python -m apps.analyst.cli ...
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
-> **Compatibility note:** `firecrawl_demo.interfaces.cli` now re-exports the analyst CLI **and** Crawlkit FastAPI builders so legacy automation and MCP tooling can adopt the new `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints without importing the Crawlkit package directly. The shim preserves `python -m app.cli` entry points for older scripts while routing fetches through the Crawlkit adapters when feature flags permit.
+> **Compatibility note:** `firecrawl_demo.interfaces.cli` now re-exports the analyst CLI **and** Crawlkit FastAPI builders so legacy automation and MCP tooling can adopt the new `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints without importing the Crawlkit package directly. The shim preserves `python -m app.cli` entry points for older scripts while routing fetches through the Crawlkit adapters when feature flags permit. Use `poetry run python -m apps.analyst.cli crawlkit-status` to verify the router is available (expects `/crawlkit/crawl`, `/crawlkit/markdown`, `/crawlkit/entities`) and to surface the targeted pytest reminder before enabling downstream tooling or MCP write access.
 
 ## Analyst commands (`apps.analyst.cli`)
 
@@ -68,6 +68,18 @@ poetry run python -m apps.analyst.cli mcp-server
   `list_sanity_issues` for remediation queues — so Copilot can reason about pipeline
   health without parsing CSVs.
 
+### `crawlkit-status`
+
+```bash
+poetry run python -m apps.analyst.cli crawlkit-status
+```
+
+- Prints the active feature flag state for Crawlkit and the optional Firecrawl SDK.
+- Verifies that the Crawlkit FastAPI router can be constructed locally (lists the registered endpoints).
+- Emits guard-rail messaging that the Promptfoo gate expects Crawlkit-first operation; only enable the Firecrawl SDK after Crawlkit surfaces are green and targeted tests pass.
+- Reminds operators to run `poetry run pytest tests/crawlkit tests/test_research_logic.py -q` before toggling feature flags or MCP write access.
+- Warns loudly if `FEATURE_ENABLE_FIRECRAWL_SDK=1` while Crawlkit remains disabled—the legacy Firecrawl adapters stay available but require explicit documentation of plan→commit artefacts and Promptfoo evidence.
+
 ## Crawlkit FastAPI Surface
 
 The compatibility shim now exposes `crawlkit.orchestrate.api.build_router` and `create_app` so teams can serve the new
@@ -88,8 +100,8 @@ guarded by the same feature flags as the CLI. Automation clients should referenc
 
 ## Environment Variables
 
-- `FEATURE_ENABLE_CRAWLKIT`: Enable first-party Crawlkit adapters. Defaults to `0` so CLI runs remain deterministic until reviewers approve the cut-over.
-- `FEATURE_ENABLE_FIRECRAWL_SDK`: Opt into the optional Firecrawl SDK once Crawlkit is enabled and network access is authorised.
+- `FEATURE_ENABLE_CRAWLKIT`: Enable first-party Crawlkit adapters. Defaults to `0`; run `apps.analyst.cli crawlkit-status` and the targeted pytest suites before promoting the flag.
+- `FEATURE_ENABLE_FIRECRAWL_SDK`: Opt into the optional Firecrawl SDK only after Crawlkit is enabled, tested, and the Promptfoo gate has recorded fresh evidence. When enabled without Crawlkit, the CLI prints warnings reminding you to flip Crawlkit first and document fallback usage.
 - `ALLOW_NETWORK_RESEARCH`: Set to `1` to permit live network calls; remains `0` for offline QA by default.
 - `FIRECRAWL_API_KEY`: Loaded via `config.Settings` when the Firecrawl SDK is enabled.
 - `FIRECRAWL_API_URL`: Override default API endpoint.
