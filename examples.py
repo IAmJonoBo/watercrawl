@@ -7,6 +7,7 @@ from typing import Any
 
 from crawlkit.adapter.firecrawl_compat import fetch_markdown
 
+
 def pretty_print(label: str, value: Any) -> None:
     """Render labelled output with truncation for readability."""
     print(f"\n{'=' * 60}")

@@ -23,19 +23,19 @@ lint:
     - shfmt@3.6.0
     - svgo@4.0.0
     - markdownlint-cli2@0.18.1
-    - sqlfluff@3.4.2
+    - sqlfluff@3.5.0
     - actionlint@1.7.8
     - hadolint@2.14.0
     - taplo@0.10.0
     - bandit@1.8.6
     - black@25.9.0
-    - checkov@3.2.484
+    - checkov@3.2.487
     - dotenv-linter@3.3.0
     - git-diff-check
     - isort@7.0.0
     - markdownlint@0.45.0
     - osv-scanner@2.2.3
-    - renovate@41.151.1
+    - renovate@41.158.0
     - ruff@0.14.1
     - trufflehog@3.90.11
     - yamllint@1.37.1

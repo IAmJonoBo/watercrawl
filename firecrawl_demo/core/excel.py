@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-import json
 import pandas as pd
 
 from firecrawl_demo.domain.models import (
@@ -65,7 +65,9 @@ def read_dataset(
         for descriptor in descriptors:
             if descriptor.name not in working.columns:
                 continue
-            result = active_registry.normalize_series(descriptor, working[descriptor.name])
+            result = active_registry.normalize_series(
+                descriptor, working[descriptor.name]
+            )
             working[descriptor.name] = result.series
             diagnostics[descriptor.name] = result.diagnostics.to_dict()
             normalized_columns.add(descriptor.name)

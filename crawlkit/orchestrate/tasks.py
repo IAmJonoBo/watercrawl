@@ -1,4 +1,5 @@
 """Celery task wiring for Crawlkit pipelines."""
+
 from __future__ import annotations
 
 import asyncio
@@ -7,11 +8,18 @@ from typing import Any, Mapping
 from ..distill.distill import distill
 from ..extract.entities import extract_entities
 from ..fetch.polite_fetch import fetch
-from ..types import DistilledDoc, Entities, FetchPolicy, FetchedPage, serialize_for_celery
+from ..types import (
+    DistilledDoc,
+    Entities,
+    FetchedPage,
+    FetchPolicy,
+    serialize_for_celery,
+)
 
 try:  # pragma: no cover - optional dependency
     from celery import shared_task
 except Exception:  # pragma: no cover - optional dependency missing
+
     def shared_task(*_args, **_kwargs):
         def decorator(func):
             return func
@@ -29,7 +37,9 @@ def _run(coro):
 
 
 @shared_task(name="crawlkit.fetch_page")
-def fetch_page_task(url: str, policy: Mapping[str, Any] | None = None) -> dict[str, Any]:
+def fetch_page_task(
+    url: str, policy: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     policy_obj = FetchPolicy.from_mapping(policy)
     result = _run(fetch(url, policy_obj))
     if asyncio.isfuture(result):
@@ -55,7 +65,9 @@ def extract_entities_task(doc: Mapping[str, Any]) -> dict[str, Any]:
 
 
 @shared_task(name="crawlkit.full_pipeline")
-def full_pipeline_task(url: str, policy: Mapping[str, Any] | None = None) -> dict[str, Any]:
+def full_pipeline_task(
+    url: str, policy: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     page = fetch_page_task(url, policy)
     doc = distill_page_task(page)
     entities = extract_entities_task(doc)

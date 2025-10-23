@@ -4,8 +4,8 @@ from .types import (
     ComplianceDecision,
     DistilledDoc,
     Entities,
-    FetchPolicy,
     FetchedPage,
+    FetchPolicy,
     RobotsDecision,
 )
 

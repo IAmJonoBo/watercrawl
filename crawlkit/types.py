@@ -1,4 +1,5 @@
 """Shared dataclasses and serialization helpers for Crawlkit."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, fields
@@ -91,7 +92,8 @@ class RobotsDecision:
             allowed=bool(data.get("allowed", True)),
             user_agent=str(data.get("user_agent", "Watercrawl-Crawlkit/1.0")),
             rule=data.get("rule"),
-            fetched_at=_deserialize_datetime(data.get("fetched_at")) or datetime.now(timezone.utc),
+            fetched_at=_deserialize_datetime(data.get("fetched_at"))
+            or datetime.now(timezone.utc),
         )
 
 
@@ -127,7 +129,8 @@ class FetchedPage:
             html=str(data.get("html", "")),
             status=int(data.get("status", 0)),
             robots_allowed=bool(data.get("robots_allowed", True)),
-            fetched_at=_deserialize_datetime(data.get("fetched_at")) or datetime.now(timezone.utc),
+            fetched_at=_deserialize_datetime(data.get("fetched_at"))
+            or datetime.now(timezone.utc),
             via=data.get("via", "http"),
             metadata=dict(data.get("metadata", {})),
             robots=RobotsDecision.from_mapping(data.get("robots")),
@@ -209,7 +212,8 @@ class ComplianceDecision:
             allowed=bool(data.get("allowed", True)),
             reason=str(data.get("reason", "")),
             region=str(data.get("region", "ZA")),
-            logged_at=_deserialize_datetime(data.get("logged_at")) or datetime.now(timezone.utc),
+            logged_at=_deserialize_datetime(data.get("logged_at"))
+            or datetime.now(timezone.utc),
             evidence=list(data.get("evidence", [])),
         )
 
@@ -229,7 +233,9 @@ def serialize_for_celery(value: Any) -> Any:
 Deserializer = Callable[[Mapping[str, Any]], Any]
 
 
-def hydrate_list(values: Iterable[Mapping[str, Any]], factory: Deserializer) -> list[Any]:
+def hydrate_list(
+    values: Iterable[Mapping[str, Any]], factory: Deserializer
+) -> list[Any]:
     """Hydrate a collection of mappings via a factory."""
 
     return [factory(value) for value in values]

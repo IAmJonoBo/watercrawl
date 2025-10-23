@@ -74,10 +74,13 @@ def test_contacts_by_regulator_lists_people(monkeypatch, tmp_path: Path) -> None
     path = _snapshot(tmp_path)
     monkeypatch.setattr(config, "RELATIONSHIPS_GRAPHML", path)
     runner = CliRunner()
-    result = runner.invoke(cli, [
-        "contacts-by-regulator",
-        "South African Civil Aviation Authority",
-    ])
+    result = runner.invoke(
+        cli,
+        [
+            "contacts-by-regulator",
+            "South African Civil Aviation Authority",
+        ],
+    )
 
     assert result.exit_code == 0
     assert "Sam Analyst" in result.output
@@ -87,10 +90,13 @@ def test_sources_for_phone_lists_documents(monkeypatch, tmp_path: Path) -> None:
     path = _snapshot(tmp_path)
     monkeypatch.setattr(config, "RELATIONSHIPS_GRAPHML", path)
     runner = CliRunner()
-    result = runner.invoke(cli, [
-        "sources-for-phone",
-        "+27115550123",
-    ])
+    result = runner.invoke(
+        cli,
+        [
+            "sources-for-phone",
+            "+27115550123",
+        ],
+    )
 
     assert result.exit_code == 0
     assert "https://sacaa.gov.za/aero" in result.output

@@ -126,7 +126,9 @@ def _leadership_check(
             )
     severity = ValidationSeverity.WARN if person else ValidationSeverity.FAIL
     detail = (
-        "Leadership contact missing." if not person else "Leadership title not recognised."
+        "Leadership contact missing."
+        if not person
+        else "Leadership title not recognised."
     )
     return ValidationCheck("leadership_title", severity, detail)
 

@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from os import environ
 from pathlib import Path
 
-
 PLAYWRIGHT_BROWSERS: tuple[str, ...] = ("chromium", "firefox", "webkit")
 NODE_CACHE_DIRNAME = "node"
 
@@ -245,7 +244,7 @@ def _tldextract_cache_steps(repo_root: Path, *, offline: bool) -> list[Bootstrap
 
     script = (
         "from pathlib import Path; import tldextract; "
-        f"cache = Path(r\"{cache_dir.as_posix()}\"); "
+        f'cache = Path(r"{cache_dir.as_posix()}"); '
         "cache.mkdir(parents=True, exist_ok=True); "
         "tldextract.TLDExtract(cache_dir=str(cache), suffix_list_urls=())('example.com')"
     )

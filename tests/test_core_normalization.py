@@ -22,7 +22,9 @@ def registry() -> ColumnNormalizationRegistry:
     return reg
 
 
-def test_registry_normalizes_contact_fields(registry: ColumnNormalizationRegistry) -> None:
+def test_registry_normalizes_contact_fields(
+    registry: ColumnNormalizationRegistry,
+) -> None:
     descriptor_phone = ColumnDescriptor(
         name="Contact Number",
         semantic_type="phone",
@@ -35,11 +37,13 @@ def test_registry_normalizes_contact_fields(registry: ColumnNormalizationRegistr
     )
 
     phone_series = pd.Series(["011 555 0100", "", None])
-    email_series = pd.Series([
-        "CONTACT@Example.org",
-        "bad-email",
-        None,
-    ])
+    email_series = pd.Series(
+        [
+            "CONTACT@Example.org",
+            "bad-email",
+            None,
+        ]
+    )
 
     phone_result = registry.normalize_series(descriptor_phone, phone_series)
     email_result = registry.normalize_series(descriptor_email, email_series)
@@ -53,7 +57,9 @@ def test_registry_normalizes_contact_fields(registry: ColumnNormalizationRegistr
     assert "Email format invalid" in email_result.diagnostics.issues
 
 
-def test_registry_enforces_enum_and_units(registry: ColumnNormalizationRegistry) -> None:
+def test_registry_enforces_enum_and_units(
+    registry: ColumnNormalizationRegistry,
+) -> None:
     descriptor_province = ColumnDescriptor(
         name="Province",
         semantic_type="enum",
@@ -86,7 +92,11 @@ def test_registry_enforces_enum_and_units(registry: ColumnNormalizationRegistry)
     assert metric_result.diagnostics.issue_count == 1
 
 
-def test_read_dataset_applies_registry(tmp_path: Path, registry: ColumnNormalizationRegistry, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_read_dataset_applies_registry(
+    tmp_path: Path,
+    registry: ColumnNormalizationRegistry,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     dataset = pd.DataFrame(
         {
             "Contact Number": ["082 123 4567"],
@@ -117,8 +127,12 @@ def test_read_dataset_applies_registry(tmp_path: Path, registry: ColumnNormaliza
     }
 
     monkeypatch.setattr(config, "COLUMN_DESCRIPTORS", descriptors, raising=False)
-    monkeypatch.setattr(config, "COLUMN_NORMALIZATION_REGISTRY", registry, raising=False)
-    monkeypatch.setattr(config, "EXPECTED_COLUMNS", [d.name for d in descriptors], raising=False)
+    monkeypatch.setattr(
+        config, "COLUMN_NORMALIZATION_REGISTRY", registry, raising=False
+    )
+    monkeypatch.setattr(
+        config, "EXPECTED_COLUMNS", [d.name for d in descriptors], raising=False
+    )
     monkeypatch.setattr(config, "INTERIM_DIR", tmp_path, raising=False)
 
     from firecrawl_demo.core.excel import read_dataset

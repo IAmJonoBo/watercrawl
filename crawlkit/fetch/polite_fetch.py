@@ -1,4 +1,5 @@
 """Polite fetching primitives built on top of httpx and optional Playwright."""
+
 from __future__ import annotations
 
 import asyncio
@@ -10,19 +11,25 @@ from urllib.robotparser import RobotFileParser
 
 import httpx
 
-from ..types import FetchPolicy, FetchedPage, RobotsDecision
+from ..types import FetchedPage, FetchPolicy, RobotsDecision
 
 __all__ = ["FetchPolicy", "FetchedPage", "fetch"]
 
 RenderCallable = Callable[[str], Awaitable[str]]
-async def _load_robots(url: str, policy: FetchPolicy, client: httpx.AsyncClient) -> RobotFileParser | None:
+
+
+async def _load_robots(
+    url: str, policy: FetchPolicy, client: httpx.AsyncClient
+) -> RobotFileParser | None:
     if not policy.obey_robots:
         return None
     parsed = urlparse(url)
     robots_url = urljoin(f"{parsed.scheme}://{parsed.netloc}", "/robots.txt")
     parser = RobotFileParser()
     try:
-        response = await client.get(robots_url, headers={"User-Agent": policy.user_agent}, timeout=5)
+        response = await client.get(
+            robots_url, headers={"User-Agent": policy.user_agent}, timeout=5
+        )
         if response.status_code >= 400:
             return None
         parser.parse(response.text.splitlines())
@@ -31,7 +38,9 @@ async def _load_robots(url: str, policy: FetchPolicy, client: httpx.AsyncClient)
         return None
 
 
-async def _evaluate_robots(url: str, policy: FetchPolicy, parser: RobotFileParser | None) -> RobotsDecision:
+async def _evaluate_robots(
+    url: str, policy: FetchPolicy, parser: RobotFileParser | None
+) -> RobotsDecision:
     if parser is None:
         return RobotsDecision(allowed=True, user_agent=policy.user_agent, rule=None)
     allowed = parser.can_fetch(policy.user_agent, url)
@@ -56,7 +65,7 @@ def _should_render(html: str, response: httpx.Response, policy: FetchPolicy) -> 
     if len(stripped) < 1024:
         return True
     lowered = stripped.lower()
-    if "data-server-rendered" in lowered or "id=\"__next\"" in lowered:
+    if "data-server-rendered" in lowered or 'id="__next"' in lowered:
         return True
     if "<main" not in lowered and "<article" not in lowered:
         return True
@@ -114,7 +123,9 @@ async def fetch(
                 robots=robots_decision,
             )
 
-        response = await active_client.get(url, headers={"User-Agent": policy.user_agent}, timeout=15)
+        response = await active_client.get(
+            url, headers={"User-Agent": policy.user_agent}, timeout=15
+        )
         response.raise_for_status()
         html = response.text
         via: Literal["http", "rendered"] = "http"  # type: ignore[name-defined]
@@ -143,7 +154,9 @@ async def fetch(
         )
 
 
-async def fetch_many(urls: list[str], policy: FetchPolicy | None = None) -> list[FetchedPage]:
+async def fetch_many(
+    urls: list[str], policy: FetchPolicy | None = None
+) -> list[FetchedPage]:
     """Convenience helper for fetching multiple URLs concurrently."""
 
     policy = policy or FetchPolicy()

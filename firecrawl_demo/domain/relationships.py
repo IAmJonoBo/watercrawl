@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
-import re
 from typing import Any, Iterable, Mapping
 
 try:  # pragma: no cover - optional dependency during type checking

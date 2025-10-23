@@ -66,31 +66,34 @@ def run_autofix(tool: str, use_poetry: bool = False, dry_run: bool = False) -> i
         return 1
 
     config = AUTOFIX_TOOLS[tool]
-    
+
     # Determine which command to use
     if use_poetry and config["with_poetry"]:
         cmd = config["with_poetry"]
     else:
         cmd = config["command"]
-    
+
     if cmd is None:
         print(f"Error: No command configured for '{tool}'", file=sys.stderr)
         return 1
-    
+
     # Check if the primary tool is available
     primary_tool = cmd[0] if not use_poetry else cmd[2]
     if not check_tool_available(primary_tool):
         print(f"Warning: Tool '{primary_tool}' not found in PATH", file=sys.stderr)
         if use_poetry:
-            print(f"Hint: Run 'poetry install --no-root --with dev' first", file=sys.stderr)
+            print(
+                f"Hint: Run 'poetry install --no-root --with dev' first",
+                file=sys.stderr,
+            )
         return 1
-    
+
     print(f"Running: {' '.join(cmd)}")
-    
+
     if dry_run:
         print(f"[DRY RUN] Would execute: {' '.join(cmd)}")
         return 0
-    
+
     try:
         result = subprocess.run(cmd, check=False)
         return result.returncode
@@ -103,7 +106,7 @@ def run_all_autofixes(use_poetry: bool = False, dry_run: bool = False) -> int:
     """Run all available autofix tools in sequence."""
     tools_to_run = ["ruff", "black", "isort", "biome"]
     exit_code = 0
-    
+
     for tool in tools_to_run:
         print(f"\n{'='*70}")
         print(f"Running autofix: {tool}")
@@ -112,7 +115,7 @@ def run_all_autofixes(use_poetry: bool = False, dry_run: bool = False) -> int:
         if code != 0:
             print(f"Warning: {tool} exited with code {code}")
             exit_code = code
-    
+
     return exit_code
 
 
@@ -123,8 +126,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available tools:
-""" + "\n".join(f"  {name:10} - {config['description']}"
-                for name, config in AUTOFIX_TOOLS.items()),
+"""
+        + "\n".join(
+            f"  {name:10} - {config['description']}"
+            for name, config in AUTOFIX_TOOLS.items()
+        ),
     )
     parser.add_argument(
         "tool",
@@ -149,7 +155,7 @@ Available tools:
 def main(argv: Sequence[str] | None = None) -> int:
     """Main entry point."""
     args = parse_args(argv)
-    
+
     if args.tool == "all":
         return run_all_autofixes(use_poetry=args.poetry, dry_run=args.dry_run)
     else:

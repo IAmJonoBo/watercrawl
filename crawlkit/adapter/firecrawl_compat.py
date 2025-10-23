@@ -1,4 +1,5 @@
 """Compatibility adapter exposing the legacy Firecrawl fetch_markdown signature."""
+
 from __future__ import annotations
 
 import asyncio
@@ -19,7 +20,12 @@ def _run(coro):
         return loop.run_until_complete(coro)
 
 
-def fetch_markdown(url: str, depth: int = 1, include_subpaths: bool = False, policy: Mapping[str, Any] | None = None) -> dict[str, Any]:
+def fetch_markdown(
+    url: str,
+    depth: int = 1,
+    include_subpaths: bool = False,
+    policy: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Fetch markdown content for the provided URL, mirroring Firecrawl's adapter."""
 
     fetch_policy = FetchPolicy.from_mapping(policy)

@@ -258,7 +258,7 @@ def test_pipeline_records_lakehouse_versioning_and_lineage(
     assert (
         lineage_manager.captured[0].lakehouse_uri == report.lakehouse_manifest.table_uri
     )
-    assert ( 
+    assert (
         evidence_sink.records
         and evidence_sink.records[0][0].organisation == "Example Flight School"
     )

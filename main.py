@@ -18,7 +18,9 @@ def pretty_print(label: str, obj: Any) -> None:
         print(obj)
 
 
-def main(url: str = "https://example.com", policy: Mapping[str, Any] | None = None) -> None:
+def main(
+    url: str = "https://example.com", policy: Mapping[str, Any] | None = None
+) -> None:
     """Fetch Markdown, text, and entities for the provided URL via Crawlkit."""
 
     bundle = fetch_markdown(url, policy=policy)

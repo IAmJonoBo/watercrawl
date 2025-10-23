@@ -10,6 +10,7 @@ from firecrawl_demo.core import config
 
 from .connectors import (
     ConnectorEvidence,
+    ConnectorObservation,
     ConnectorRequest,
     ConnectorResult,
     CorporateFilingsConnector,
@@ -17,7 +18,6 @@ from .connectors import (
     RegulatorConnector,
     ResearchConnector,
     SocialConnector,
-    ConnectorObservation,
 )
 from .core import ResearchFinding, merge_findings
 from .validators import ValidationReport, cross_validate_findings
@@ -65,9 +65,9 @@ class MultiSourceResearchAdapter:
     """Compose multiple deterministic connectors into a single adapter."""
 
     connectors: tuple[ResearchConnector, ...] = ()
-    validator: Callable[[ResearchFinding, Sequence[ConnectorResult]], ValidationReport] = (
-        cross_validate_findings
-    )
+    validator: Callable[
+        [ResearchFinding, Sequence[ConnectorResult]], ValidationReport
+    ] = cross_validate_findings
 
     def __post_init__(self) -> None:
         if not self.connectors:
@@ -97,9 +97,7 @@ class MultiSourceResearchAdapter:
 
     async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None, self.lookup, organisation, province
-        )
+        return await loop.run_in_executor(None, self.lookup, organisation, province)
 
     def _collect_results(
         self, organisation: str, province: str
@@ -161,7 +159,9 @@ class MultiSourceResearchAdapter:
         allow_personal = settings.get("allow_personal_data")
         if allow_personal is None:
             allow_personal = config.RESEARCH_ALLOW_PERSONAL_DATA
-        rate_limit = settings.get("rate_limit_seconds", config.RESEARCH_RATE_LIMIT_SECONDS)
+        rate_limit = settings.get(
+            "rate_limit_seconds", config.RESEARCH_RATE_LIMIT_SECONDS
+        )
         return ConnectorRequest(
             organisation=organisation,
             province=province,

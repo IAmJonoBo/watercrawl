@@ -89,12 +89,16 @@ def contacts_by_regulator(regulator: str, throttle: float) -> None:
             person_data = graph.nodes[person_node]
             contact_name = person_data.get("name", person_node)
             organisations = _organisation_names(graph, person_node)
-            rows.append((contact_name, ", ".join(organisations) or "—", data.get("uri", "")))
+            rows.append(
+                (contact_name, ", ".join(organisations) or "—", data.get("uri", ""))
+            )
         if throttle > 0:
             time.sleep(throttle)
 
     if not rows:
-        console.print(f"[yellow]No contacts linked to regulator '{regulator}'.[/yellow]")
+        console.print(
+            f"[yellow]No contacts linked to regulator '{regulator}'.[/yellow]"
+        )
         return
 
     table = Table(title=f"Contacts linked to {regulator}")
@@ -134,13 +138,17 @@ def sources_for_phone(phone: str, throttle: float) -> None:
             target_data = graph.nodes[target]
             if target_data.get("type") != "source":
                 continue
-            sources.append((target_data.get("uri", ""), target_data.get("publisher", "")))
+            sources.append(
+                (target_data.get("uri", ""), target_data.get("publisher", ""))
+            )
             if throttle > 0:
                 time.sleep(throttle)
         matches.append((data.get("name", node), sources))
 
     if not matches:
-        console.print(f"[yellow]No sources recorded for phone number {phone}. [/yellow]")
+        console.print(
+            f"[yellow]No sources recorded for phone number {phone}. [/yellow]"
+        )
         return
 
     table = Table(title=f"Sources corroborating {phone}")

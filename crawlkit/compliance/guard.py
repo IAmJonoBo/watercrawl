@@ -1,4 +1,5 @@
 """Compliance guard implementing region-specific decisions and logging."""
+
 from __future__ import annotations
 
 import json
@@ -29,7 +30,11 @@ class ComplianceGuard:
             raise ValueError(f"Unsupported region: {self.region}")
         self._log_path = _log_path(self.log_directory)
 
-    def decide_collection(self, kind: Literal["business_email", "personal_email", "phone"], region: str | None = None) -> ComplianceDecision:
+    def decide_collection(
+        self,
+        kind: Literal["business_email", "personal_email", "phone"],
+        region: str | None = None,
+    ) -> ComplianceDecision:
         active_region = region or self.region
         if active_region not in _ALLOWED_REGIONS:
             raise ValueError(f"Unsupported region: {active_region}")
@@ -54,14 +59,18 @@ class ComplianceGuard:
         else:  # US
             reason = "CAN-SPAM allows B2B contact with opt-out provisions."
 
-        decision = ComplianceDecision(allowed=allowed, reason=reason, region=active_region, evidence=evidence)
-        self._append_log({
-            "timestamp": decision.logged_at.isoformat(),
-            "region": active_region,
-            "kind": kind,
-            "allowed": allowed,
-            "reason": reason,
-        })
+        decision = ComplianceDecision(
+            allowed=allowed, reason=reason, region=active_region, evidence=evidence
+        )
+        self._append_log(
+            {
+                "timestamp": decision.logged_at.isoformat(),
+                "region": active_region,
+                "kind": kind,
+                "allowed": allowed,
+                "reason": reason,
+            }
+        )
         return decision
 
     def log_provenance(self, source_url: str, rule: str) -> None:

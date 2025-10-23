@@ -812,9 +812,7 @@ def configure(provider: SecretsProvider | None = None) -> None:
     settings = Settings(provider=SECRETS_PROVIDER)
 
     FEATURE_FLAGS = FeatureFlags(
-        enable_crawlkit=_env_bool(
-            "FEATURE_ENABLE_CRAWLKIT", False, SECRETS_PROVIDER
-        ),
+        enable_crawlkit=_env_bool("FEATURE_ENABLE_CRAWLKIT", False, SECRETS_PROVIDER),
         enable_firecrawl_sdk=_env_bool(
             "FEATURE_ENABLE_FIRECRAWL_SDK", False, SECRETS_PROVIDER
         ),

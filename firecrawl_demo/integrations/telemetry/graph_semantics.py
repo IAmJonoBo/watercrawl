@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import re
 import csv
 import json
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -516,7 +516,9 @@ def build_relationship_graph(
         if not graph.has_node(link.source) or not graph.has_node(link.target):
             continue
         provenance = [tag.as_dict() for tag in link.provenance]
-        attributes = {key: value for key, value in link.attributes.items() if value is not None}
+        attributes = {
+            key: value for key, value in link.attributes.items() if value is not None
+        }
         graph.add_edge(
             link.source,
             link.target,

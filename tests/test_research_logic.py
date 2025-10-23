@@ -250,9 +250,7 @@ async def test_lookup_with_adapter_async_uses_adapter_executor(monkeypatch) -> N
 
 
 @pytest.mark.parametrize("enable_crawlkit", [True, False])
-def test_build_research_adapter_handles_missing_crawlkit(
-    monkeypatch, enable_crawlkit
-):
+def test_build_research_adapter_handles_missing_crawlkit(monkeypatch, enable_crawlkit):
     flags = config.FeatureFlags(
         enable_crawlkit=enable_crawlkit,
         enable_press_research=True,
@@ -562,7 +560,9 @@ def test_crawlkit_research_adapter_merges_multiple_seed_urls(monkeypatch) -> Non
                     {
                         "url": url,
                         "entities": {
-                            "people": [{"name": "Press Liaison", "role": "Spokesperson"}],
+                            "people": [
+                                {"name": "Press Liaison", "role": "Spokesperson"}
+                            ],
                             "phones": [{"number": "+27 12 555 0101", "kind": "media"}],
                         },
                     }

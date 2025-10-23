@@ -1,4 +1,5 @@
 """Entity extraction and enrichment helpers for Crawlkit."""
+
 from __future__ import annotations
 
 import re
@@ -51,7 +52,9 @@ def _mx_status(domain: str | None) -> str:
     return "mx_only" if answers else "mx_missing"
 
 
-def extract_entities(doc: DistilledDoc, enrich: bool = True, domain_hint: str | None = None) -> Entities:
+def extract_entities(
+    doc: DistilledDoc, enrich: bool = True, domain_hint: str | None = None
+) -> Entities:
     """Extract entities from a :class:`DistilledDoc`."""
 
     emails: list[dict[str, object]] = []
@@ -89,7 +92,13 @@ def extract_entities(doc: DistilledDoc, enrich: bool = True, domain_hint: str | 
             if entry_type in {"Person", "Organization"}:
                 name = entry.get("name")
                 if isinstance(name, str):
-                    people.append({"name": name, "role": entry.get("jobTitle"), "sources": [doc.url]})
+                    people.append(
+                        {
+                            "name": name,
+                            "role": entry.get("jobTitle"),
+                            "sources": [doc.url],
+                        }
+                    )
 
     for match in PERSON_RE.finditer(doc.text):
         name = match.group("name")

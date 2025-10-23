@@ -1,4 +1,5 @@
 """Content distillation helpers converting HTML into Markdown."""
+
 from __future__ import annotations
 
 import json
@@ -11,7 +12,14 @@ from ..types import DistilledDoc
 __all__ = ["DistilledDoc", "distill"]
 
 
-_HEADING_TAGS = {"h1": "#", "h2": "##", "h3": "###", "h4": "####", "h5": "#####", "h6": "######"}
+_HEADING_TAGS = {
+    "h1": "#",
+    "h2": "##",
+    "h3": "###",
+    "h4": "####",
+    "h5": "#####",
+    "h6": "######",
+}
 _BLOCK_TAGS = {"p", "div", "section", "article", "header", "footer", "li"}
 
 
@@ -61,13 +69,16 @@ class _MarkdownParser(HTMLParser):
 _META_SELECTORS = {
     "title": re.compile(r"<title>(.*?)</title>", re.IGNORECASE | re.DOTALL),
     "description": re.compile(
-        r'<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']', re.IGNORECASE | re.DOTALL
+        r'<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']',
+        re.IGNORECASE | re.DOTALL,
     ),
     "og:title": re.compile(
-        r'<meta[^>]*property=["\']og:title["\'][^>]*content=["\'](.*?)["\']', re.IGNORECASE | re.DOTALL
+        r'<meta[^>]*property=["\']og:title["\'][^>]*content=["\'](.*?)["\']',
+        re.IGNORECASE | re.DOTALL,
     ),
     "og:description": re.compile(
-        r'<meta[^>]*property=["\']og:description["\'][^>]*content=["\'](.*?)["\']', re.IGNORECASE | re.DOTALL
+        r'<meta[^>]*property=["\']og:description["\'][^>]*content=["\'](.*?)["\']',
+        re.IGNORECASE | re.DOTALL,
     ),
 }
 
@@ -75,7 +86,9 @@ _META_SELECTORS = {
 def _extract_json_ld(html: str) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
     for match in re.finditer(
-        r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, flags=re.IGNORECASE | re.DOTALL
+        r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
     ):
         try:
             payload = json.loads(match.group(1))
@@ -104,7 +117,9 @@ def _extract_meta(html: str) -> dict[str, str]:
     return metadata
 
 
-def distill(html: str, url: str, profile: Literal["article", "docs", "catalog"] = "article") -> DistilledDoc:
+def distill(
+    html: str, url: str, profile: Literal["article", "docs", "catalog"] = "article"
+) -> DistilledDoc:
     """Distil HTML into markdown, returning a :class:`DistilledDoc`."""
 
     markdown = _extract_text(html)
@@ -117,4 +132,6 @@ def distill(html: str, url: str, profile: Literal["article", "docs", "catalog"] 
         meta["profile"] = "catalog"
     else:
         meta["profile"] = "article"
-    return DistilledDoc(url=url, markdown=markdown, text=text, meta=meta, microdata=microdata)
+    return DistilledDoc(
+        url=url, markdown=markdown, text=text, meta=meta, microdata=microdata
+    )

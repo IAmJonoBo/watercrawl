@@ -221,4 +221,3 @@ targets = ["3.14", "3.15"]
 owner = "Data Engineering"
 issue = "Python version unsupported"
 notes = "Great Expectations 1.7.1 currently pins Python <3.14; defer interpreter bumps until upstream releases cp314/cp315 compatibility."
-

@@ -176,7 +176,9 @@ def _text_normalizer(
             text = text.title()
         normalized.append(text)
     diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-    return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+    return ColumnNormalizationResult(
+        pd.Series(normalized, index=series.index), diagnostics
+    )
 
 
 def _address_normalizer(
@@ -219,7 +221,9 @@ def _enum_normalizer(
         else:
             normalized.append(canonical)
     diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-    return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+    return ColumnNormalizationResult(
+        pd.Series(normalized, index=series.index), diagnostics
+    )
 
 
 def _numeric_normalizer(
@@ -227,6 +231,7 @@ def _numeric_normalizer(
 ) -> ColumnNormalizationResult:
     hints = descriptor.format_hints
     cast_hint = str(hints.get("cast", "float")).lower()
+
     def _cast_to_int(value: float) -> int:
         return int(round(value))
 
@@ -245,11 +250,15 @@ def _numeric_normalizer(
             normalized.append(caster(float(value)))
         except (TypeError, ValueError):
             issues.append(
-                NormalizationIssue(int(index), f"Unable to parse numeric value '{value}'")
+                NormalizationIssue(
+                    int(index), f"Unable to parse numeric value '{value}'"
+                )
             )
             normalized.append(None)
     diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-    return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+    return ColumnNormalizationResult(
+        pd.Series(normalized, index=series.index), diagnostics
+    )
 
 
 def _numeric_with_units_normalizer(
@@ -281,7 +290,9 @@ def _numeric_with_units_normalizer(
             issues.append(NormalizationIssue(int(index), "Missing required value"))
         normalized.append(normalized_value)
     diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-    return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+    return ColumnNormalizationResult(
+        pd.Series(normalized, index=series.index), diagnostics
+    )
 
 
 def _date_normalizer(
@@ -318,7 +329,9 @@ def _date_normalizer(
         else:
             normalized.append(parsed.strftime(str(output_format)))
     diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-    return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+    return ColumnNormalizationResult(
+        pd.Series(normalized, index=series.index), diagnostics
+    )
 
 
 def _url_normalizer(
@@ -363,12 +376,16 @@ def _url_normalizer(
         rebuilt = urlunparse((scheme, netloc, path, parsed.params, query, fragment))
         normalized.append(rebuilt)
     diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-    return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+    return ColumnNormalizationResult(
+        pd.Series(normalized, index=series.index), diagnostics
+    )
 
 
 def _phone_normalizer(phone_normalizer: PhoneNormalizer) -> NormalizerCallable:
     def _normalizer(
-        series: Series, descriptor: ColumnDescriptor, registry: ColumnNormalizationRegistry
+        series: Series,
+        descriptor: ColumnDescriptor,
+        registry: ColumnNormalizationRegistry,
     ) -> ColumnNormalizationResult:
         normalized: list[Any] = []
         issues: list[NormalizationIssue] = []
@@ -379,14 +396,18 @@ def _phone_normalizer(phone_normalizer: PhoneNormalizer) -> NormalizerCallable:
             for issue in field_issues:
                 issues.append(NormalizationIssue(int(index), issue))
         diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-        return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+        return ColumnNormalizationResult(
+            pd.Series(normalized, index=series.index), diagnostics
+        )
 
     return _normalizer
 
 
 def _email_normalizer(email_validator: EmailValidator) -> NormalizerCallable:
     def _normalizer(
-        series: Series, descriptor: ColumnDescriptor, registry: ColumnNormalizationRegistry
+        series: Series,
+        descriptor: ColumnDescriptor,
+        registry: ColumnNormalizationRegistry,
     ) -> ColumnNormalizationResult:
         normalized: list[Any] = []
         issues: list[NormalizationIssue] = []
@@ -397,7 +418,9 @@ def _email_normalizer(email_validator: EmailValidator) -> NormalizerCallable:
             for issue in field_issues:
                 issues.append(NormalizationIssue(int(index), issue))
         diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
-        return ColumnNormalizationResult(pd.Series(normalized, index=series.index), diagnostics)
+        return ColumnNormalizationResult(
+            pd.Series(normalized, index=series.index), diagnostics
+        )
 
     return _normalizer
 

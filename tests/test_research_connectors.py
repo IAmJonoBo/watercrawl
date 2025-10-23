@@ -22,7 +22,9 @@ def sample_request() -> ConnectorRequest:
     )
 
 
-def test_regulator_connector_filters_personal_data(sample_request: ConnectorRequest) -> None:
+def test_regulator_connector_filters_personal_data(
+    sample_request: ConnectorRequest,
+) -> None:
     payload = {
         "officialWebsite": "https://skyhigh.example.za",
         "contactPerson": "Ms. Test",

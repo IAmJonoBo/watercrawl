@@ -15,7 +15,7 @@ def test_fetch_respects_robots(monkeypatch):
         return httpx.Response(200, text="<html><main>allowed</main></html>")
 
     transport = httpx.MockTransport(handler)
-    
+
     async def runner():
         async with httpx.AsyncClient(transport=transport) as client:
             page = await fetch("https://example.com/blocked", client=client)
@@ -36,7 +36,7 @@ def test_fetch_uses_renderer_when_required():
         return "<html><main>rendered</main></html>"
 
     transport = httpx.MockTransport(handler)
-    
+
     async def runner():
         async with httpx.AsyncClient(transport=transport) as client:
             page = await fetch("https://example.com/", client=client, renderer=renderer)
@@ -59,6 +59,10 @@ def test_fetch_many_batches_requests(monkeypatch):
             super().__init__(transport=transport, *args, **kwargs)
 
     monkeypatch.setattr("crawlkit.fetch.polite_fetch.httpx.AsyncClient", DummyClient)
-    pages = asyncio.run(fetch_many(["https://example.com/a", "https://example.com/b"], policy=FetchPolicy()))
+    pages = asyncio.run(
+        fetch_many(
+            ["https://example.com/a", "https://example.com/b"], policy=FetchPolicy()
+        )
+    )
     assert len(pages) == 2
     assert all(page.robots_allowed for page in pages)

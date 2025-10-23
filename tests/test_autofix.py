@@ -17,7 +17,7 @@ def test_autofix_tools_registry():
     assert "black" in autofix.AUTOFIX_TOOLS
     assert "isort" in autofix.AUTOFIX_TOOLS
     assert "all" in autofix.AUTOFIX_TOOLS
-    
+
     # Each tool should have required keys
     for tool_name, config in autofix.AUTOFIX_TOOLS.items():
         if tool_name != "all":

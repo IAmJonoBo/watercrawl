@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 
 from crawlkit.adapter.firecrawl_compat import fetch_markdown
 from crawlkit.types import Entities, FetchPolicy
-
 from firecrawl_demo.core import config
 from firecrawl_demo.core.external_sources import triangulate_organisation
 from firecrawl_demo.domain.compliance import normalize_phone
@@ -53,9 +52,7 @@ class ResearchFinding:
     alternate_names: list[str] = field(default_factory=list)
     investigation_notes: list[str] = field(default_factory=list)
     physical_address: str | None = None
-    evidence_by_connector: dict[str, "ConnectorEvidence"] = field(
-        default_factory=dict
-    )
+    evidence_by_connector: dict[str, "ConnectorEvidence"] = field(default_factory=dict)
     validation: "ValidationReport | None" = None
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
@@ -151,7 +148,10 @@ class CrawlkitResearchAdapter:
 
     def __init__(
         self,
-        fetcher: Callable[[str, int, bool, Mapping[str, Any] | None], Mapping[str, Any]] | None = None,
+        fetcher: (
+            Callable[[str, int, bool, Mapping[str, Any] | None], Mapping[str, Any]]
+            | None
+        ) = None,
         *,
         seed_url_provider: SeedProvider | None = None,
         policy_factory: PolicyFactory | None = None,
@@ -196,13 +196,19 @@ class CrawlkitResearchAdapter:
             try:
                 result = self._fetcher(url, policy=policy)
             except Exception as exc:  # pragma: no cover - defensive guard
-                logger.warning("Crawlkit fetch failed for %s (%s): %s", organisation, url, exc)
+                logger.warning(
+                    "Crawlkit fetch failed for %s (%s): %s", organisation, url, exc
+                )
                 failures.append(url)
                 continue
 
             records: list[Mapping[str, Any]]
             if isinstance(result.get("items"), list):
-                records = [item for item in result.get("items", []) if isinstance(item, Mapping)]
+                records = [
+                    item
+                    for item in result.get("items", [])
+                    if isinstance(item, Mapping)
+                ]
             else:
                 records = [result]
 
@@ -212,9 +218,7 @@ class CrawlkitResearchAdapter:
                     findings.append(finding)
 
         if not findings:
-            notes: list[str] = [
-                baseline.notes or "Crawlkit returned no enrichments"
-            ]
+            notes: list[str] = [baseline.notes or "Crawlkit returned no enrichments"]
             if failures:
                 notes.append(_format_failure_note(failures))
             return merge_findings(
@@ -256,7 +260,9 @@ class CrawlkitResearchAdapter:
         policy = FetchPolicy(region="ZA", max_depth=1, max_pages=5)
         return policy.to_dict()
 
-    def _build_finding_from_record(self, record: Mapping[str, Any]) -> ResearchFinding | None:
+    def _build_finding_from_record(
+        self, record: Mapping[str, Any]
+    ) -> ResearchFinding | None:
         url = _coerce_url(record)
         entities = Entities.from_mapping(record.get("entities"))
         emails = entities.emails
@@ -377,7 +383,9 @@ def _format_failure_note(failures: Sequence[str]) -> str:
     if more:
         summary = f"{summary}, … (+{more} more)" if summary else f"… (+{more} more)"
     urls_fragment = f": {summary}" if summary else ""
-    return f"Crawlkit skipped {len(failures)} URL(s) due to fetch errors{urls_fragment}."
+    return (
+        f"Crawlkit skipped {len(failures)} URL(s) due to fetch errors{urls_fragment}."
+    )
 
 
 def triangulate_via_sources(
@@ -399,8 +407,8 @@ def triangulate_via_sources(
 def build_research_adapter() -> ResearchAdapter:
     """Assemble the default adapter stack declared in configuration."""
 
-    from .registry import AdapterLoaderSettings, load_enabled_adapters
     from .multi_source import MultiSourceResearchAdapter
+    from .registry import AdapterLoaderSettings, load_enabled_adapters
 
     settings = AdapterLoaderSettings(provider=config.SECRETS_PROVIDER)
     adapters = load_enabled_adapters(settings)
