@@ -36,6 +36,7 @@ from scripts import bootstrap_python
 CLI_ENVIRONMENT = load_cli_environment()
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLAYWRIGHT_CACHE_DIR = (REPO_ROOT / "artifacts" / "cache" / "playwright").resolve()
+PIP_CACHE_DIR = (REPO_ROOT / "artifacts" / "cache" / "pip").resolve()
 
 
 @dataclass(frozen=True)
@@ -487,6 +488,21 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
                 "Ensure mirrored cp314/cp315 wheels match the current lockfile before promotion."
             ),
             tags=("supply-chain", "python"),
+        ),
+        CommandSpec(
+            name="Bootstrap offline preflight",
+            args=(
+                "python",
+                "-m",
+                "scripts.bootstrap_env",
+                "--offline",
+                "--dry-run",
+            ),
+            description=(
+                "Dry-run the offline bootstrap plan and fail when caches are missing."
+            ),
+            env={"UV_CACHE_DIR": str(PIP_CACHE_DIR)},
+            tags=("supply-chain", "offline"),
         ),
     ],
     "precommit": [

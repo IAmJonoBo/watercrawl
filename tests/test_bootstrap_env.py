@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -227,3 +228,87 @@ def test_offline_bootstrap_requires_validated_cache(tmp_path: Path) -> None:
             enable_docs=False,
             offline=True,
         )
+
+
+def _seed_offline_caches(repo_root: Path) -> None:
+    pip_cache = repo_root / "artifacts" / "cache" / "pip"
+    pip_cache.mkdir(parents=True, exist_ok=True)
+    (pip_cache / "sample-0.0.0-py3-none-any.whl").write_bytes(b"wheel")
+
+    playwright_cache = repo_root / "artifacts" / "cache" / "playwright"
+    for browser in bootstrap_env.PLAYWRIGHT_BROWSERS:
+        (playwright_cache / f"{browser}-cached").mkdir(parents=True, exist_ok=True)
+
+    suffix_cache = (
+        repo_root
+        / "artifacts"
+        / "cache"
+        / "tldextract"
+        / "publicsuffix.org-tlds"
+    )
+    suffix_cache.mkdir(parents=True, exist_ok=True)
+    (suffix_cache / "snapshot.tldextract.json").write_text("{}", encoding="utf-8")
+
+    cache_dir = repo_root / "artifacts" / "cache" / bootstrap_env.NODE_CACHE_DIRNAME
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    tarball = cache_dir / "node-v20.0.0-linux-x64.tar.gz"
+    tarball.write_bytes(b"node")
+    checksum = cache_dir / "SHASUMS256.txt"
+
+    import hashlib
+
+    digest = hashlib.sha256(b"node").hexdigest()
+    checksum.write_text(
+        f"{digest}  node-v20.0.0-linux-x64.tar.gz\n",
+        encoding="utf-8",
+    )
+
+
+def test_dry_run_preflight_reports_success(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Dry-run preflight emits JSON and writes a chaos artefact when caches are ready."""
+
+    (tmp_path / "package.json").write_text("{}", encoding="utf-8")
+    _seed_offline_caches(tmp_path)
+    pip_cache = tmp_path / "artifacts" / "cache" / "pip"
+    monkeypatch.setenv("UV_CACHE_DIR", str(pip_cache))
+
+    exit_code = bootstrap_env.main(
+        ["--repo-root", str(tmp_path), "--offline", "--dry-run"]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out.strip().splitlines()[-1])
+
+    assert exit_code == 0
+    assert payload["status"] == "pass"
+    assert payload["missing_caches"] == []
+    assert payload["offline"] is True
+    artefact_path = tmp_path / payload["report_path"]
+    assert artefact_path.exists()
+
+
+def test_dry_run_preflight_reports_missing_cache(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Dry-run preflight fails fast and records missing caches when offline requirements are absent."""
+
+    (tmp_path / "package.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv(
+        "UV_CACHE_DIR", str(tmp_path / "artifacts" / "cache" / "pip")
+    )
+
+    exit_code = bootstrap_env.main(
+        ["--repo-root", str(tmp_path), "--offline", "--dry-run"]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out.strip().splitlines()[-1])
+
+    assert exit_code == 1
+    assert payload["status"] == "fail"
+    assert "playwright" in payload["missing_caches"]
+    assert "pip_cache" in payload["missing_caches"]
+    artefact_path = tmp_path / payload["report_path"]
+    assert artefact_path.exists()

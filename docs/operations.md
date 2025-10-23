@@ -57,6 +57,30 @@ detects unresolved blockers. Escalate dry-run or workflow failures to the
 Platform supply-chain rotation (Slack `#platform-supply-chain`, pager `platform-deps@acme.example.com`) so upstream wheel
 owners receive the F-011 alert within the same business day.
 
+### Offline preflight automation
+
+`poetry run python -m apps.automation.cli qa dependencies` (and `qa all`) now
+invokes `python -m scripts.bootstrap_env --offline --dry-run` with
+`UV_CACHE_DIR` pinned to `artifacts/cache/pip/`. The command prints the
+bootstrap plan, emits a machine-readable JSON summary, and archives the result
+under `artifacts/chaos/preflight/<timestamp>.json` so CI and chaos drills can
+prove F-004 mitigation is executed before failover exercises.
+
+When the JSON reports missing caches, remediate with the cache-specific
+workflow and re-run the preflight:
+
+- **pip wheel mirror** — `python scripts/mirror_wheels.py --python 3.14 --python 3.15`
+  (add `--dry-run` to verify contents without modifying the cache).
+- **Node tarballs** — `python -m scripts.stage_node_tarball --version <LTS> --platform linux-x64`
+  to download and checksum official archives before copying them into
+  `artifacts/cache/node/`.
+- **Playwright browsers** — `PLAYWRIGHT_BROWSERS_PATH=artifacts/cache/playwright \
+  poetry run playwright install chromium firefox webkit` to repopulate the
+  browser cache when network access is temporarily available.
+- **tldextract suffix data** — `poetry run python -m scripts.bootstrap_env`
+  (online) seeds the suffix JSON automatically, or run the inline command from
+  the bootstrap plan to regenerate the files manually.
+
 Then execute the quality gates:
 
 ```bash

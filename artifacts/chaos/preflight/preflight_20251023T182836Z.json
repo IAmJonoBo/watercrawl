@@ -1,0 +1,37 @@
+{
+  "status": "fail",
+  "offline": true,
+  "recorded_at": "2025-10-23T18:28:36.060491+00:00",
+  "missing_caches": [
+    "pip_cache",
+    "playwright",
+    "tldextract",
+    "node_tarballs"
+  ],
+  "details": {
+    "pip": {
+      "path": "/workspace/watercrawl/artifacts/cache/pip",
+      "ready": false,
+      "mirror_state": false
+    },
+    "playwright": {
+      "path": "/workspace/watercrawl/artifacts/cache/playwright",
+      "ready": false,
+      "missing_browsers": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ]
+    },
+    "tldextract": {
+      "path": "/workspace/watercrawl/artifacts/cache/tldextract/publicsuffix.org-tlds",
+      "ready": false
+    },
+    "node": {
+      "path": "/workspace/watercrawl/artifacts/cache/node",
+      "ready": false,
+      "has_tarballs": false
+    }
+  },
+  "error": "Offline bootstrap requires cached Playwright archives under 'artifacts/cache/playwright'. Missing browsers: chromium, firefox, webkit."
+}
