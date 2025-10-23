@@ -1,0 +1,101 @@
+[
+  {
+    "eventTime": "2025-10-20T06:41:23.240708+00:00",
+    "eventType": "START",
+    "inputs": [
+      {
+        "facets": {
+          "dataset": {
+            "uri": "file:///private/var/folders/mg/zf8h7h511mx31g73gtsfhv100000gn/T/pytest-of-jonathanbotha/pytest-80/test_cli_enrich_logs_plan_audi0/input.csv"
+          }
+        },
+        "name": "flight-schools",
+        "namespace": "aces-aerodynamics"
+      }
+    ],
+    "job": {
+      "name": "enrichment",
+      "namespace": "aces-aerodynamics"
+    },
+    "run": {
+      "runId": "enrichment-f4db91de-fdbd-4cde-896a-b0c431630135"
+    }
+  },
+  {
+    "eventTime": "2025-10-20T06:41:23.310246+00:00",
+    "eventType": "COMPLETE",
+    "inputs": [
+      {
+        "facets": {
+          "dataset": {
+            "uri": "file:///private/var/folders/mg/zf8h7h511mx31g73gtsfhv100000gn/T/pytest-of-jonathanbotha/pytest-80/test_cli_enrich_logs_plan_audi0/input.csv"
+          }
+        },
+        "name": "flight-schools",
+        "namespace": "aces-aerodynamics"
+      }
+    ],
+    "job": {
+      "name": "enrichment",
+      "namespace": "aces-aerodynamics"
+    },
+    "outputs": [
+      {
+        "facets": {
+          "acesMetrics": {
+            "metrics": {
+              "adapter_failures": 0,
+              "enriched_rows": 1,
+              "issues_found": 0,
+              "quality_issues": 0,
+              "quality_rejections": 0,
+              "rows_total": 1,
+              "sanity_issues": 2,
+              "verified_rows": 0
+            }
+          },
+          "datasetVersion": {
+            "version": "20251020T064123-enrichment-f4db91de-fdbd-4cde-896a-b0c431630135"
+          },
+          "evidenceLog": {
+            "uri": "file:///Users/jonathanbotha/GitHub/watercrawl/data/interim/evidence_log.csv"
+          },
+          "lakehouse": {
+            "fingerprint": "712de74738618550b9124c937c206346ddcaf9c30dcc869fa18eb35731effca3",
+            "uri": "delta:///Users/jonathanbotha/GitHub/watercrawl/data/lakehouse/flight_schools/20251020T064123-enrichment-f4db91de-fdbd-4cde-896a-b0c431630135"
+          },
+          "lakehouseManifest": {
+            "uri": "file:///Users/jonathanbotha/GitHub/watercrawl/data/lakehouse/flight_schools/20251020T064123-enrichment-f4db91de-fdbd-4cde-896a-b0c431630135/manifest.json"
+          },
+          "versionExtras": {
+            "environment": "dev",
+            "git_commit": "23a12f43a1934e8118e315af724bfcece02bef29",
+            "source": "pipeline.run_dataframe_async"
+          },
+          "versionMetadata": {
+            "uri": "file:///Users/jonathanbotha/GitHub/watercrawl/data/versioning/20251020T064123-enrichment-f4db91de-fdbd-4cde-896a-b0c431630135/version.json"
+          },
+          "versionReproduce": {
+            "command": [
+              "poetry",
+              "run",
+              "python",
+              "-m",
+              "firecrawl_demo.interfaces.cli",
+              "enrich"
+            ]
+          },
+          "versioning": {
+            "inputFingerprint": "c809afc98f2a509fd89a73946017c0204e1b6654703413683c1a4042baa084bd",
+            "outputFingerprint": "712de74738618550b9124c937c206346ddcaf9c30dcc869fa18eb35731effca3"
+          }
+        },
+        "name": "flight-schools",
+        "namespace": "aces-aerodynamics"
+      }
+    ],
+    "run": {
+      "runId": "enrichment-f4db91de-fdbd-4cde-896a-b0c431630135"
+    }
+  }
+]
