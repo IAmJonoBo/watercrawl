@@ -31,9 +31,13 @@ def main(url: str = "https://example.com", policy: Mapping[str, Any] | None = No
         pretty_print("Entities", bundle.get("entities", []))
         pretty_print("Metadata", bundle.get("metadata", {}))
 
-    print("\nTip: run `uvicorn firecrawl_demo.interfaces.cli:create_app --factory` to serve the"
-          " /crawlkit/crawl, /crawlkit/markdown, and /crawlkit/entities endpoints backed by"
-          " the same adapters.")
+    print(
+        (
+            "\nTip: run `uvicorn firecrawl_demo.interfaces.cli:create_app --factory` to serve the"
+            " /crawlkit/crawl, /crawlkit/markdown, and /crawlkit/entities endpoints backed by"
+            " the same adapters."
+        )
+    )
 
 
 if __name__ == "__main__":
