@@ -19,10 +19,10 @@ from typing import Any
 
 import certifi
 import requests
+from packaging.specifiers import SpecifierSet
 from requests.adapters import HTTPAdapter
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
-from packaging.specifiers import SpecifierSet
 
 DEFAULT_BLOCKERS_PATH = Path("presets/dependency_blockers.toml")
 DEFAULT_OUTPUT_PATH = Path("tools/dependency_matrix/wheel_status.json")

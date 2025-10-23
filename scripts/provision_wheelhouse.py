@@ -17,10 +17,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 
 import certifi
-import tomllib
 
 EXPORT_PLUGIN = "poetry-plugin-export"
 REQUIREMENTS_FILE = Path("wheel-reqs.txt")

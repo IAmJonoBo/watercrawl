@@ -10,8 +10,8 @@ mirror remains fresh when the lockfile changes.
 from __future__ import annotations
 
 import argparse
-import json
 import hashlib
+import json
 import shutil
 import sys
 from datetime import UTC, datetime
@@ -73,7 +73,9 @@ def _write_metadata(
     }
     metadata_path = _metadata_path(cache_root, metadata_name)
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
-    metadata_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    metadata_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def _hash_file(path: Path) -> str:
@@ -149,11 +151,17 @@ def _validate_cache(
         tag = _python_tag(version)
         wheel_dir = cache_root / tag
         if not wheel_dir.exists():
-            raise MirrorError(f"Wheel directory missing for {tag}: {wheel_dir.as_posix()}")
+            raise MirrorError(
+                f"Wheel directory missing for {tag}: {wheel_dir.as_posix()}"
+            )
         wheels = list(wheel_dir.glob("*.whl"))
         if not wheels:
-            raise MirrorError(f"No wheels mirrored for {tag} under {wheel_dir.as_posix()}")
-        recorded = int(wheel_counts.get(tag, 0)) if isinstance(wheel_counts, dict) else 0
+            raise MirrorError(
+                f"No wheels mirrored for {tag} under {wheel_dir.as_posix()}"
+            )
+        recorded = (
+            int(wheel_counts.get(tag, 0)) if isinstance(wheel_counts, dict) else 0
+        )
         if recorded and recorded != len(wheels):
             raise MirrorError(
                 f"Wheel count mismatch for {tag}: metadata={recorded}, found={len(wheels)}"

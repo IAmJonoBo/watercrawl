@@ -99,7 +99,9 @@ def test_offline_plan_uses_cached_resources(tmp_path: Path) -> None:
     for browser in bootstrap_env.PLAYWRIGHT_BROWSERS:
         (playwright_cache / f"{browser}-123").mkdir(parents=True, exist_ok=True)
 
-    tld_cache = tmp_path / "artifacts" / "cache" / "tldextract" / "publicsuffix.org-tlds"
+    tld_cache = (
+        tmp_path / "artifacts" / "cache" / "tldextract" / "publicsuffix.org-tlds"
+    )
     tld_cache.mkdir(parents=True, exist_ok=True)
     (tld_cache / "snapshot.tldextract.json").write_text("{}", encoding="utf-8")
 
