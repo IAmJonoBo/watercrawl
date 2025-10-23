@@ -38,6 +38,46 @@ class BootstrapStep:
         return f"{self.description}{location}: $ {cmd}{suffix}"
 
 
+def _ensure_poetry_lock_in_sync(repo_root: Path) -> None:
+    """Raise an error when the Poetry lockfile is missing or out of sync."""
+
+    lock_path = repo_root / "poetry.lock"
+    if not lock_path.exists():
+        raise BootstrapError(
+            "Missing 'poetry.lock'. Run 'poetry lock' (or 'poetry lock --no-update' on "
+            "older Poetry releases) to generate it before bootstrapping."
+        )
+
+    try:
+        result = subprocess.run(
+            ("poetry", "check", "--lock"),
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError as exc:  # pragma: no cover - defensive guard
+        raise BootstrapError(
+            "Poetry CLI is required to validate the lockfile but was not found in PATH. "
+            "Install Poetry and retry the bootstrap command."
+        ) from exc
+
+    if result.returncode == 0:
+        return
+
+    details = "\n".join(
+        part for part in (result.stdout.strip(), result.stderr.strip()) if part
+    )
+    message = (
+        "'pyproject.toml' and 'poetry.lock' are out of sync. Regenerate the lockfile "
+        "with 'poetry lock' (or 'poetry lock --no-update' when supported) and commit "
+        "the changes before rerunning the bootstrap command."
+    )
+    if details:
+        message = f"{message}\nPoetry output:\n{details}"
+    raise BootstrapError(message)
+
+
 def discover_node_projects(repo_root: Path) -> list[Path]:
     """Return known Node.js project directories within the repository."""
 
@@ -71,6 +111,9 @@ def build_bootstrap_plan(
     offline: bool,
 ) -> list[BootstrapStep]:
     """Assemble the ordered bootstrap steps for the repository."""
+
+    if enable_python:
+        _ensure_poetry_lock_in_sync(repo_root)
 
     if offline:
         _ensure_offline_caches(

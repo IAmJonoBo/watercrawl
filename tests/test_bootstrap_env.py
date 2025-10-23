@@ -3,10 +3,92 @@ from __future__ import annotations
 import json
 import hashlib
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from scripts import bootstrap_env
+
+
+def _seed_poetry_lock(
+    repo_root: Path, monkeypatch: pytest.MonkeyPatch | None = None
+) -> None:
+    (repo_root / "poetry.lock").write_text("", encoding="utf-8")
+    if monkeypatch is not None:
+        monkeypatch.setattr(
+            bootstrap_env.subprocess,
+            "run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0, stdout="", stderr=""
+            ),
+        )
+
+
+def test_lock_sync_guard_requires_lockfile(tmp_path: Path) -> None:
+    with pytest.raises(bootstrap_env.BootstrapError) as excinfo:
+        bootstrap_env._ensure_poetry_lock_in_sync(tmp_path)
+
+    assert "Missing 'poetry.lock'" in str(excinfo.value)
+
+
+def test_lock_sync_guard_passes_when_poetry_check_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "poetry.lock").write_text("", encoding="utf-8")
+
+    def fake_run(*args: object, **kwargs: object) -> SimpleNamespace:
+        assert args[0] == ("poetry", "check", "--lock")
+        assert kwargs["cwd"] == tmp_path
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(bootstrap_env.subprocess, "run", fake_run)
+
+    # Should not raise.
+    bootstrap_env._ensure_poetry_lock_in_sync(tmp_path)
+
+
+def test_lock_sync_guard_surfaces_poetry_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "poetry.lock").write_text("", encoding="utf-8")
+
+    def fake_run(*args: object, **kwargs: object) -> SimpleNamespace:
+        return SimpleNamespace(
+            returncode=1,
+            stdout="lock mismatch",
+            stderr="update required",
+        )
+
+    monkeypatch.setattr(bootstrap_env.subprocess, "run", fake_run)
+
+    with pytest.raises(bootstrap_env.BootstrapError) as excinfo:
+        bootstrap_env._ensure_poetry_lock_in_sync(tmp_path)
+
+    message = str(excinfo.value)
+    assert "out of sync" in message
+    assert "lock mismatch" in message
+    assert "update required" in message
+
+
+def test_lock_sync_guard_runs_during_plan_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    invoked: list[Path] = []
+
+    def fake_check(path: Path) -> None:
+        invoked.append(path)
+
+    monkeypatch.setattr(bootstrap_env, "_ensure_poetry_lock_in_sync", fake_check)
+
+    bootstrap_env.build_bootstrap_plan(
+        repo_root=tmp_path,
+        enable_python=True,
+        enable_node=False,
+        enable_docs=False,
+        offline=False,
+    )
+
+    assert invoked == [tmp_path]
 
 
 def test_discover_node_projects(tmp_path: Path) -> None:
@@ -57,7 +139,10 @@ def test_build_node_command_variants(
     assert command == expected
 
 
-def test_plan_includes_python_and_node(tmp_path: Path) -> None:
+def test_plan_includes_python_and_node(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed_poetry_lock(tmp_path, monkeypatch)
     (tmp_path / "package.json").write_text("{}\n", encoding="utf-8")
     docs_dir = tmp_path / "docs-starlight"
     docs_dir.mkdir()
@@ -80,7 +165,10 @@ def test_plan_includes_python_and_node(tmp_path: Path) -> None:
     assert any("docs-starlight" in step.description for step in plan)
 
 
-def test_offline_plan_requires_cached_artifacts(tmp_path: Path) -> None:
+def test_offline_plan_requires_cached_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed_poetry_lock(tmp_path, monkeypatch)
     with pytest.raises(bootstrap_env.BootstrapError) as excinfo:
         bootstrap_env.build_bootstrap_plan(
             repo_root=tmp_path,
@@ -97,7 +185,10 @@ def test_offline_plan_requires_cached_artifacts(tmp_path: Path) -> None:
     assert "Node.js tarball" in message
 
 
-def test_offline_plan_uses_cached_resources(tmp_path: Path) -> None:
+def test_offline_plan_uses_cached_resources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed_poetry_lock(tmp_path, monkeypatch)
     (tmp_path / "package.json").write_text("{}\n", encoding="utf-8")
     docs_dir = tmp_path / "docs-starlight"
     docs_dir.mkdir()
@@ -342,6 +433,7 @@ def test_dry_run_preflight_reports_success(
 ) -> None:
     """Dry-run preflight emits JSON and writes a chaos artefact when caches are ready."""
 
+    _seed_poetry_lock(tmp_path, monkeypatch)
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
     _seed_offline_caches(tmp_path)
     pip_cache = tmp_path / "artifacts" / "cache" / "pip"
@@ -367,6 +459,7 @@ def test_dry_run_preflight_reports_missing_cache(
 ) -> None:
     """Dry-run preflight fails fast and records missing caches when offline requirements are absent."""
 
+    _seed_poetry_lock(tmp_path, monkeypatch)
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
     monkeypatch.setenv(
         "UV_CACHE_DIR", str(tmp_path / "artifacts" / "cache" / "pip")
