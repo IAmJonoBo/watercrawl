@@ -22,6 +22,32 @@ python scripts/collect_problems.py --output problems_report.json
 python -m json.tool problems_report.json | less
 ```
 
+## Reconciling Poetry Lock Mismatches
+
+The bootstrap helper now fails fast when `pyproject.toml` and `poetry.lock` drift. If
+`python -m scripts.bootstrap_env` raises a lockfile error:
+
+1. Inspect the current status:
+
+   ```bash
+   poetry check --lock
+   ```
+
+2. Regenerate the lockfile without refreshing dependency versions:
+
+   ```bash
+   poetry lock
+   ```
+
+   > Older Poetry releases expose the `--no-update` flag; the default behaviour in
+   > Poetry 2.x already avoids dependency upgrades.
+
+3. Commit the updated `poetry.lock` alongside the change that touched
+   `pyproject.toml`, then rerun the bootstrap command.
+
+When CI detects a mismatch, the same `poetry check --lock`/`poetry lock` cycle brings
+the lockfile back in sync before re-running the workflow.
+
 ## Offline Node.js Runtime Support
 
 For environments with restricted internet access, Node.js tooling (markdownlint, biome) can run from cached tarballs:
