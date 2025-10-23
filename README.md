@@ -100,6 +100,11 @@ When running offline, seed the following caches ahead of time:
 - `artifacts/cache/node/` populated with `*.tgz` tarballs for npm/pnpm so JavaScript installs can operate entirely from disk.
 - `artifacts/cache/pip/` housing pre-downloaded Python wheels if you intend to use `uv pip sync` in fully air-gapped environments.
 
+**Note:** By default, `uv` uses its own cache directory (typically at `~/.cache/uv`). To ensure `uv pip sync` uses your pre-populated cache at `artifacts/cache/pip/` during offline installation, set the `UV_CACHE_DIR` environment variable before running the bootstrap command:
+
+```bash
+export UV_CACHE_DIR="$(pwd)/artifacts/cache/pip/"
+python -m scripts.bootstrap_env --offline
 The exported requirements files include pinned versions with SHA256 hashes for reproducible, secure installations, and the offline bootstrap flow uses those hashes with `uv pip sync` to hydrate `.venv/` deterministically.
 
 **Dependency download resilience:**
