@@ -79,9 +79,27 @@
 - [ ] 2025-10-22 — Contract registry instrumentation: Added Pydantic contract adapters for pipeline/evidence, JSON+Avro schema exporters with snapshots, CLI/MCP metadata embedding, and plan→commit/evidence validation guards. Awaiting full QA run once baseline issues cleared.
 - [x] 2025-10-22 — Contract sink regression follow-up: Normalised evidence sink shims/tests to accept contract payloads, updated pipeline/MCP fixtures to coerce contracts back to dataclasses, and reran targeted pytest suite (`tests/test_audit.py`, `tests/test_pipeline.py`, `tests/test_mcp.py`) successfully.
 
+## 2) Deliverables
+
+- [ ] **Crawlkit cut-over playbook & CLI alignment** — _Owner: Platform/Research · Due: 2025-10-27_
+  - Acceptance criteria: Crawlkit cut-over runbook published with sequencing for adapter swaps, CLI and automation docs updated to surface new feature flags, and MCP Promptfoo gate references refreshed for Crawlkit endpoints.
+  - Evidence: [`SCRATCH.md`](SCRATCH.md), [`docs/cli.md`](docs/cli.md), [`docs/mcp-promptfoo-gate.md`](docs/mcp-promptfoo-gate.md)
+- [ ] **Contracts vNext — registry + adapter rollout** — _Owner: Platform/Data · Due: 2025-11-05_
+  - Acceptance criteria: Contract registry documentation live, CLI/MCP emit schema URIs with semantic versioning, Avro/JSON Schema regression suites green, and evidence sinks enforcing schema validation end-to-end.
+  - Evidence: [`data_contracts/`](data_contracts), [`docs/data-quality.md`](docs/data-quality.md), [`apps/automation/cli.py`](apps/automation/cli.py)
+- [ ] **Wheel remediation — Python 3.13/3.14/3.15 blockers** — _Owner: Platform/Data/Security · Due: 2025-11-08_
+  - Acceptance criteria: `cp314`/`cp315` wheels published for tracked packages (argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, etc.) and `python -m scripts.dependency_matrix guard --strict` passes with zero blockers.
+  - Evidence: [`scripts/wheel_status.py`](scripts/wheel_status.py), [`tools/dependency_matrix/wheel_status.json`](tools/dependency_matrix/wheel_status.json), [`tools/dependency_matrix/status.json`](tools/dependency_matrix/status.json)
+- [ ] **QA baseline remediation — nodeenv + typing gaps** — _Owner: QA/Platform · Due: 2025-10-28_
+  - Acceptance criteria: Markdownlint CLI runnable offline (nodeenv certificate pinning), mypy clean with `tomli` dependency verified, axe smoke test isolates Chrome profile, yamllint limited to tracked sources, and problems collector completes without TLS errors.
+  - Evidence: [`scripts/collect_problems.py`](scripts/collect_problems.py), [`apps/automation/cli.py`](apps/automation/cli.py), [`docs/ephemeral-qa-guide.md`](docs/ephemeral-qa-guide.md)
+- [ ] **Chaos/FMEA exercise for pipeline & MCP** — _Owner: SRE/Security · Due: 2026-01-31_
+  - Acceptance criteria: Execute Q4 2025 scenarios (F-001, F-004, F-011), capture RPN deltas and mitigation actions in the FMEA register, and archive game day artefacts alongside observability telemetry snapshots.
+  - Evidence: [`docs/chaos-fmea-scenarios.md`](docs/chaos-fmea-scenarios.md), [`Next_Steps.md`](Next_Steps.md#steps-iteration-log)
+
 ---
 
-## 2) Red‑Team Integration — Quick Index (WC‑01 … WC‑20)
+## 3) Red‑Team Integration — Quick Index (WC‑01 … WC‑20)
 
 Execute in this order; each item must meet its gate before promotion.
 
@@ -96,7 +114,7 @@ Execute in this order; each item must meet its gate before promotion.
 
 ---
 
-## 3) WC ↔ AT Cross‑walk (traceability)
+## 4) WC ↔ AT Cross‑walk (traceability)
 
 |   WC ID   | Purpose                      | AT Dependencies (primary)         |
 | :-------: | ---------------------------- | --------------------------------- |
@@ -113,7 +131,7 @@ Execute in this order; each item must meet its gate before promotion.
 
 ---
 
-## 4) Milestones & Exit Criteria
+## 5) Milestones & Exit Criteria
 
 | Milestone                   | Window                  | Scope               | Exit Criteria                                                                             |
 | --------------------------- | ----------------------- | ------------------- | ----------------------------------------------------------------------------------------- |
@@ -126,7 +144,7 @@ Execute in this order; each item must meet its gate before promotion.
 
 ---
 
-## 5) Quality Gates (release blockers)
+## 6) Quality Gates (release blockers)
 
 - Any failing **GX/dbt/Deequ** test on publishable datasets (AT‑24).
 - Missing **OpenLineage/PROV‑O/DCAT** for a publishable run (AT‑25).
@@ -140,7 +158,7 @@ Execute in this order; each item must meet its gate before promotion.
 
 ---
 
-## 6) Links (End)
+## 7) Links (End)
 
 - [x] Operations runbook — Great Expectations contract execution guidance → `docs/operations.md`
 - [x] Cleanup automation — `scripts/cleanup.py`
@@ -156,7 +174,7 @@ Execute in this order; each item must meet its gate before promotion.
 
 ---
 
-## 7) Risks/Notes (active, de‑duplicated)
+## 8) Risks/Notes (active, de‑duplicated)
 
 - Running Great Expectations locally regenerates `data_contracts/great_expectations/uncommitted/config_variables.yml`; keep it ignored and document analyst‑specific overrides per run.
 - Confirm repository‑root anchored paths in `firecrawl_demo.core.config` propagate to packaging/release workflows; adjust docs if downstream tools expect package‑root paths.
