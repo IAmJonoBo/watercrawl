@@ -1,0 +1,14 @@
+Task: Refresh dependency matrix and wheel status for cp314/cp315 blockers.
+Scope:
+- Run python -m scripts.dependency_matrix survey to regenerate tools/dependency_matrix/report.json.
+- Use scripts/provision_wheelhouse.py to mark blocker wheels built or vendored and update tools/dependency_matrix/wheel_status.json.
+- Re-run python -m scripts.dependency_matrix guard to refresh tools/dependency_matrix/status.json once blockers resolved or documented.
+Assumptions:
+- No new blockers beyond presets/dependency_blockers.toml.
+- Wheel builds may be simulated/offline via provision script.
+Planned Outputs:
+- Updated report.json, wheel_status.json, status.json with current survey + guard results.
+- Log updates in Next_Steps.md.
+Risks:
+- Missing dependencies for wheel build script; treat as advisory and document failures.
+- Guard may remain red if blockers unresolved; capture rationale.
