@@ -12,5 +12,5 @@ QA Notes:
 - mypy reports 102 errors/missing stubs.
 - bandit unavailable in env; poetry build succeeds.
 Risks:
-- Wheel status data derived from survey snapshot; lacks PyPI metadata verification until TLS trust store issue resolved.
+- Wheel status data derived from survey snapshot; lacks verification of PyPI 'requires_python' metadata and wheel availability timestamps until TLS trust store issue is resolved.
 - Wheelhouse provisioning still blocked; Platform must install Poetry export plugin or adjust script.
