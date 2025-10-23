@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import csv
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
@@ -37,13 +37,20 @@ def _ensure_contract_records(
     contracts: list[EvidenceRecordContract] = []
     for entry in entries:
         if isinstance(entry, EvidenceRecordContract):
-            contracts.append(entry)
+            # Only revalidate if constructed via model_construct (fields_set is empty)
+            if not getattr(entry, "__pydantic_fields_set__", None):
+                validated = EvidenceRecordContract.model_validate(entry.model_dump())
+            else:
+                validated = entry
         elif isinstance(entry, EvidenceRecord):
-            contracts.append(evidence_record_to_contract(entry))
+            validated = evidence_record_to_contract(entry)
+        elif isinstance(entry, Mapping):
+            validated = EvidenceRecordContract.model_validate(dict(entry))
         else:
             raise TypeError(
-                "Evidence sinks accept EvidenceRecord dataclasses or EvidenceRecordContract instances"
+                "Evidence sinks accept EvidenceRecord dataclasses, EvidenceRecordContract instances, or mappings"
             )
+        contracts.append(validated)
     return contracts
 
 

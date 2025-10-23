@@ -138,7 +138,7 @@ poetry run python -c "from firecrawl_demo.domain.contracts import export_all_avr
 - All domain models have versioned Pydantic equivalents in `firecrawl_demo/domain/contracts.py`
 - JSON Schema **and Avro** export available for integration testing, registries, and API docs
 - Backward compatibility adapters in `firecrawl_demo/domain/models.py`
-- Schema stability enforced via regression tests (JSON + Avro snapshots stored under `tests/data/contracts/`)
+- Schema stability enforced via regression tests (JSON + Avro bundles stored under `data_contracts/registry/`)
 - Evidence sinks normalise and validate entries via `EvidenceRecordContract`
 - Plan→commit artefacts must satisfy `PlanArtifactContract`/`CommitArtifactContract` before execution
 

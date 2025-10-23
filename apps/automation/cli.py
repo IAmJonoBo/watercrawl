@@ -128,6 +128,21 @@ def _build_commit_payload(
     return CommitArtifactContract.model_validate(payload).model_dump(mode="json")
 
 
+def _contract_hint(name: str) -> Text:
+    """Render a console hint describing the schema metadata for a contract."""
+
+    metadata = contract_registry().get(name)
+    if metadata is None:
+        return Text.assemble((f"{name} contract metadata unavailable", "yellow"))
+    version = metadata.get("version", "unknown")
+    schema_uri = metadata.get("schema_uri") or "n/a"
+    hint = Text()
+    hint.append(f"{name} contract → ", style="cyan")
+    hint.append(schema_uri, style="magenta")
+    hint.append(f" (v{version})", style="green")
+    return hint
+
+
 def _ensure_unique_path(path: Path) -> Path:
     candidate = path
     counter = 1
@@ -204,11 +219,13 @@ def _maybe_generate_plan_artifacts(
                     ("Generated plan artefact → ", "green"), plan_path.as_posix()
                 )
             )
+            console.print(_contract_hint("PlanArtifact"))
             console.print(
                 Text.assemble(
                     ("Generated commit artefact → ", "green"), commit_path.as_posix()
                 )
             )
+            console.print(_contract_hint("CommitArtifact"))
     return plan_paths_list, commit_paths_list, active_guard
 
 

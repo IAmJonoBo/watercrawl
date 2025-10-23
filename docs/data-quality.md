@@ -119,3 +119,26 @@ Phase 1.3 introduces Deequ integration and enforces contracts as CI gates.
 Exit criteria for Phase 1.3 are complete: deterministic Deequ checks ship with
 evidence logging, CI enforcement is active, and coverage tracking ensures ≥95%
 of curated tables are covered.
+
+## Contract registry & schema artefacts
+
+The contract registry centralises schema metadata for every public contract. The
+runtime helper `firecrawl_demo.integrations.integration_plugins.contract_registry()`
+returns a dictionary keyed by contract name with semantic versions, schema URIs,
+and both JSON Schema and Avro serialisations. The bundles that power the CLI and
+MCP surfaces are published under `data_contracts/registry/` for direct
+inspection:
+
+- `data_contracts/registry/json_schemas_v1.json` — canonical JSON Schema bundle
+  spanning all contracts.
+- `data_contracts/registry/avro_schemas_v1.json` — Avro equivalents generated
+  from the same Pydantic models.
+- `data_contracts/registry/registry_v1.json` — metadata index used by CLI/MCP
+  clients to look up schema URIs and semantic versions.
+
+`apps.automation.cli`, `apps.analyst.cli`, and the MCP server now emit the
+contract version and schema URI alongside their results so analysts can align
+plan→commit artefacts, CLI payloads, and JSON-RPC responses with the published
+contracts. Regression tests in `tests/test_contract_schemas.py` assert the
+bundles remain stable and validate exporter behaviour for both JSON Schema and
+Avro outputs.
