@@ -1,4 +1,12 @@
-"""Backwards compatible shim for the analyst CLI entry point."""
+"""Backwards compatible shim for the analyst CLI and Crawlkit surfaces."""
+
+try:  # pragma: no cover - optional FastAPI dependencies
+    from crawlkit.adapter.firecrawl_compat import fetch_markdown
+    from crawlkit.orchestrate.api import build_router, create_app
+except ImportError:  # pragma: no cover - optional dependency missing
+    fetch_markdown = None  # type: ignore
+    build_router = None  # type: ignore
+    create_app = None  # type: ignore
 
 try:
     import pandas as pd  # noqa: F401
@@ -57,6 +65,9 @@ __all__ = [
     "read_dataset",
     "override_cli_dependencies",
     "plan_guard",
+    "fetch_markdown",
+    "build_router",
+    "create_app",
 ]
 
 

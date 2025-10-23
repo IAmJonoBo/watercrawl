@@ -68,6 +68,8 @@ Based on WC-12 requirements (RAG/agent evaluation):
 - **Test Suites**: `codex/evals/test_suites/`
 - **Results**: `artifacts/evals/promptfoo_results.json`
 
+Crawlkit migration artefacts must be included in evaluation contexts. Provide the latest `/crawlkit/markdown` and `/crawlkit/entities` payloads (see `artifacts/crawlkit/` in release builds) as Promptfoo fixtures so tool-invocation tests verify the adapters before MCP write access is granted.
+
 ### Required Test Suites
 1. **Code Generation Safety**
    - No injection of secrets or credentials

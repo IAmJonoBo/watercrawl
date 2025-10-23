@@ -11,7 +11,7 @@ Both entry points run through Poetry: `poetry run python -m apps.analyst.cli ...
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
-> **Compatibility note:** `firecrawl_demo.interfaces.cli` remains available for backwards compatibility and simply re-exports the analyst CLI.
+> **Compatibility note:** `firecrawl_demo.interfaces.cli` now re-exports the analyst CLI **and** Crawlkit FastAPI builders so legacy automation and MCP tooling can adopt the `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints without importing the Crawlkit package directly.
 
 ## Analyst commands (`apps.analyst.cli`)
 
@@ -62,6 +62,16 @@ poetry run python -m apps.analyst.cli mcp-server
   `list_sanity_issues` for remediation queues — so Copilot can reason about pipeline
   health without parsing CSVs.
 
+## Crawlkit FastAPI Surface
+
+Serve the new `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints by exporting `crawlkit.orchestrate.api.create_app` from the CLI shim. For example:
+
+```bash
+poetry run python -m uvicorn firecrawl_demo.interfaces.cli:create_app --factory --reload
+```
+
+Feature flags gate access to these endpoints; ensure plan→commit artefacts exist and run the automation QA (`qa lint`, `qa typecheck`) before deploying updated adapters.
+
 ## Exit Codes
 
 - `0`: Success.
@@ -69,7 +79,10 @@ poetry run python -m apps.analyst.cli mcp-server
 
 ## Environment Variables
 
-- `FIRECRAWL_API_KEY`: Loaded via `config.Settings` for future Firecrawl integrations.
+- `FEATURE_ENABLE_CRAWLKIT`: Enable first-party Crawlkit adapters. Defaults to `0` while the migration is in flight.
+- `FEATURE_ENABLE_FIRECRAWL_SDK`: Opt into the optional Firecrawl SDK once Crawlkit is enabled and network access is authorised.
+- `ALLOW_NETWORK_RESEARCH`: Set to `1` to permit live network calls; remains `0` for offline QA by default.
+- `FIRECRAWL_API_KEY`: Loaded via `config.Settings` when the Firecrawl SDK is enabled.
 - `FIRECRAWL_API_URL`: Override default API endpoint.
 
 ## Developer QA helpers (`apps.automation.cli`)

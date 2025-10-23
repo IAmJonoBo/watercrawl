@@ -13,19 +13,21 @@ description: System design, layered architecture, and component relationships
 2. **Domain Layer** (`firecrawl_demo.domain`)
    - Owns canonical models (`models`), validation rules (`validation`), and compliance heuristics (`compliance`).
    - Emits structured `ValidationReport`, `EvidenceRecord`, and `QualityIssue` objects that can be consumed without referencing persistence concerns.
-3. **Application Layer** (`firecrawl_demo.application`)
+3. **Crawlkit Modules** (`crawlkit`)
+   - Houses polite fetchers, renderer fallbacks, Markdown distillers, entity extraction, and Celery orchestration, replacing the legacy Firecrawl demos under feature flag control.
+   - FastAPI surfaces expose `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` so automation and MCP clients can reuse the same primitives as the CLI.
+4. **Application Layer** (`firecrawl_demo.application`)
    - Coordinates orchestration through the `pipeline`, `quality`, and `progress` modules.
    - Defines interfaces in `application.interfaces` so pipelines and evidence sinks can be swapped or decorated without touching domain logic.
    - Centralises row-level enrichment inside `application.row_processing`, which exposes a deterministic `process_row` service. All future enrichment steps must depend on this service instead of mutating DataFrames directly so change descriptions, sanity checks, and quality-gate artefacts stay consistent and testable.
-4. **Integrations** (`firecrawl_demo.integrations`)
+5. **Integrations** (`firecrawl_demo.integrations`)
    - Adapter, telemetry, storage, and contract integrations register themselves with the shared plugin registry.
    - External systems plug into the application layer via protocols so deterministic offline adapters continue to drive the QA suite.
-5. **Infrastructure** (`firecrawl_demo.infrastructure`)
+6. **Infrastructure** (`firecrawl_demo.infrastructure`)
    - Implements persistence for the application interfaces, including CSV/streaming evidence sinks and the infrastructure planning scaffold.
    - Keeps storage and deployment details decoupled from the pipeline so alternative sinks (e.g., Kafka, REST) can be introduced without disturbing core orchestration.
-6. **Interfaces** (`firecrawl_demo.interfaces`)
+7. **Interfaces** (`firecrawl_demo.interfaces`)
    - CLI, analyst UI, and MCP surfaces build on the application layer to expose validated enrichment workflows to humans and GitHub Copilot.
-
 > **Package boundaries.** `firecrawl_demo.domain` captures business invariants, `firecrawl_demo.application` orchestrates workflows against those invariants, `firecrawl_demo.infrastructure` persists artefacts, and `firecrawl_demo.integrations` houses optional systems (lineage, lakehouse, contracts, research). Production wheels still exclude workspace directories (`codex/`, `apps/`, `platform/`, `tools/`) so deployments remain lean.
 
 ## Data Contracts

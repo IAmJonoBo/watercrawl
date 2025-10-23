@@ -9,7 +9,7 @@ description: Current-state findings and improvement areas
 
 - **Tests**: Baseline pytest run failed because the legacy pipeline imported the `firecrawl` SDK directly, which is unavailable in the local environment.
 - **Tooling**: `poetry run pre-commit` failed (`pre-commit` not installed); type checking raised missing stub errors; `bandit` highlighted blanket `except/pass` blocks and insecure RNG usage.
-- **Architecture**: Core modules were monolithic, mixed sync/async concerns, and tightly coupled to Firecrawl specifics, complicating offline QA.
+- **Architecture**: Core modules were monolithic, mixed sync/async concerns, and tightly coupled to Firecrawl specifics, complicating offline QA before the Crawlkit migration.
 - **Data Quality**: Validation rules were implicit, with little test coverage around South African provincial constraints or evidence logging.
 - **Automation**: No CLI or MCP layer existed, making orchestration manual.
 - **Documentation**: README only described Firecrawl demos; no architectural or operations guidance existed.
@@ -27,7 +27,7 @@ description: Current-state findings and improvement areas
 
 - ✅ New validator, pipeline, CLI, and MCP server implemented with deterministic tests.
 - ✅ MkDocs site scaffolded with architecture, data-quality, and operations content.
-- ✅ Firecrawl SDK integration available behind feature toggles with offline-safe defaults and type stubs for pandas/requests.
+- ✅ Crawlkit fetch/distill/extract/orchestrate modules now replace the demo stack behind `FEATURE_ENABLE_CRAWLKIT`, with the optional Firecrawl SDK still gated by `FEATURE_ENABLE_FIRECRAWL_SDK`. Offline defaults remain the same.
 - 🔄 Follow-up: replace placeholder `.env` credentials with secrets manager integration.
 - ✅ Infrastructure planning module added to codify crawler, observability, and policy guardrails with environment-driven overrides.
 - ✅ Integrations restructured into adapter/telemetry/storage subpackages with a shared plugin registry and health probes for QA.

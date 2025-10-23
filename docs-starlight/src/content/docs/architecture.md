@@ -101,6 +101,10 @@ graph LR
     style C fill:#1f6feb,color:#fff
 ```
 
+### Crawlkit Modules (`crawlkit`)
+
+Feature-flagged Crawlkit fetch, distill, extract, and Celery orchestrators replace the legacy Firecrawl demos. Enable `FEATURE_ENABLE_CRAWLKIT` to exercise the adapters locally; set `FEATURE_ENABLE_FIRECRAWL_SDK` only when you are ready to run the optional SDK. The compatibility shim exposes `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` via FastAPI (`firecrawl_demo.interfaces.cli:create_app`) so automation clients can reuse the same surfaces.
+
 ### 2. Application Layer (`firecrawl_demo.application`)
 
 **Purpose**: Orchestrate workflows and enforce business rules

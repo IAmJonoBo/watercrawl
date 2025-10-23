@@ -1,24 +1,10 @@
-"""Main script for Firecrawl demo: loads API key, scrapes and extracts content from example URLs."""
-
-# mypy: ignore-errors
+"""Example script showcasing Crawlkit fetch and distillation helpers."""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
-from firecrawl import Firecrawl
-
-from firecrawl_demo.core.config import resolve_api_key
-
-
-def ensure_api_key() -> str:
-    """Load FIRECRAWL_API_KEY from the configured secrets provider."""
-    try:
-        return resolve_api_key()
-    except ValueError as exc:
-        raise RuntimeError(
-            "Set FIRECRAWL_API_KEY in the configured secrets backend before running this script."
-        ) from exc
+from crawlkit.adapter.firecrawl_compat import fetch_markdown
 
 
 def pretty_print(label: str, obj: Any) -> None:
@@ -32,20 +18,22 @@ def pretty_print(label: str, obj: Any) -> None:
         print(obj)
 
 
-def main() -> None:
-    api_key = ensure_api_key()
-    client = Firecrawl(api_key=api_key)
+def main(url: str = "https://example.com", policy: Mapping[str, Any] | None = None) -> None:
+    """Fetch Markdown, text, and entities for the provided URL via Crawlkit."""
 
-    # Example: scrape the Firecrawl homepage for markdown content.
-    scrape_result = client.scrape("https://firecrawl.dev", formats=["markdown"])
-    pretty_print("Scrape result", scrape_result.markdown)
+    bundle = fetch_markdown(url, policy=policy)
+    if "items" in bundle:
+        for item in bundle["items"]:
+            pretty_print("Markdown", item.get("markdown", ""))
+            pretty_print("Entities", item.get("entities", []))
+    else:
+        pretty_print("Markdown", bundle.get("markdown", ""))
+        pretty_print("Entities", bundle.get("entities", []))
+        pretty_print("Metadata", bundle.get("metadata", {}))
 
-    # Example: extract key details from the docs landing page using a prompt.
-    extract_result = client.extract(
-        urls=["https://docs.firecrawl.dev/introduction"],
-        prompt="Summarize the main sections and purpose of the page in bullet points.",
-    )
-    pretty_print("Extract result", extract_result.data)
+    print("\nTip: run `uvicorn firecrawl_demo.interfaces.cli:create_app --factory` to serve the"
+          " /crawlkit/crawl, /crawlkit/markdown, and /crawlkit/entities endpoints backed by"
+          " the same adapters.")
 
 
 if __name__ == "__main__":

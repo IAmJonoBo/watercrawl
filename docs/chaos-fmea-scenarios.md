@@ -130,7 +130,7 @@ sudo iptables -A OUTPUT -j DROP
 
 **Expected Behaviors**:
 - Feature flags enforce offline-first operation
-- Firecrawl SDK disabled automatically
+- `FEATURE_ENABLE_CRAWLKIT`/`FEATURE_ENABLE_FIRECRAWL_SDK` enforce offline-first operation by default
 - Fallback to deterministic adapters
 - Warning logged, not error
 
