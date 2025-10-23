@@ -250,7 +250,7 @@ def load_graph_snapshot(
     edges_csv = (
         edge_csv_path.expanduser().resolve()
         if edge_csv_path is not None
-        else graphml_path.with_name(f"{graphml_path.stem}_edges.csv")
+        else graphml_path.with_stem(f"{graphml_path.stem}_edges")
     )
 
     simple_graph = nx.Graph(graph)
