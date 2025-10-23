@@ -287,7 +287,9 @@ class CrawlkitResearchAdapter:
 
         domain_hint = urlparse(url).netloc if isinstance(url, str) else None
         if entities.emails and not contact_email and domain_hint:
-            contact_email = entities.emails[0].get("address")  # type: ignore[assignment]
+            first_email = entities.emails[0]
+            if isinstance(first_email, Mapping):
+                contact_email = first_email.get("address")  # type: ignore[assignment]
 
         confidence = 70 if (contact_email or contact_phone) else 50
 
