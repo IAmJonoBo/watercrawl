@@ -66,9 +66,58 @@ def test_plan_includes_python_and_node(tmp_path: Path) -> None:
         enable_python=True,
         enable_node=True,
         enable_docs=True,
+        offline=False,
     )
 
     step_descriptions = [step.description for step in plan]
 
     assert "Install Poetry environment" in step_descriptions
     assert any("docs-starlight" in step.description for step in plan)
+
+
+def test_offline_plan_requires_cached_artifacts(tmp_path: Path) -> None:
+    with pytest.raises(bootstrap_env.BootstrapError) as excinfo:
+        bootstrap_env.build_bootstrap_plan(
+            repo_root=tmp_path,
+            enable_python=True,
+            enable_node=True,
+            enable_docs=False,
+            offline=True,
+        )
+
+    assert "Playwright" in str(excinfo.value)
+
+
+def test_offline_plan_uses_cached_resources(tmp_path: Path) -> None:
+    (tmp_path / "package.json").write_text("{}\n", encoding="utf-8")
+    docs_dir = tmp_path / "docs-starlight"
+    docs_dir.mkdir()
+    (docs_dir / "package.json").write_text("{}\n", encoding="utf-8")
+    (docs_dir / "pnpm-lock.yaml").write_text("{}\n", encoding="utf-8")
+
+    playwright_cache = tmp_path / "artifacts" / "cache" / "playwright"
+    for browser in bootstrap_env.PLAYWRIGHT_BROWSERS:
+        (playwright_cache / f"{browser}-123").mkdir(parents=True, exist_ok=True)
+
+    tld_cache = tmp_path / "artifacts" / "cache" / "tldextract" / "publicsuffix.org-tlds"
+    tld_cache.mkdir(parents=True, exist_ok=True)
+    (tld_cache / "snapshot.tldextract.json").write_text("{}", encoding="utf-8")
+
+    node_cache = tmp_path / "artifacts" / "cache" / "node"
+    node_cache.mkdir(parents=True, exist_ok=True)
+    (node_cache / "package-1.0.0.tgz").write_bytes(b"cache")
+
+    plan = bootstrap_env.build_bootstrap_plan(
+        repo_root=tmp_path,
+        enable_python=True,
+        enable_node=True,
+        enable_docs=True,
+        offline=True,
+    )
+
+    commands = [step.command for step in plan]
+
+    assert ("uv", "venv", str(tmp_path / ".venv")) in commands
+    assert any(cmd[:3] == ("uv", "pip", "sync") for cmd in commands)
+    assert not any("playwright" in " ".join(cmd) for cmd in commands)
+    assert any(cmd[0] in {"pnpm", "npm", "yarn"} for cmd in commands)

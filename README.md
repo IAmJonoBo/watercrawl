@@ -86,15 +86,21 @@ We include `pnpm-workspace.yaml` to manage the root project and the docs subproj
 **Offline installation (for air-gapped environments):**
 
 ```bash
-# Provision the 3.13 interpreter and sync dependencies with uv
-python -m scripts.bootstrap_python --install-uv --poetry
-uv pip sync requirements-dev.txt
+# Inspect the offline plan (verifies caches before running)
+python -m scripts.bootstrap_env --offline --dry-run
 
-# For production environments (runtime dependencies only)
-uv pip sync requirements.txt
+# Execute the cached bootstrap plan
+python -m scripts.bootstrap_env --offline
 ```
 
-The exported requirements files include pinned versions with SHA256 hashes for reproducible, secure installations.
+When running offline, seed the following caches ahead of time:
+
+- `artifacts/cache/playwright/` containing the Chromium, Firefox, and WebKit archives for Playwright (copied from a connected machine).
+- `artifacts/cache/tldextract/publicsuffix.org-tlds/*.tldextract.json` to satisfy the public suffix lookups without network access.
+- `artifacts/cache/node/` populated with `*.tgz` tarballs for npm/pnpm so JavaScript installs can operate entirely from disk.
+- `artifacts/cache/pip/` housing pre-downloaded Python wheels if you intend to use `uv pip sync` in fully air-gapped environments.
+
+The exported requirements files include pinned versions with SHA256 hashes for reproducible, secure installations, and the offline bootstrap flow uses those hashes with `uv pip sync` to hydrate `.venv/` deterministically.
 
 **Dependency download resilience:**
 
