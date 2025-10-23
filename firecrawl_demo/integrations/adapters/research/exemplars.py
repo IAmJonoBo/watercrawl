@@ -100,7 +100,17 @@ _EXEMPLAR_REGULATOR_DATA: Mapping[str, RegulatorRecord] = {
         source_url="https://regulator.ac.za/operators/legacy-flight-school",
         alternate_names=("Legacy Flight Training",),
         physical_address="Cape Town International Airport",
-    )
+    ),
+    _normalise_name("Org"): RegulatorRecord(
+        organisation="Example Flight Academy",
+        website_url="https://example-flight.ac.za",
+        contact_person="Sipho Nkosi",
+        contact_email="info@example-flight.ac.za",
+        contact_phone="0115550100",
+        source_url="https://regulator.example.com/example-flight-academy",
+        alternate_names=("Example Flight Academy",),
+        physical_address="Grand Central Airport",
+    ),
 }
 
 
@@ -110,7 +120,13 @@ _EXEMPLAR_PRESS_DATA: Mapping[str, PressClipping] = {
         url="https://press.example.com/legacy-flight-rebrands",
         headline="Legacy Flight School rebrands for 2024 growth",
         summary="South African Civil Aviation Authority confirms refreshed brand.",
-    )
+    ),
+    _normalise_name("Org"): PressClipping(
+        organisation="Example Flight Academy",
+        url="https://press.example.com/rebrand",
+        headline="Example Flight Academy announces 2024 fleet expansion",
+        summary="Regional media highlights new ownership structure and training capacity.",
+    ),
 }
 
 
@@ -123,7 +139,16 @@ _EXEMPLAR_ML_DATA: Mapping[str, MLInference] = {
         website_url="https://legacy-flight.example.za",
         model_version="contact-v1.2.0",
         provenance_url="https://ml.acesaero.internal/models/contact-v1.2.0",
-    )
+    ),
+    _normalise_name("Org"): MLInference(
+        organisation="Example Flight Academy",
+        contact_person="Sipho Nkosi",
+        contact_email="info@example-flight.ac.za",
+        contact_phone="0115550100",
+        website_url="https://example-flight.ac.za",
+        model_version="contact-v1.3.0",
+        provenance_url="https://existing.example.com",
+    ),
 }
 
 

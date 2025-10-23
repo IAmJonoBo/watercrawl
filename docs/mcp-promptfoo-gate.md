@@ -46,6 +46,8 @@ Based on WC-12 requirements (RAG/agent evaluation):
 
 ## Implementation
 
+Before promoting MCP write access or enabling network adapters, run `poetry run python -m apps.analyst.cli crawlkit-status` to confirm Crawlkit is active and review the CLI warnings. The command now surfaces the registered `/crawlkit/*` routes and prints the targeted QA reminder (`poetry run pytest tests/crawlkit tests/test_research_logic.py -q`). Only escalate to the optional Firecrawl SDK once these checks pass, Crawlkit remains enabled, and the Promptfoo results meet freshness thresholds.
+
 ### Phase 1: Advisory (2025-10-28 to 2025-11-30)
 - MCP operations log a warning if evaluation is missing or stale
 - No blocking enforcement

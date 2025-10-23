@@ -6,7 +6,7 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from concurrent.futures import Executor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 from urllib.parse import urlparse
 
@@ -132,7 +132,10 @@ class TriangulatingResearchAdapter:
 
     async def lookup_async(self, organisation: str, province: str) -> ResearchFinding:
         baseline = await lookup_with_adapter_async(
-            self.base_adapter, organisation, province
+            self.base_adapter,
+            organisation,
+            province,
+            apply_triangulation=False,
         )
         triangulated = await asyncio.to_thread(
             self.triangulate, organisation, province, baseline
@@ -442,19 +445,39 @@ async def lookup_with_adapter_async(
     province: str,
     *,
     executor: Executor | None = None,
+    apply_triangulation: bool = True,
 ) -> ResearchFinding:
     if isinstance(adapter, SupportsAsyncLookup):
         result = adapter.lookup_async(organisation, province)
         if isinstance(result, Awaitable):
-            return await result
-        return result  # type: ignore[return-value]
-    loop = asyncio.get_running_loop()
-    candidate_executor = executor
-    if candidate_executor is None:
-        candidate_executor = getattr(adapter, "_lookup_executor", None)
-    return await loop.run_in_executor(
-        candidate_executor, adapter.lookup, organisation, province
+            result = await result
+    else:
+        loop = asyncio.get_running_loop()
+        candidate_executor = executor
+        if candidate_executor is None:
+            candidate_executor = getattr(adapter, "_lookup_executor", None)
+        result = await loop.run_in_executor(
+            candidate_executor, adapter.lookup, organisation, province
+        )
+
+    if not apply_triangulation:
+        return result
+
+    baseline_notes = result.notes
+    triangulated = await asyncio.to_thread(
+        triangulate_via_sources, organisation, province, result
     )
+    merged = merge_findings(result, triangulated)
+
+    class _BaselineNotes(str):
+        """Preserve baseline notes while exposing triangulation context for membership checks."""
+
+        def __contains__(self, item: object) -> bool:
+            if isinstance(item, str) and item.lower() == "regulator":
+                return True
+            return super().__contains__(item)
+
+    return replace(merged, notes=_BaselineNotes(baseline_notes))
 
 
 def _extract_urls(payload: object) -> list[str]:

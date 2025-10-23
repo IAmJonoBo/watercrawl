@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import click
 from rich.console import Console
 from rich.table import Table
 
+from firecrawl_demo.core import config
 from firecrawl_demo.interfaces import analyst_cli
 from firecrawl_demo.integrations.integration_plugins import contract_registry
 
@@ -67,5 +70,75 @@ def overview() -> None:
 cli.add_command(analyst_cli.cli.commands["mcp-server"], name="mcp-server")
 
 
+@cli.command(name="crawlkit-status")
+def crawlkit_status() -> None:
+    """Report feature-flag state and Crawlkit FastAPI readiness."""
+
+    console = Console()
+    flags = _feature_flags()
+    crawlkit_state = "enabled" if flags.enable_crawlkit else "disabled"
+    firecrawl_state = "enabled" if flags.enable_firecrawl_sdk else "disabled"
+
+    console.print(
+        f"[cyan]FEATURE_ENABLE_CRAWLKIT[/cyan]: {crawlkit_state}"
+        f" · [cyan]FEATURE_ENABLE_FIRECRAWL_SDK[/cyan]: {firecrawl_state}"
+    )
+
+    if flags.enable_crawlkit:
+        try:
+            router = _build_crawlkit_router()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            console.print(
+                f"[red]Crawlkit router unavailable:[/red] {exc}"
+            )
+        else:
+            endpoints = _format_router_routes(router)
+            console.print(
+                "[green]Crawlkit router ready[/green] → " + endpoints
+            )
+            console.print(
+                "[blue]Targeted QA:[/blue] poetry run pytest "
+                "tests/crawlkit tests/test_research_logic.py -q"
+            )
+    else:
+        console.print(
+            "[yellow]Set FEATURE_ENABLE_CRAWLKIT=1 before using Crawlkit "
+            "fetch/distill/entity endpoints.[/yellow]"
+        )
+
+    if flags.enable_firecrawl_sdk:
+        if not flags.enable_crawlkit:
+            console.print(
+                "[red]Enable FEATURE_ENABLE_CRAWLKIT before toggling "
+                "FEATURE_ENABLE_FIRECRAWL_SDK. Crawlkit is the primary surface; "
+                "Firecrawl remains a gated fallback.[/red]"
+            )
+        else:
+            console.print(
+                "[yellow]Legacy Firecrawl SDK fallback enabled — keep Promptfoo "
+                "evidence fresh and document plan→commit artefacts before granting "
+                "MCP writes.[/yellow]"
+            )
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
     cli()
+
+
+def _feature_flags() -> config.FeatureFlags:
+    return getattr(config, "FEATURE_FLAGS", config.FeatureFlags())
+
+
+def _build_crawlkit_router() -> Any:
+    from crawlkit.orchestrate import api as orchestrate_api
+
+    return orchestrate_api.build_router()
+
+
+def _format_router_routes(router: Any) -> str:
+    routes = [
+        getattr(route, "path", "?")
+        for route in getattr(router, "routes", [])
+        if getattr(route, "path", None)
+    ]
+    return ", ".join(sorted(routes)) if routes else "no routes registered"

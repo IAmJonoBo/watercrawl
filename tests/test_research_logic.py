@@ -167,6 +167,44 @@ def test_default_sequence_defers_firecrawl_until_opt_in(monkeypatch):
     assert isinstance(adapters[-1], NullResearchAdapter)
 
 
+def test_crawlkit_adapter_reports_flag_and_network_state(monkeypatch):
+    adapter = research.CrawlkitResearchAdapter(
+        fetcher=lambda *_args, **_kwargs: {
+            "markdown": "",
+            "metadata": {},
+            "entities": {},
+        }
+    )
+
+    disabled_flags = config.FeatureFlags(
+        enable_crawlkit=False,
+        enable_firecrawl_sdk=False,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    with monkeypatch.context() as ctx:
+        ctx.setattr(config, "FEATURE_FLAGS", disabled_flags)
+        ctx.setattr(config, "ALLOW_NETWORK_RESEARCH", True)
+        finding = adapter.lookup("Example Flight Academy", "Gauteng")
+    assert "disabled" in finding.notes.lower()
+
+    enabled_flags = config.FeatureFlags(
+        enable_crawlkit=True,
+        enable_firecrawl_sdk=False,
+        enable_press_research=True,
+        enable_regulator_lookup=True,
+        enable_ml_inference=True,
+        investigate_rebrands=True,
+    )
+    with monkeypatch.context() as ctx:
+        ctx.setattr(config, "FEATURE_FLAGS", enabled_flags)
+        ctx.setattr(config, "ALLOW_NETWORK_RESEARCH", False)
+        finding = adapter.lookup("Example Flight Academy", "Gauteng")
+    assert "network research disabled" in finding.notes.lower()
+
+
 def test_triangulating_adapter_merges_sources_and_notes():
     base_finding = ResearchFinding(
         website_url=None,
