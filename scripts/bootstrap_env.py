@@ -160,7 +160,7 @@ def _playwright_cache_steps(repo_root: Path) -> list[BootstrapStep]:
 
 
 def _playwright_browser_cached(cache_dir: Path, browser: str) -> bool:
-    """Return True if the requested browser artefact is already cached."""
+    """Return True if the requested browser artifact is already cached."""
 
     search_roots = [cache_dir, cache_dir / "ms-playwright"]
     pattern = f"{browser}-*"
