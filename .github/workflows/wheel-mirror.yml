@@ -1,4 +1,6 @@
 name: Wheel Mirror
+permissions:
+  contents: read
 
 on:
   schedule:
