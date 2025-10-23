@@ -2964,9 +2964,9 @@ types-pytz==2025.2.0.20250809 ; python_version >= "3.13" and python_version < "3
 types-pyyaml==6.0.12 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:29228db9f82df4f1b7febee06bbfb601677882e98a3da98132e31c6874163e15 \
     --hash=sha256:f6f350418125872f3f0409d96a62a5a5ceb45231af5cc07ee0034ec48a3c82fa
-types-requests==2.28.11 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:7ee827eb8ce611b02b5117cfec5da6455365b6a575f5e3ff19f655ba603e6b4e \
-    --hash=sha256:af5f55e803cabcfb836dad752bd6d8a0fc8ef1cd84243061c0e27dee04ccf4fd
+types-requests==2.32.4.20250913; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:78c9c1fffebbe0fa487a418e0fa5252017e9c60d1a2da394077f1780f655d7e1 \
+    --hash=sha256:abd6d4f9ce3a9383f269775a9835a4c24e5cd6b9f647d64f88aa4613c33def5d
 types-s3transfer==0.14.0 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:108134854069a38b048e9b710b9b35904d22a9d0f37e4e1889c2e6b58e5b3253 \
     --hash=sha256:17f800a87c7eafab0434e9d87452c809c290ae906c2024c24261c564479e9c95

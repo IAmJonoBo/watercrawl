@@ -7741,18 +7741,18 @@ files = [
 
 [[package]]
 name = "types-requests"
-version = "2.28.11"
+version = "2.32.4.20250913"
 description = "Typing stubs for requests"
 optional = false
-python-versions = "*"
+python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "types-requests-2.28.11.tar.gz", hash = "sha256:7ee827eb8ce611b02b5117cfec5da6455365b6a575f5e3ff19f655ba603e6b4e"},
-    {file = "types_requests-2.28.11-py3-none-any.whl", hash = "sha256:af5f55e803cabcfb836dad752bd6d8a0fc8ef1cd84243061c0e27dee04ccf4fd"},
+    {file = "types_requests-2.32.4.20250913-py3-none-any.whl", hash = "sha256:78c9c1fffebbe0fa487a418e0fa5252017e9c60d1a2da394077f1780f655d7e1"},
+    {file = "types_requests-2.32.4.20250913.tar.gz", hash = "sha256:abd6d4f9ce3a9383f269775a9835a4c24e5cd6b9f647d64f88aa4613c33def5d"},
 ]
 
 [package.dependencies]
-types-urllib3 = "<1.27"
+urllib3 = ">=2"
 
 [[package]]
 name = "types-s3transfer"
@@ -8274,4 +8274,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.15"
-content-hash = "2f5855fa4b428367d4deca3a1ba8de00f90ed7ac4732f246e0ed96ebe92da0da"
+content-hash = "4987679038e30dd36f75ec56cf55c62591d3f2d29260f806beff0379c11f24cc"
