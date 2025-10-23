@@ -2954,9 +2954,9 @@ twisted==25.5.0 ; python_version >= "3.13" and python_version < "3.15" \
 typer==0.19.2 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:755e7e19670ffad8283db353267cb81ef252f595aa6834a0d1ca9312d9326cb9 \
     --hash=sha256:9ad824308ded0ad06cc716434705f691d4ee0bfd0fb081839d2e426860e7fdca
-types-awscrt==0.28.1 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:66d77ec283e1dc907526a44511a12624118723a396c36d3f3dd9855cb614ce14 \
-    --hash=sha256:d88f43ef779f90b841ba99badb72fe153077225a4e426ae79e943184827b4443
+types-awscrt==0.28.2; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:4349b6fc7b1cd9c9eb782701fb213875db89ab1781219c0e947dd7c4d9dcd65e \
+    --hash=sha256:d08916fa735cfc032e6a8cfdac92785f1c4e88623999b224ea4e6267d5de5fcb
 types-boto3==1.40.56 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:0f7331e5f11e6db44a69f7eff8618089704af72893815759c188634bb539dd8b \
     --hash=sha256:bf2ea05e87393da5901465cb6dd23ebcf4cb851f233a62f4be492328ad9cb198
