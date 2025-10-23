@@ -66,15 +66,25 @@ confidence adjustment and the detailed check outcomes.
 
 ## Pipeline metrics
 
-`Pipeline._LookupMetrics` aggregates new telemetry:
+`Pipeline._LookupMetrics` aggregates concurrency-aware telemetry. The
+`PipelineReport.metrics` payload now emits:
 
-- `connector_latency[connector]` – per-connector execution timings.
+- `adapter_retry_attempts` – total retry count across all rows for this run.
+- `adapter_circuit_rejections` – rows short-circuited by the circuit breaker
+  after repeated adapter failures.
+- `research_cache_hits` / `research_cache_misses` – cache effectiveness
+  counters keyed by normalised organisation+province tuples.
+- `research_queue_latency_avg_ms`, `research_queue_latency_p95_ms`,
+  `research_queue_latency_max_ms` – time spent waiting on the lookup semaphore
+  before work starts (TaskGroup fan-out + shared threadpool).
+- `connector_latency[connector]` – per-connector execution timings captured
+  from `ResearchFinding.evidence_by_connector` metadata.
 - `connector_success[connector]` – success/failure booleans for hit ratios.
 - `confidence_deltas` – tuples of `(base, adjustment, final)` confidence scores
   per lookup.
 
-These metrics complement the existing queue-latency and retry counters and are
-available to downstream Prometheus exporters.
+Exporters (Prometheus textfile, Grafana dashboards, etc.) can now surface queue
+backlog and circuit breaker health alongside the existing connector metrics.
 
 ## Required configuration and environment
 

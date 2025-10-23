@@ -103,7 +103,7 @@ optional = true
 # so the baseline dev environment can resolve on machines where dbt-core 1.11.0
 # (or platform wheels) are not available. To enable locally: `poetry install --with dbt`.
 "dbt-core" = { version = "1.10.13", python = ">=3.13,<3.15" }
-dbt-duckdb = "^1.9.6"
+dbt-duckdb = { version = "^1.9.6", python = ">=3.13,<3.15" }
 
 [tool.poetry.group.ui]
 optional = true

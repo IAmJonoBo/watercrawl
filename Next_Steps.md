@@ -101,6 +101,7 @@
 - [ ] 2025-10-22 — Contract registry instrumentation: Added Pydantic contract adapters for pipeline/evidence, JSON+Avro schema exporters with snapshots, CLI/MCP metadata embedding, and plan→commit/evidence validation guards. Awaiting full QA run once baseline issues cleared.
 - [x] 2025-10-22 — Contract sink regression follow-up: Normalised evidence sink shims/tests to accept contract payloads, updated pipeline/MCP fixtures to coerce contracts back to dataclasses, and reran targeted pytest suite (`tests/test_audit.py`, `tests/test_pipeline.py`, `tests/test_mcp.py`) successfully.
 - [x] 2025-10-28 — Offline preflight automation (agent): `qa dependencies` now runs `python -m scripts.bootstrap_env --offline --dry-run` with `UV_CACHE_DIR=artifacts/cache/pip/`, emitting JSON into `artifacts/chaos/preflight/<timestamp>.json`. Script now records cache status (pip/node/Playwright/tldextract) for F-004 audits; docs/runbook updated with remediation commands. Targeted QA: `poetry run pytest tests/test_bootstrap_env.py -k preflight` (new coverage for JSON emission and artefact capture).
+- [x] 2025-10-31 — dbt 1.10 compatibility + concurrency metrics (agent): Pinned the optional dbt stack to Python 3.13/3.14 (`dbt-core 1.10.13`, `dbt-duckdb 1.9.6`), regenerated the lockfile, documented the new queue latency/circuit breaker metrics in `docs/research-pipeline.md`, and added TaskGroup/circuit breaker regression tests in `tests/test_pipeline.py`. Targeted QA: ✅ `poetry run pytest tests/test_pipeline.py -k concurrency -q`.
 
 ## 2) Deliverables
 

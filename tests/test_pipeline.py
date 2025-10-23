@@ -11,7 +11,13 @@ from typing import Any
 import pandas as pd
 import pytest
 
-from firecrawl_demo.application.pipeline import Pipeline
+from firecrawl_demo.application.pipeline import (
+    Pipeline,
+    _CircuitBreaker,
+    _LookupCoordinator,
+    _RowState,
+)
+from firecrawl_demo.application.progress import NullPipelineProgressListener
 from firecrawl_demo.application.quality import QualityFinding, QualityGate
 from firecrawl_demo.application.row_processing import (
     RowProcessingRequest,
@@ -59,6 +65,9 @@ def _minimal_frame() -> pd.DataFrame:
                 "Contact Person": "",
                 "Contact Number": "",
                 "Contact Email Address": "",
+                "Fleet Size": "",
+                "Runway Length": "",
+                "Runway Length (m)": "",
             }
         ]
     )
@@ -357,10 +366,155 @@ async def test_pipeline_preserves_order_with_concurrency_one(monkeypatch) -> Non
 
     report = await pipe.run_dataframe_async(frame)
 
+    from collections import Counter
+
     assert adapter.calls == names
-    assert [record.organisation for record in report.evidence_log] == names
+    evidence_counts = Counter(record.organisation for record in report.evidence_log)
+    assert evidence_counts == Counter({name: 2 for name in names})
     assert report.metrics["adapter_circuit_rejections"] == 0
     assert report.metrics["research_cache_misses"] == len(names)
+
+
+@pytest.mark.asyncio()
+async def test_lookup_coordinator_taskgroup_tracks_concurrency(monkeypatch) -> None:
+    from dataclasses import replace
+
+    cache_module._cache.clear()
+    monkeypatch.setattr(config, "RESEARCH_CACHE_TTL_HOURS", None)
+
+    class TimedAdapter(ResearchAdapter):
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, float, float]] = []
+
+        def lookup(self, organisation: str, province: str) -> ResearchFinding:
+            start = time.perf_counter()
+            time.sleep(0.05)
+            end = time.perf_counter()
+            slug = organisation.lower().replace(" ", "-")
+            self.calls.append((organisation, start, end))
+            return ResearchFinding(
+                website_url=f"https://{slug}.za",
+                contact_email=f"{slug}@example.za",
+                sources=["https://example.com"],
+                confidence=88,
+            )
+
+    adapter = TimedAdapter()
+    listener = NullPipelineProgressListener()
+    circuit_breaker = _CircuitBreaker(failure_threshold=5, reset_seconds=30.0)
+
+    states: list[_RowState] = []
+    for position in range(4):
+        original_row = {
+            "Name of Organisation": f"Concurrent Org {position}",
+            "Province": "Gauteng",
+            "Status": "Candidate",
+            "Website URL": "",
+            "Contact Person": "",
+            "Contact Number": "",
+            "Contact Email Address": "",
+        }
+        base_record = SchoolRecord.from_dataframe_row(original_row)
+        states.append(
+            _RowState(
+                position=position,
+                index=position,
+                row_id=position + 2,
+                original_row=original_row,
+                original_record=base_record,
+                working_record=replace(base_record),
+            )
+        )
+
+    coordinator = _LookupCoordinator(
+        adapter=adapter,
+        listener=listener,
+        concurrency=4,
+        cache_ttl_hours=None,
+        max_retries=0,
+        retry_backoff_base_seconds=0.0,
+        circuit_breaker=circuit_breaker,
+    )
+
+    async with coordinator:
+        start = time.perf_counter()
+        results = await coordinator.run(states)
+        elapsed = time.perf_counter() - start
+
+    assert [result.state.position for result in results] == list(range(len(states)))
+    assert elapsed < 0.12
+    assert coordinator.metrics.cache_misses == len(states)
+    assert coordinator.metrics.cache_hits == 0
+    assert len(coordinator.metrics.queue_latencies) == len(states)
+    assert adapter.calls and len(adapter.calls) == len(states)
+
+
+@pytest.mark.asyncio()
+async def test_lookup_coordinator_circuit_breaker_metrics(monkeypatch) -> None:
+    from dataclasses import replace
+
+    cache_module._cache.clear()
+    monkeypatch.setattr(config, "RESEARCH_CACHE_TTL_HOURS", None)
+
+    class FailingAdapter(ResearchAdapter):
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def lookup(self, organisation: str, province: str) -> ResearchFinding:
+            self.calls += 1
+            raise RuntimeError("simulated adapter failure")
+
+    adapter = FailingAdapter()
+    listener = NullPipelineProgressListener()
+    circuit_breaker = _CircuitBreaker(failure_threshold=2, reset_seconds=60.0)
+
+    states: list[_RowState] = []
+    for position in range(4):
+        original_row = {
+            "Name of Organisation": f"Breaker Org {position}",
+            "Province": "Gauteng",
+            "Status": "Candidate",
+            "Website URL": "",
+            "Contact Person": "",
+            "Contact Number": "",
+            "Contact Email Address": "",
+        }
+        base_record = SchoolRecord.from_dataframe_row(original_row)
+        states.append(
+            _RowState(
+                position=position,
+                index=position,
+                row_id=position + 2,
+                original_row=original_row,
+                original_record=base_record,
+                working_record=replace(base_record),
+            )
+        )
+
+    coordinator = _LookupCoordinator(
+        adapter=adapter,
+        listener=listener,
+        concurrency=1,
+        cache_ttl_hours=None,
+        max_retries=0,
+        retry_backoff_base_seconds=0.0,
+        circuit_breaker=circuit_breaker,
+    )
+
+    async with coordinator:
+        results = await coordinator.run(states)
+
+    assert adapter.calls == 2
+    assert coordinator.metrics.failures == 2
+    assert coordinator.metrics.retries == 2
+    assert coordinator.metrics.circuit_rejections == len(states) - adapter.calls
+
+    failure_notes = [
+        result.finding.notes for result in results[: adapter.calls]
+    ]
+    assert all("Research adapter failed" in note for note in failure_notes)
+    paused_messages = [result.finding.notes for result in results[adapter.calls :]]
+    assert paused_messages and all("temporarily paused" in msg for msg in paused_messages)
 
 
 def test_process_row_quality_rejection_produces_deterministic_artifacts(
