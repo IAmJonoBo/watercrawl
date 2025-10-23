@@ -177,9 +177,9 @@ bleach==6.2.0 ; python_version >= "3.13" and python_version < "3.15" \
 blinker==1.9.0 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf \
     --hash=sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc
-boto3==1.40.56 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:8985a840d57671aa3c6124b0c178e79be97e3447de4b5819156071793f82ee5c \
-    --hash=sha256:c1afdb04dd27418fc58400434ab8e05998bb452b69c428168d9ada344fe6b93e
+boto3==1.40.57; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:4ceeac741b04cd5d9193c85d1707597a30f7482682733437454408ea755ee151 \
+    --hash=sha256:717605170cb167e07462b7f033b26bc9c0fee34b78b5eac52edcd6149915e23f
 botocore-stubs==1.40.55 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:57c8978b0bbe40a9fa29fde564de8a04679a223f430a97d03ada62ec112231af \
     --hash=sha256:fdc85df8960a6f156c57c5980d125c7467134ca8d612f32175cb88a49a0a6cf5
