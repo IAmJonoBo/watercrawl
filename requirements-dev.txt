@@ -572,9 +572,9 @@ daff==1.4.2 ; python_version >= "3.13" and python_version < "3.15" \
 dateparser==1.2.2 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:5a5d7211a09013499867547023a2a0c91d5a27d15dd4dbcea676ea9fe66f2482 \
     --hash=sha256:986316f17cb8cdc23ea8ce563027c5ef12fc725b6fb1d137c14ca08777c5ecf7
-dbt-adapters==1.17.2 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:3b8069c837b9a32481b9b51cea5052a3f45245c6aff83d5a7ffce26b6915ab86 \
-    --hash=sha256:7f6d625c718bb6516debd9e9f5e7b06f121f782a61055a94198fae5b6577e865
+dbt-adapters==1.17.3; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:7421f13edbb90e29c114cf14bda6b9c29d708b34a3c912f6668dd4414b0650e4 \
+    --hash=sha256:8f3c2ea081444033ed3146aea85c21175f868c1f2dd262e7caab19f78bcf25cc
 dbt-common==1.32.0 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:b63ff15d8aaa471704496cd250a60bba0cb1a1844396a58b497f7a72fe202d0c \
     --hash=sha256:f764fa4fc7e6f8bf4a629bb8559ec29909c1794e3042ce0c61689b2866e6a6f5
