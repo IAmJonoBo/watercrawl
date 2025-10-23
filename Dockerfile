@@ -1,5 +1,5 @@
 # Stage 1: Builder - install dependencies and build artifacts
-FROM python:3.13-slim@sha256:2ec5a4a5c3e919570f57675471f081d6299668d909feabd8d4803c6c61af666c as builder
+FROM python:3.13-slim@sha256:0222b795db95bf7412cede36ab46a266cfb31f632e64051aac9806dabf840a61 as builder
 
 # Install build dependencies
 RUN apt-get update && \
@@ -53,7 +53,7 @@ RUN mkdir -p artifacts/cache/playwright artifacts/cache/tldextract && \
     poetry run python -c "from pathlib import Path; import tldextract; cache = Path('/build/artifacts/cache/tldextract'); cache.mkdir(parents=True, exist_ok=True); tldextract.TLDExtract(cache_dir=str(cache), suffix_list_urls=())('example.com')"
 
 # Stage 2: Runtime - minimal production image
-FROM python:3.13-slim@sha256:2ec5a4a5c3e919570f57675471f081d6299668d909feabd8d4803c6c61af666c
+FROM python:3.13-slim@sha256:0222b795db95bf7412cede36ab46a266cfb31f632e64051aac9806dabf840a61
 
 # Install minimal runtime dependencies
 RUN apt-get update && \
