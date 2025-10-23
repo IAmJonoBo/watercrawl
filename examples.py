@@ -37,8 +37,12 @@ def main() -> None:
     print("🚀 Crawlkit Examples")
     demo_markdown("https://example.com")
     demo_depth("https://example.com/docs")
-    print("\nTip: `uvicorn firecrawl_demo.interfaces.cli:create_app --factory` exposes /crawlkit/crawl,"
-          " /crawlkit/markdown, and /crawlkit/entities for automation harnesses.")
+    print(
+        (
+            "\nTip: `uvicorn firecrawl_demo.interfaces.cli:create_app --factory` exposes /crawlkit/crawl,"
+            " /crawlkit/markdown, and /crawlkit/entities for automation harnesses."
+        )
+    )
 
 
 if __name__ == "__main__":
