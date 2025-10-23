@@ -1,0 +1,16 @@
+Plan: plans/dependency_refresh.plan
+If-Match: d85c3b500513a44b94aa5d4b11fdf92933f9c75d
+Status: amber
+Summary:
+- Regenerated dependency survey report.json (13 blockers for cp314, 32 for cp315).
+- Documented wheelhouse provisioning failure (Poetry 2 missing export command) and TLS issues contacting PyPI.
+- Produced offline wheel_status.json derived from latest survey to track 31 unresolved blockers.
+- Re-ran guard to refresh status.json; blockers remain present pending upstream wheels.
+QA Notes:
+- pytest with coverage failed (pytest-cov plugin missing) prior to changes.
+- ruff check reports 34 legacy lint errors.
+- mypy reports 102 errors/missing stubs.
+- bandit unavailable in env; poetry build succeeds.
+Risks:
+- Wheel status data derived from survey snapshot; lacks verification of PyPI 'requires_python' metadata and wheel availability timestamps until TLS trust store issue is resolved.
+- Wheelhouse provisioning still blocked; Platform must install Poetry export plugin or adjust script.
