@@ -2550,9 +2550,9 @@ s3transfer==0.14.0 ; python_version >= "3.13" and python_version < "3.15" \
 safety-db==2021.7.17 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:287353e0d6c06995a4f22dc5e1de135898e8600f7a123b6f955801f68d53e028 \
     --hash=sha256:33d4f657060345e5a417e05d2fd59fcc42bbcdf2c246e4e7bdb2238f8566c429
-safety-schemas==0.0.16 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:3bb04d11bd4b5cc79f9fa183c658a6a8cf827a9ceec443a5ffa6eed38a50a24e \
-    --hash=sha256:6760515d3fd1e6535b251cd73014bd431d12fe0bfb8b6e8880a9379b5ab7aa44
+safety-schemas==0.0.17; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:4ec695d283acab16b9c24cfb5afc91d6a5d4b3812027607e676f70888805d151 \
+    --hash=sha256:762e14a89184f6c5cd7fd2eec71190a9baec0b1351ebf006e581f5a818100709
 safety==3.6.2 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:2e148cd9a4ad2e387d2c142878b7b5a3a9cb9e6538167043faa1ba7023a032be \
     --hash=sha256:754f8d6068d1504503b0346cbd3cb0e67015d2abc1d842f3a4e4b662cb4f44ec
