@@ -1,0 +1,13 @@
+# Offline bootstrap cache enforcement commit artefact
+If-Match: e1fd02d4d04044018e5603fe5db3e2c1b5af3f25
+Diffstat:
+ Next_Steps.md                           |  1 +
+ docs/ephemeral-qa-guide.md              | 21 +++++++++++++++---
+ scripts/bootstrap_env.py                | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------
+ scripts/download_wheelhouse_artifact.py | 55 +++++++++++++++++++++++++++++++++++++++++++++--
+ tests/test_bootstrap_env.py             | 79 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 5 files changed, 227 insertions(+), 23 deletions(-)
+RAG:
+ - Requirements: Green — offline cache enforcement and helper tooling implemented per request
+ - Analysis: Green — plan reviewed against diff and targeted QA results recorded
+ - Governance: Amber — legacy repository-wide lint/type/security debt remains, broader QA rerun pending duckdb wheels

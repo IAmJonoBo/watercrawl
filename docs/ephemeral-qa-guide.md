@@ -56,9 +56,24 @@ python -m scripts.bootstrap_env --offline
 ```
 
 When `--offline` is enabled:
-- Bootstrap validates cached tarballs using SHA256 checksums
-- If validation fails, bootstrap raises a clear error with remediation steps
-- Node dependencies (markdownlint-cli2, etc.) install from the local tarball
+- Bootstrap validates the pip wheel cache (`artifacts/cache/pip/`) and fails fast if no wheels or `mirror_state.json` are present
+- Playwright browser archives must exist under `artifacts/cache/playwright/` for Chromium, Firefox, and WebKit
+- The tldextract suffix cache (`artifacts/cache/tldextract/publicsuffix.org-tlds/`) must contain at least one JSON snapshot
+- Node tarballs are verified against `SHASUMS256.txt`; validation failures raise actionable errors
+- Dependencies install exclusively from local caches, so seed them before cutting the network cord
+
+### Seeding Offline Caches
+
+Use the wheelhouse downloader to prime the pip cache (defaults to `artifacts/cache/pip/`):
+
+```bash
+# Download the latest wheelhouse artifact and stage it into the pip cache
+python -m scripts.download_wheelhouse_artifact --seed-pip-cache
+```
+
+If your cache lives elsewhere, pass a path (e.g. `--seed-pip-cache /mnt/cache/pip`). The same script continues to support CI usage without the flag when you just need the unpacked wheelhouse directory.
+
+Playwright browsers can be cached ahead of time by running `poetry run playwright install --with-deps`, and tldextract seeds itself during a network-enabled bootstrap or by executing `python -m scripts.bootstrap_env --dry-run` without `--offline`.
 
 ### Running QA with Cached Node
 

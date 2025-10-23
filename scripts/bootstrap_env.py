@@ -72,6 +72,13 @@ def build_bootstrap_plan(
 ) -> list[BootstrapStep]:
     """Assemble the ordered bootstrap steps for the repository."""
 
+    if offline:
+        _ensure_offline_caches(
+            repo_root,
+            require_python=enable_python,
+            require_node=enable_node,
+        )
+
     steps: list[BootstrapStep] = []
 
     if enable_python:
@@ -160,13 +167,6 @@ def build_bootstrap_plan(
         steps.extend(_build_artifact_cache_steps(repo_root, offline=offline))
 
     if enable_node:
-        if offline:
-            if not _validate_node_tarball_cache(repo_root):
-                raise BootstrapError(
-                    "Offline bootstrap requires validated Node package tarballs under "
-                    "'artifacts/cache/node'. Run 'python -m scripts.stage_node_tarball' "
-                    "to seed the cache or disable Node setup."
-                )
         root_package = repo_root / "package.json"
         if root_package.exists():
             steps.append(
@@ -386,7 +386,9 @@ def _pip_cache_status(cache_dir: Path) -> dict[str, Any]:
     return status
 
 
-def _collect_cache_status(repo_root: Path) -> dict[str, Any]:
+def _collect_cache_status(
+    repo_root: Path, *, require_python: bool, require_node: bool
+) -> dict[str, Any]:
     """Inspect offline caches and return readiness metadata."""
 
     pip_cache_dir = _resolve_pip_cache_dir(repo_root)
@@ -423,13 +425,13 @@ def _collect_cache_status(repo_root: Path) -> dict[str, Any]:
     }
 
     missing: list[str] = []
-    if not pip_status["ready"]:
+    if require_python and not pip_status["ready"]:
         missing.append("pip_cache")
-    if not playwright_status["ready"]:
+    if require_python and not playwright_status["ready"]:
         missing.append("playwright")
-    if not tld_status["ready"]:
+    if require_python and not tld_status["ready"]:
         missing.append("tldextract")
-    if not node_status["ready"]:
+    if require_node and not node_status["ready"]:
         missing.append("node_tarballs")
 
     return {
@@ -441,6 +443,61 @@ def _collect_cache_status(repo_root: Path) -> dict[str, Any]:
         },
         "missing": missing,
     }
+
+
+def _ensure_offline_caches(
+    repo_root: Path, *, require_python: bool, require_node: bool
+) -> None:
+    """Raise an error when required offline caches are not present."""
+
+    cache_status = _collect_cache_status(
+        repo_root, require_python=require_python, require_node=require_node
+    )
+    if not cache_status["missing"]:
+        return
+
+    details = cache_status["details"]
+    messages: list[str] = []
+
+    if "pip_cache" in cache_status["missing"]:
+        pip_path = details["pip"]["path"]
+        messages.append(
+            "pip wheel cache not primed at "
+            f"{pip_path}. Seed the cache via "
+            "'python -m scripts.download_wheelhouse_artifact --seed-pip-cache' "
+            "or rerun bootstrap without --offline to populate wheels."
+        )
+    if "playwright" in cache_status["missing"]:
+        playwright_path = details["playwright"]["path"]
+        missing_browsers = details["playwright"].get("missing_browsers")
+        browser_hint = (
+            f" Missing archives: {', '.join(missing_browsers)}." if missing_browsers else ""
+        )
+        messages.append(
+            "Playwright browser cache missing under "
+            f"{playwright_path}.{browser_hint} Seed with "
+            "'poetry run playwright install --with-deps' before re-running in offline mode."
+        )
+    if "tldextract" in cache_status["missing"]:
+        tld_path = details["tldextract"]["path"]
+        messages.append(
+            "tldextract suffix cache not found at "
+            f"{tld_path}. Run 'python -m scripts.bootstrap_env --dry-run' "
+            "without --offline or execute the seeding helper documented in "
+            "docs/ephemeral-qa-guide.md to prime the cache."
+        )
+    if "node_tarballs" in cache_status["missing"]:
+        node_path = details["node"]["path"]
+        messages.append(
+            "Node.js tarball cache missing or unverified at "
+            f"{node_path}. Run 'python -m scripts.stage_node_tarball' to "
+            "download and validate tarballs for offline bootstrap."
+        )
+
+    raise BootstrapError(
+        "Offline bootstrap requires pre-seeded caches before running with --offline:\n- "
+        + "\n- ".join(messages)
+    )
 
 
 def _write_preflight_report(
@@ -457,11 +514,18 @@ def _write_preflight_report(
 
 
 def _build_preflight_report(
-    *, repo_root: Path, offline: bool, error: str | None
+    *,
+    repo_root: Path,
+    offline: bool,
+    error: str | None,
+    require_python: bool,
+    require_node: bool,
 ) -> dict[str, Any]:
     """Compose the structured JSON payload describing cache readiness."""
 
-    cache_status = _collect_cache_status(repo_root)
+    cache_status = _collect_cache_status(
+        repo_root, require_python=require_python, require_node=require_node
+    )
     recorded_at = datetime.now(UTC)
     status = "pass" if not cache_status["missing"] and error is None else "fail"
     report: dict[str, Any] = {
@@ -552,6 +616,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             repo_root=args.repo_root,
             offline=args.offline,
             error=error_message,
+            require_python=args.enable_python,
+            require_node=args.enable_node,
         )
         print(json.dumps(report, sort_keys=True))
         if error_message:

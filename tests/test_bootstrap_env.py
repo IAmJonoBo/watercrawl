@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -72,7 +73,10 @@ def test_plan_includes_python_and_node(tmp_path: Path) -> None:
 
     step_descriptions = [step.description for step in plan]
 
-    assert "Install Poetry environment" in step_descriptions
+    assert any(
+        "Install Poetry environment" in description
+        for description in step_descriptions
+    )
     assert any("docs-starlight" in step.description for step in plan)
 
 
@@ -86,7 +90,11 @@ def test_offline_plan_requires_cached_artifacts(tmp_path: Path) -> None:
             offline=True,
         )
 
-    assert "Playwright" in str(excinfo.value)
+    message = str(excinfo.value)
+    assert "pip wheel cache" in message
+    assert "Playwright" in message
+    assert "tldextract" in message
+    assert "Node.js tarball" in message
 
 
 def test_offline_plan_uses_cached_resources(tmp_path: Path) -> None:
@@ -108,7 +116,16 @@ def test_offline_plan_uses_cached_resources(tmp_path: Path) -> None:
 
     node_cache = tmp_path / "artifacts" / "cache" / "node"
     node_cache.mkdir(parents=True, exist_ok=True)
-    (node_cache / "package-1.0.0.tgz").write_bytes(b"cache")
+    tarball = node_cache / "node-v20.0.0-linux-x64.tar.gz"
+    tarball.write_bytes(b"cache")
+    checksum = hashlib.sha256(b"cache").hexdigest()
+    (node_cache / "SHASUMS256.txt").write_text(
+        f"{checksum}  {tarball.name}\n", encoding="utf-8"
+    )
+
+    pip_cache = tmp_path / "artifacts" / "cache" / "pip"
+    pip_cache.mkdir(parents=True, exist_ok=True)
+    (pip_cache / "mirror_state.json").write_text("{}\n", encoding="utf-8")
 
     plan = bootstrap_env.build_bootstrap_plan(
         repo_root=tmp_path,
@@ -124,6 +141,60 @@ def test_offline_plan_uses_cached_resources(tmp_path: Path) -> None:
     assert any(cmd[:3] == ("uv", "pip", "sync") for cmd in commands)
     assert not any("playwright" in " ".join(cmd) for cmd in commands)
     assert any(cmd[0] in {"pnpm", "npm", "yarn"} for cmd in commands)
+
+
+def test_collect_cache_status_respects_optional_node(tmp_path: Path) -> None:
+    pip_cache = tmp_path / "artifacts" / "cache" / "pip"
+    pip_cache.mkdir(parents=True, exist_ok=True)
+    (pip_cache / "mirror_state.json").write_text("{}\n", encoding="utf-8")
+
+    playwright_cache = tmp_path / "artifacts" / "cache" / "playwright"
+    for browser in bootstrap_env.PLAYWRIGHT_BROWSERS:
+        (playwright_cache / f"{browser}-seed").mkdir(parents=True, exist_ok=True)
+
+    suffix_cache = (
+        tmp_path / "artifacts" / "cache" / "tldextract" / "publicsuffix.org-tlds"
+    )
+    suffix_cache.mkdir(parents=True, exist_ok=True)
+    (suffix_cache / "seed.tldextract.json").write_text("{}", encoding="utf-8")
+
+    status = bootstrap_env._collect_cache_status(
+        tmp_path, require_python=True, require_node=False
+    )
+
+    assert status["missing"] == []
+
+
+def test_preflight_report_writes_plan_artifact(tmp_path: Path) -> None:
+    pip_cache = tmp_path / "artifacts" / "cache" / "pip"
+    pip_cache.mkdir(parents=True, exist_ok=True)
+    (pip_cache / "mirror_state.json").write_text("{}\n", encoding="utf-8")
+
+    playwright_cache = tmp_path / "artifacts" / "cache" / "playwright"
+    for browser in bootstrap_env.PLAYWRIGHT_BROWSERS:
+        (playwright_cache / f"{browser}-seed").mkdir(parents=True, exist_ok=True)
+
+    suffix_cache = (
+        tmp_path / "artifacts" / "cache" / "tldextract" / "publicsuffix.org-tlds"
+    )
+    suffix_cache.mkdir(parents=True, exist_ok=True)
+    (suffix_cache / "seed.tldextract.json").write_text("{}", encoding="utf-8")
+
+    report = bootstrap_env._build_preflight_report(
+        repo_root=tmp_path,
+        offline=True,
+        error=None,
+        require_python=True,
+        require_node=False,
+    )
+
+    assert report["status"] == "pass"
+    assert report["missing_caches"] == []
+    assert "report_path" in report
+    report_path = tmp_path / report["report_path"]
+    assert report_path.exists()
+    saved = json.loads(report_path.read_text(encoding="utf-8"))
+    assert saved["offline"] is True
 
 
 def test_validate_node_tarball_checksum_success(tmp_path: Path) -> None:
@@ -221,7 +292,7 @@ def test_offline_bootstrap_requires_validated_cache(tmp_path: Path) -> None:
 
     with pytest.raises(
         bootstrap_env.BootstrapError,
-        match="Offline bootstrap requires validated Node package tarballs",
+        match=r"Node\.js tarball cache missing or unverified",
     ):
         bootstrap_env.build_bootstrap_plan(
             repo_root=tmp_path,

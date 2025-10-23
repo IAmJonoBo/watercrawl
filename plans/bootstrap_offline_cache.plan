@@ -1,0 +1,15 @@
+Task: Strengthen offline bootstrap cache assertions and tooling.
+Scope:
+- Update scripts/bootstrap_env.py to fail fast when --offline is requested without cached Playwright browsers, tldextract data, Node tarballs, or pip wheel caches.
+- Extend scripts/download_wheelhouse_artifact.py (or sibling helper) to seed the local pip cache and document offline cache priming in docs/ephemeral-qa-guide.md.
+- Expand tests/test_bootstrap_env.py to cover offline cache validation paths and preflight reporting; ensure plan artefacts emitted by --dry-run are exercised.
+Assumptions:
+- Offline caches live under artifacts/cache/ and pip wheels mirror to artifacts/cache/pip by default (UV_CACHE_DIR respected).
+- Tests can simulate caches with temporary directories without invoking network installs.
+Planned Outputs:
+- Modified bootstrap_env logic with explicit pip cache validation and clearer error messages.
+- New helper or extended wheelhouse downloader that stages pip caches locally plus documentation updates.
+- Additional pytest coverage for offline validations including dry-run failure messaging and plan artefact capture expectations.
+Risks:
+- Existing baseline lint/type debt remains unresolved; target new code paths with focused tests and annotations.
+- CI environment differences for UV_CACHE_DIR may require dynamic path handling; document fallback behaviour.
