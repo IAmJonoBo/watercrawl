@@ -7,10 +7,19 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, TypedDict
+
+
+class ToolConfig(TypedDict):
+    """Configuration for an autofix tool."""
+
+    command: list[str] | None
+    with_poetry: list[str] | None
+    description: str
+
 
 # Available autofix tools and their commands
-AUTOFIX_TOOLS = {
+AUTOFIX_TOOLS: dict[str, ToolConfig] = {
     "ruff": {
         "command": ["ruff", "check", ".", "--fix"],
         "with_poetry": ["poetry", "run", "ruff", "check", ".", "--fix"],
@@ -68,6 +77,7 @@ def run_autofix(tool: str, use_poetry: bool = False, dry_run: bool = False) -> i
     config = AUTOFIX_TOOLS[tool]
 
     # Determine which command to use
+    cmd: list[str] | None
     if use_poetry and config["with_poetry"]:
         cmd = config["with_poetry"]
     else:
@@ -76,6 +86,8 @@ def run_autofix(tool: str, use_poetry: bool = False, dry_run: bool = False) -> i
     if cmd is None:
         print(f"Error: No command configured for '{tool}'", file=sys.stderr)
         return 1
+
+    assert cmd is not None  # For type checker
 
     # Check if the primary tool is available
     primary_tool = cmd[0] if not use_poetry else cmd[2]

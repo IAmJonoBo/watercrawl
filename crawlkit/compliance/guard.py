@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Mapping
 
 from ..types import ComplianceDecision
 
@@ -81,7 +81,7 @@ class ComplianceGuard:
         }
         self._append_log(payload)
 
-    def _append_log(self, payload: dict[str, object]) -> None:
+    def _append_log(self, payload: Mapping[str, object]) -> None:
         with self._log_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(payload))
             handle.write("\n")

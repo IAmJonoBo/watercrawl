@@ -198,7 +198,7 @@ def stage_node_tarball(
 
     # Optionally verify GPG signature
     if verify_sig:
-        verify_gpg_signature(checksum_path)
+        verify_gpg_signature(checksum_path, release.checksum_url)
 
     print(f"✓ Node.js tarball staged: {tarball_path}")
     return tarball_path

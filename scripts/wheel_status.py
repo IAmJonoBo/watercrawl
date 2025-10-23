@@ -69,7 +69,7 @@ def _build_trust_store() -> tuple[ssl.SSLContext, str | None]:
             if not data.endswith(b"\n"):
                 merged.write(b"\n")
     merged_path = Path(handle.name)
-    atexit.register(lambda path=merged_path: path.unlink(missing_ok=True))
+    atexit.register(lambda path=merged_path: path.unlink(missing_ok=True))  # type: ignore
     return ssl.create_default_context(cafile=handle.name), handle.name
 
 
@@ -236,7 +236,7 @@ def evaluate_package(
 
 def generate_status(
     blockers: Iterable[Blocker],
-    fetcher: Callable[[str], Mapping[str, Any]],
+    fetcher: Callable[[str], tuple[Mapping[str, Any], bool]],
 ) -> dict[str, Any]:
     packages = []
     unresolved = 0
@@ -281,7 +281,7 @@ def main(argv: list[str] | None = None) -> int:
 
     blockers = load_blockers(args.blockers)
 
-    def _fetch(pkg: str) -> Mapping[str, Any]:
+    def _fetch(pkg: str) -> tuple[Mapping[str, Any], bool]:
         return fetch_package_metadata(pkg)
 
     status = generate_status(blockers, _fetch)

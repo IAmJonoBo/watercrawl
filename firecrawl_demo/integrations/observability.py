@@ -16,6 +16,7 @@ WC-17 acceptance criteria:
 from __future__ import annotations
 
 import logging
+import os
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -201,8 +202,13 @@ class ObservabilityManager:
 
     def _init_metrics(self, resource: Resource) -> None:
         """Initialize metrics with Prometheus exporter."""
+        # Set Prometheus port via environment variable
+        os.environ["OTEL_PYTHON_METRICS_EXPORTER_PROMETHEUS_PORT"] = str(
+            self.config.prometheus_port
+        )
+
         # Create Prometheus reader
-        prometheus_reader = PrometheusMetricReader(port=self.config.prometheus_port)
+        prometheus_reader = PrometheusMetricReader()
 
         # Set up meter provider
         meter_provider = MeterProvider(

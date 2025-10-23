@@ -157,11 +157,11 @@ def _text_normalizer(
     case_hint = str(hints.get("case", "")).lower()
     normalized: list[Any] = []
     issues: list[NormalizationIssue] = []
-    for index, value in series.items():
+    for row_index, value in enumerate(series):
         text = _coerce_to_str(value)
         if text is None:
             if descriptor.required:
-                issues.append(NormalizationIssue(int(index), "Missing required value"))
+                issues.append(NormalizationIssue(row_index, "Missing required value"))
             normalized.append(None)
             continue
         if strip_values:
@@ -204,18 +204,18 @@ def _enum_normalizer(
     default_value = hints.get("default")
     issues: list[NormalizationIssue] = []
     normalized: list[Any] = []
-    for index, value in series.items():
+    for row_index, value in enumerate(series):
         text = _coerce_to_str(value)
         if text is None:
             if descriptor.required:
-                issues.append(NormalizationIssue(int(index), "Missing required value"))
+                issues.append(NormalizationIssue(row_index, "Missing required value"))
             normalized.append(default_value)
             continue
         cleaned = text.strip()
         canonical = allowed_map.get(cleaned.lower())
         if canonical is None:
             issues.append(
-                NormalizationIssue(int(index), f"Value '{cleaned}' not in allowed set")
+                NormalizationIssue(row_index, f"Value '{cleaned}' not in allowed set")
             )
             normalized.append(default_value)
         else:
@@ -240,10 +240,10 @@ def _numeric_normalizer(
         caster = _cast_to_int
     issues: list[NormalizationIssue] = []
     normalized: list[Any] = []
-    for index, value in series.items():
+    for row_index, value in enumerate(series):
         if _is_missing(value):
             if descriptor.required:
-                issues.append(NormalizationIssue(int(index), "Missing required value"))
+                issues.append(NormalizationIssue(row_index, "Missing required value"))
             normalized.append(None)
             continue
         try:
@@ -251,7 +251,7 @@ def _numeric_normalizer(
         except (TypeError, ValueError):
             issues.append(
                 NormalizationIssue(
-                    int(index), f"Unable to parse numeric value '{value}'"
+                    row_index, f"Unable to parse numeric value '{value}'"
                 )
             )
             normalized.append(None)
@@ -275,7 +275,7 @@ def _numeric_with_units_normalizer(
         rule["_allowed_units_cache"] = allowed_units
     issues: list[NormalizationIssue] = []
     normalized: list[Any] = []
-    for index, value in series.items():
+    for row_index, value in enumerate(series):
         try:
             normalized_value = normalize_numeric_value(
                 value=value,
@@ -284,10 +284,10 @@ def _numeric_with_units_normalizer(
                 allowed_units=allowed_units,
             )
         except ValueError as exc:
-            issues.append(NormalizationIssue(int(index), str(exc)))
+            issues.append(NormalizationIssue(row_index, str(exc)))
             normalized_value = None
         if normalized_value is None and descriptor.required:
-            issues.append(NormalizationIssue(int(index), "Missing required value"))
+            issues.append(NormalizationIssue(row_index, "Missing required value"))
         normalized.append(normalized_value)
     diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
     return ColumnNormalizationResult(
@@ -303,11 +303,11 @@ def _date_normalizer(
     output_format = hints.get("output_format", "%Y-%m-%d")
     issues: list[NormalizationIssue] = []
     normalized: list[Any] = []
-    for index, value in series.items():
+    for row_index, value in enumerate(series):
         text = _coerce_to_str(value)
         if text is None:
             if descriptor.required:
-                issues.append(NormalizationIssue(int(index), "Missing required value"))
+                issues.append(NormalizationIssue(row_index, "Missing required value"))
             normalized.append(None)
             continue
         cleaned = text.strip()
@@ -322,7 +322,7 @@ def _date_normalizer(
         if parsed is None:
             issues.append(
                 NormalizationIssue(
-                    int(index), f"Unable to parse date '{cleaned}' with known formats"
+                    row_index, f"Unable to parse date '{cleaned}' with known formats"
                 )
             )
             normalized.append(None)
@@ -344,11 +344,11 @@ def _url_normalizer(
     strip_trailing = bool(hints.get("strip_trailing_slash", True))
     issues: list[NormalizationIssue] = []
     normalized: list[Any] = []
-    for index, value in series.items():
+    for row_index, value in enumerate(series):
         text = _coerce_to_str(value)
         if text is None:
             if descriptor.required:
-                issues.append(NormalizationIssue(int(index), "Missing required value"))
+                issues.append(NormalizationIssue(row_index, "Missing required value"))
             normalized.append(None)
             continue
         cleaned = text.strip()
@@ -360,7 +360,7 @@ def _url_normalizer(
         parsed = urlparse(cleaned)
         if not parsed.netloc:
             issues.append(
-                NormalizationIssue(int(index), f"URL '{text}' is missing a hostname")
+                NormalizationIssue(row_index, f"URL '{text}' is missing a hostname")
             )
             normalized.append(None)
             continue
@@ -389,12 +389,12 @@ def _phone_normalizer(phone_normalizer: PhoneNormalizer) -> NormalizerCallable:
     ) -> ColumnNormalizationResult:
         normalized: list[Any] = []
         issues: list[NormalizationIssue] = []
-        for index, value in series.items():
+        for row_index, value in enumerate(series):
             cleaned = _coerce_to_str(value)
             normalized_value, field_issues = phone_normalizer(cleaned)
             normalized.append(normalized_value)
             for issue in field_issues:
-                issues.append(NormalizationIssue(int(index), issue))
+                issues.append(NormalizationIssue(row_index, issue))
         diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
         return ColumnNormalizationResult(
             pd.Series(normalized, index=series.index), diagnostics
@@ -411,12 +411,12 @@ def _email_normalizer(email_validator: EmailValidator) -> NormalizerCallable:
     ) -> ColumnNormalizationResult:
         normalized: list[Any] = []
         issues: list[NormalizationIssue] = []
-        for index, value in series.items():
+        for row_index, value in enumerate(series):
             cleaned = _coerce_to_str(value)
             normalized_value, field_issues = email_validator(cleaned, None)
             normalized.append(normalized_value)
             for issue in field_issues:
-                issues.append(NormalizationIssue(int(index), issue))
+                issues.append(NormalizationIssue(row_index, issue))
         diagnostics = _build_diagnostics(descriptor, series.index, normalized, issues)
         return ColumnNormalizationResult(
             pd.Series(normalized, index=series.index), diagnostics

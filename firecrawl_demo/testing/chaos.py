@@ -19,9 +19,19 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Generator, List, Optional
+from typing import Generator, List, Optional, TypedDict
 
 logger = logging.getLogger(__name__)
+
+
+class ChaosScenario(TypedDict):
+    """A chaos testing scenario."""
+
+    name: str
+    failure_mode: FailureMode
+    component: str
+    expected_behavior: str
+    recovery_steps: List[str]
 
 
 class FailureMode(Enum):
@@ -375,7 +385,7 @@ class ChaosOrchestrator:
 
 
 # Pre-defined game day scenarios based on docs/chaos-fmea-scenarios.md
-GAME_DAY_SCENARIOS = {
+GAME_DAY_SCENARIOS: dict[str, ChaosScenario] = {
     "F-001": {
         "name": "Adapter timeout during enrichment",
         "failure_mode": FailureMode.ADAPTER_TIMEOUT,
@@ -436,7 +446,7 @@ def execute_game_day_scenario(
 
         # Inject failure
         with orch.inject_transient_failure(
-            scenario["failure_mode"], scenario["component"]
+            scenario["failure_mode"], scenario["component"]  # type: ignore
         ) as injection:
             result.injections.append(injection)
 
