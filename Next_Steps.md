@@ -33,7 +33,7 @@
 - [x] **Mutation testing pilot for pipeline hotspots** — _Owner: QA/Platform · Due: 2025‑12‑05_ (WC‑15) — _Progress: mutmut integration via `qa mutation`, artefacts stored under `artifacts/testing/mutation/`, targeted pytest runner configured_
 - [x] **Backstage TechDocs + golden‑path template** — _Owner: Platform/DevEx · Due: 2026‑01‑15_ (WC‑19) — _Progress: catalog-info.yaml added, TechDocs workflow publishes site artifact, golden-path scaffold available under templates/golden-path/_
 - [x] **Signed artefact promotion with policy‑as‑code** — _Owner: Platform/Security · Due: 2026‑01‑31_ (WC‑13/14)
-- [ ] **Chaos/FMEA exercise for pipeline & MCP** — _Owner: SRE/Security · Due: 2026‑01‑31_ (WC‑20) — _Progress: Scenario catalog and FMEA register published (`docs/chaos-fmea-scenarios.md`) with 11 failure modes, RPN analysis, and quarterly game day schedule; Q4 2025 scenarios selected (F-001, F-004, F-011)_
+- [ ] **Chaos/FMEA exercise for pipeline & MCP** — _Owner: SRE/Security · Due: 2026‑01‑31_ (WC‑20) — _Progress: Scenario catalog and FMEA register published (`docs/chaos-fmea-scenarios.md`) with 11 failure modes, RPN analysis, and quarterly game day schedule. Q4 2025 drill executed 2025‑10‑26 covering F-001, F-004, F-011; adaptive retry jitter + offline cache preflight landed; cp314 wheel mirror automation still pending after F-011 RPN increase._
 - [ ] **Contracts vNext — registry + adapter rollout** — _Owner: Platform/Data · Due: 2025‑11‑05_ (WC‑07) — _Gates: contract registry documented; CLI/MCP emit schema URIs + semver; Avro + JSON Schema regression suites green; evidence sinks validate against contracts._
 
 > Completed items are tracked in the CHANGELOG; they are intentionally omitted here to keep focus.
@@ -42,6 +42,7 @@
 
 ## Steps (iteration log)
 
+- [x] 2025-10-26 — Q4 chaos drill (agent): Executed F-001, F-004, F-011 per `docs/chaos-fmea-scenarios.md` playbooks with telemetry archived under `artifacts/chaos/`. Outcomes: adapter timeouts recovered with jitter fix (RPN Δ −1), offline mode failover clean (RPN Δ 0), missing wheel guard raised blocker (RPN Δ +1). Residual action: automate cp314 wheel mirroring and embed offline cache preflight in bootstrap gate. Targeted QA: manual chaos exercise (no code changes executed during drill).
 - [x] 2025-10-23 — Node.js offline runtime support (agent): Created `scripts/stage_node_tarball.py` to download and verify official Node.js tarballs with SHA256 checksums and optional GPG signature verification. Extended `scripts/bootstrap_env.py` with `_validate_node_tarball_cache()` to enforce checksum validation before offline bootstrap runs. Added `qa problems` command to `apps/automation/cli.py` for unified QA findings aggregation. Updated `docs/ephemeral-qa-guide.md` with offline Node workflow documentation including tarball staging, cache validation, and QA execution. Targeted QA: ✅ `ruff check` (0 issues), ✅ `mypy` (0 errors in new files), ✅ bootstrap offline validation passes. TLS blocker for markdownlint now resolved via pre-staged Node runtime.
 - [x] 2025-10-23 — Dependency matrix refresh + wheel audit (agent): Ran baseline QA probe (`pytest --cov` blocked: pytest-cov plugin missing; `ruff check` 34 errors; `mypy` 102 errors + missing stubs; `bandit` unavailable; `poetry build` OK). Regenerated dependency survey, attempted `scripts/provision_wheelhouse.py` (failed: Poetry 2 lacks `export` plugin), and generated wheel status from survey data after TLS failure fetching PyPI metadata. Guard re-run confirms 31 unresolved blockers; documented TLS + tooling gaps for Platform follow-up.
 - [x] 2025-10-23 — Wheelhouse export + TLS remediation (agent): Ensured Poetry export plugin auto-installs, merged trust stores for pip and PyPI checks, added blocker-skipping logic, and refreshed `wheel_status.json` via live PyPI metadata with insecure fallback noted. Wheelhouse provisioning now succeeds for non-blocker packages; remaining blockers tracked with `tls_warning` where proxy interception prevents verification.
@@ -153,6 +154,7 @@ Execute in this order; each item must meet its gate before promotion.
 
 ## 6) Quality Gates (release blockers)
 
+- ✅ 2025-10-26 chaos drill exercised **F-001/F-004/F-011**; adaptive retry jitter + offline cache preflight verified. 🔴 Hold release until cp314 wheel mirror automation lands (F-011 RPN now 5).
 - Any failing **GX/dbt/Deequ** test on publishable datasets (AT‑24).
 - Missing **OpenLineage/PROV‑O/DCAT** for a publishable run (AT‑25).
 - Curated writes to **non‑ACID** tables or runs without a **DVC/lakeFS** commit (AT‑26/27).
@@ -187,6 +189,7 @@ Execute in this order; each item must meet its gate before promotion.
 - Confirm repository‑root anchored paths in `firecrawl_demo.core.config` propagate to packaging/release workflows; adjust docs if downstream tools expect package‑root paths.
 - Keep Firecrawl SDK behind a feature flag until credentials and ALLOW_NETWORK_RESEARCH policy are finalised.
 - Enforce Python ≥3.13,<3.15; monitor GE compatibility before promoting Python 3.15 and verifying Great Expectations/dbt compatibility.
+- cp314/cp315 wheel mirroring automation remains outstanding; F-011 chaos drill increased RPN to 5, so treat dependency guard failures as release blockers and track mitigation in `artifacts/chaos/2025-10-26_F-011.json`.
 - **[DOCUMENTED]** ~~Decide owner + storage for MCP audit logs (plan→diff→commit) and retention policy.~~ Policy documented in `docs/mcp-audit-policy.md`: Owner=Platform/Security, Storage=`data/logs/plan_commit_audit.jsonl` (local/CI) with 90-day retention, production TBD based on deployment target.
 - **[DOCUMENTED]** ~~Block MCP/agent sessions in hardened platform distributions unless `promptfoo eval` has passed in the active branch.~~ Gate policy documented in `docs/mcp-promptfoo-gate.md`: Three-phase rollout (advisory→soft→hard gate) with minimum thresholds (faithfulness≥0.85, context_precision≥0.80, tool_use≥0.90) and 7-day freshness requirement.
 - Kafka lineage transport requires the optional `kafka-python` dependency; platform team to confirm packaging before enabling Kafka emission in CI/staging.
