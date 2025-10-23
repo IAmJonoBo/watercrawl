@@ -315,7 +315,7 @@ def _validate_node_tarball_cache(repo_root: Path) -> bool:
     # Find Node.js tarballs
     tarballs: list[Path] = []
     for suffix in (".tgz", ".tar.gz", ".tar.xz"):
-        tarballs.extend(cache_root.glob(f"node-*.{suffix.lstrip('.')}"))
+        tarballs.extend(cache_root.glob(f"node-*{suffix}"))
 
     if not tarballs:
         return False
