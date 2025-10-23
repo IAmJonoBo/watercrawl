@@ -337,6 +337,7 @@ def list_profiles() -> list[dict[str, object]]:
 # Dataclasses for richer configuration --------------------------------------
 @dataclass(frozen=True)
 class FeatureFlags:
+    enable_crawlkit: bool = False
     enable_firecrawl_sdk: bool = False
     enable_press_research: bool = True
     enable_regulator_lookup: bool = True
@@ -811,6 +812,9 @@ def configure(provider: SecretsProvider | None = None) -> None:
     settings = Settings(provider=SECRETS_PROVIDER)
 
     FEATURE_FLAGS = FeatureFlags(
+        enable_crawlkit=_env_bool(
+            "FEATURE_ENABLE_CRAWLKIT", False, SECRETS_PROVIDER
+        ),
         enable_firecrawl_sdk=_env_bool(
             "FEATURE_ENABLE_FIRECRAWL_SDK", False, SECRETS_PROVIDER
         ),

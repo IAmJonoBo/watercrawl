@@ -78,8 +78,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Command enforces 95% threshold and exits with code 1 on failure
 
 - Updated `apps/analyst/cli.py` to include coverage in user-facing commands
+- Replaced the Firecrawl research adapter with a Crawlkit-powered implementation that respects the
+  new `FEATURE_ENABLE_CRAWLKIT` flag and falls back gracefully when network access is disabled.
   - Added coverage to `_USER_FACING_COMMANDS` dictionary
   - Included coverage in overview command's ordered command list
+- Enhanced the Crawlkit research adapter to surface fetch failure diagnostics and deduplicate
+  multi-source seed URLs, with new integration tests covering press/regulator triangulation.
 
 - Updated CI workflow (`.github/workflows/ci.yml`)
   - Added "Run data contracts" step after tests

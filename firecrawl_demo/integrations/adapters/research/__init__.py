@@ -1,8 +1,5 @@
 """Research adapter infrastructure with registry extensibility."""
 
-# Import exemplar adapters for registration side effects.
-from importlib import util as importlib_util
-
 from firecrawl_demo.integrations.integration_plugins import (
     IntegrationPlugin,
     PluginConfigSchema,
@@ -25,7 +22,7 @@ from .connectors import (
 )
 from .core import (
     CompositeResearchAdapter,
-    FirecrawlResearchAdapter,
+    CrawlkitResearchAdapter,
     NullResearchAdapter,
     ResearchAdapter,
     ResearchFinding,
@@ -58,7 +55,7 @@ __all__ = [
     "ConnectorRequest",
     "ConnectorResult",
     "CorporateFilingsConnector",
-    "FirecrawlResearchAdapter",
+    "CrawlkitResearchAdapter",
     "MultiSourceResearchAdapter",
     "NullResearchAdapter",
     "PressConnector",
@@ -86,14 +83,10 @@ __all__ = [
 ]
 
 
-def _firecrawl_dependency_available() -> bool:
-    return importlib_util.find_spec("firecrawl") is not None
-
-
 def _research_health_probe(context: PluginContext) -> PluginHealthStatus:
     adapters = load_enabled_adapters()
-    enable_firecrawl_sdk = bool(
-        getattr(context.config.FEATURE_FLAGS, "enable_firecrawl_sdk", False)
+    enable_crawlkit = bool(
+        getattr(context.config.FEATURE_FLAGS, "enable_crawlkit", False)
     )
     allow_network_research = bool(
         getattr(context.config, "ALLOW_NETWORK_RESEARCH", False)
@@ -102,17 +95,13 @@ def _research_health_probe(context: PluginContext) -> PluginHealthStatus:
         "adapter_count": len(adapters),
         "adapters": [type(adapter).__name__ for adapter in adapters],
         "feature_flags": {
-            "enable_firecrawl_sdk": enable_firecrawl_sdk,
+            "enable_crawlkit": enable_crawlkit,
             "allow_network_research": allow_network_research,
         },
     }
 
     healthy = bool(adapters)
     reason = "Adapters loaded" if healthy else "No research adapters enabled"
-
-    if enable_firecrawl_sdk and not _firecrawl_dependency_available():
-        healthy = False
-        reason = "Firecrawl SDK enabled but dependency missing"
 
     return PluginHealthStatus(healthy=healthy, reason=reason, details=details)
 
@@ -123,12 +112,11 @@ register_plugin(
         category="adapters",
         factory=lambda ctx: build_research_adapter(),
         config_schema=PluginConfigSchema(
-            feature_flags=("FEATURE_ENABLE_FIRECRAWL_SDK", "ALLOW_NETWORK_RESEARCH"),
+            feature_flags=("FEATURE_ENABLE_CRAWLKIT", "ALLOW_NETWORK_RESEARCH"),
             environment_variables=("RESEARCH_ADAPTERS", "RESEARCH_ADAPTERS_FILE"),
-            optional_dependencies=("firecrawl",),
             description=(
                 "Composite research adapter stack combining registry-managed "
-                "intelligence sources with Firecrawl when enabled."
+                "intelligence sources with Crawlkit enrichment."
             ),
         ),
         health_probe=_research_health_probe,
