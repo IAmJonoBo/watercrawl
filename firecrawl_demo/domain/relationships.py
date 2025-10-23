@@ -212,6 +212,103 @@ def merge_evidence_links(primary: EvidenceLink, incoming: EvidenceLink) -> Evide
     return combined
 
 
+def load_graph_snapshot(
+    *,
+    graphml_path: Path,
+    node_csv_path: Path | None = None,
+    edge_csv_path: Path | None = None,
+) -> RelationshipGraphSnapshot:
+    """Load a previously exported relationship graph snapshot."""
+
+    if nx is None:  # pragma: no cover - optional dependency guard
+        raise RuntimeError("networkx is required to load the relationship graph")
+
+    graphml_path = graphml_path.expanduser().resolve()
+    if not graphml_path.exists():
+        raise FileNotFoundError(
+            f"Relationship graph snapshot not found at {graphml_path}"
+        )
+
+    raw_graph = nx.read_graphml(graphml_path)
+    if isinstance(raw_graph, nx.MultiDiGraph):
+        graph = raw_graph
+    else:
+        graph = nx.MultiDiGraph()
+        graph.add_nodes_from(raw_graph.nodes(data=True))
+        for source, target, data in raw_graph.edges(data=True):
+            attributes = dict(data)
+            edge_key = attributes.pop("key", None)
+            if edge_key is not None:
+                graph.add_edge(source, target, key=edge_key, **attributes)
+            else:
+                graph.add_edge(source, target, **attributes)
+    nodes_csv = (
+        node_csv_path.expanduser().resolve()
+        if node_csv_path is not None
+        else graphml_path.with_suffix(".csv")
+    )
+    edges_csv = (
+        edge_csv_path.expanduser().resolve()
+        if edge_csv_path is not None
+        else graphml_path.with_name(f"{graphml_path.stem}_edges.csv")
+    )
+
+    simple_graph = nx.Graph(graph)
+    if simple_graph.number_of_nodes():
+        centrality = nx.degree_centrality(simple_graph)
+        betweenness = nx.betweenness_centrality(simple_graph)
+        try:
+            communities = list(
+                nx.algorithms.community.greedy_modularity_communities(simple_graph)
+            )
+        except Exception:  # pragma: no cover - community detection optional
+            communities = []
+    else:
+        centrality = {}
+        betweenness = {}
+        communities = []
+
+    community_assignments: dict[str, int] = {}
+    for index, community in enumerate(communities):
+        for node in community:
+            community_assignments[str(node)] = index
+
+    anomalies: list[RelationshipAnomaly] = []
+    for node, data in graph.nodes(data=True):
+        if data.get("type") != "organisation":
+            continue
+        raw = str(data.get("provinces", ""))
+        provinces = {item for item in raw.split(";") if item}
+        if len(provinces) > 1:
+            anomalies.append(
+                RelationshipAnomaly(
+                    code="CONFLICTING_PROVINCE",
+                    message=(
+                        f"Organisation '{data.get('name', node)}' has conflicting"
+                        f" provinces {sorted(provinces)}"
+                    ),
+                    details={
+                        "organisation": data.get("name", node),
+                        "provinces": sorted(provinces),
+                        "identifier": str(node),
+                    },
+                )
+            )
+
+    return RelationshipGraphSnapshot(
+        graphml_path=graphml_path,
+        node_summary_path=nodes_csv,
+        edge_summary_path=edges_csv,
+        node_count=graph.number_of_nodes(),
+        edge_count=graph.number_of_edges(),
+        centrality={str(key): value for key, value in centrality.items()},
+        betweenness={str(key): value for key, value in betweenness.items()},
+        community_assignments=community_assignments,
+        anomalies=anomalies,
+        graph=graph,
+    )
+
+
 __all__ = [
     "EvidenceLink",
     "Organisation",
@@ -221,6 +318,7 @@ __all__ = [
     "RelationshipGraphSnapshot",
     "SourceDocument",
     "canonical_id",
+    "load_graph_snapshot",
     "merge_evidence_links",
     "merge_organisations",
     "merge_people",

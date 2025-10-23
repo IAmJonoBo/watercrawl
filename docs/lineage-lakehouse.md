@@ -89,3 +89,15 @@ description: OpenLineage, PROV-O metadata, and Delta Lake integration
 2. Implement OpenLineage emitter prototype and capture sample events in CI artefacts.
 3. Draft MkDocs updates and runbook outlines for lineage/lakehouse operations.
 4. Schedule security review once provenance and versioning artefacts are generated in staging.
+
+## Verification
+
+- Run the relationship graph regression tests to confirm GraphML/CSV exports and analyst
+  telemetry tooling are healthy:
+
+```bash
+poetry run pytest tests/test_relationships.py tests/test_graph_cli.py -q
+```
+
+- Use `poetry run python -m apps.analyst.graph_cli export-telemetry <output.json>` to
+  materialise the latest centrality, betweenness, and anomaly metrics for audit trails.
