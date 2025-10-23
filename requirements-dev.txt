@@ -2966,9 +2966,9 @@ types-s3transfer==0.14.0 ; python_version >= "3.13" and python_version < "3.15" 
 types-setuptools==80.9.0.20250822 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:070ea7716968ec67a84c7f7768d9952ff24d28b65b6594797a464f1b3066f965 \
     --hash=sha256:53bf881cb9d7e46ed12c76ef76c0aaf28cfe6211d3fab12e0b83620b1a8642c3
-types-urllib3==1.26.25 ; python_version >= "3.13" and python_version < "3.15" \
-    --hash=sha256:5aef0e663724eef924afa8b320b62ffef2c1736c1fa6caecfc9bc6c8ae2c3def \
-    --hash=sha256:c1d78cef7bd581e162e46c20a57b2e1aa6ebecdcf01fd0713bb90978ff3e3427
+types-urllib3==1.26.25.14; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f \
+    --hash=sha256:9683bbb7fb72e32bfe9d2be6e04875fbe1b3eeec3cbb4ea231435aa7fd6b4f0e
 typing-extensions==4.15.0 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
     --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
