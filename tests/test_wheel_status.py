@@ -75,7 +75,6 @@ def test_fetch_package_metadata_uses_certifi_context(
     assert insecure is False
     assert captured["url"].endswith("/example/json")
     assert captured["timeout"] == wheel_status.REQUEST_TIMEOUT
-    assert captured["timeout"] == wheel_status.REQUEST_TIMEOUT
 
 
 def test_build_trust_store_combines_environment(
