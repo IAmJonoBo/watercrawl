@@ -36,6 +36,11 @@ poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample.csv --f
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
+> `requirements-dev.txt` hashes refreshed on **2025-10-23 (UTC)** via
+> `poetry export -f requirements.txt --with dev --output requirements-dev.txt`.
+> Repeat the export whenever dependency versions change to keep bootstrap
+> environments reproducible.
+
 - Generate local CI dashboards with `poetry run python -m scripts.ci_summary --coverage coverage.xml --junit pytest-results.xml --output ci-summary.md --json ci-dashboard.json` when validating reports outside GitHub Actions.
 - TechDocs publishing runs via `.github/workflows/techdocs.yml`; the job uses `techdocs-cli generate --no-docker` and uploads a `techdocs-site` artifact for Backstage ingestion. New services should copy the `templates/golden-path/` scaffold to inherit plan→commit guardrails and documentation structure.
 

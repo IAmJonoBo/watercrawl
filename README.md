@@ -198,6 +198,11 @@ poetry run python -m apps.automation.cli qa mutation --dry-run
 
 > **Ephemeral Runner Support:** The automation QA commands (`qa lint`, `qa typecheck`, `qa mutation`) are resilient on ephemeral runners (GitHub Actions, Copilot sandboxes) with minimal dependencies. They bootstrap vendored tooling automatically and allow partial QA results even when the full environment isn't available. See [docs/operations.md](docs/operations.md#qa-automation-workflows) for details.
 
+> `requirements-dev.txt` hashes refreshed on **2025-10-23 (UTC)** via
+> `poetry export -f requirements.txt --with dev --output requirements-dev.txt`.
+> Repeat the export whenever dependency versions change to keep offline QA
+> reproducible.
+
 > Ruff enforces the Flake8 rule families (`E`, `F`, `W`) alongside Bugbear (`B`), import sorting (`I`), and security linting (`S`), eliminating the need to run Flake8 separately.
 
 > The offline Safety runner relies on the vendored `safety-db` snapshot so QA can execute without network connectivity. Update the dependency periodically to refresh advisories.
