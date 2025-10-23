@@ -18,7 +18,7 @@ install:
 # Install with development dependencies
 install-dev:
     @echo "Installing with dev dependencies and timeout/retry protection..."
-    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 && poetry install --no-root --with dev
+    @export PIP_TIMEOUT=60 PIP_RETRIES=5 POETRY_INSTALLER_MAX_WORKERS=10 PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 && poetry install --no-root --with dev --with contracts --with dbt --with ui --with lakehouse
 
 # Run all tests
 test:
@@ -28,7 +28,7 @@ test:
 # Run tests with coverage
 test-cov:
     @echo "Running tests with coverage..."
-    poetry run pytest --cov=firecrawl_demo --cov-report=term-missing --cov-report=xml
+    poetry run pytest --cov=crawlkit --cov-report=term-missing --cov-report=xml
 
 # Run specific test file
 test-file FILE:
@@ -57,7 +57,7 @@ typecheck:
 # Run security scan
 security:
     @echo "Running security scan..."
-    poetry run bandit -r firecrawl_demo
+    poetry run bandit -r crawlkit firecrawl_demo
 
 # Run all quality checks
 qa: lint typecheck security test
@@ -148,8 +148,8 @@ wheel-status:
 # Export requirements
 export:
     @echo "Exporting requirements..."
-    poetry export -f requirements.txt --output requirements.txt --without-hashes
-    poetry export -f requirements.txt --with dev --output requirements-dev.txt --without-hashes
+    poetry export -f requirements.txt -o requirements.txt
+    poetry export -f requirements.txt -o requirements-dev.txt --with dev --with contracts --with dbt --with ui --with lakehouse
 
 # Run mutation tests (pilot)
 mutation:

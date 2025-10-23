@@ -42,26 +42,6 @@
     },
     {
       "issue": "Missing wheels for Python 3.14+",
-      "notes": "Legacy glob2 dependency lacks cp314/cp315 wheels; monitor upstream packaging or replace usage.",
-      "owner": "Platform",
-      "package": "glob2",
-      "targets": [
-        {
-          "details": "No wheel compatible with Python 3.14",
-          "python": "3.14",
-          "reason": "missing-wheel",
-          "status": "present"
-        },
-        {
-          "details": "No wheel compatible with Python 3.15",
-          "python": "3.15",
-          "reason": "missing-wheel",
-          "status": "present"
-        }
-      ]
-    },
-    {
-      "issue": "Missing wheels for Python 3.14+",
       "notes": "Impacts observability and cleanup tooling; monitor psutil 7.x release milestones.",
       "owner": "Platform",
       "package": "psutil",
@@ -142,9 +122,109 @@
     },
     {
       "issue": "Missing wheels for Python 3.14+",
-      "notes": "Mutation testing harness depends on mutmut wheels; track upstream packaging or revisit tooling.",
+      "notes": "Arrow3 core bindings required by scrapy lack cp314/cp315 wheels; monitor upstream builds.",
       "owner": "Platform",
-      "package": "mutmut",
+      "package": "arro3-core",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "JSON style tooling used by extruct has no cp314/cp315 wheels; track release cadence.",
+      "owner": "Platform",
+      "package": "jstyleson",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "LibCST does not yet publish cp314/cp315 wheels; Renovate should surface upstream releases.",
+      "owner": "Platform",
+      "package": "libcst",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "HTML parsing stack depends on lxml wheels; wait for cp314/cp315 support before bumping interpreters.",
+      "owner": "Platform",
+      "package": "lxml",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Scrapy transitively requires pypydispatcher; upstream must publish cp314/cp315 wheels.",
+      "owner": "Platform",
+      "package": "pypydispatcher",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.14",
+          "python": "3.14",
+          "reason": "missing-wheel",
+          "status": "present"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.14+",
+      "notes": "Twisted dependency zope-interface needs cp314/cp315 wheels before interpreter bump.",
+      "owner": "Platform",
+      "package": "zope-interface",
       "targets": [
         {
           "details": "No wheel compatible with Python 3.14",
@@ -162,9 +242,51 @@
     },
     {
       "issue": "Missing wheels for Python 3.15",
-      "notes": "Networking stacks remain blocked on cp315 wheels; align with upstream 3.14+ rollout.",
+      "notes": "Playwright depends on greenlet; block Python 3.15 until wheels ship.",
       "owner": "Platform",
-      "package": "aiohttp",
+      "package": "greenlet",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "OTLP exporter requires grpcio; monitor cp315 wheel availability.",
+      "owner": "Platform",
+      "package": "grpcio",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "HTML parser selectolax lacks cp315 wheels; update when upstream publishes binaries.",
+      "owner": "Platform",
+      "package": "selectolax",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "Analytics tooling relies on setproctitle; wait for cp315 support.",
+      "owner": "Platform",
+      "package": "setproctitle",
       "targets": [
         {
           "details": "No wheel compatible with Python 3.15",
@@ -403,23 +525,9 @@
           "status": "present"
         }
       ]
-    },
-    {
-      "issue": "Missing wheels for Python 3.15",
-      "notes": "YAML tooling relies on ruamel-yaml-clib wheels; track cp315 builds before enabling Python 3.15.",
-      "owner": "Platform",
-      "package": "ruamel-yaml-clib",
-      "targets": [
-        {
-          "details": "No wheel compatible with Python 3.15",
-          "python": "3.15",
-          "reason": "missing-wheel",
-          "status": "present"
-        }
-      ]
     }
   ],
   "cleared": [],
-  "generated_at": "2025-10-21T14:36:21.047735+00:00",
+  "generated_at": "2025-10-22T23:19:11.707036+00:00",
   "unexpected": []
 }

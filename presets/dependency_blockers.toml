@@ -13,13 +13,6 @@ issue = "Missing wheels for Python 3.14+"
 notes = "Required for SQLFluff/dbt smoke tests; coordinate with upstream release schedule."
 
 [[blockers]]
-package = "glob2"
-targets = ["3.14", "3.15"]
-owner = "Platform"
-issue = "Missing wheels for Python 3.14+"
-notes = "Legacy glob2 dependency lacks cp314/cp315 wheels; monitor upstream packaging or replace usage."
-
-[[blockers]]
 package = "psutil"
 targets = ["3.14", "3.15"]
 owner = "Platform"
@@ -48,18 +41,74 @@ issue = "Missing wheels for Python 3.14+"
 notes = "Lakehouse Delta snapshots require upstream cp314/cp315 wheels before enabling newer interpreters."
 
 [[blockers]]
-package = "mutmut"
+package = "arro3-core"
 targets = ["3.14", "3.15"]
 owner = "Platform"
 issue = "Missing wheels for Python 3.14+"
-notes = "Mutation testing harness depends on mutmut wheels; track upstream packaging or revisit tooling."
+notes = "Arrow3 core bindings required by scrapy lack cp314/cp315 wheels; monitor upstream builds."
 
 [[blockers]]
-package = "aiohttp"
+package = "jstyleson"
+targets = ["3.14", "3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.14+"
+notes = "JSON style tooling used by extruct has no cp314/cp315 wheels; track release cadence."
+
+[[blockers]]
+package = "libcst"
+targets = ["3.14", "3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.14+"
+notes = "LibCST does not yet publish cp314/cp315 wheels; Renovate should surface upstream releases."
+
+[[blockers]]
+package = "lxml"
+targets = ["3.14", "3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.14+"
+notes = "HTML parsing stack depends on lxml wheels; wait for cp314/cp315 support before bumping interpreters."
+
+[[blockers]]
+package = "pypydispatcher"
+targets = ["3.14", "3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.14+"
+notes = "Scrapy transitively requires pypydispatcher; upstream must publish cp314/cp315 wheels."
+
+[[blockers]]
+package = "zope-interface"
+targets = ["3.14", "3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.14+"
+notes = "Twisted dependency zope-interface needs cp314/cp315 wheels before interpreter bump."
+
+[[blockers]]
+package = "greenlet"
 targets = ["3.15"]
 owner = "Platform"
 issue = "Missing wheels for Python 3.15"
-notes = "Networking stacks remain blocked on cp315 wheels; align with upstream 3.14+ rollout."
+notes = "Playwright depends on greenlet; block Python 3.15 until wheels ship."
+
+[[blockers]]
+package = "grpcio"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "OTLP exporter requires grpcio; monitor cp315 wheel availability."
+
+[[blockers]]
+package = "selectolax"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "HTML parser selectolax lacks cp315 wheels; update when upstream publishes binaries."
+
+[[blockers]]
+package = "setproctitle"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "Analytics tooling relies on setproctitle; wait for cp315 support."
 
 [[blockers]]
 package = "argon2-cffi-bindings"
@@ -173,9 +222,3 @@ owner = "Data Engineering"
 issue = "Python version unsupported"
 notes = "Great Expectations 1.7.1 currently pins Python <3.14; defer interpreter bumps until upstream releases cp314/cp315 compatibility."
 
-[[blockers]]
-package = "ruamel-yaml-clib"
-targets = ["3.15"]
-owner = "Platform"
-issue = "Missing wheels for Python 3.15"
-notes = "YAML tooling relies on ruamel-yaml-clib wheels; track cp315 builds before enabling Python 3.15."
