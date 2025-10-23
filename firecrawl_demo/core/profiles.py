@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import]
 
 _CAST_FACTORIES: dict[str, Callable[[Any], Any]] = {
     "int": int,
