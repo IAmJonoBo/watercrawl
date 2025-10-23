@@ -18,7 +18,10 @@
 - [x] **Validate Poetry exclude list in release pipeline** — _Owner: Platform · Due: 2025‑10‑31_
 - [ ] **Wheel remediation — Python 3.13/3.14/3.15 blockers** — _Owner: Platform/Data/Security · Due: 2025‑11‑08_
   - Gates: cp314/cp315 wheels published for argon2-cffi-bindings, cryptography, dbt-extractor, duckdb, psutil, tornado, and other tracked packages; `python -m scripts.dependency_matrix guard --strict` passes with no blockers.
-  - Progress: `scripts/wheel_status.py` now reports blocker status to `tools/dependency_matrix/wheel_status.json`; remains blocked pending upstream wheel releases. 2025-10-23 refresh: dependency survey rerun, wheelhouse provisioning failed on `poetry export` (Poetry 2 plugin missing), TLS still blocks PyPI metadata fetch; wheel_status.json regenerated from survey data to keep owners informed.
+  - Progress:
+    - `scripts/wheel_status.py` now reports blocker status to `tools/dependency_matrix/wheel_status.json`; remains blocked pending upstream wheel releases.
+    - 2025-10-23 survey refresh: dependency survey rerun; wheelhouse provisioning failed on `poetry export` (Poetry 2 plugin missing).
+    - TLS still blocks PyPI metadata fetch; `wheel_status.json` regenerated from survey data to keep owners informed.
 - [ ] **QA baseline remediation — nodeenv + typing gaps** — _Owner: QA/Platform · Due: 2025‑10‑28_
   - Gates: markdownlint CLI cached offline; mypy clean with `tomli` dependency resolved; axe smoke test launches with unique Chrome profile; yamllint limited to tracked sources; problems collector completes.
   - Status: ✅ Partial remediation 2025-10-21: `tomli` resolved (already in deps), Chrome profile fixed (temp dirs), yamllint ignore updated (`.venv/**`), mypy return annotations fixed. ⏳ Remaining: nodeenv TLS/certificate pinning for markdownlint (requires bundled Node tarball or CA config).
