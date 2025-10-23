@@ -534,6 +534,6 @@
       }
     }
   ],
-  "source": "offline-generated using survey report due to TLS failure contacting PyPI",
+  "source": "offline-generated using survey report report.json at 2025-10-23T10:46:04Z due to TLS failure contacting PyPI",
   "unresolved_count": 31
 }
