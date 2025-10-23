@@ -99,6 +99,12 @@ When running offline, seed the following caches ahead of time:
 - `artifacts/cache/tldextract/publicsuffix.org-tlds/*.tldextract.json` to satisfy the public suffix lookups without network access.
 - `artifacts/cache/node/` populated with `*.tgz` tarballs for npm/pnpm so JavaScript installs can operate entirely from disk.
 - `artifacts/cache/pip/` housing pre-downloaded Python wheels if you intend to use `uv pip sync` in fully air-gapped environments.
+  The mirror helper (`python scripts/mirror_wheels.py`) refreshes cp314/cp315
+  wheel inventories under `artifacts/cache/pip/<python-tag>/` and copies the
+  wheels into the cache root alongside `mirror_state.json`, which records the
+  lockfile hash and blocker snapshot used during the run. Use
+  `python scripts/mirror_wheels.py --dry-run` to verify the cache matches the
+  current `poetry.lock` before invoking `uv pip sync` offline.
 
 **Note:** By default, `uv` uses its own cache directory (typically at `~/.cache/uv`). To ensure `uv pip sync` uses your pre-populated cache at `artifacts/cache/pip/` during offline installation, set the `UV_CACHE_DIR` environment variable before running the bootstrap command:
 

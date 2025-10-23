@@ -360,7 +360,7 @@ poetry install
 | F-008 | Audit log write failure | Compliance gap, operations halt | 5 | 2 | 1 | 2 | Critical alert, fail-closed design | Security |
 | F-009 | Prompt injection | Security breach attempt | 5 | 3 | 2 | 6 | Pattern detection, input sanitization, audit | Security |
 | F-010 | Secrets backend down | Config unavailable | 3 | 2 | 2 | 4 | Environment fallback, retry logic | Platform |
-| F-011 | Missing Python wheel | Deployment blocked | 3 | 4 | 1 | 4 → 5 (_Δ_ +1) | Wheel status monitoring, version pinning; mirror automation & upstream escalation playbook added after 2025-10-26 regression | Platform |
+| F-011 | Missing Python wheel | Deployment blocked | 3 | 4 | 1 | 4 → 5 (_Δ_ +1) | Wheel status monitoring, nightly `.github/workflows/wheel-mirror.yml` refresh (runs `scripts/mirror_wheels.py` and uploads `artifacts/cache/pip/*`), Platform supply-chain escalation (Slack `#platform-supply-chain`, pager `platform-deps@aces.example.com`) | Platform |
 
 **RPN = Severity × Occurrence × Detection** (range: 1-125, high RPN = high priority)
 
@@ -427,7 +427,7 @@ For effective chaos testing, ensure these signals are available:
 |----------|-------|-----------------|---------|-------|----------------------|--------------------|
 | F-001 | Platform | 2025-10-26T14:05:32Z | Recovered with degraded coverage | −1 | Adaptive retry jitter, scenario-tagged alerts | `artifacts/chaos/2025-10-26_F-001.json` |
 | F-004 | Platform | 2025-10-26T15:12:04Z | Successful failover to offline mode | 0 | Offline cache preflight automation | `artifacts/chaos/2025-10-26_F-004.json` |
-| F-011 | Platform | 2025-10-26T16:27:41Z | Guardrails blocked deploy; manual mitigation required | +1 | Mirror automation, upstream escalation SOP | `artifacts/chaos/2025-10-26_F-011.json` |
+| F-011 | Platform | 2025-10-26T16:27:41Z | Guardrails blocked deploy; manual mitigation required | +1 | Wheel mirror workflow + dry-run check wired into release gate; escalation contacts confirmed | `artifacts/chaos/2025-10-26_F-011.json` |
 
 ## References
 

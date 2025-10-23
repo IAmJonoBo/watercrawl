@@ -47,6 +47,16 @@ Renovate, CI summaries, and release checklists.
 > invokes the same survey/guard pipeline but automatically installs the Poetry
 > environment and provisions Python 3.13 via uv when the active interpreter is older than 3.13.
 
+The mirrored wheel cache backing offline installs is automated via
+`scripts/mirror_wheels.py`. Run `python scripts/mirror_wheels.py --dry-run`
+after the dependency guard to ensure `artifacts/cache/pip/mirror_state.json`
+matches the current `poetry.lock`. CI executes the full mirror refresh in
+`.github/workflows/wheel-mirror.yml` (nightly and on lockfile changes), uploads
+the cache artifact, and fails fast when `python -m scripts.wheel_status --fail-on-missing`
+detects unresolved blockers. Escalate dry-run or workflow failures to the
+Platform supply-chain rotation (Slack `#platform-supply-chain`, pager `platform-deps@acme.example.com`) so upstream wheel
+owners receive the F-011 alert within the same business day.
+
 Then execute the quality gates:
 
 ```bash
