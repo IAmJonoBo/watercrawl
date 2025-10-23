@@ -2518,7 +2518,7 @@ rpds-py==0.27.1 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:fecc80cb2a90e28af8a9b366edacf33d7a91cbfe4c2c4544ea1246e949cfebeb \
     --hash=sha256:fed467af29776f6556250c9ed85ea5a4dd121ab56a5f8b206e3e7a4c551e48ec \
     --hash=sha256:ffce0481cc6e95e5b3f0a47ee17ffbd234399e6d532f394c8dce320c3b089c21
-ruamel-yaml==0.17.40 ; python_version >= "3.13" and python_version < "3.15" \
+ruamel-yaml==0.18.16 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:6024b986f06765d482b5b07e086cc4b4cd05dd22ddcbc758fa23d54873cf313d \
     --hash=sha256:b16b6c3816dff0a93dca12acf5e70afd089fa5acb80604afd1ffa8b465b7722c
 ruff==0.14.1 ; python_version >= "3.13" and python_version < "3.15" \
@@ -3189,3 +3189,6 @@ zope-interface==8.0.1 ; python_version >= "3.13" and python_version < "3.15" \
     --hash=sha256:f8e88f35f86bbe8243cad4b2972deef0fdfca0a0723455abbebdc83bbab96b69 \
     --hash=sha256:fcf9097ff3003b7662299f1c25145e15260ec2a27f9a9e69461a585d79ca8552 \
     --hash=sha256:fd7195081b8637eeed8d73e4d183b07199a1dc738fb28b3de6666b1b55662570
+ruamel.yaml==0.18.16; python_version >= "3.13" and python_version < "3.15" \
+    --hash=sha256:048f26d64245bae57a4f9ef6feb5b552a386830ef7a826f235ffb804c59efbba \
+    --hash=sha256:a6e587512f3c998b2225d68aa1f35111c29fad14aed561a26e73fab729ec5e5a
