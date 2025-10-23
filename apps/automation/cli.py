@@ -472,6 +472,22 @@ _QA_GROUPS: dict[str, list[CommandSpec]] = {
             ),
             tags=("supply-chain", "python"),
         ),
+        CommandSpec(
+            name="Wheel mirror freshness",
+            args=(
+                "python",
+                "scripts/mirror_wheels.py",
+                "--python",
+                "3.14",
+                "--python",
+                "3.15",
+                "--dry-run",
+            ),
+            description=(
+                "Ensure mirrored cp314/cp315 wheels match the current lockfile before promotion."
+            ),
+            tags=("supply-chain", "python"),
+        ),
     ],
     "precommit": [
         CommandSpec(
