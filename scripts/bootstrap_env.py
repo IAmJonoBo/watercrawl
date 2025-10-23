@@ -150,11 +150,13 @@ def build_bootstrap_plan(
         steps.extend(_build_artifact_cache_steps(repo_root, offline=offline))
 
     if enable_node:
-        if offline and not _has_node_tarball_cache(repo_root):
-            raise BootstrapError(
-                "Offline bootstrap requires cached Node package tarballs under "
-                "'artifacts/cache/node'. Seed the cache or disable Node setup."
-            )
+        if offline:
+            if not _validate_node_tarball_cache(repo_root):
+                raise BootstrapError(
+                    "Offline bootstrap requires validated Node package tarballs under "
+                    "'artifacts/cache/node'. Run 'python -m scripts.stage_node_tarball' "
+                    "to seed the cache or disable Node setup."
+                )
         root_package = repo_root / "package.json"
         if root_package.exists():
             steps.append(
@@ -257,6 +259,41 @@ def _tldextract_cache_steps(repo_root: Path, *, offline: bool) -> list[Bootstrap
     ]
 
 
+def _validate_node_tarball_checksum(tarball_path: Path) -> bool:
+    """Validate the checksum of a Node.js tarball against SHASUMS256.txt.
+
+    Returns True if checksum is valid, False otherwise.
+    """
+    import hashlib
+
+    checksum_file = tarball_path.parent / "SHASUMS256.txt"
+    if not checksum_file.exists():
+        return False
+
+    # Find expected checksum
+    checksum_text = checksum_file.read_text(encoding="utf-8")
+    tarball_name = tarball_path.name
+    expected_checksum = None
+    for line in checksum_text.splitlines():
+        if tarball_name in line:
+            parts = line.strip().split()
+            if len(parts) >= 2:
+                expected_checksum = parts[0]
+                break
+
+    if not expected_checksum:
+        return False
+
+    # Calculate actual checksum
+    sha256 = hashlib.sha256()
+    with tarball_path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(8192), b""):
+            sha256.update(chunk)
+    actual_checksum = sha256.hexdigest()
+
+    return actual_checksum == expected_checksum
+
+
 def _has_node_tarball_cache(repo_root: Path) -> bool:
     """Return True when a local Node package tarball cache is available."""
 
@@ -266,6 +303,28 @@ def _has_node_tarball_cache(repo_root: Path) -> bool:
     for suffixes in (".tgz", ".tar", ".tar.gz", ".tar.xz"):
         if any(cache_root.rglob(f"*{suffixes}")):
             return True
+    return False
+
+
+def _validate_node_tarball_cache(repo_root: Path) -> bool:
+    """Return True when cached Node tarballs exist and pass checksum validation."""
+    cache_root = repo_root / "artifacts" / "cache" / NODE_CACHE_DIRNAME
+    if not cache_root.exists():
+        return False
+
+    # Find Node.js tarballs
+    tarballs = []
+    for suffix in (".tgz", ".tar.gz", ".tar.xz"):
+        tarballs.extend(cache_root.glob(f"node-*.{suffix.lstrip('.')}"))
+
+    if not tarballs:
+        return False
+
+    # Validate at least one tarball
+    for tarball in tarballs:
+        if _validate_node_tarball_checksum(tarball):
+            return True
+
     return False
 
 
