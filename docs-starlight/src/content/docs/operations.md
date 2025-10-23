@@ -19,7 +19,7 @@ poetry run python -m scripts.cleanup
 Then execute the quality gates:
 
 ```bash
-./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing
 poetry run ruff check .
 poetry run python -m tools.sql.sqlfluff_runner
 poetry run yamllint --strict -c .yamllint.yaml .
@@ -27,12 +27,12 @@ poetry run pre-commit run markdownlint-cli2 --all-files
 poetry run pre-commit run hadolint --all-files
 poetry run pre-commit run actionlint --all-files
 poetry run mypy .
-poetry run bandit -r firecrawl_demo
+poetry run bandit -r watercrawl
 poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
 poetry run dotenv-linter lint .env.example
 poetry run poetry build
-poetry run python -m firecrawl_demo.interfaces.cli contracts data/sample.csv --format json
+poetry run python -m watercrawl.interfaces.cli contracts data/sample.csv --format json
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
 ```
 
@@ -53,7 +53,7 @@ archives run artefacts to `data/contracts/<timestamp>/` for provenance.
 The CLI seeds `CONTRACTS_CANONICAL_JSON` so dbt macros and Great Expectations
 share canonical province/status taxonomies and the 70-point evidence confidence
 threshold. When invoking dbt directly, export this environment variable with the
-JSON payload from `firecrawl_demo.integrations.contracts.shared_config` to avoid
+JSON payload from `watercrawl.integrations.contracts.shared_config` to avoid
 drift between toolchains.
 
 Every enrichment run now emits a lineage bundle under `artifacts/lineage/<run_id>/` containing OpenLineage, PROV-O, and DCAT documents together with optional lakehouse manifests. The PROV graphs call out the enrichment software agent, evidence counts, and quality metrics while DCAT entries surface reproducibility commands, contact metadata, and distribution records for the evidence log, manifests, and lineage bundle. Surface these artefacts in runbooks and attach them to incident reports so provenance checks stay reproducible.
@@ -72,7 +72,7 @@ release reviews so operators can replay or roll back snapshots deterministically
 
 ## Secrets Provisioning
 
-The stack now resolves credentials and feature flags through `firecrawl_demo.governance.secrets`.
+The stack now resolves credentials and feature flags through `watercrawl.governance.secrets`.
 
 1. Choose a backend by setting `SECRETS_BACKEND` to `env`, `aws`, or `azure`.
 2. For local development (`env`), populate `.env` or OS environment variables as before.
@@ -126,8 +126,8 @@ If verification fails, regenerate the cache on a connected workstation with
   sigstore verify identity \
     --cert-identity "https://github.com/IAmJonoBo/watercrawl/.github/workflows/ci.yml@refs/heads/main" \
     --cert-oidc-issuer https://token.actions.githubusercontent.com \
-    --bundle artifacts/signatures/bundles/dist/firecrawl_demo-*.whl.sigstore \
-    dist/firecrawl_demo-*.whl
+    --bundle artifacts/signatures/bundles/dist/watercrawl-*.whl.sigstore \
+    dist/watercrawl-*.whl
   ```
 
 - OpenSSF Scorecard runs via `.github/workflows/scorecard.yml` on every push to `main`, on a weekly schedule, and on demand. Review SARIF results in the repository Security tab or download the `scorecard-results` artifact.
@@ -163,7 +163,7 @@ or missing evidence before publishing results.
 - **Pylint** can be re-enabled by exporting `ENABLE_PYLINT=1` before running the collector; it remains optional to keep the default workflow fast.
 - The optional Poetry group `ui` bundles Streamlit and PyArrow (currently limited to Python `<3.14`). Default installs skip the group so baseline environments no longer fail on missing Arrow wheels; run `poetry install --with ui` from Python 3.12/3.13 whenever you need the analyst UI or first-class Parquet exports.
 - The `lakehouse` dependency group adds native Delta Lake support. Use `poetry install --with ui --with lakehouse` on Python 3.12/3.13 to record real Delta commits; without the group the writer falls back to filesystem snapshots and marks the manifest as degraded.
-- Restore snapshots programmatically (`poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3 --output tmp.csv`) to verify time-travel and roll back runs when required.
+- Restore snapshots programmatically (`poetry run python -m watercrawl.infrastructure.lakehouse restore --version 3 --output tmp.csv`) to verify time-travel and roll back runs when required.
 - Configure drift monitoring via `DRIFT_BASELINE_PATH`, `DRIFT_WHYLOGS_OUTPUT`, and `DRIFT_WHYLOGS_BASELINE`. Each pipeline run logs a whylogs-style profile (fallback JSON when the library is absent) and surfaces alerts whenever ratios deviate beyond `DRIFT_THRESHOLD`.
 
 The `.sqlfluff` configuration is already scoped to `data_contracts/analytics`, so teams stay on the same dbt golden path regardless of where the lint is executed.
@@ -214,6 +214,6 @@ manifest paths so runbooks can link provenance bundles without digging through t
 
 ## Infrastructure Plan Drift
 
-- `firecrawl_demo.infrastructure.planning.detect_plan_drift()` compares the active plan against the checked-in baseline snapshot.
+- `watercrawl.infrastructure.planning.detect_plan_drift()` compares the active plan against the checked-in baseline snapshot.
 - `tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot` guards probe endpoints, the active OPA bundle path, and plan→commit automation topics from unexpected drift.
 - Update the baseline snapshot intentionally whenever probes move or policy bundles change, and note the reason in `Next_Steps.md`.

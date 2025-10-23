@@ -5,7 +5,7 @@ description = "Crawlkit — offline-friendly research, extraction, and complianc
 authors = ["ACES Aerodynamics Analyst <info@acesaero.co.za>"]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "crawlkit" }, { include = "firecrawl_demo" }]
+packages = [{ include = "crawlkit" }, { include = "watercrawl" }]
 exclude = [
   "apps",
   "codex",
@@ -141,13 +141,13 @@ extend-exclude = '''
 [tool.isort]
 profile = "black"
 line_length = 88
-known_first_party = ["apps", "crawlkit", "firecrawl_demo", "scripts"]
+known_first_party = ["apps", "crawlkit", "watercrawl", "scripts"]
 skip_glob = [".trunk/plugins/**/*"]
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-src = ["apps", "crawlkit", "firecrawl_demo", "scripts", "tests"]
+src = ["apps", "crawlkit", "watercrawl", "scripts", "tests"]
 extend-exclude = ["stubs/third_party"]
 
 [tool.ruff.lint]
@@ -156,7 +156,7 @@ ignore = ["E203", "E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["S101", "I001"]
-"firecrawl_demo/integrations/contracts/great_expectations_runner.py" = ["E402"]
+"watercrawl/integrations/contracts/great_expectations_runner.py" = ["E402"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -197,8 +197,8 @@ ignore_missing_imports = true
 
 [tool.mutmut]
 paths_to_mutate = [
-  "firecrawl_demo/application/pipeline.py",
-  "firecrawl_demo/integrations/research/core.py",
+  "watercrawl/application/pipeline.py",
+  "watercrawl/integrations/adapters/research/core.py",
 ]
 tests_dir = "tests"
 runner = "python -m pytest tests/test_pipeline.py tests/test_research_logic.py"

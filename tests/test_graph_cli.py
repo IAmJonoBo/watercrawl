@@ -7,8 +7,8 @@ from click.testing import CliRunner
 pytest.importorskip("networkx")
 
 from apps.analyst.graph_cli import cli
-from firecrawl_demo.core import config
-from firecrawl_demo.domain.relationships import (
+from watercrawl.core import config
+from watercrawl.domain.relationships import (
     EvidenceLink,
     Organisation,
     Person,
@@ -17,7 +17,7 @@ from firecrawl_demo.domain.relationships import (
     SourceDocument,
     canonical_id,
 )
-from firecrawl_demo.integrations.telemetry.graph_semantics import (
+from watercrawl.integrations.telemetry.graph_semantics import (
     build_relationship_graph,
 )
 

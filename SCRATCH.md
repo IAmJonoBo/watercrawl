@@ -2,12 +2,12 @@ Watercrawl Crawl/Extract Subsystem — Firecrawl Removal & In-house Replacement
 
 Objective
 
-Remove firecrawl_demo and ship a first-party crawler that turns URLs (and site sections) into LLM-ready Markdown + structured entities, with region-aware compliance, polite crawling, and contact/fleet enrichment hooks. Must run on Python 3.13 and integrate with existing Celery/CLI/agents. Scrapy and Playwright both support 3.13; use scrapy-playwright as JS fallback. ￼
+Remove watercrawl and ship a first-party crawler that turns URLs (and site sections) into LLM-ready Markdown + structured entities, with region-aware compliance, polite crawling, and contact/fleet enrichment hooks. Must run on Python 3.13 and integrate with existing Celery/CLI/agents. Scrapy and Playwright both support 3.13; use scrapy-playwright as JS fallback. ￼
 
 ⸻
 
 Target repo touch-points (baseline)
-• Watercrawl repo (Python 3.13 toolchain & analyst surface). Replace the firecrawl_demo path and any callers with the new module. ￼
+• Watercrawl repo (Python 3.13 toolchain & analyst surface). Replace the watercrawl path and any callers with the new module. ￼
 
 ⸻
 
@@ -139,7 +139,7 @@ Non-functional requirements
 Cut-over plan (Firecrawl → Crawlkit)
 
 Phase 0 — Discovery & guardrails
-1. Grep for any `firecrawl_` imports / `firecrawl_demo` references; catalogue call signatures and owning teams.
+1. Grep for any `firecrawl_` imports / `watercrawl` references; catalogue call signatures and owning teams.
 2. Draft the compatibility adapter `fetch_markdown(url, depth, include_subpaths)` in `crawlkit.adapter.firecrawl_compat` and map return-shape parity gaps.
 3. Capture plan artefacts up front (`qa plan --generate-plan`) and log intended write targets per the [plan→commit guardrail](README.md#features).
 4. Baseline QA: execute the root [Tests & QA suite](README.md#tests--qa) in dry-run mode via `poetry run python -m apps.automation.cli qa all --dry-run` to log existing failures before changes.
@@ -148,11 +148,11 @@ Phase 1 — Drop-in replacement with QA gates
 1. Implement adapter to call `fetch → distill → extract` and assemble the same return shape (Markdown, link graph).
 2. Feature flag sequencing: flip `FEATURE_ENABLE_CRAWLKIT=1`, confirm `apps.analyst.cli crawlkit-status` reports the router (expects `/crawlkit/crawl`, `/crawlkit/markdown`, `/crawlkit/entities` in the route list) and prints the targeted QA command reminder. Only after `poetry run pytest tests/crawlkit tests/test_research_logic.py -q` returns green do we opt into the optional Firecrawl SDK with `FEATURE_ENABLE_FIRECRAWL_SDK=1`.
 3. Enforce plan→commit artefacts with `poetry run python -m apps.automation.cli qa plan --write-plan --write-commit` so MCP and CLI runs satisfy audit requirements.
-4. Run mandatory QA before merge: targeted suites (`poetry run pytest tests/crawlkit tests/test_research_logic.py -q`) to validate Crawlkit wiring, then the broader `./scripts/run_pytest.sh ...`, `poetry run ruff check .`, `poetry run mypy .`, `poetry run bandit -r firecrawl_demo`, and the Promptfoo evaluation gate from [docs/mcp-promptfoo-gate.md](docs/mcp-promptfoo-gate.md) to unblock Copilot write access.
+4. Run mandatory QA before merge: targeted suites (`poetry run pytest tests/crawlkit tests/test_research_logic.py -q`) to validate Crawlkit wiring, then the broader `./scripts/run_pytest.sh ...`, `poetry run ruff check .`, `poetry run mypy .`, `poetry run bandit -r watercrawl`, and the Promptfoo evaluation gate from [docs/mcp-promptfoo-gate.md](docs/mcp-promptfoo-gate.md) to unblock Copilot write access.
 5. Keep tests green using golden-file Markdown comparisons on a fixed corpus; update corpus fixtures as needed with plan artefacts attached.
 
 Phase 2 — Firecrawl deprecation & documentation
-1. Delete `firecrawl_demo/` and vendor stubs, remove env vars, and update docs/CLI help to reference Crawlkit endpoints.
+1. Delete `watercrawl/` and vendor stubs, remove env vars, and update docs/CLI help to reference Crawlkit endpoints.
 2. Lock dependency graph (`poetry.lock`) and CI matrices for Python 3.13; regenerate SBOM/signature artefacts during build.
 3. Publish migration notes in `CHANGELOG.md` and surface roll-out steps in `Next_Steps.md` with QA evidence links.
 4. Confirm MCP Promptfoo scores meet thresholds; attach latest `promptfoo_results.json` to the migration evidence bundle.
@@ -260,7 +260,7 @@ Risk register (and mitigations)
 
 ⸻
 
-“Delete-and-replace” checklist 1. Land crawlkit/_+ adapter; flip feature flag default. 2. Update CLI (apps.analyst.cli) to swap firecrawl subcommands to crawlkit equivalents. 3. Replace examples in examples.py and docs. 4. Remove firecrawl_demo/ + deps; prune requirements_.txt and pyproject.toml. 5. Regenerate dependency report; lock. 6. Run compliance suite (robots, POPIA, LIA record writes) on corpus. 7. Tag release; update CHANGELOG.md.
+“Delete-and-replace” checklist 1. Land crawlkit/_+ adapter; flip feature flag default. 2. Update CLI (apps.analyst.cli) to swap firecrawl subcommands to crawlkit equivalents. 3. Replace examples in examples.py and docs. 4. Remove watercrawl/ + deps; prune requirements_.txt and pyproject.toml. 5. Regenerate dependency report; lock. 6. Run compliance suite (robots, POPIA, LIA record writes) on corpus. 7. Tag release; update CHANGELOG.md.
 
 ⸻
 
@@ -303,7 +303,7 @@ watercrawl/
     │   └── tasks.py                   # Celery chains (crawl→distil→extract)
     └── types.py                       # Shared dataclasses (FetchedPage/Doc/Entities)
 
-Removed: firecrawl_demo/ and any imports of it.
+Removed: watercrawl/ and any imports of it.
 Feature flags:
  • FEATURE_ENABLE_CRAWLKIT=1 (defaults off → opt-in once Crawlkit CLI passes targeted tests)
  • FEATURE_ENABLE_FIRECRAWL_SDK=0 (default off; delete later)
@@ -607,7 +607,7 @@ tests/crawlkit/
 Migration steps
  1. Route callsites to crawlkit.adapter.firecrawl_compat.fetch_markdown.
  2. Feature flags: set FEATURE_ENABLE_CRAWLKIT=1, FEATURE_ENABLE_FIRECRAWL_SDK=0.
- 3. Remove firecrawl_demo/ and its deps; update docs and examples.
+ 3. Remove watercrawl/ and its deps; update docs and examples.
  4. Install Playwright browsers in CI/Docker (python -m playwright install --with-deps).  ￼
  5. Run the golden corpus tests; verify Markdown parity and robots decisions are logged.
 

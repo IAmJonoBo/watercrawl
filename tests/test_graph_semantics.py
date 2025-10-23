@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from firecrawl_demo.core.excel import EXPECTED_COLUMNS
-from firecrawl_demo.domain.relationships import (
+from watercrawl.core.excel import EXPECTED_COLUMNS
+from watercrawl.domain.relationships import (
     EvidenceLink,
     Organisation,
     Person,
@@ -13,7 +13,7 @@ from firecrawl_demo.domain.relationships import (
     SourceDocument,
     canonical_id,
 )
-from firecrawl_demo.integrations.telemetry.graph_semantics import (
+from watercrawl.integrations.telemetry.graph_semantics import (
     GraphSemanticsReport,
     GraphValidationIssue,
     build_csvw_metadata,

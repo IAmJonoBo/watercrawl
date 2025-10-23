@@ -6,20 +6,20 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from firecrawl_demo.application.pipeline import Pipeline
-from firecrawl_demo.application.progress import PipelineProgressListener
-from firecrawl_demo.application.quality import QualityGate
-from firecrawl_demo.application.row_processing import (
+from watercrawl.application.pipeline import Pipeline
+from watercrawl.application.progress import PipelineProgressListener
+from watercrawl.application.quality import QualityGate
+from watercrawl.application.row_processing import (
     RowProcessingRequest,
     process_row,
 )
-from firecrawl_demo.core import config
-from firecrawl_demo.domain.models import SchoolRecord
-from firecrawl_demo.integrations.adapters.research import (
+from watercrawl.core import config
+from watercrawl.domain.models import SchoolRecord
+from watercrawl.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
 )
-from firecrawl_demo.integrations.telemetry.drift import (
+from watercrawl.integrations.telemetry.drift import (
     DriftBaseline,
     log_whylogs_profile,
     save_baseline,

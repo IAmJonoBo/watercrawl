@@ -164,15 +164,15 @@ def ensure_tool_dependencies(tool_name: str) -> None:
         installer()
 
 
-# Optional dependency on firecrawl_demo for contract environment - graceful fallback
+# Optional dependency on watercrawl for contract environment - graceful fallback
 try:
-    from firecrawl_demo.integrations.contracts.shared_config import (
+    from watercrawl.integrations.contracts.shared_config import (
         environment_payload as contracts_environment_payload,
     )
 except (ModuleNotFoundError, ImportError):  # pragma: no cover - ephemeral runners
 
     def contracts_environment_payload() -> dict[str, str]:
-        """Fallback when firecrawl_demo is not available (e.g., ephemeral runners)."""
+        """Fallback when watercrawl is not available (e.g., ephemeral runners)."""
         return {}
 
 
@@ -1445,7 +1445,7 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
             name="pylint",
             command=_static_command(
                 "pylint",
-                "firecrawl_demo",
+                "watercrawl",
                 "app",
                 "scripts",
                 "tests",
@@ -1458,7 +1458,7 @@ def _iter_builtin_tool_specs(env: Mapping[str, str]) -> Iterable[ToolSpec]:
     if BANDIT_AVAILABLE:
         yield ToolSpec(
             name="bandit",
-            command=_static_command("bandit", "-r", "firecrawl_demo", "-f", "json"),
+            command=_static_command("bandit", "-r", "watercrawl", "-f", "json"),
             parser=parse_bandit_output,
         )
     if SQLFLUFF_AVAILABLE:

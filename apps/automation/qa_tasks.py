@@ -6,7 +6,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from firecrawl_demo.domain.models import ComplianceScheduleEntry
+from watercrawl.domain.models import ComplianceScheduleEntry
 
 
 @dataclass(slots=True)

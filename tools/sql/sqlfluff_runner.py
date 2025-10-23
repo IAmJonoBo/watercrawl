@@ -14,7 +14,7 @@ from pathlib import Path
 
 import duckdb
 
-from firecrawl_demo.integrations.contracts.shared_config import environment_payload
+from watercrawl.integrations.contracts.shared_config import environment_payload
 
 DEFAULT_DBT_PROJECT = Path("data_contracts/analytics")
 DEFAULT_DUCKDB = Path("target/contracts.duckdb")

@@ -9,8 +9,8 @@ from typing import Any, cast
 
 import pandas as pd
 
-from firecrawl_demo.domain import models
-from firecrawl_demo.integrations.telemetry.lineage import (
+from watercrawl.domain import models
+from watercrawl.integrations.telemetry.lineage import (
     LineageContext,
     LineageManager,
     build_catalog_entry,

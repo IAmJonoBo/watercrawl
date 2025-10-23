@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from firecrawl_demo.integrations.contracts import (
+from watercrawl.integrations.contracts import (
     calculate_contract_coverage,
     report_coverage,
 )

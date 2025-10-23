@@ -8,20 +8,20 @@ from pathlib import Path
 import pytest
 import yaml
 
-from firecrawl_demo.application.pipeline import Pipeline
-from firecrawl_demo.core import config
-from firecrawl_demo.domain.contracts import CONTRACT_VERSION, EvidenceRecordContract
-from firecrawl_demo.domain.models import (
+from watercrawl.application.pipeline import Pipeline
+from watercrawl.core import config
+from watercrawl.domain.contracts import CONTRACT_VERSION, EvidenceRecordContract
+from watercrawl.domain.models import (
     EvidenceRecord,
     evidence_record_from_contract,
 )
-from firecrawl_demo.infrastructure.planning import PlanCommitContract
-from firecrawl_demo.integrations.adapters.research import (
+from watercrawl.infrastructure.planning import PlanCommitContract
+from watercrawl.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
 )
-from firecrawl_demo.interfaces.cli_base import PlanCommitGuard
-from firecrawl_demo.interfaces.mcp.server import CopilotMCPServer
+from watercrawl.interfaces.cli_base import PlanCommitGuard
+from watercrawl.interfaces.mcp.server import CopilotMCPServer
 
 
 class DummyPipeline(Pipeline):

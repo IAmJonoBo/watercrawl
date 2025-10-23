@@ -12,8 +12,8 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 try:  # pragma: no cover - fallback for direct execution
-    from firecrawl_demo.core import config
-    from firecrawl_demo.integrations.telemetry.drift import (
+    from watercrawl.core import config
+    from watercrawl.integrations.telemetry.drift import (
         DriftBaseline,
         log_whylogs_profile,
         save_baseline,
@@ -21,8 +21,8 @@ try:  # pragma: no cover - fallback for direct execution
 except ModuleNotFoundError:  # pragma: no cover - allows `python seed_drift_baseline.py`
     if str(REPO_ROOT) not in sys.path:
         sys.path.insert(0, str(REPO_ROOT))
-    from firecrawl_demo.core import config
-    from firecrawl_demo.integrations.telemetry.drift import (
+    from watercrawl.core import config
+    from watercrawl.integrations.telemetry.drift import (
         DriftBaseline,
         log_whylogs_profile,
         save_baseline,

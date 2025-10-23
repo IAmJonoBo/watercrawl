@@ -4,8 +4,8 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from firecrawl_demo.integrations.telemetry.drift import DriftMetric, DriftReport
-from firecrawl_demo.integrations.telemetry.drift_dashboard import (
+from watercrawl.integrations.telemetry.drift import DriftMetric, DriftReport
+from watercrawl.integrations.telemetry.drift_dashboard import (
     append_alert_report,
     write_prometheus_metrics,
 )

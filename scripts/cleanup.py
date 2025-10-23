@@ -14,7 +14,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from firecrawl_demo.core import config
+from watercrawl.core import config
 
 # Default paths that routinely accumulate during local QA runs. Paths are
 # expressed relative to the repository root.

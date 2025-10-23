@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from firecrawl_demo.core import cache
+from watercrawl.core import cache
 
 
 def test_cache_set_and_get(monkeypatch):

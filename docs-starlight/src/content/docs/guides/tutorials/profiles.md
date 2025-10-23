@@ -176,7 +176,7 @@ Validate your profile before using it:
 
 ```bash
 poetry run python -c "
-from firecrawl_demo.core.config import load_profile
+from watercrawl.core.config import load_profile
 profile = load_profile('my_industry')
 print(f'Profile loaded: {profile.geography.country}')
 print(f'Valid provinces: {profile.geography.provinces}')
@@ -360,7 +360,7 @@ Ensure input data uses values from profile taxonomies:
 ```python
 # Check valid status values
 poetry run python -c "
-from firecrawl_demo.core.config import load_profile
+from watercrawl.core.config import load_profile
 profile = load_profile('my_industry')
 print('Valid statuses:', profile.taxonomies['status'])
 "

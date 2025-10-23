@@ -12,7 +12,7 @@ This reference documents all public APIs in Watercrawl. Internal implementation 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#f6f8fa','primaryTextColor':'#24292f'}}}%%
 graph TD
-    A[firecrawl_demo] --> B[core]
+    A[watercrawl] --> B[core]
     A --> C[domain]
     A --> D[application]
     A --> E[integrations]
@@ -49,7 +49,7 @@ graph TD
 
 ## Core Modules
 
-### firecrawl_demo.core.config
+### watercrawl.core.config
 
 Configuration management and environment variable handling.
 
@@ -58,7 +58,7 @@ Configuration management and environment variable handling.
 Returns the global configuration instance.
 
 ```python
-from firecrawl_demo.core.config import get_config
+from watercrawl.core.config import get_config
 
 config = get_config()
 print(config.feature_enable_firecrawl_sdk)  # bool
@@ -96,7 +96,7 @@ class Config:
     versioning_root: Path
 ```
 
-### firecrawl_demo.core.excel
+### watercrawl.core.excel
 
 CSV/XLSX reading and writing utilities.
 
@@ -105,7 +105,7 @@ CSV/XLSX reading and writing utilities.
 Load a dataset from CSV or XLSX.
 
 ```python
-from firecrawl_demo.core.excel import read_dataset
+from watercrawl.core.excel import read_dataset
 
 df = read_dataset(Path("data/sample.csv"))
 ```
@@ -124,14 +124,14 @@ df = read_dataset(Path("data/sample.csv"))
 Write a dataset to CSV or XLSX.
 
 ```python
-from firecrawl_demo.core.excel import write_dataset
+from watercrawl.core.excel import write_dataset
 
 write_dataset(df, Path("output.csv"), format="csv")
 ```
 
 ## Domain Layer
 
-### firecrawl_demo.domain.models
+### watercrawl.domain.models
 
 Core domain models representing business entities.
 
@@ -175,7 +175,7 @@ class EvidenceRecord:
         ...
 ```
 
-### firecrawl_demo.domain.validation
+### watercrawl.domain.validation
 
 Dataset validation rules and validators.
 
@@ -207,8 +207,8 @@ class DatasetValidator:
 **Usage:**
 
 ```python
-from firecrawl_demo.domain.validation import DatasetValidator
-from firecrawl_demo.core.config import load_profile
+from watercrawl.domain.validation import DatasetValidator
+from watercrawl.core.config import load_profile
 
 profile = load_profile("za_flight_schools")
 validator = DatasetValidator(profile)
@@ -241,7 +241,7 @@ class ValidationReport:
         ...
 ```
 
-### firecrawl_demo.domain.compliance
+### watercrawl.domain.compliance
 
 POPIA and SACAA compliance utilities.
 
@@ -250,7 +250,7 @@ POPIA and SACAA compliance utilities.
 Normalize phone number to E.164 format.
 
 ```python
-from firecrawl_demo.domain.compliance import normalize_phone_e164
+from watercrawl.domain.compliance import normalize_phone_e164
 
 normalized = normalize_phone_e164("0123456789")  # "+27123456789"
 ```
@@ -260,14 +260,14 @@ normalized = normalize_phone_e164("0123456789")  # "+27123456789"
 Check if email domain has valid MX records.
 
 ```python
-from firecrawl_demo.domain.compliance import validate_mx_records
+from watercrawl.domain.compliance import validate_mx_records
 
 valid = validate_mx_records("info@example.aero")  # True/False
 ```
 
 ## Application Layer
 
-### firecrawl_demo.application.pipeline
+### watercrawl.application.pipeline
 
 Main enrichment pipeline orchestrator.
 
@@ -301,7 +301,7 @@ class Pipeline:
 **Usage:**
 
 ```python
-from firecrawl_demo.application.pipeline import Pipeline, build_pipeline
+from watercrawl.application.pipeline import Pipeline, build_pipeline
 
 # Build with default dependencies
 pipeline = build_pipeline()
@@ -333,7 +333,7 @@ class PipelineReport:
         ...
 ```
 
-### firecrawl_demo.application.quality
+### watercrawl.application.quality
 
 Quality gate for evaluating enrichment findings.
 
@@ -376,7 +376,7 @@ class QualityDecision:
 
 ## Integrations Layer
 
-### firecrawl_demo.integrations.adapters.research
+### watercrawl.integrations.adapters.research
 
 Research adapter interfaces and implementations.
 
@@ -426,7 +426,7 @@ def load_enabled_adapters() -> ResearchAdapter:
 **Usage:**
 
 ```python
-from firecrawl_demo.integrations.adapters.research import (
+from watercrawl.integrations.adapters.research import (
     register_adapter,
     load_enabled_adapters,
     ResearchAdapter,
@@ -444,7 +444,7 @@ adapter = load_enabled_adapters()
 finding = await adapter.lookup("SA Flight Academy", "Gauteng")
 ```
 
-### firecrawl_demo.integrations.lineage
+### watercrawl.integrations.lineage
 
 OpenLineage, PROV-O, and DCAT lineage tracking.
 
@@ -480,7 +480,7 @@ class LineageManager:
 
 ## Infrastructure Layer
 
-### firecrawl_demo.infrastructure.evidence
+### watercrawl.infrastructure.evidence
 
 Evidence sink implementations.
 
@@ -506,7 +506,7 @@ class CSVEvidenceSink:
         ...
 ```
 
-### firecrawl_demo.infrastructure.secrets
+### watercrawl.infrastructure.secrets
 
 Secrets management for multiple backends.
 
@@ -533,13 +533,13 @@ class SecretsProvider:
 
 ## Interfaces Layer
 
-### firecrawl_demo.interfaces.cli
+### watercrawl.interfaces.cli
 
 Command-line interface for analysts.
 
 See [CLI Guide](/cli/) for detailed command documentation.
 
-### firecrawl_demo.interfaces.mcp
+### watercrawl.interfaces.mcp
 
 Model Context Protocol server for GitHub Copilot.
 
@@ -573,9 +573,9 @@ class ProgressCallback(Protocol):
 Common exceptions:
 
 ```python
-from firecrawl_demo.domain.validation import ValidationError
-from firecrawl_demo.application.pipeline import PipelineError
-from firecrawl_demo.integrations.adapters.research import AdapterError
+from watercrawl.domain.validation import ValidationError
+from watercrawl.application.pipeline import PipelineError
+from watercrawl.integrations.adapters.research import AdapterError
 
 try:
     report = await pipeline.run(df)
@@ -592,7 +592,7 @@ except PipelineError as e:
 ### Fixtures and Mocks
 
 ```python
-from firecrawl_demo.testing import (
+from watercrawl.testing import (
     create_sample_dataframe,
     MockResearchAdapter,
     MockEvidenceSink,

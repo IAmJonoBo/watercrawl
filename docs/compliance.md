@@ -22,19 +22,19 @@ profile (`profiles/za_flight_schools.yaml`) now exposes:
 - `compliance.audit_exports` enumerating the supported export formats generated
   by downstream automation (`csv` and `jsonl` are bundled by default).
 
-The configuration is surfaced in `firecrawl_demo.core.config` as:
+The configuration is surfaced in `watercrawl.core.config` as:
 
 - `COMPLIANCE_LAWFUL_BASES`
 - `COMPLIANCE_CONTACT_PURPOSES`
 - `COMPLIANCE_NOTIFICATION_TEMPLATES`
 - `COMPLIANCE_REVALIDATION_DAYS`
 
-These values are consumed by `firecrawl_demo.application.compliance_review`
+These values are consumed by `watercrawl.application.compliance_review`
 whenever a row is processed.
 
 ## Compliance Review
 
-`firecrawl_demo/application/compliance_review.py` introduces a
+`watercrawl/application/compliance_review.py` introduces a
 `ComplianceReview` that executes for every row processed by the enrichment
 pipeline. It:
 
@@ -84,7 +84,7 @@ and track completion of mandated communications.
 ## Robots.txt and Terms of Service
 
 The deterministic research connectors now enforce the politeness policy
-(`firecrawl_demo.integrations.crawl_policy.CrawlPolicyManager`). Sources that
+(`watercrawl.integrations.crawl_policy.CrawlPolicyManager`). Sources that
 violate robots.txt rules or present explicit Terms-of-Service prohibitions are
 skipped and logged. The compliance review supplements these notes with alternate
 query suggestions sourced from `config.EVIDENCE_QUERIES` so analysts have a

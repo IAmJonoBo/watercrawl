@@ -11,20 +11,20 @@ import pytest
 from click.testing import CliRunner
 from pydantic import ValidationError
 
-from firecrawl_demo.core import config
-from firecrawl_demo.domain.contracts import EvidenceRecordContract
-from firecrawl_demo.infrastructure.evidence import (
+from watercrawl.core import config
+from watercrawl.domain.contracts import EvidenceRecordContract
+from watercrawl.infrastructure.evidence import (
     CSVEvidenceSink,
     StreamingEvidenceSink,
 )
-from firecrawl_demo.integrations.contracts import (
+from watercrawl.integrations.contracts import (
     DBT_AVAILABLE,
     GREAT_EXPECTATIONS_AVAILABLE,
     DbtContractResult,
     run_dbt_contract_tests,
     validate_curated_dataframe,
 )
-from firecrawl_demo.interfaces.cli import cli
+from watercrawl.interfaces.cli import cli
 
 
 def _valid_row() -> dict[str, str]:

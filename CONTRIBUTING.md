@@ -94,12 +94,12 @@ poetry run mypy .
 We adhere to a layered, hexagonal architecture that separates concerns and enables extensibility:
 
 - **Crawlkit** (`crawlkit`): Fetch, distill, extract, and orchestrate modules replacing the legacy Firecrawl demos.
-- **Core** (`firecrawl_demo.core`): Configuration, utilities, constants
-- **Domain** (`firecrawl_demo.domain`): Models, validation, compliance logic
-- **Application** (`firecrawl_demo.application`): Orchestration, pipelines, interfaces
-- **Integrations** (`firecrawl_demo.integrations`): Adapters, plugins, external systems
-- **Infrastructure** (`firecrawl_demo.infrastructure`): Persistence, deployment concerns
-- **Interfaces** (`firecrawl_demo.interfaces`): CLI, UI, MCP surfaces
+- **Core** (`watercrawl.core`): Configuration, utilities, constants
+- **Domain** (`watercrawl.domain`): Models, validation, compliance logic
+- **Application** (`watercrawl.application`): Orchestration, pipelines, interfaces
+- **Integrations** (`watercrawl.integrations`): Adapters, plugins, external systems
+- **Infrastructure** (`watercrawl.infrastructure`): Persistence, deployment concerns
+- **Interfaces** (`watercrawl.interfaces`): CLI, UI, MCP surfaces
 
 ### Coding Conventions
 
@@ -153,7 +153,7 @@ Run all linters: `poetry run pre-commit run --all-files`
 
 ```bash
 # Run tests with coverage
-poetry run pytest --cov=firecrawl_demo --cov-report=term-missing
+poetry run pytest --cov=watercrawl --cov-report=term-missing
 
 # Run specific test categories
 poetry run pytest -k "test_validation"
@@ -183,7 +183,7 @@ All changes must be logged to `data/interim/evidence_log.csv`:
 
 ```python
 # Example evidence logging
-from firecrawl_demo.infrastructure.evidence import EvidenceSink
+from watercrawl.infrastructure.evidence import EvidenceSink
 
 sink = EvidenceSink()
 await sink.log_evidence(
@@ -212,7 +212,7 @@ await sink.log_evidence(
 Implement `ResearchAdapter` protocol for new data sources:
 
 ```python
-from firecrawl_demo.integrations.adapters.research import ResearchAdapter, ResearchFinding
+from watercrawl.integrations.adapters.research import ResearchAdapter, ResearchFinding
 
 class MyAdapter(ResearchAdapter):
     async def lookup(self, organisation: str, province: str) -> ResearchFinding | None:
@@ -226,7 +226,7 @@ class MyAdapter(ResearchAdapter):
         )
 
 # Register in registry
-from firecrawl_demo.integrations.adapters.research.registry import register_adapter
+from watercrawl.integrations.adapters.research.registry import register_adapter
 register_adapter("my-adapter", lambda ctx: MyAdapter())
 ```
 
@@ -235,7 +235,7 @@ register_adapter("my-adapter", lambda ctx: MyAdapter())
 Use the plugin registry for adapters, telemetry, storage, contracts:
 
 ```python
-from firecrawl_demo.integrations.integration_plugins import register_plugin
+from watercrawl.integrations.integration_plugins import register_plugin
 
 register_plugin("adapters", "my-adapter", {
     "factory": lambda: MyAdapter(),
@@ -298,7 +298,7 @@ poetry run python -m apps.automation.cli qa typecheck
 Use the secrets provider for secure configuration:
 
 ```python
-from firecrawl_demo.governance.secrets import SecretsProvider
+from watercrawl.governance.secrets import SecretsProvider
 
 provider = SecretsProvider(backend="azure")  # or "env", "aws"
 api_key = provider.get_secret("FIRECRAWL_API_KEY")
@@ -310,7 +310,7 @@ api_key = provider.get_secret("FIRECRAWL_API_KEY")
 - Use environment variables or secure vaults
 - Encrypt sensitive data at rest
 - Validate inputs to prevent injection
-- Run security scans: `poetry run bandit -r firecrawl_demo`
+- Run security scans: `poetry run bandit -r watercrawl`
 
 ## Frontier Standards
 

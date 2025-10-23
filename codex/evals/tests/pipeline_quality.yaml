@@ -1,5 +1,5 @@
 - vars:
-    file: "firecrawl_demo/pipeline.py"
+    file: "watercrawl/pipeline.py"
     test: "tests/test_pipeline.py::test_pipeline_rejects_low_confidence_updates"
   assert:
     - type: icontains
@@ -7,7 +7,7 @@
     - type: icontains
       value: "rollback"
 - vars:
-    file: "firecrawl_demo/compliance.py"
+    file: "watercrawl/compliance.py"
     test: "tests/test_compliance.py::test_validate_email_domain"
   assert:
     - type: icontains

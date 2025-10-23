@@ -188,7 +188,7 @@ This document tracks abandoned code, potential technical debt, and implementatio
 
 **Status**: ⚠️ Mixed conventions
 
-**Description**: Some examples use old import paths (e.g., `firecrawl_demo.interfaces.cli`) while code may have evolved.
+**Description**: Some examples use old import paths (e.g., `watercrawl.interfaces.cli`) while code may have evolved.
 
 **Recommendation**: Audit all code examples to ensure import paths match current codebase.
 
@@ -200,7 +200,7 @@ This document tracks abandoned code, potential technical debt, and implementatio
 
 **Description**: Environment variable names should be verified against actual code to ensure consistency.
 
-**Recommendation**: Cross-reference all environment variables with `firecrawl_demo/core/config.py`.
+**Recommendation**: Cross-reference all environment variables with `watercrawl/core/config.py`.
 
 ### 3. Terminology
 

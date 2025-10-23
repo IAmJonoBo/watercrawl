@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from firecrawl_demo.integrations.adapters.research.connectors import (
+from watercrawl.integrations.adapters.research.connectors import (
     ConnectorRequest,
     ConnectorResult,
     PressConnector,

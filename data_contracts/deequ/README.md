@@ -17,7 +17,7 @@ large-scale data validation.
 The Deequ runner executes automatically:
 
 ```python
-from firecrawl_demo.integrations.contracts import run_deequ_checks
+from watercrawl.integrations.contracts import run_deequ_checks
 
 result = run_deequ_checks(dataset_path)
 if result.success:

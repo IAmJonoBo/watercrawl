@@ -27,7 +27,7 @@ tenant-specific settings:
 * **Connector routing** – each connector (regulator, press, corporate
   filings, social) maps to a tenant-specific publisher label so that
   downstream CRMs can filter evidence sources. Update
-  `_CONNECTOR_PUBLISHERS` in `firecrawl_demo/application/pipeline.py` when
+  `_CONNECTOR_PUBLISHERS` in `watercrawl/application/pipeline.py` when
   introducing new connectors.
 * **Storage directories** – the graph uses the same per-tenant
   `data/processed/` tree as the rest of the pipeline, keeping artefacts

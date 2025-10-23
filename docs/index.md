@@ -32,8 +32,8 @@ See the [CLI documentation](cli.md) for detailed commands.
 
 The stack follows a layered architecture with core business logic, integrations, governance, and interfaces. Key components include:
 
-- `firecrawl_demo/core/`: Validation, pipeline orchestration, and models
-- `firecrawl_demo/integrations/`: Research adapters, lineage, and lakehouse
+- `watercrawl/core/`: Validation, pipeline orchestration, and models
+- `watercrawl/integrations/`: Research adapters, lineage, and lakehouse
 - `data_contracts/analytics/`: dbt project for data contracts
 - `data_contracts/great_expectations/`: Data quality suites
 

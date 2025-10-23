@@ -5,7 +5,7 @@ Codex can attach to the in-repo MCP server so agents can invoke the same validat
 ## Local server
 
 ```bash
-poetry run python -m firecrawl_demo.mcp.server
+poetry run python -m watercrawl.mcp.server
 ```
 
 This exposes JSON-RPC tools for validation, enrichment, and evidence export. Point Codex at the server by adding the following entry to `~/.codex/config.toml`:
@@ -13,7 +13,7 @@ This exposes JSON-RPC tools for validation, enrichment, and evidence export. Poi
 ```toml
 [mcp_servers.watercrawl]
 command = "poetry"
-args = ["run", "python", "-m", "firecrawl_demo.mcp.server"]
+args = ["run", "python", "-m", "watercrawl.mcp.server"]
 ```
 
 Inspect active servers inside the Codex TUI with `/mcp`. Disable the server once the session finishes to avoid unintended writes.

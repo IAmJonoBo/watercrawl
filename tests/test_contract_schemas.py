@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from firecrawl_demo.domain.contracts import (
+from watercrawl.domain.contracts import (
     CONTRACT_VERSION,
     SCHEMA_URI_BASE,
     EvidenceRecordContract,
@@ -30,7 +30,7 @@ from firecrawl_demo.domain.contracts import (
     export_contract_registry,
     export_json_schema,
 )
-from firecrawl_demo.domain.models import (
+from watercrawl.domain.models import (
     EvidenceRecord,
     PipelineReport,
     QualityIssue,

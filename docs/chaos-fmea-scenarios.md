@@ -33,7 +33,7 @@ This document defines the chaos engineering scenarios and Failure Mode & Effects
 **Injection Method**:
 ```python
 # Inject via adapter mock or network chaos
-from firecrawl_demo.integrations.adapters.research import registry
+from watercrawl.integrations.adapters.research import registry
 registry.register_adapter("chaos-adapter", ChaosAdapter(
     failure_mode="timeout",
     failure_rate=0.3
@@ -463,7 +463,7 @@ For effective chaos testing, ensure these signals are available:
 #!/usr/bin/env python3
 """Inject adapter failure chaos."""
 import random
-from firecrawl_demo.integrations.adapters.research import ResearchAdapter
+from watercrawl.integrations.adapters.research import ResearchAdapter
 
 class ChaosAdapter(ResearchAdapter):
     def __init__(self, failure_rate=0.3):

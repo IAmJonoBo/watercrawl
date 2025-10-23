@@ -394,7 +394,7 @@ poetry show --tree | grep -A 5 -B 5 problematic_package
 poetry update --only test
 
 # Run with coverage to identify untested paths
-poetry run pytest --cov=firecrawl_demo --cov-report=html
+poetry run pytest --cov=watercrawl --cov-report=html
 # Open htmlcov/index.html in browser
 
 # For async test issues

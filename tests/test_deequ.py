@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from firecrawl_demo.integrations.contracts import (
+from watercrawl.integrations.contracts import (
     DEEQU_AVAILABLE,
     DeequContractResult,
     run_deequ_checks,

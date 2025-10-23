@@ -93,7 +93,7 @@ poetry run mypy .
 ### Security & Dependencies
 
 ```bash
-poetry run bandit -r firecrawl_demo
+poetry run bandit -r watercrawl
 poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
 ```
@@ -106,7 +106,7 @@ poetry run pre-commit run --all-files
 ### Testing
 
 ```bash
-./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing
 ```
 
 `scripts/run_pytest.sh` discovers the Poetry-managed Python 3.13 interpreter (or provisions one via `uv`) so local shells never fall back to an outdated `pytest` binary on the system PATH.
@@ -132,17 +132,17 @@ The project uses **Pydantic-based data contracts** (v1.0.0) for all domain model
 poetry run pytest tests/test_contract_schemas.py -v
 
 # Export all contract schemas for documentation
-poetry run python -c "from firecrawl_demo.domain.contracts import export_all_schemas; import json; print(json.dumps(export_all_schemas(), indent=2))"
+poetry run python -c "from watercrawl.domain.contracts import export_all_schemas; import json; print(json.dumps(export_all_schemas(), indent=2))"
 
 # Export the matching Avro schema bundle when refreshing registry metadata
-poetry run python -c "from firecrawl_demo.domain.contracts import export_all_avro_schemas; import json; print(json.dumps(export_all_avro_schemas(), indent=2))"
+poetry run python -c "from watercrawl.domain.contracts import export_all_avro_schemas; import json; print(json.dumps(export_all_avro_schemas(), indent=2))"
 ```
 
 **Contract guarantees:**
 
-- All domain models have versioned Pydantic equivalents in `firecrawl_demo/domain/contracts.py`
+- All domain models have versioned Pydantic equivalents in `watercrawl/domain/contracts.py`
 - JSON Schema **and Avro** export available for integration testing, registries, and API docs
-- Backward compatibility adapters in `firecrawl_demo/domain/models.py`
+- Backward compatibility adapters in `watercrawl/domain/models.py`
 - Schema stability enforced via regression tests (JSON + Avro bundles stored under `data_contracts/registry/`)
 - Evidence sinks normalise and validate entries via `EvidenceRecordContract`
 - Plan→commit artefacts must satisfy `PlanArtifactContract`/`CommitArtifactContract` before execution
@@ -169,8 +169,8 @@ poetry run pytest tests/test_contract_schemas.py::TestSchemaExport::test_avro_sc
   sigstore verify identity \
     --cert-identity "https://github.com/IAmJonoBo/watercrawl/.github/workflows/ci.yml@refs/heads/main" \
     --cert-oidc-issuer https://token.actions.githubusercontent.com \
-    --bundle artifacts/signatures/bundles/dist/firecrawl_demo-*.whl.sigstore \
-    dist/firecrawl_demo-*.whl
+    --bundle artifacts/signatures/bundles/dist/watercrawl-*.whl.sigstore \
+    dist/watercrawl-*.whl
   ```
 
 - Scorecard runs live in `.github/workflows/scorecard.yml`. Review the latest SARIF under the repository Security tab or download the `scorecard-results` artifact from workflow runs.
@@ -212,7 +212,7 @@ Mirror CI locally before pushing:
 poetry run python -m dev.cli qa all --dry-run
 
 # Check evidence logging
-poetry run python -m firecrawl_demo.interfaces.cli validate data/sample.csv --evidence-log data/interim/evidence_log.csv
+poetry run python -m watercrawl.interfaces.cli validate data/sample.csv --evidence-log data/interim/evidence_log.csv
 ```
 
 > **Plan requirement:** When running `poetry run python -m apps.automation.cli qa all` (non dry-run), include one or more `--plan` arguments pointing at recorded `*.plan` artefacts so the cleanup step passes plan→commit enforcement. Use `--dry-run` while drafting the plan or `--force` only when `PLAN_COMMIT_ALLOW_FORCE=1`.
@@ -251,10 +251,10 @@ poetry run python -m dev.cli mcp list-sanity-issues
 
 ```bash
 # Snapshot to lakehouse
-poetry run python -m firecrawl_demo.infrastructure.lakehouse snapshot --source data/processed/enriched.csv --destination data/lakehouse/
+poetry run python -m watercrawl.infrastructure.lakehouse snapshot --source data/processed/enriched.csv --destination data/lakehouse/
 
 # Lineage capture
-poetry run python -m firecrawl_demo.infrastructure.lineage capture --run-id $(date +%s) --input data/sample.csv --output data/processed/enriched.csv
+poetry run python -m watercrawl.infrastructure.lineage capture --run-id $(date +%s) --input data/sample.csv --output data/processed/enriched.csv
 ```
 
 - The Streamlit analyst UI and the Parquet writer engine are packaged in the optional Poetry dependency group `ui`. On Python 3.14+ the PyArrow wheels are still pending, so default installs on those interpreters skip these packages; run `poetry install --with ui` from Python 3.12/3.13 when you need the UI or native Parquet snapshots. Without the group, lakehouse exports fall back to CSV with remediation guidance in the manifest.
@@ -263,15 +263,15 @@ poetry run python -m firecrawl_demo.infrastructure.lineage capture --run-id $(da
 
 ```bash
 # Restore the latest snapshot to a CSV file
-poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --output tmp/restored.csv
+poetry run python -m watercrawl.infrastructure.lakehouse restore --output tmp/restored.csv
 
 # Restore a specific Delta commit (requires --with lakehouse)
-poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3 --output tmp/restored.csv
+poetry run python -m watercrawl.infrastructure.lakehouse restore --version 3 --output tmp/restored.csv
 ```
 
 ### Drift observability
 
-- Configure drift baselines via `DRIFT_BASELINE_PATH` (JSON with `status_counts`, `province_counts`, and `total_rows`). Use `python -m firecrawl_demo.integrations.telemetry.drift` helpers or the provided notebook to generate the initial baseline from a trusted dataset.
+- Configure drift baselines via `DRIFT_BASELINE_PATH` (JSON with `status_counts`, `province_counts`, and `total_rows`). Use `python -m watercrawl.integrations.telemetry.drift` helpers or the provided notebook to generate the initial baseline from a trusted dataset.
 - Whylogs profiles are emitted to `DRIFT_WHYLOGS_OUTPUT` (default `data/observability/whylogs/`). Set `DRIFT_WHYLOGS_BASELINE` to a stored profile metadata JSON to enable automatic alerting.
 - Each pipeline run logs a whylogs-compatible profile (fallback JSON when the `whylogs` package is unavailable) and raises alerts when category ratios drift beyond `DRIFT_THRESHOLD` (default `0.15`). Alerts surface in `PipelineReport.drift_report` and increment the `drift_alerts` metric for downstream dashboards.
 - Set `DRIFT_ALERT_OUTPUT` (default `data/observability/whylogs/alerts.json`) to control where append-only JSON alert logs are written. The log captures run ID, dataset name, exceeded-threshold flag, and the underlying distribution deltas for each execution so SOC teams can stream the file into log shipping or SIEM tooling.
@@ -284,7 +284,7 @@ poetry run python -m firecrawl_demo.infrastructure.lakehouse restore --version 3
 ### Mutation testing pilot
 
 - Install the mutation tooling with `poetry install --with dev` (mutmut ships in the default development profile).
-- Execute `poetry run python -m apps.automation.cli qa mutation` to launch the pilot. The command runs mutmut against pipeline hotspots (`firecrawl_demo/application/pipeline.py`, `firecrawl_demo/integrations/research/core.py`) using the focused pytest suite (`tests/test_pipeline.py`, `tests/test_research_logic.py`).
+- Execute `poetry run python -m apps.automation.cli qa mutation` to launch the pilot. The command runs mutmut against pipeline hotspots (`watercrawl/application/pipeline.py`, `watercrawl/integrations/research/core.py`) using the focused pytest suite (`tests/test_pipeline.py`, `tests/test_research_logic.py`).
 - Artefacts are written to `artifacts/testing/mutation/` including the raw `mutmut_results_<timestamp>.txt` output and a JSON summary with the exit code, targets, and test selection. A `latest.txt` symlink is maintained for dashboards that tail the newest run.
 - Use `--dry-run` when sanity checking CI wiring; the summary file is generated without invoking mutmut so integration tests remain deterministic.
 - Configure dashboards or QA checks to enforce the desired mutation score. Mutmut returns a non-zero exit code when surviving mutants remain, allowing CI to fail until gaps are addressed.
@@ -312,7 +312,7 @@ archives run artefacts to `data/contracts/<timestamp>/` for provenance.
 The CLI seeds `CONTRACTS_CANONICAL_JSON` so dbt macros and Great Expectations
 share canonical province/status taxonomies and the 70-point evidence confidence
 threshold. When invoking dbt directly, export this environment variable with the
-JSON payload from `firecrawl_demo.integrations.contracts.shared_config` to avoid
+JSON payload from `watercrawl.integrations.contracts.shared_config` to avoid
 drift between toolchains.
 
 Every enrichment run now emits a lineage bundle under `artifacts/lineage/<run_id>/` containing OpenLineage, PROV-O, and DCAT documents together with optional lakehouse manifests. The PROV graphs call out the enrichment software agent, evidence counts, and quality metrics while DCAT entries surface reproducibility commands, contact metadata, and distribution records for the evidence log, manifests, and lineage bundle. Surface these artefacts in runbooks and attach them to incident reports so provenance checks stay reproducible.
@@ -379,7 +379,7 @@ The Rich tables highlight failing tools, durations, and remediation hints. Becau
 
 ## Secrets Provisioning
 
-The stack now resolves credentials and feature flags through `firecrawl_demo.governance.secrets`.
+The stack now resolves credentials and feature flags through `watercrawl.governance.secrets`.
 
 1. Choose a backend by setting `SECRETS_BACKEND` to `env`, `aws`, or `azure`.
 2. For local development (`env`), populate `.env` or OS environment variables as before.
@@ -550,6 +550,6 @@ manifest paths so runbooks can link provenance bundles without digging through t
 
 ## Infrastructure Plan Drift
 
-- `firecrawl_demo.infrastructure.planning.detect_plan_drift()` compares the active plan against the checked-in baseline snapshot.
+- `watercrawl.infrastructure.planning.detect_plan_drift()` compares the active plan against the checked-in baseline snapshot.
 - `tests/test_infrastructure_planning.py::test_infrastructure_plan_matches_baseline_snapshot` guards probe endpoints, the active OPA bundle path, and plan→commit automation topics from unexpected drift.
 - Update the baseline snapshot intentionally whenever probes move or policy bundles change, and note the reason in `Next_Steps.md`.

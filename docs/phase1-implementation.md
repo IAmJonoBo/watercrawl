@@ -42,7 +42,7 @@ Added two critical CI steps that block on failure:
 
 **New Files**:
 
-- `firecrawl_demo/integrations/contracts/deequ_runner.py`
+- `watercrawl/integrations/contracts/deequ_runner.py`
 - `data_contracts/deequ/README.md` (updated)
 
 **Features**:
@@ -55,7 +55,7 @@ Added two critical CI steps that block on failure:
 **Usage**:
 
 ```python
-from firecrawl_demo.integrations.contracts import run_deequ_checks
+from watercrawl.integrations.contracts import run_deequ_checks
 
 result = run_deequ_checks(dataset_path)
 if result.success:
@@ -64,7 +64,7 @@ if result.success:
 
 ### 3. Contract Coverage Tracking
 
-**New File**: `firecrawl_demo/integrations/contracts/coverage.py`
+**New File**: `watercrawl/integrations/contracts/coverage.py`
 
 **Features**:
 
@@ -88,7 +88,7 @@ if result.success:
 
 **Files Modified**:
 
-- `firecrawl_demo/interfaces/analyst_cli.py`
+- `watercrawl/interfaces/analyst_cli.py`
 - `apps/analyst/cli.py`
 
 **New Command**: `poetry run python -m apps.analyst.cli coverage`
@@ -177,7 +177,7 @@ Coverage by tool:
 ### Module Organization
 
 ```text
-firecrawl_demo/integrations/contracts/
+watercrawl/integrations/contracts/
 ├── __init__.py              # Updated with new exports
 ├── coverage.py              # NEW: Coverage tracking
 ├── deequ_runner.py          # NEW: Deterministic Deequ integration
@@ -249,7 +249,7 @@ poetry run python -m apps.analyst.cli coverage --format json --output coverage-r
 ### Programmatic Usage
 
 ```python
-from firecrawl_demo.integrations.contracts import (
+from watercrawl.integrations.contracts import (
     calculate_contract_coverage,
     run_deequ_checks,
 )

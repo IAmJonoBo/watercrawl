@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from firecrawl_demo.application.pipeline import _LookupMetrics
-from firecrawl_demo.integrations.adapters.research.connectors import ConnectorEvidence
-from firecrawl_demo.integrations.adapters.research.core import ResearchFinding
-from firecrawl_demo.integrations.adapters.research.validators import ValidationReport
+from watercrawl.application.pipeline import _LookupMetrics
+from watercrawl.integrations.adapters.research.connectors import ConnectorEvidence
+from watercrawl.integrations.adapters.research.core import ResearchFinding
+from watercrawl.integrations.adapters.research.validators import ValidationReport
 
 
 def test_lookup_metrics_tracks_connector_details() -> None:

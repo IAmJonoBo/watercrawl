@@ -36,7 +36,7 @@ def _start_streamlit(port: int) -> tuple[subprocess.Popen[str], str]:
             "-m",
             "streamlit",
             "run",
-            "firecrawl_demo/interfaces/analyst_ui.py",
+            "watercrawl/interfaces/analyst_ui.py",
         ],
         cwd=REPO_ROOT,
         stdout=subprocess.PIPE,

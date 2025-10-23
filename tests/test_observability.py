@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from firecrawl_demo.integrations.observability import (
+from watercrawl.integrations.observability import (
     ObservabilityConfig,
     ObservabilityManager,
     SLOMetrics,

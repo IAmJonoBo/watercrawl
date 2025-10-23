@@ -34,7 +34,7 @@ title: Data Quality & Research Methodology
   - `notes`: Concise justification of the enrichment decision.
   - `confidence`: Integer 0–100 reflecting evidence strength.
 - Keep adapters stateless; persist caching or rate limiting externally.
-- Add new adapters under `firecrawl_demo.integrations.research` or compose them within the pipeline factory.
+- Add new adapters under `watercrawl.integrations.research` or compose them within the pipeline factory.
 
 ## Phase 1.1 — Great Expectations + dbt quality suites
 
@@ -72,7 +72,7 @@ documentation summarising rule coverage and remediation playbooks.
 Phase 1.2 extends contract coverage to spreadsheet ingest and computed fields.
 
 - ✅ **Unit-aware schema enforcement**
-  - `firecrawl_demo.core.excel.normalize_numeric_units` now uses Pint to coerce
+  - `watercrawl.core.excel.normalize_numeric_units` now uses Pint to coerce
     spreadsheet-provided fleet counts and runway lengths into canonical units,
     rejecting incompatible unit strings before they enter the pipeline.
   - Numeric enforcement applies to both CSV and Excel ingest with consistent

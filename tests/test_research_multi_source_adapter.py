@@ -4,16 +4,16 @@ from dataclasses import dataclass
 from typing import Iterable
 from unittest.mock import MagicMock
 
-from firecrawl_demo.integrations.adapters.research.connectors import (
+from watercrawl.integrations.adapters.research.connectors import (
     ConnectorObservation,
     ConnectorRequest,
     ConnectorResult,
 )
-from firecrawl_demo.integrations.adapters.research.core import ResearchFinding
-from firecrawl_demo.integrations.adapters.research.multi_source import (
+from watercrawl.integrations.adapters.research.core import ResearchFinding
+from watercrawl.integrations.adapters.research.multi_source import (
     MultiSourceResearchAdapter,
 )
-from firecrawl_demo.integrations.adapters.research.validators import ValidationReport
+from watercrawl.integrations.adapters.research.validators import ValidationReport
 
 
 @dataclass

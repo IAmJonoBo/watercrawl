@@ -37,7 +37,7 @@ description: Validation rules, enrichment heuristics, and quality gates
   - `notes`: Concise justification of the enrichment decision.
   - `confidence`: Integer 0–100 reflecting evidence strength.
 - Keep adapters stateless; persist caching or rate limiting externally.
-- Add new adapters under `firecrawl_demo.integrations.adapters.research` or compose them within the plugin registry.
+- Add new adapters under `watercrawl.integrations.adapters.research` or compose them within the plugin registry.
 
 ## Phase 1.1 — Great Expectations + dbt quality suites
 
@@ -75,7 +75,7 @@ documentation summarising rule coverage and remediation playbooks.
 Phase 1.2 extends contract coverage to spreadsheet ingest and computed fields.
 
 - ✅ **Unit-aware schema enforcement**
-  - `firecrawl_demo.core.excel.normalize_numeric_units` now uses Pint to coerce
+  - `watercrawl.core.excel.normalize_numeric_units` now uses Pint to coerce
     spreadsheet-provided fleet counts and runway lengths into canonical units,
     rejecting incompatible unit strings before they enter the pipeline.
   - Numeric enforcement applies to both CSV and Excel ingest with consistent
@@ -100,7 +100,7 @@ CI enforcement active, and coverage tracking in place.
 Phase 1.3 introduces Deequ integration and enforces contracts as CI gates.
 
 - ✅ **Deterministic Deequ integration**
-  - `firecrawl_demo.integrations.contracts.deequ_runner` now executes
+  - `watercrawl.integrations.contracts.deequ_runner` now executes
     Deequ-inspired checks even when PySpark is unavailable. The runner enforces
     HTTPS requirements, duplicate detection, verified-contact completeness, and
     canonical confidence thresholds using pandas, while still surfacing
@@ -123,7 +123,7 @@ of curated tables are covered.
 ## Contract registry & schema artefacts
 
 The contract registry centralises schema metadata for every public contract. The
-runtime helper `firecrawl_demo.integrations.integration_plugins.contract_registry()`
+runtime helper `watercrawl.integrations.integration_plugins.contract_registry()`
 returns a dictionary keyed by contract name with semantic versions, schema URIs,
 and both JSON Schema and Avro serialisations. The bundles that power the CLI and
 MCP surfaces are published under `data_contracts/registry/` for direct

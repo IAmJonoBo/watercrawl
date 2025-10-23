@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from firecrawl_demo.core import config
-from firecrawl_demo.infrastructure import planning
+from watercrawl.core import config
+from watercrawl.infrastructure import planning
 
 
 @dataclass

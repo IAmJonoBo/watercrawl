@@ -4,13 +4,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from firecrawl_demo.core import config
-from firecrawl_demo.core.normalization import (
+from watercrawl.core import config
+from watercrawl.core.normalization import (
     ColumnNormalizationRegistry,
     build_default_registry,
 )
-from firecrawl_demo.core.profiles import ColumnDescriptor
-from firecrawl_demo.domain.compliance import normalize_phone, validate_email
+from watercrawl.core.profiles import ColumnDescriptor
+from watercrawl.domain.compliance import normalize_phone, validate_email
 
 
 @pytest.fixture()
@@ -135,7 +135,7 @@ def test_read_dataset_applies_registry(
     )
     monkeypatch.setattr(config, "INTERIM_DIR", tmp_path, raising=False)
 
-    from firecrawl_demo.core.excel import read_dataset
+    from watercrawl.core.excel import read_dataset
 
     normalized = read_dataset(csv_path, registry=registry)
 

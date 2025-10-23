@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from firecrawl_demo.integrations.telemetry.drift import (
+from watercrawl.integrations.telemetry.drift import (
     DriftBaseline,
     DriftReport,
     WhylogsAlert,

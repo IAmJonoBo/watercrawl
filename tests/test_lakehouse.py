@@ -6,8 +6,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from firecrawl_demo.core.excel import EXPECTED_COLUMNS
-from firecrawl_demo.integrations.storage.lakehouse import (
+from watercrawl.core.excel import EXPECTED_COLUMNS
+from watercrawl.integrations.storage.lakehouse import (
     LakehouseConfig,
     LocalLakehouseWriter,
     restore_snapshot,

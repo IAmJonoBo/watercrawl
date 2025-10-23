@@ -6,13 +6,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from firecrawl_demo.core.excel import EXPECTED_COLUMNS
-from firecrawl_demo.integrations.storage import versioning as versioning_module
-from firecrawl_demo.integrations.storage.lakehouse import (
+from watercrawl.core.excel import EXPECTED_COLUMNS
+from watercrawl.integrations.storage import versioning as versioning_module
+from watercrawl.integrations.storage.lakehouse import (
     LakehouseConfig,
     LocalLakehouseWriter,
 )
-from firecrawl_demo.integrations.storage.versioning import (
+from watercrawl.integrations.storage.versioning import (
     VersioningManager,
     fingerprint_dataframe,
 )

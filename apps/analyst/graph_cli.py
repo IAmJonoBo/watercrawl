@@ -12,8 +12,8 @@ import networkx as nx
 from rich.console import Console
 from rich.table import Table
 
-from firecrawl_demo.core import config
-from firecrawl_demo.domain import relationships
+from watercrawl.core import config
+from watercrawl.domain import relationships
 
 _DEFAULT_THROTTLE = 0.2
 

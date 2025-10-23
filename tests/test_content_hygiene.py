@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from firecrawl_demo.integrations.content_hygiene import (
+from watercrawl.integrations.content_hygiene import (
     ContentCleaner,
     Deduplicator,
     HygieneConfig,

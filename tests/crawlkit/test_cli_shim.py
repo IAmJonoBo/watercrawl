@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
-from firecrawl_demo.core import config
+from watercrawl.core import config
 
 
 def _set_flags(
@@ -29,13 +29,13 @@ def _set_flags(
 
 @pytest.fixture(autouse=True)
 def _reload_cli_module():
-    module = importlib.import_module("firecrawl_demo.interfaces.cli")
+    module = importlib.import_module("watercrawl.interfaces.cli")
     importlib.reload(module)
     yield
 
 
 def test_fetch_markdown_uses_crawlkit_when_flag_enabled(monkeypatch):
-    import firecrawl_demo.interfaces.cli as shim
+    import watercrawl.interfaces.cli as shim
 
     _set_flags(monkeypatch, enable_crawlkit=True, enable_firecrawl_sdk=False)
 
@@ -56,7 +56,7 @@ def test_fetch_markdown_uses_crawlkit_when_flag_enabled(monkeypatch):
 
 
 def test_fetch_markdown_requires_feature_flag(monkeypatch):
-    import firecrawl_demo.interfaces.cli as shim
+    import watercrawl.interfaces.cli as shim
 
     _set_flags(monkeypatch, enable_crawlkit=False, enable_firecrawl_sdk=False)
 
@@ -65,7 +65,7 @@ def test_fetch_markdown_requires_feature_flag(monkeypatch):
 
 
 def test_fetch_markdown_uses_legacy_when_sdk_enabled(monkeypatch):
-    import firecrawl_demo.interfaces.cli as shim
+    import watercrawl.interfaces.cli as shim
 
     _set_flags(monkeypatch, enable_crawlkit=False, enable_firecrawl_sdk=True)
 
@@ -87,7 +87,7 @@ def test_fetch_markdown_uses_legacy_when_sdk_enabled(monkeypatch):
 
 
 def test_build_router_prefers_crawlkit(monkeypatch):
-    import firecrawl_demo.interfaces.cli as shim
+    import watercrawl.interfaces.cli as shim
 
     _set_flags(monkeypatch, enable_crawlkit=True, enable_firecrawl_sdk=False)
 
@@ -98,7 +98,7 @@ def test_build_router_prefers_crawlkit(monkeypatch):
 
 
 def test_build_router_uses_legacy_when_only_sdk_enabled(monkeypatch):
-    import firecrawl_demo.interfaces.cli as shim
+    import watercrawl.interfaces.cli as shim
 
     _set_flags(monkeypatch, enable_crawlkit=False, enable_firecrawl_sdk=True)
 
