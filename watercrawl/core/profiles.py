@@ -30,6 +30,16 @@ def _coerce_string_iterable(value: Any, field_name: str) -> tuple[str, ...]:
     raise ProfileError(f"{field_name} must be iterable")
 
 
+def _dedupe_strings(values: Iterable[str]) -> tuple[str, ...]:
+    """Return a tuple with duplicates removed while preserving order."""
+
+    seen: list[str] = []
+    for value in values:
+        if value and value not in seen:
+            seen.append(value)
+    return tuple(seen)
+
+
 class ProfileError(RuntimeError):
     """Raised when a refinement profile fails validation."""
 
@@ -54,6 +64,7 @@ class ColumnDescriptor:
     allowed_values: tuple[str, ...] = ()
     format_hints: Mapping[str, Any] = field(default_factory=dict)
     synonyms: tuple[str, ...] = ()
+    alternate_labels: tuple[str, ...] = ()
     detection_hooks: tuple[str, ...] = ()
 
     def candidate_labels(self) -> tuple[str, ...]:
@@ -68,6 +79,8 @@ class ColumnDescriptor:
         _append_unique(self.name)
         for synonym in self.synonyms:
             _append_unique(synonym)
+        for label in self.alternate_labels:
+            _append_unique(label)
 
         aliases = self.format_hints.get("aliases", ())
         if isinstance(aliases, (str, bytes)):
@@ -208,19 +221,14 @@ def _load_column_descriptor(payload: Mapping[str, Any]) -> ColumnDescriptor:
     if hints_raw and not isinstance(hints_raw, Mapping):
         raise ProfileError("dataset.columns.format_hints must be a mapping if provided")
     format_hints = {str(key): value for key, value in dict(hints_raw).items()}
-    synonyms_payload: list[str] = []
-    synonyms_payload.extend(
+    synonyms = _dedupe_strings(
         _coerce_string_iterable(payload.get("synonyms"), "dataset.columns.synonyms")
     )
-    synonyms_payload.extend(
+    alternate_labels = _dedupe_strings(
         _coerce_string_iterable(
             payload.get("alternate_labels"), "dataset.columns.alternate_labels"
         )
     )
-    seen_synonyms: list[str] = []
-    for synonym in synonyms_payload:
-        if synonym and synonym not in seen_synonyms:
-            seen_synonyms.append(synonym)
     detection_hooks = _coerce_string_iterable(
         payload.get("detection_hooks"), "dataset.columns.detection_hooks"
     )
@@ -230,7 +238,8 @@ def _load_column_descriptor(payload: Mapping[str, Any]) -> ColumnDescriptor:
         required=required,
         allowed_values=allowed_values,
         format_hints=format_hints,
-        synonyms=tuple(seen_synonyms),
+        synonyms=synonyms,
+        alternate_labels=alternate_labels,
         detection_hooks=detection_hooks,
     )
 

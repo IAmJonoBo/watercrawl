@@ -20,7 +20,8 @@ def test_inference_scores_synonyms_and_ontologies() -> None:
     descriptors = (
         ColumnDescriptor(
             name="Name of Organisation",
-            synonyms=("Organisation Name", "School Name"),
+            synonyms=("Organisation Name",),
+            alternate_labels=("Org Name", "School Name"),
         ),
         ColumnDescriptor(
             name="Province",
@@ -50,6 +51,12 @@ def test_inference_scores_synonyms_and_ontologies() -> None:
     assert result.rename_map["Org Name"] == "Name of Organisation"
     assert result.rename_map["Region"] == "Province"
     assert result.rename_map["Website"] == "Website URL"
+
+    name_match = next(
+        match for match in result.matches if match.canonical == "Name of Organisation"
+    )
+    assert name_match.matched_label == "Org Name"
+    assert any("synonym" in reason.lower() for reason in name_match.reasons)
 
     province_match = next(
         match for match in result.matches if match.canonical == "Province"
