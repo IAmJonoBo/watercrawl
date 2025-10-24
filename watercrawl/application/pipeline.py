@@ -1263,9 +1263,7 @@ class Pipeline(PipelineService):
             if isinstance(input_path, Path):
                 input_uri = input_path.resolve().as_uri()
             else:
-                input_uri = ",".join(
-                    str(candidate.resolve()) for candidate in input_path
-                )
+                input_uri = [candidate.resolve().as_uri() for candidate in input_path]
             output_uri = output_path.resolve().as_uri() if output_path else None
             active_context = replace(
                 active_context,
