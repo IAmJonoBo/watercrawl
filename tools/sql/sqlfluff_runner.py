@@ -62,14 +62,6 @@ def run_sqlfluff(
         )
         return 0
 
-    if duckdb is None:
-        print(
-            "Skipping SQLFluff lint: duckdb is not installed. "
-            "Install the optional lakehouse extras or run from an environment "
-            "with duckdb wheels to enable SQL checks."
-        )
-        return 0
-
     materialised_path = ensure_duckdb(project_dir, duckdb_path)
     env = os.environ.copy()
     env.setdefault("DBT_DUCKDB_PATH", materialised_path.as_posix())
