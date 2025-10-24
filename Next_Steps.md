@@ -48,6 +48,16 @@
       - Validated discovery via `env PATH="/tmp/uv-only:${CLEAN_PATH}" ./scripts/run_pytest.sh --maxfail=1 --disable-warnings`; run halts on pre-existing `ModuleNotFoundError: pint`.
       - Next: Package pint (and other optional pipeline deps) into the fallback flow or document required extras for CI smoke runs.
 
+- [ ] 2025-10-31 — Package typing markers for crawlkit/watercrawl (agent) — _Owner: Platform · Due: 2025-11-07_:
+      - Baseline QA before edits (poetry venv freshly created during runs):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ❌ (pytest coverage plugin flags `--cov` as unknown; pytest-cov absent in env)【0e0ca1†L1-L4】
+        - `poetry run ruff check .` ❌ (29 existing lint errors across scripts/tests/core modules)【611973†L1-L118】
+        - `poetry run mypy .` ❌ (124 existing typing issues; numerous missing stubs/imports)【25d7f2†L1-L15】
+        - `poetry run bandit -r .` ❌ (`bandit` CLI missing from environment)【870c32†L1-L2】
+      - Added empty `py.typed` markers under `crawlkit/` and `watercrawl/`; updated `pyproject.toml` `include` list to ship markers in both sdist and wheel.
+      - Validated `poetry build` ✅ and confirmed markers present via `tar -tzf dist/crawlkit-0.1.0.tar.gz` and zip inspection.【7f3ab0†L1-L4】【8dfeda†L1-L3】【430f13†L1-L2】
+      - Next: Broader QA debts remain (lint/type/security) — coordinate with owners before enabling stricter gates; consider auto-installing pytest-cov or adjusting coverage flags.
+
 - [ ] 2025-10-31 — CI coverage invocation update (agent) — _Owner: Platform · Due: 2025-11-07_:
       - Baseline QA prior to edits:
         - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ❌ (pytest-cov plugin missing).

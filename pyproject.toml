@@ -6,6 +6,10 @@ authors = ["ACES Aerodynamics Analyst <info@acesaero.co.za>"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "crawlkit" }, { include = "watercrawl" }]
+include = [
+  "crawlkit/py.typed",
+  "watercrawl/py.typed",
+]
 exclude = [
   "apps",
   "codex",
