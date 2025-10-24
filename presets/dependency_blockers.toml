@@ -221,3 +221,10 @@ targets = ["3.14", "3.15"]
 owner = "Data Engineering"
 issue = "Python version unsupported"
 notes = "Great Expectations 1.7.1 currently pins Python <3.14; defer interpreter bumps until upstream releases cp314/cp315 compatibility."
+
+[[blockers]]
+package = "ruamel-yaml-clib"
+targets = ["3.15"]
+owner = "Platform"
+issue = "Missing wheels for Python 3.15"
+notes = "YAML parsing acceleration requires cp315 wheels; mirror from internal wheelhouse once published."
