@@ -174,7 +174,7 @@ class ColumnConflictResolver:
         )
         if selected is existing and reason == "prefer_existing":
             # No actionable change beyond retaining the existing value.
-            return existing, conflict
+            return existing, None
         return selected, conflict
 
     def _apply_descriptor(
