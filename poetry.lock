@@ -8351,4 +8351,4 @@ pipeline = ["marshmallow"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.15"
-content-hash = "e58b3dd6d38a82834f07428cf54f5663db2352ab204069ca859f7e51ad79f924"
+content-hash = "4881a166da5a0dac8df1e2b661e64be9ef25865334511ee0e948950a5b2f36fc"

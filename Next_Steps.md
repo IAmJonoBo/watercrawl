@@ -71,6 +71,14 @@
         - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ❌ (`ModuleNotFoundError: httpx` when importing crawlkit fetch module; optional dependency still absent).
       - Next: Ensure CI/environment bundles required optional dependencies (httpx, playwright, etc.) or adjust test strategy so coverage run can execute without network extras.
 
+- [ ] 2025-10-31 — QA lint configuration remediation (agent) — _Owner: Platform · Due: 2025-11-07_:
+      - Context: Automation CLI lint runs failed due to `click` missing, Black targeting unsupported `py314`, isort traversing vendored stubs, and SQLFluff hard-requiring duckdb.
+      - Changes: Added explicit dev dependency on `click`, narrowed Black target versions to `py312`/`py313`, skipped `stubs/**` in isort config, and taught `tools/sql/sqlfluff_runner.py` to gracefully skip when duckdb wheels are unavailable.
+      - Validation (post-change, env freshly pinned to uv Python 3.13.0):
+        - `poetry run python -m tools.sql.sqlfluff_runner --project-dir data_contracts/analytics` ✅ (emits skip notice instead of crashing)【9e26ad†L1-L4】
+        - `poetry run python -m apps.automation.cli qa lint` ⚠️ (command executes; lint debt remains, led by existing Ruff/isort/Black violations in repo-managed sources and tests)【e0df2f†L1-L3】【23ce23†L1-L16】
+      - Next: Coordinate with code owners to remediate outstanding Ruff/Black/isort violations and close the pre-existing lint queue; revisit duckdb optional installation when wheel remediation lands.
+
 - [x] 2025-10-23 — requirements-dev hash refresh (agent) — _Owner: Platform · Due: 2025-10-23_:
   - Ran `poetry export -f requirements.txt --with dev --output requirements-dev.txt` after installing the export plugin.
   - Verified hashes by syncing a clean uv virtualenv with `uv pip sync --python .hash-env/bin/python --require-hashes requirements-dev.txt`.
