@@ -1,0 +1,8 @@
+Title: Dataset validator hygiene and relationship checks
+Summary: Modularise dataset validation to cover contact hygiene, duplicate graph semantics, and multi-contact conflicts aligned with contracts.
+Steps:
+  - Refactor watercrawl/domain/validation.py to support pluggable validators, build contact collections, and invoke new hygiene, duplicate, and multi-contact checks using config rules and relationship identifiers.
+  - Implement contact hygiene enforcement leveraging config.PHONE_E164_REGEX and EMAIL_REQUIRE_DOMAIN_MATCH, including domain parsing via compliance helpers and canonical identifiers for duplicate detection.
+  - Add duplicate and conflict detection that groups rows by organisation, flags repeated entities, reused contacts, and cross-organisation email reuse using watercrawl.domain.relationships canonical IDs.
+  - Create tests/validation/test_dataset_validator.py with pytest + Hypothesis coverage for the new validators, ensuring ValidationReport contracts serialise new issue codes without regressions.
+Rationale: Contact hygiene and relationship-aware deduplication are required QA guardrails before enrichment; modular validators keep config-driven rules maintainable and observable through contracts.

@@ -354,4 +354,17 @@ Execute in this order; each item must meet its gate before promotion.
         - Targeted tests: `poetry run pytest tests/test_core_column_inference.py` ⚠️ (skipped: pandas/yaml not available).【08e7c4†L1-L7】
         - CLI preview test: `poetry run pytest tests/test_cli.py::test_cli_validate_emits_inference_preview` ⚠️ (module skipped without pandas/yaml).【8c271e†L1-L7】
         - Targeted mypy remains blocked by repo-wide missing stubs/existing errors (see log).【73c7c0†L1-L27】【52643c†L1-L54】
+    - [ ] 2025-11-05 — Dataset validator hygiene uplift (agent) — _Owner: Platform/Data · Due: 2025-11-12_:
+      - Baseline QA before edits (fresh Poetry env):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing` ❌ (`pytest-cov` plugin unavailable; pytest rejects coverage flags).【81f1a0†L1-L5】
+        - `poetry run ruff check .` ❌ (29 pre-existing Ruff violations across repository scripts/tests/core modules).【b108e0†L1-L69】
+        - `poetry run mypy .` ❌ (130 errors stemming from missing stubs/dependencies e.g., pandas, networkx, opentelemetry).【3dbedf†L1-L30】【afe179†L1-L67】
+        - `poetry run bandit -r .` ❌ (`bandit` executable not available in environment).【afe179†L67-L68】
+        - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ❌ (`packaging` dependency missing).【81c4b1†L1-L8】
+        - `poetry run black --check .` ❌ (178 files require formatting; existing formatting debt).【42563b†L1-L6】
+        - `poetry build` ✅ (sdist and wheel produced successfully).【b6e7c9†L1-L4】
+      - Targeted QA after validator updates:
+        - `poetry run pytest tests/validation/test_dataset_validator.py` ⚠️ (skipped: Hypothesis/pandas not installed in environment).【ffd5ef†L1-L7】
+        - `poetry run ruff check watercrawl/domain/validation.py tests/validation/test_dataset_validator.py` ✅ (clean for touched files).【6958f1†L1-L1】
+      - Next: Coordinate with platform owners to provision pandas + Hypothesis for full test execution; extend automation CLI coverage once dependencies available and follow-up on repo-wide lint/type/security debt.
 
