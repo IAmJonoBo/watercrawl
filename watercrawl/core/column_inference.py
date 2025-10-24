@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Callable, Iterable, Mapping, Sequence
+import re
 
 import pandas as pd
-import re
 
 from .profiles import ColumnDescriptor
 
