@@ -620,7 +620,9 @@ def test_cli_validate_progress_path(tmp_path):
 
     with cli.override_cli_dependencies(
         Pipeline=DummyPipeline,
-        read_dataset=lambda path, **_: df,
+        read_dataset=lambda path, **kwargs: (
+            (assert "sheet_map" not in kwargs or kwargs["sheet_map"] is None), df
+        )[1],
         RichPipelineProgress=DummyProgressListener,
     ):
         runner = CliRunner()
