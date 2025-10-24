@@ -639,3 +639,16 @@ Evidence-gated note (summary)
  • Key result: Feature-parity “URL→LLM-ready Markdown→Entities” without Firecrawl; stronger compliance & provenance; native to your stack.
  • Uncertainty: Some sites’ ToS/API policies limit crawling; JS-heavy pages can still be expensive—hence heuristic rendering & resource blocking. (Mitigated by Scrapy settings + Playwright usage guidance.)  ￼
  • Safer alternative: When available, prefer official/paid APIs for sensitive domains (and keep robots allow-lists strict by default).  ￼
+
+CLOSEOUT CHECKS
+
+Act as Release-Readiness Lead. Run a Production Readiness Review for <project>. Produce and execute an evidence-backed checklist that blocks release on any critical failure. Verify, with artefacts: 
+• Quality & functionality: unit/integration/e2e pass, coverage thresholds, lint/static analysis. 
+• Reliability & performance: load/stress results, SLOs/error budgets, capacity limits, chaos/DR tests (RPO/RTO).
+• Security & privacy: threat model, secrets/least-privilege, SAST/DAST/dep scans clean, vulnerability SLAs, data protection and retention.
+• Supply chain: SBOM present and policy-compliant (SPDX/CycloneDX), reproducible/signed builds, provenance attestation (SLSA tracks).
+• Compliance & licensing: third-party licence obligations satisfied.
+• Observability & ops: metrics/logs/traces, actionable alerts, runbooks, on-call, rollback.
+• Deployment & change: IaC validated, config pinned, blue/green or canary plan, schema/data migrations, feature flags.
+• Docs & comms: release notes, user/admin docs, support handover.
+Output: a table of checks with Status (Pass/Fail/N/A), Proofs (links), and Remediations; then a concise Go/No-Go with residual risks. Align to PRR, NIST SSDF, OWASP ASVS v5, SLSA, SBOM minimum elements, and OpenSSF Scorecard. Ask only for missing facts.
