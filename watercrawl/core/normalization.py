@@ -311,6 +311,20 @@ def _coerce_numeric(value: Any) -> float | None:
 
 
 def _canonical_key(value: str) -> str:
+    """
+    Normalize a string (typically an organization name) for deduplication.
+
+    This function case-folds the input and collapses all runs of whitespace
+    into single spaces, removing leading/trailing whitespace. This ensures
+    that strings differing only in case or whitespace are treated as equal
+    during deduplication.
+
+    Args:
+        value (str): The input string to normalize.
+
+    Returns:
+        str: The normalized string.
+    """
     tokens = [chunk for chunk in value.casefold().split() if chunk]
     return " ".join(tokens)
 def build_numeric_rule_lookup(
