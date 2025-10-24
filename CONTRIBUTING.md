@@ -272,6 +272,43 @@ poetry run python -m apps.automation.cli qa tests
 poetry run python -m apps.automation.cli qa lint
 poetry run python -m apps.automation.cli qa typecheck
 
+# Production Readiness Review (before release)
+poetry run python -m apps.automation.cli qa prr
+poetry run python -m apps.automation.cli qa prr --skip-optional --output artifacts/prr/report.json
+```
+
+### Production Readiness Review (PRR)
+
+Before any production release, run the comprehensive Production Readiness Review:
+
+```bash
+poetry run python -m apps.automation.cli qa prr
+```
+
+The PRR validates release readiness across 8 categories aligned with industry standards (PRR, NIST SSDF, OWASP ASVS v5, SLSA, OpenSSF Scorecard):
+
+1. **Quality & Functionality**: Tests, coverage, lint, static analysis
+2. **Reliability & Performance**: Load/stress tests, SLOs, capacity planning, chaos/DR
+3. **Security & Privacy**: Threat model, secrets management, SAST/DAST, vulnerability SLAs, data protection
+4. **Supply Chain**: SBOM (SPDX/CycloneDX), reproducible builds, provenance attestation
+5. **Compliance & Licensing**: Third-party license obligations
+6. **Observability & Ops**: Metrics, logs, traces, alerts, runbooks, on-call/rollback
+7. **Deployment & Change**: IaC validation, config pinning, deployment strategy, migrations, feature flags
+8. **Docs & Comms**: Release notes, user/admin docs, support handover
+
+Each check returns Pass/Fail/Warn/N/A/Skip with proof and remediation guidance. The review concludes with a Go/No-Go decision:
+
+- **GO**: All critical checks pass (warnings allowed)
+- **NO-GO**: One or more critical failures block release
+
+**PRR Options:**
+
+- `--skip-optional`: Skip optional checks like load tests, SLOs, chaos engineering (faster validation)
+- `--output <path>`: Save evidence bundle to specific JSON file
+- `--no-fail-on-no-go`: Don't exit with error on NO-GO (useful for CI reporting)
+
+**Evidence Bundle**: All PRR runs save evidence to `artifacts/prr/evidence/prr_report_<timestamp>.json` for audit trails and compliance verification.
+
 ```
 
 ## Documentation Standards
