@@ -163,7 +163,7 @@ def read_dataset(
                     "source_row": (
                         int(row_index)
                         if isinstance(row_index, (int, float)) and not pd.isna(row_index)
-                        else row_index
+                        else str(row_index) if row_index is not None else None
                     ),
                     "local_index": local_index,
                 }
