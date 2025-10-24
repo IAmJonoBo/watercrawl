@@ -77,7 +77,10 @@ def _align_columns(
             if descriptor.required:
                 required_columns.add(descriptor.name)
             hints = descriptor.format_hints or {}
-            for alias in hints.get("aliases", ()):  # type: ignore[call-arg]
+            aliases = hints.get("aliases", ())
+            if not isinstance(aliases, Iterable) or isinstance(aliases, (str, bytes)):
+                aliases = ()
+            for alias in aliases:
                 alias_lookup[_column_key(str(alias))] = descriptor.name
         else:
             name = getattr(descriptor, "name", None)
