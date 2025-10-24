@@ -679,7 +679,7 @@ def test_cli_validate_emits_inference_preview(tmp_path):
         def __init__(self) -> None:
             self.validator = DummyValidator()
 
-    def _dummy_read_dataset(path: Path | list[Path], **kwargs):
+    def _dummy_read_dataset(_path: Path | list[Path], **_kwargs):
         return df
 
     with cli.override_cli_dependencies(
