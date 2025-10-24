@@ -855,7 +855,7 @@ def test_multi_source_pipeline_merges_duplicate_inputs(tmp_path: Path) -> None:
     assert report.metrics["multi_source_conflicts"] >= 1
     metadata = report.refined_dataframe.attrs.get("multi_source")
     assert metadata is not None
-    assert metadata["files"] == {str(primary_path.resolve()), str(secondary_path.resolve())}
+    assert set(metadata["files"]) == {str(primary_path.resolve()), str(secondary_path.resolve())}
     assert metadata["rows"]
     assert len(metadata["rows"][0]["sources"]) == 2
 
