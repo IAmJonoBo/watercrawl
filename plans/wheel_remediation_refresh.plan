@@ -1,0 +1,23 @@
+Plan: Refresh Python 3.14+/3.15 wheel blocker status
+Author: ChatGPT (agent)
+Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+Context:
+- Baseline QA prior to changes is red: pytest fails on missing duckdb wheel【27327f†L1-L24】, ruff surfaces 29 lint issues【ed58ef†L1-L82】, mypy reports 49 errors across 21 files including wheel tracker typing gaps【596263†L1-L24】.
+- Security scan (bandit) aborted at 3% due to long runtime; needs follow-up run post-remediation.
+
+Intended changes:
+1. Run `python -m scripts.dependency_matrix survey --config presets/dependency_targets.toml --output tools/dependency_matrix/report.json` to refresh dependency metadata with the latest wheel availability.
+2. Run `python -m scripts.dependency_matrix guard --config presets/dependency_targets.toml --blockers presets/dependency_blockers.toml --status-output tools/dependency_matrix/status.json --strict` to validate blockers and update status file.
+3. Review generated report/status and update `tools/dependency_matrix/wheel_status.json` to reflect cleared blockers, capturing new version metadata and marking `resolved: true` for all packages.
+4. Update `Next_Steps.md` Wheel remediation task and iteration log with completion details and QA follow-ups.
+5. Document follow-up actions if guard detects unexpected blockers.
+
+Quality gates before commit:
+- Re-run `python -m scripts.dependency_matrix guard --strict` after edits (already step 2) to ensure zero blockers reported.
+- Targeted diff review of `tools/dependency_matrix/*.json` and `Next_Steps.md`.
+
+Risks & Mitigations:
+- PyPI metadata fetch may fail due to TLS restrictions; fall back to cached wheelhouse data under `artifacts/cache/pip/` if needed.
+- If guard still reports blockers, coordinate with platform wheelhouse and document outstanding gaps rather than forcing clearance.
+

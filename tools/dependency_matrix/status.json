@@ -525,9 +525,23 @@
           "status": "present"
         }
       ]
+    },
+    {
+      "issue": "Missing wheels for Python 3.15",
+      "notes": "YAML parsing acceleration requires cp315 wheels; mirror from internal wheelhouse once published.",
+      "owner": "Platform",
+      "package": "ruamel-yaml-clib",
+      "targets": [
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "python": "3.15",
+          "reason": "missing-wheel",
+          "status": "present"
+        }
+      ]
     }
   ],
   "cleared": [],
-  "generated_at": "2025-10-23T10:46:53.941512+00:00",
+  "generated_at": "2025-10-24T10:03:13.836595+00:00",
   "unexpected": []
 }

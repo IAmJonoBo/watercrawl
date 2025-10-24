@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-23T10:46:04.095620+00:00",
+  "generated_at": "2025-10-24T09:59:22.126558+00:00",
   "targets": [
     {
       "issues": [
@@ -64,7 +64,7 @@
           "groups": "dev",
           "package": "psutil",
           "reason": "missing-wheel",
-          "version": "7.1.0"
+          "version": "7.1.1"
         },
         {
           "details": "No wheel compatible with Python 3.14",
@@ -232,7 +232,7 @@
           "groups": "dev",
           "package": "psutil",
           "reason": "missing-wheel",
-          "version": "7.1.0"
+          "version": "7.1.1"
         },
         {
           "details": "No wheel compatible with Python 3.15",
@@ -264,7 +264,7 @@
         },
         {
           "details": "No wheel compatible with Python 3.15",
-          "groups": "dbt,dev",
+          "groups": "main,dbt,dev",
           "package": "pyyaml",
           "reason": "missing-wheel",
           "version": "6.0.3"
@@ -281,14 +281,21 @@
           "groups": "main,dev",
           "package": "regex",
           "reason": "missing-wheel",
-          "version": "2025.9.18"
+          "version": "2025.10.23"
         },
         {
           "details": "No wheel compatible with Python 3.15",
           "groups": "contracts,dbt,dev,ui",
           "package": "rpds-py",
           "reason": "missing-wheel",
-          "version": "0.27.1"
+          "version": "0.28.0"
+        },
+        {
+          "details": "No wheel compatible with Python 3.15",
+          "groups": "contracts,dev",
+          "package": "ruamel-yaml-clib",
+          "reason": "missing-wheel",
+          "version": "0.2.14"
         },
         {
           "details": "No wheel compatible with Python 3.15",
