@@ -623,7 +623,7 @@ def test_cli_validate_progress_path(tmp_path):
         def on_complete(self, metrics: Mapping[str, int]) -> None:
             self.completions.append(metrics)
 
-    def _dummy_read_dataset(path, **kwargs):
+    def _dummy_read_dataset(_path, **kwargs):
         assert "sheet_map" not in kwargs or kwargs["sheet_map"] is None
         return df
 
