@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -14,6 +14,20 @@ _CAST_FACTORIES: dict[str, Callable[[Any], Any]] = {
     "float": float,
     "str": str,
 }
+
+
+def _coerce_string_iterable(value: Any, field_name: str) -> tuple[str, ...]:
+    """Coerce YAML payloads into a tuple of strings."""
+
+    if value is None:
+        return ()
+    if isinstance(value, Mapping):
+        raise ProfileError(f"{field_name} must be a list of strings if provided")
+    if isinstance(value, (str, bytes)):
+        return (str(value),)
+    if isinstance(value, Iterable):
+        return tuple(str(item) for item in value)
+    raise ProfileError(f"{field_name} must be iterable")
 
 
 class ProfileError(RuntimeError):
@@ -39,6 +53,30 @@ class ColumnDescriptor:
     required: bool = False
     allowed_values: tuple[str, ...] = ()
     format_hints: Mapping[str, Any] = field(default_factory=dict)
+    synonyms: tuple[str, ...] = ()
+    detection_hooks: tuple[str, ...] = ()
+
+    def candidate_labels(self) -> tuple[str, ...]:
+        """Return all column labels that should be considered synonymous."""
+
+        labels: list[str] = []
+
+        def _append_unique(value: str) -> None:
+            if value and value not in labels:
+                labels.append(value)
+
+        _append_unique(self.name)
+        for synonym in self.synonyms:
+            _append_unique(synonym)
+
+        aliases = self.format_hints.get("aliases", ())
+        if isinstance(aliases, (str, bytes)):
+            _append_unique(str(aliases))
+        elif isinstance(aliases, Iterable):
+            for alias in aliases:
+                _append_unique(str(alias))
+
+        return tuple(labels)
 
 
 @dataclass(frozen=True)
@@ -170,12 +208,30 @@ def _load_column_descriptor(payload: Mapping[str, Any]) -> ColumnDescriptor:
     if hints_raw and not isinstance(hints_raw, Mapping):
         raise ProfileError("dataset.columns.format_hints must be a mapping if provided")
     format_hints = {str(key): value for key, value in dict(hints_raw).items()}
+    synonyms_payload: list[str] = []
+    synonyms_payload.extend(
+        _coerce_string_iterable(payload.get("synonyms"), "dataset.columns.synonyms")
+    )
+    synonyms_payload.extend(
+        _coerce_string_iterable(
+            payload.get("alternate_labels"), "dataset.columns.alternate_labels"
+        )
+    )
+    seen_synonyms: list[str] = []
+    for synonym in synonyms_payload:
+        if synonym and synonym not in seen_synonyms:
+            seen_synonyms.append(synonym)
+    detection_hooks = _coerce_string_iterable(
+        payload.get("detection_hooks"), "dataset.columns.detection_hooks"
+    )
     return ColumnDescriptor(
         name=str(name),
         semantic_type=semantic_type,
         required=required,
         allowed_values=allowed_values,
         format_hints=format_hints,
+        synonyms=tuple(seen_synonyms),
+        detection_hooks=detection_hooks,
     )
 
 
