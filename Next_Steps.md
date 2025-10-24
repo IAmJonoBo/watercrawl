@@ -43,6 +43,11 @@
 
 ## Steps (iteration log)
 
+- [ ] 2025-10-31 — Pytest runner Python 3.13 fallback update (agent) — _Owner: Platform · Due: 2025-11-07_:
+      - Updated `scripts/run_pytest.sh` fallback to locate Python 3.13 interpreters and install the `${PIPELINE_EXTRA}` bundle when running via uv.
+      - Validated discovery via `env PATH="/tmp/uv-only:${CLEAN_PATH}" ./scripts/run_pytest.sh --maxfail=1 --disable-warnings`; run halts on pre-existing `ModuleNotFoundError: pint`.
+      - Next: Package pint (and other optional pipeline deps) into the fallback flow or document required extras for CI smoke runs.
+
 - [x] 2025-10-23 — requirements-dev hash refresh (agent) — _Owner: Platform · Due: 2025-10-23_:
   - Ran `poetry export -f requirements.txt --with dev --output requirements-dev.txt` after installing the export plugin.
   - Verified hashes by syncing a clean uv virtualenv with `uv pip sync --python .hash-env/bin/python --require-hashes requirements-dev.txt`.
