@@ -29,7 +29,7 @@ title: Phase 2 — Lineage & Lakehouse Implementation Plan
 - Provide environment-driven configuration: `OPENLINEAGE_URL`, `OPENLINEAGE_NAMESPACE`, `OPENLINEAGE_API_KEY`.
 - Capture evidence log paths and DVC/lakeFS commit IDs as OpenLineage `inputs`/`outputs` facets.
 - Add pytest coverage to assert that events are produced and schema-valid for the sample dataset.
-- ✅ **2025-10-17 update**: `firecrawl_demo.integrations.lineage` now emits OpenLineage start/complete events alongside PROV-O and DCAT artefacts and persists them under `artifacts/lineage/<run_id>/` with regression coverage in `tests/test_lineage.py`.
+- ✅ **2025-10-17 update**: `watercrawl.integrations.lineage` now emits OpenLineage start/complete events alongside PROV-O and DCAT artefacts and persists them under `artifacts/lineage/<run_id>/` with regression coverage in `tests/test_lineage.py`.
 - ✅ **New**: HTTP/Kafka transports can be toggled with `OPENLINEAGE_TRANSPORT`; HTTP emission respects
   `OPENLINEAGE_URL`/`OPENLINEAGE_API_KEY` while Kafka honours `OPENLINEAGE_KAFKA_TOPIC` and
   `OPENLINEAGE_KAFKA_BOOTSTRAP`. CLI enrichment output now prints the lineage artefact directory plus

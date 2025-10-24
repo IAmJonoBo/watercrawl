@@ -14,7 +14,7 @@
       "run",
       "python",
       "-m",
-      "firecrawl_demo.interfaces.cli",
+      "watercrawl.interfaces.cli",
       "enrich"
     ],
     "notes": "Invoke the enrichment CLI with the recorded run parameters to reproduce this snapshot."

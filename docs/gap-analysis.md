@@ -35,7 +35,7 @@ description: Current-state findings and improvement areas
 
 ## 2025-10-16 Audit Findings
 
-- ❗ **Secrets manager dependencies missing** — `firecrawl_demo.governance.secrets` expects `boto3` and Azure Key Vault libraries, but they are not declared in `pyproject.toml`, so the documented AWS/Azure backends cannot be activated without manual installs.
+- ❗ **Secrets manager dependencies missing** — `watercrawl.governance.secrets` expects `boto3` and Azure Key Vault libraries, but they are not declared in `pyproject.toml`, so the documented AWS/Azure backends cannot be activated without manual installs.
 - ❗ **Evidence log guidance unenforced** — `docs/data-quality.md` promises remediation notes when evidence has fewer than two sources, yet `Pipeline._merge_sources`/`_compose_evidence_notes` never add those warnings, so analysts receive silent shortfalls.
 - ❗ **Quickstart dataset absent** — README instructs running the CLI against `data/sample.csv`, but no sample file ships in `data/`, leaving newcomers without a runnable example.
 

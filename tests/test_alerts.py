@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import requests
 
-from firecrawl_demo.integrations.telemetry.alerts import send_slack_alert
-from firecrawl_demo.integrations.telemetry.drift import DriftMetric, DriftReport
+from watercrawl.integrations.telemetry.alerts import send_slack_alert
+from watercrawl.integrations.telemetry.drift import DriftMetric, DriftReport
 
 
 def _mock_report(exceeded: bool = True) -> DriftReport:

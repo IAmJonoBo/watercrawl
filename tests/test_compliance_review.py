@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from firecrawl_demo.application.compliance_review import ComplianceReview
-from firecrawl_demo.domain.models import ComplianceScheduleEntry, SchoolRecord
-from firecrawl_demo.integrations.adapters.research.core import ResearchFinding
+from watercrawl.application.compliance_review import ComplianceReview
+from watercrawl.domain.models import ComplianceScheduleEntry, SchoolRecord
+from watercrawl.integrations.adapters.research.core import ResearchFinding
 
 
 def _record(status: str = "Verified") -> SchoolRecord:

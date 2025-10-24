@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from firecrawl_demo.integrations.integration_plugins import (
+from watercrawl.integrations.integration_plugins import (
     IntegrationPlugin,
     PluginConfigSchema,
     PluginContext,
@@ -33,12 +33,12 @@ def plugin_registry_snapshot() -> Iterator[list[str]]:
     """Snapshot the plugin registry and restore it after the test."""
 
     modules_to_reload: list[str] = [
-        "firecrawl_demo.integrations.adapters.research",
-        "firecrawl_demo.integrations.storage.lakehouse",
-        "firecrawl_demo.integrations.storage.versioning",
-        "firecrawl_demo.integrations.telemetry.drift",
-        "firecrawl_demo.integrations.telemetry.graph_semantics",
-        "firecrawl_demo.integrations.telemetry.lineage",
+        "watercrawl.integrations.adapters.research",
+        "watercrawl.integrations.storage.lakehouse",
+        "watercrawl.integrations.storage.versioning",
+        "watercrawl.integrations.telemetry.drift",
+        "watercrawl.integrations.telemetry.graph_semantics",
+        "watercrawl.integrations.telemetry.lineage",
     ]
     yield modules_to_reload
     reset_registry()

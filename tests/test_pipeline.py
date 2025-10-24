@@ -11,43 +11,43 @@ from typing import Any
 import pandas as pd
 import pytest
 
-from firecrawl_demo.application.pipeline import (
+from watercrawl.application.pipeline import (
     Pipeline,
     _CircuitBreaker,
     _LookupCoordinator,
     _RowState,
 )
-from firecrawl_demo.application.progress import NullPipelineProgressListener
-from firecrawl_demo.application.quality import QualityFinding, QualityGate
-from firecrawl_demo.application.row_processing import (
+from watercrawl.application.progress import NullPipelineProgressListener
+from watercrawl.application.quality import QualityFinding, QualityGate
+from watercrawl.application.row_processing import (
     RowProcessingRequest,
     compose_quality_rejection_notes,
     describe_changes,
     process_row,
 )
-from firecrawl_demo.core import cache as cache_module
-from firecrawl_demo.core import config
-from firecrawl_demo.domain.contracts import EvidenceRecordContract
-from firecrawl_demo.domain.models import (
+from watercrawl.core import cache as cache_module
+from watercrawl.core import config
+from watercrawl.domain.contracts import EvidenceRecordContract
+from watercrawl.domain.models import (
     EvidenceRecord,
     SchoolRecord,
     evidence_record_from_contract,
 )
-from firecrawl_demo.integrations.adapters.research import (
+from watercrawl.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
     StaticResearchAdapter,
 )
-from firecrawl_demo.integrations.storage.lakehouse import (
+from watercrawl.integrations.storage.lakehouse import (
     LakehouseConfig,
     LakehouseManifest,
     LocalLakehouseWriter,
 )
-from firecrawl_demo.integrations.storage.versioning import (
+from watercrawl.integrations.storage.versioning import (
     VersionInfo,
     VersioningManager,
 )
-from firecrawl_demo.integrations.telemetry.lineage import (
+from watercrawl.integrations.telemetry.lineage import (
     LineageArtifacts,
     LineageContext,
     LineageManager,
@@ -635,7 +635,7 @@ def test_pipeline_sends_slack_alert_on_drift(tmp_path: Path, monkeypatch) -> Non
         return True
 
     monkeypatch.setattr(
-        "firecrawl_demo.application.pipeline.send_slack_alert", fake_send_slack_alert
+        "watercrawl.application.pipeline.send_slack_alert", fake_send_slack_alert
     )
 
     research_adapter = StaticResearchAdapter({})

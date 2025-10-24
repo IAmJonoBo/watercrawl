@@ -7,7 +7,7 @@ provisioned and how automation tooling is deployed across the stack.
 ## Guardrails
 
 - Keep this area documentation-first—runtime code lives under
-  `firecrawl_demo/`, `apps/`, or dedicated infrastructure repositories.
+  `watercrawl/`, `apps/`, or dedicated infrastructure repositories.
 - Record ownership and escalation paths for every artefact so operations teams
   can respond quickly.
 - Any executable added here must include usage instructions, dependencies, and

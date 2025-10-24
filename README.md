@@ -135,11 +135,11 @@ See [docs/dependency-resilience.md](docs/dependency-resilience.md) for complete 
   distillation to Markdown, entity extraction, and Celery task chaining (`crawlkit/fetch`, `crawlkit/distill`, `crawlkit/extract`,
   `crawlkit/orchestrate`).
 - **FastAPI + CLI surfaces** expose Crawlkit functionality at `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities`
-  while keeping the analyst CLI backward compatible via `firecrawl_demo.interfaces.cli`.
-- **Research adapters** combine Crawlkit, regulator, press, and directory intelligence (`firecrawl_demo.integrations.research`)
+  while keeping the analyst CLI backward compatible via `watercrawl.interfaces.cli`.
+- **Research adapters** combine Crawlkit, regulator, press, and directory intelligence (`watercrawl.integrations.research`)
   with feature flags to toggle Firecrawl or offline-only modes.
-- **Dataset validation** with detailed issue reporting (`firecrawl_demo.domain.validation`).
-- **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`firecrawl_demo.application.pipeline`).
+- **Dataset validation** with detailed issue reporting (`watercrawl.domain.validation`).
+- **Pipeline orchestrator** producing `PipelineReport` objects for UI/automation (`watercrawl.application.pipeline`).
 - **Configurable refinement profiles** living under `profiles/` to capture geography, taxonomy, evidence, and contact rules for
   any white-labeled deployment.
 - **Automated sanity checks** that normalise URLs, clear invalid contacts, surface duplicate organisations, and feed
@@ -156,8 +156,8 @@ See [docs/dependency-resilience.md](docs/dependency-resilience.md) for complete 
   lineage bundles. CLI runs now print the lineage directory plus lakehouse/version manifest paths for immediate runbook
   inclusion.
 - **Versioned lakehouse snapshots** with deterministic fingerprints and reproduce commands captured in `data/versioning/`.
-- **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`firecrawl_demo.interfaces.mcp.server`).
-- **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`firecrawl_demo.infrastructure.planning`).
+- **MCP server** exposing JSON-RPC tasks to GitHub Copilot (`watercrawl.interfaces.mcp.server`).
+- **Infrastructure planning** module that codifies crawler, observability, policy, and plan→commit guardrails (`watercrawl.infrastructure.planning`).
 - **MkDocs documentation** under `docs/` with architecture, gap analysis, and SOPs.
 
 ## Feature Flags & Environment Variables
@@ -177,7 +177,7 @@ When offline, the pipeline still records reminders in the evidence log so analys
 ```bash
 poetry run python -m scripts.cleanup --dry-run  # inspect cleanup targets
 poetry run python -m scripts.cleanup            # remove cached artefacts
-./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=firecrawl_demo --cov-report=term-missing
+./scripts/run_pytest.sh --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing
 poetry run ruff check .
 poetry run python -m tools.sql.sqlfluff_runner
 poetry run yamllint --strict -c .yamllint.yaml .
@@ -185,7 +185,7 @@ poetry run pre-commit run markdownlint-cli2 --all-files
 poetry run pre-commit run hadolint --all-files
 poetry run pre-commit run actionlint --all-files
 poetry run mypy .
-poetry run bandit -r firecrawl_demo
+poetry run bandit -r watercrawl
 poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt
 poetry run pre-commit run --all-files
 poetry run dbt build --project-dir data_contracts/analytics --profiles-dir data_contracts/analytics --target ci --select tag:contracts --vars '{"curated_source_path": "data/sample.csv"}'
@@ -221,8 +221,8 @@ The analyst CLI now accepts `--profile`/`--profile-path` switches on `validate`,
   sigstore verify identity \
     --cert-identity "https://github.com/IAmJonoBo/watercrawl/.github/workflows/ci.yml@refs/heads/main" \
     --cert-oidc-issuer https://token.actions.githubusercontent.com \
-    --bundle artifacts/signatures/bundles/dist/firecrawl_demo-*.whl.sigstore \
-    dist/firecrawl_demo-*.whl
+    --bundle artifacts/signatures/bundles/dist/watercrawl-*.whl.sigstore \
+    dist/watercrawl-*.whl
   ```
 
 - CI enforces policy-as-code verification via `scripts.verify_artifact_signatures`, blocking uploads when Sigstore bundles are missing or bound to the wrong GitHub workflow identity.
@@ -283,11 +283,11 @@ pnpm run build
 
 ## Repository layout
 
-- `firecrawl_demo/core/` — canonical business logic, validation, pipeline orchestration, and shared models.
+- `watercrawl/core/` — canonical business logic, validation, pipeline orchestration, and shared models.
 - `crawlkit/` — first-party fetch/distill/extract/orchestrate modules replacing the legacy demos.
-- `firecrawl_demo/integrations/` — contracts, research adapters, lineage, lakehouse, drift, and optional Firecrawl client bindings.
-- `firecrawl_demo/governance/` — safety, evaluation, and secrets providers isolated from crawler orchestration.
-- `firecrawl_demo/interfaces/` — CLI, analyst UI, and MCP orchestration entrypoints.
+- `watercrawl/integrations/` — contracts, research adapters, lineage, lakehouse, drift, and optional Firecrawl client bindings.
+- `watercrawl/governance/` — safety, evaluation, and secrets providers isolated from crawler orchestration.
+- `watercrawl/interfaces/` — CLI, analyst UI, and MCP orchestration entrypoints.
 - `apps/` — deployable application surfaces (`analyst` for humans, `automation` for CI orchestration).
 - `tools/` — shared automation helpers (Promptfoo configs, audit recipes, QA fixtures).
 - `platform/` — infrastructure guardrails and operational script documentation (see `scripts/` for Python modules).
@@ -302,7 +302,7 @@ Codex agents can reuse the same guardrails as analysts by running the Promptfoo 
 promptfoo eval codex/evals/promptfooconfig.yaml
 
 # Launch the in-repo MCP server for Codex sessions
-poetry run python -m firecrawl_demo.mcp.server
+poetry run python -m watercrawl.mcp.server
 ```
 
 See `codex/README.md` for the full workflow, including optional read-only context servers.

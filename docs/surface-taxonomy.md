@@ -10,10 +10,10 @@ maps to the CODEOWNERS responsibilities captured in `.github/CODEOWNERS`.
 
 | Surface | Description | CODEOWNERS |
 | --- | --- | --- |
-| `firecrawl_demo/core/` | Canonical business logic, validation, and shared models. | `@ACES-Aerodynamics/platform-team` |
-| `firecrawl_demo/integrations/` | Contracts, lineage, lakehouse, telemetry, and research adapters. | `@ACES-Aerodynamics/data-engineering` |
-| `firecrawl_demo/governance/` | Safety, evaluation, and secrets providers. | `@ACES-Aerodynamics/security` |
-| `firecrawl_demo/interfaces/` | CLI, MCP, and UI entry points. | `@ACES-Aerodynamics/automation` |
+| `watercrawl/core/` | Canonical business logic, validation, and shared models. | `@ACES-Aerodynamics/platform-team` |
+| `watercrawl/integrations/` | Contracts, lineage, lakehouse, telemetry, and research adapters. | `@ACES-Aerodynamics/data-engineering` |
+| `watercrawl/governance/` | Safety, evaluation, and secrets providers. | `@ACES-Aerodynamics/security` |
+| `watercrawl/interfaces/` | CLI, MCP, and UI entry points. | `@ACES-Aerodynamics/automation` |
 | `apps/analyst/` | Analyst-facing CLI surface used in runbooks. | `@ACES-Aerodynamics/automation` |
 | `apps/automation/` | Automation and CI helper CLI surfaces. | `@ACES-Aerodynamics/automation` |
 | `platform/infrastructure/` | Hardened deployment guardrails and operational runbooks. | `@ACES-Aerodynamics/platform-team` |

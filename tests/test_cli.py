@@ -7,16 +7,16 @@ from types import SimpleNamespace
 import pandas as pd
 from click.testing import CliRunner
 
-from firecrawl_demo.application.progress import PipelineProgressListener
-from firecrawl_demo.domain.contracts import (
+from watercrawl.application.progress import PipelineProgressListener
+from watercrawl.domain.contracts import (
     CONTRACT_VERSION,
     PipelineReportContract,
     ValidationIssueContract,
     ValidationReportContract,
 )
-from firecrawl_demo.domain.models import SchoolRecord
-from firecrawl_demo.interfaces import cli
-from firecrawl_demo.interfaces.cli import cli as cli_group
+from watercrawl.domain.models import SchoolRecord
+from watercrawl.interfaces import cli
+from watercrawl.interfaces.cli import cli as cli_group
 
 
 def _write_sample_csv(path: Path, include_email: bool = False) -> None:
@@ -197,7 +197,7 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
     commit_path = _write_commit(tmp_path)
     _write_sample_csv(input_path, include_email=True)
 
-    with caplog.at_level("INFO", logger="firecrawl_demo.plan_commit"):
+    with caplog.at_level("INFO", logger="watercrawl.plan_commit"):
         runner = CliRunner()
         result = runner.invoke(
             cli_group,

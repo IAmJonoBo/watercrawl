@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from firecrawl_demo.core import config as project_config
-from firecrawl_demo.core import presets
+from watercrawl.core import config as project_config
+from watercrawl.core import presets
 
 
 def _write_preset(monkeypatch, tmp_path: Path, name: str, payload: dict[str, object]):

@@ -35,7 +35,7 @@ def main(
 
     print(
         (
-            "\nTip: run `uvicorn firecrawl_demo.interfaces.cli:create_app --factory` to serve the"
+            "\nTip: run `uvicorn watercrawl.interfaces.cli:create_app --factory` to serve the"
             " /crawlkit/crawl, /crawlkit/markdown, and /crawlkit/entities endpoints backed by"
             " the same adapters."
         )

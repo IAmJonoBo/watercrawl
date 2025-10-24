@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import pytest
 
-from firecrawl_demo.integrations.crawl_policy import (
+from watercrawl.integrations.crawl_policy import (
     CrawlConfig,
     CrawlPolicyManager,
     create_default_policy,

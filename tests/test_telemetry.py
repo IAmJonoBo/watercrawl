@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from firecrawl_demo.interfaces.telemetry import (
+from watercrawl.interfaces.telemetry import (
     DevExMetrics,
     TelemetryCollector,
     create_default_collector,

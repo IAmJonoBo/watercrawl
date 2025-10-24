@@ -82,5 +82,5 @@ repos:
     rev: 1.8.6
     hooks:
       - id: bandit
-        args: [-r, firecrawl_demo]
+        args: [-r, watercrawl]
         pass_filenames: false

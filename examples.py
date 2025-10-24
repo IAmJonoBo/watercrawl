@@ -40,7 +40,7 @@ def main() -> None:
     demo_depth("https://example.com/docs")
     print(
         (
-            "\nTip: `uvicorn firecrawl_demo.interfaces.cli:create_app --factory` exposes /crawlkit/crawl,"
+            "\nTip: `uvicorn watercrawl.interfaces.cli:create_app --factory` exposes /crawlkit/crawl,"
             " /crawlkit/markdown, and /crawlkit/entities for automation harnesses."
         )
     )

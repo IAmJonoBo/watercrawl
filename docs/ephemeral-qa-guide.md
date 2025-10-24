@@ -130,7 +130,7 @@ Type checking with mypy automatically works because:
 ### Graceful Degradation
 
 When project dependencies aren't available:
-- The collector skips modules it can't import (e.g., `firecrawl_demo`)
+- The collector skips modules it can't import (e.g., `watercrawl`)
 - QA tools run independently without needing project code
 - Tools that aren't installed are marked as "not_installed" rather than failing
 - Partial results are still useful for triage
@@ -237,7 +237,7 @@ RUN python scripts/collect_problems.py && \
 
 ## Troubleshooting
 
-### "No module named 'firecrawl_demo'"
+### "No module named 'watercrawl'"
 
 **Expected behavior** - The collector handles this gracefully. It only needs the QA tools, not the project code.
 

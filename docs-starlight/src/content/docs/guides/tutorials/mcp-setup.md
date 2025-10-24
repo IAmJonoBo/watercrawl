@@ -395,8 +395,8 @@ poetry run python -m apps.automation.cli qa commit \
 Extend the MCP server with custom methods:
 
 ```python
-# firecrawl_demo/interfaces/mcp/custom_methods.py
-from firecrawl_demo.interfaces.mcp.server import register_method
+# watercrawl/interfaces/mcp/custom_methods.py
+from watercrawl.interfaces.mcp.server import register_method
 
 @register_method("my_custom_method")
 async def my_custom_method(params: dict) -> dict:

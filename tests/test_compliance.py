@@ -3,10 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from firecrawl_demo.core import config as project_config
-from firecrawl_demo.domain import compliance
-from firecrawl_demo.domain.models import EvidenceRecord
-from firecrawl_demo.infrastructure.evidence import CSVEvidenceSink
+from watercrawl.core import config as project_config
+from watercrawl.domain import compliance
+from watercrawl.domain.models import EvidenceRecord
+from watercrawl.infrastructure.evidence import CSVEvidenceSink
 
 
 def test_normalize_helpers_cover_edge_cases():

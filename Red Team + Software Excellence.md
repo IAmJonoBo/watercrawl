@@ -41,7 +41,7 @@ _Last updated: 2025-10-17_
 - **Architecture**: layered Python packages—`core` (validation, pipeline, compliance), `integrations` (research adapters, lakehouse, lineage, drift), `governance` (safety, secrets, RAG evaluation), `interfaces` (CLI, MCP, analyst UI).【F:docs/architecture.md†L5-L49】
 - **Data flow**: CSV/XLSX → validation → enrichment via adapter registry → compliance normalisation → evidence sink → lineage/versioning artefacts.【F:docs/architecture.md†L51-L74】
 - **Trust boundaries**: local analyst workstation ↔ evidence sink storage, optional Firecrawl SDK (external network), secrets providers (ENV/AWS/Azure), GitHub Actions CI environment, prospective lakehouse/graph backends.
-- **Critical assets**: `data/` curated datasets, `evidence_log.csv`, secrets backends, lineage manifests, policy configs (`firecrawl_demo.infrastructure.planning`).
+- **Critical assets**: `data/` curated datasets, `evidence_log.csv`, secrets backends, lineage manifests, policy configs (`watercrawl.infrastructure.planning`).
 - **AuthZ**: CLI/MCP rely on environment-level secrets; future MCP expansions must enforce plan→commit gating with audit logs.
 
 ### 3.2 Red-Team Analysis (Design → Code → Build → Deploy → Run)
@@ -165,7 +165,7 @@ _Maturity snapshot_: `{SSDF: PS/PW/RV ~1.5 → target 3; SAMM: ~1.5 → 2; ASVS:
 Use the format below for each tracked issue (examples appended in this revision):
 
 1. **Dependency wheel blockers • High • Confidence: Medium • Evidence: `tools/dependency_matrix/status.json`, `tools/dependency_matrix/wheel_status.json` show cp314/cp315 gaps for duckdb/argon2/etc. • Assets: Python supply chain** — `{SSDF:PW.6 | SLSA:L2.Dependency.1}` — Fix: coordinate with owners flagged in `presets/dependency_blockers.toml`, track escalations via `scripts.wheel_status` output, explore interim vendored wheels; residual risk: delayed interpreter upgrades.
-2. **MCP audit gaps • High • Confidence: Medium • Evidence: `firecrawl_demo/interfaces/mcp/server.py` only enforces basic tool allowlist • Assets: MCP runtime** — `{SSDF:RV.4 | SAMM:Governance 1.2 | OWASP ASVS V2}` — Fix: implement audit log + plan→commit gating; trade-off: additional storage/ops overhead.
+2. **MCP audit gaps • High • Confidence: Medium • Evidence: `watercrawl/interfaces/mcp/server.py` only enforces basic tool allowlist • Assets: MCP runtime** — `{SSDF:RV.4 | SAMM:Governance 1.2 | OWASP ASVS V2}` — Fix: implement audit log + plan→commit gating; trade-off: additional storage/ops overhead.
 3. **Accessibility blind spot • Medium • Confidence: Low • Evidence: `app/` Streamlit UI lacks WCAG testing** — `{ISO 25010:Usability | WCAG 2.2 AA}` — Fix: run axe CI, create component checklist; trade-off: design bandwidth.
 
 Log additional findings in Next_Steps as they arise.

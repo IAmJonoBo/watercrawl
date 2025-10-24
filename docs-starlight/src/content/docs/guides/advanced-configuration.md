@@ -85,7 +85,7 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root --only main
 
 # Copy application code
-COPY firecrawl_demo ./firecrawl_demo
+COPY watercrawl ./watercrawl
 COPY apps ./apps
 COPY data_contracts ./data_contracts
 
@@ -158,7 +158,7 @@ CACHE_DIR=.cache/watercrawl
 Customize caching behavior:
 
 ```python
-from firecrawl_demo.core.config import CacheConfig
+from watercrawl.core.config import CacheConfig
 
 config = CacheConfig(
     enabled=True,
@@ -282,9 +282,9 @@ functions:
 Extend Watercrawl with custom research sources:
 
 ```python
-# firecrawl_demo/integrations/adapters/custom_adapter.py
+# watercrawl/integrations/adapters/custom_adapter.py
 from typing import Dict, List, Optional
-from firecrawl_demo.interfaces.adapters import ResearchAdapter, ResearchResult
+from watercrawl.interfaces.adapters import ResearchAdapter, ResearchResult
 
 class CustomDirectoryAdapter(ResearchAdapter):
     """Custom adapter for proprietary directory service."""
@@ -321,7 +321,7 @@ class CustomDirectoryAdapter(ResearchAdapter):
 
 ```python
 # apps/analyst/cli.py
-from firecrawl_demo.integrations.adapters.custom_adapter import CustomDirectoryAdapter
+from watercrawl.integrations.adapters.custom_adapter import CustomDirectoryAdapter
 
 # Register adapter
 adapter = CustomDirectoryAdapter(
@@ -347,7 +347,7 @@ FEATURE_ENABLE_CUSTOM_DIRECTORY=1
 ```python
 # tests/test_custom_adapter.py
 import pytest
-from firecrawl_demo.integrations.adapters.custom_adapter import CustomDirectoryAdapter
+from watercrawl.integrations.adapters.custom_adapter import CustomDirectoryAdapter
 
 @pytest.fixture
 def adapter():
@@ -442,7 +442,7 @@ Control features dynamically without code changes:
 
 ```python
 # Feature flag configuration
-from firecrawl_demo.core.feature_flags import FeatureFlags
+from watercrawl.core.feature_flags import FeatureFlags
 
 flags = FeatureFlags.from_env()
 if flags.is_enabled('PRESS_RESEARCH'):

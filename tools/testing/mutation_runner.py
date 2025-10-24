@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_TARGETS = (
-    "firecrawl_demo/application/pipeline.py",
-    "firecrawl_demo/integrations/research/core.py",
+    "watercrawl/application/pipeline.py",
+    "watercrawl/integrations/research/core.py",
 )
 DEFAULT_TESTS = (
     "tests/test_pipeline.py",

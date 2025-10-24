@@ -32,7 +32,7 @@ RUN python -m pip install --no-cache-dir --timeout 60 --retries 5 "poetry==1.9.6
 WORKDIR /build
 COPY pyproject.toml poetry.lock poetry.toml ./
 COPY crawlkit ./crawlkit
-COPY firecrawl_demo ./firecrawl_demo
+COPY watercrawl ./watercrawl
 COPY scripts ./scripts
 COPY tools ./tools
 COPY data ./data
@@ -91,7 +91,7 @@ COPY --from=builder --chown=app:app /build/artifacts/cache /app/artifacts/cache
 
 # Copy application code
 COPY --chown=app:app crawlkit ./crawlkit
-COPY --chown=app:app firecrawl_demo ./firecrawl_demo
+COPY --chown=app:app watercrawl ./watercrawl
 COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app tools ./tools
 COPY --chown=app:app data ./data

@@ -106,4 +106,4 @@ entry under `numeric_units` with the canonical unit (`meter`, `count`, etc.).
 When a white-label deployment introduces extra metrics, extend
 `dataset.columns` with the new column name, pick the appropriate semantic type,
 and provide any custom hints. The registry will automatically pick up the new
-intent without modifying code in `firecrawl_demo/core/excel.py`.
+intent without modifying code in `watercrawl/core/excel.py`.

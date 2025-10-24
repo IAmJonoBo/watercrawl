@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from firecrawl_demo.application.quality import QualityGate
-from firecrawl_demo.domain.models import SchoolRecord
-from firecrawl_demo.integrations.adapters.research.core import ResearchFinding
+from watercrawl.application.quality import QualityGate
+from watercrawl.domain.models import SchoolRecord
+from watercrawl.integrations.adapters.research.core import ResearchFinding
 
 _BASE_RECORD = SchoolRecord(
     name="Aero Academy",

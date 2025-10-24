@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Package Rename and Structure Elevation
+
+- **BREAKING: Package Renamed** `firecrawl_demo` → `watercrawl`
+  - Removed all traces of "firecrawl_demo" from the codebase to better reflect the project's purpose
+  - The package name now aligns with the repository name and project identity
+  - Updated 103 Python files, 84 documentation files, and all configuration files
+  - Preserved all functionality: business logic, pipelines, integrations, and interfaces remain intact
+  - External Firecrawl SDK integration remains available via `FEATURE_ENABLE_FIRECRAWL_SDK` flag
+  - Migration path: Update all imports from `firecrawl_demo.*` to `watercrawl.*`
+
+- **Crawlkit Elevated**: Crawlkit is now the primary crawling engine
+  - `crawlkit/` provides first-party fetch, distill, extract, and orchestration modules
+  - Replaces legacy dependency on external Firecrawl service with deterministic offline-first approach
+  - Compatibility adapter (`crawlkit.adapter.firecrawl_compat`) maintains backward compatibility
+  - Architecture: `watercrawl` (core enrichment toolkit) uses `crawlkit` (crawling primitives)
+
+- **Configuration Updates**:
+  - Updated `pyproject.toml`: packages list, known_first_party, src paths, ruff config, mutmut paths
+  - Updated `Dockerfile`: COPY commands reference watercrawl instead of firecrawl_demo
+  - Updated `justfile`: security, coverage, and metrics recipes use watercrawl paths
+  - Updated `.github/CODEOWNERS`: team ownership paths now reference watercrawl/* and crawlkit/
+
 ### Added - Phase 1: Data Contracts & Evidence Enforcement
 
 - **CI Enforcement**: Added contracts command to CI workflow that blocks publish on failures
@@ -15,14 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added coverage check step to ensure ≥95% threshold is met
 
 - **Deequ Quality Checks**: Implemented deterministic Deequ enforcement with PySpark fallback
-  - `firecrawl_demo.integrations.contracts.deequ_runner` now enforces HTTPS, duplicate detection,
+  - `watercrawl.integrations.contracts.deequ_runner` now enforces HTTPS, duplicate detection,
     verified-contact completeness, and confidence thresholds even without PySpark
   - CLI and CI fail when any Deequ check fails, aligning release blockers across GX/dbt/Deequ
   - PySpark availability is still surfaced for future JVM-backed processing
   - Updated `data_contracts/deequ/README.md` with usage, fallback behaviour, and troubleshooting guidance
 
 - **Contract Coverage Tracking**: Implemented coverage tracking to ensure ≥95% of curated tables covered
-  - `firecrawl_demo.integrations.contracts.coverage` module calculates coverage metrics
+  - `watercrawl.integrations.contracts.coverage` module calculates coverage metrics
   - Tracks coverage by tool (Great Expectations, dbt, Deequ)
   - `calculate_contract_coverage()` function discovers curated tables and checks for contracts
   - `report_coverage()` generates JSON reports for automation and CI
@@ -67,12 +89,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated `firecrawl_demo.integrations.contracts.__init__.py` to export new modules
+- Updated `watercrawl.integrations.contracts.__init__.py` to export new modules
   - Added `DeequContractResult`, `run_deequ_checks`, `DEEQU_AVAILABLE` exports
   - Added `ContractCoverage`, `calculate_contract_coverage`, `report_coverage` exports
   - Added `DBT_AVAILABLE` and `GREAT_EXPECTATIONS_AVAILABLE` flags to exports
 
-- Updated `firecrawl_demo.interfaces.analyst_cli.py` to include coverage command
+- Updated `watercrawl.interfaces.analyst_cli.py` to include coverage command
   - Imported coverage tracking functions
   - Added `coverage` command with text/JSON output support
   - Command enforces 95% threshold and exits with code 1 on failure

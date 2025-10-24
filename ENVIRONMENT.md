@@ -60,7 +60,7 @@ source .venv/bin/activate  # Linux/macOS
 
 - All dependencies from `pyproject.toml` are available
 - Dev dependencies are installed with `--with dev`
-- Import paths: `firecrawl_demo`, `apps`, etc.
+- Import paths: `watercrawl`, `apps`, etc.
 
 ### 2. UV Environment (Optional)
 
@@ -217,7 +217,7 @@ cp .env.example .env
 poetry run pytest -q
 
 # With coverage
-poetry run pytest --cov=firecrawl_demo --cov-report=term-missing
+poetry run pytest --cov=watercrawl --cov-report=term-missing
 
 # Specific test file
 poetry run pytest tests/test_pipeline.py -v

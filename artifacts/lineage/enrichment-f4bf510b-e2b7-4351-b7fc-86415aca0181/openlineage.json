@@ -80,7 +80,7 @@
               "run",
               "python",
               "-m",
-              "firecrawl_demo.interfaces.cli",
+              "watercrawl.interfaces.cli",
               "enrich"
             ]
           },

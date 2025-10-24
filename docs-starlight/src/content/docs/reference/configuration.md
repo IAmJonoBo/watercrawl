@@ -329,14 +329,14 @@ Validate your configuration:
 ```bash
 # Check current configuration
 poetry run python -c "
-from firecrawl_demo.core.config import get_config
+from watercrawl.core.config import get_config
 config = get_config()
 print(config)
 "
 
 # Verify secrets backend
 poetry run python -c "
-from firecrawl_demo.governance.secrets import SecretsProvider
+from watercrawl.governance.secrets import SecretsProvider
 provider = SecretsProvider()
 print(f'Backend: {provider.backend}')
 "

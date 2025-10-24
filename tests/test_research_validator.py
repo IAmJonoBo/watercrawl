@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from firecrawl_demo.integrations.adapters.research.connectors import (
+from watercrawl.integrations.adapters.research.connectors import (
     ConnectorObservation,
     ConnectorResult,
 )
-from firecrawl_demo.integrations.adapters.research.core import ResearchFinding
-from firecrawl_demo.integrations.adapters.research.validators import (
+from watercrawl.integrations.adapters.research.core import ResearchFinding
+from watercrawl.integrations.adapters.research.validators import (
     ValidationReport,
     ValidationSeverity,
     cross_validate_findings,

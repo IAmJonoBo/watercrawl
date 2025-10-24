@@ -1,8 +1,8 @@
-"""Unit tests for firecrawl_demo.domain.models data structures and serialization."""
+"""Unit tests for watercrawl.domain.models data structures and serialization."""
 
 import pandas as pd
 
-from firecrawl_demo.domain import models
+from watercrawl.domain import models
 
 
 def test_models_import():

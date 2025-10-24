@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from firecrawl_demo.testing.chaos import (
+from watercrawl.testing.chaos import (
     GAME_DAY_SCENARIOS,
     ChaosConfig,
     ChaosOrchestrator,

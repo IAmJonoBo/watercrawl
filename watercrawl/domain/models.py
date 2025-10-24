@@ -1,0 +1,531 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, Literal
+
+from watercrawl.core import config
+
+if TYPE_CHECKING:
+    from watercrawl.domain.contracts import (
+        PipelineReportContract,
+        ValidationReportContract,
+    )
+    from watercrawl.domain.relationships import RelationshipGraphSnapshot
+    from watercrawl.integrations.storage.lakehouse import LakehouseManifest
+    from watercrawl.integrations.storage.versioning import VersionInfo
+    from watercrawl.integrations.telemetry.drift import DriftReport
+    from watercrawl.integrations.telemetry.graph_semantics import (
+        GraphSemanticsReport,
+    )
+    from watercrawl.integrations.telemetry.lineage import LineageArtifacts
+else:  # pragma: no cover - optional integrations may be unavailable at runtime
+    try:
+        from watercrawl.integrations.telemetry.graph_semantics import (
+            GraphSemanticsReport,
+        )
+    except Exception:  # pragma: no cover - fallback when telemetry module missing
+        GraphSemanticsReport = Any  # type: ignore[misc, assignment]
+    try:
+        from watercrawl.domain.relationships import RelationshipGraphSnapshot
+    except Exception:  # pragma: no cover - fallback when relationships module missing
+        RelationshipGraphSnapshot = Any  # type: ignore[misc, assignment]
+
+EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
+
+_CANONICAL_PROVINCES = {province.lower(): province for province in config.PROVINCES}
+_UNKNOWN_PROVINCE = "Unknown"
+_CANONICAL_STATUSES = {status.lower(): status for status in config.CANONICAL_STATUSES}
+_STATUS_FALLBACK = config.DEFAULT_STATUS
+
+
+def normalize_province(value: Any) -> str:
+    if value is None:
+        return _UNKNOWN_PROVINCE
+    text = str(value).strip()
+    if not text:
+        return _UNKNOWN_PROVINCE
+    return _CANONICAL_PROVINCES.get(text.lower(), _UNKNOWN_PROVINCE)
+
+
+def normalize_status(value: Any) -> str:
+    if value is None:
+        return _STATUS_FALLBACK
+    text = str(value).strip()
+    if not text:
+        return _STATUS_FALLBACK
+    return _CANONICAL_STATUSES.get(text.lower(), _STATUS_FALLBACK)
+
+
+@dataclass
+class Organisation:
+    name: str
+    province: str | None = None
+    status: str | None = None
+
+
+@dataclass(frozen=True)
+class ValidationIssue:
+    code: str
+    message: str
+    row: int | None = None
+    column: str | None = None
+
+
+@dataclass(frozen=True)
+class ValidationReport:
+    issues: list[ValidationIssue]
+    rows: int
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.issues
+
+    def to_contract(self) -> ValidationReportContract:
+        return validation_report_to_contract(self)
+
+
+@dataclass(frozen=True)
+class EvidenceRecord:
+    row_id: int
+    organisation: str
+    changes: str
+    sources: list[str]
+    notes: str
+    confidence: int
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "RowID": str(self.row_id),
+            "Organisation": self.organisation,
+            "What changed": self.changes,
+            "Sources": "; ".join(self.sources),
+            "Notes": self.notes,
+            "Timestamp": self.timestamp.isoformat(timespec="seconds"),
+            "Confidence": str(self.confidence),
+        }
+
+
+@dataclass(frozen=True)
+class QualityIssue:
+    row_id: int
+    organisation: str
+    code: str
+    severity: Literal["block", "warn"]
+    message: str
+    remediation: str | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "row_id": self.row_id,
+            "organisation": self.organisation,
+            "code": self.code,
+            "severity": self.severity,
+            "message": self.message,
+            "remediation": self.remediation or "",
+        }
+
+
+@dataclass(frozen=True)
+class SanityCheckFinding:
+    row_id: int
+    organisation: str
+    issue: str
+    remediation: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "row_id": str(self.row_id),
+            "organisation": self.organisation,
+            "issue": self.issue,
+            "remediation": self.remediation,
+        }
+
+
+@dataclass(frozen=True)
+class ComplianceScheduleEntry:
+    """Record compliance verification state for a dataset row."""
+
+    row_id: int
+    organisation: str
+    status: str
+    last_verified_at: datetime | None = None
+    next_review_due: datetime | None = None
+    mx_failure_count: int = 0
+    tasks: tuple[str, ...] = ()
+    lawful_basis: str | None = None
+    contact_purpose: str | None = None
+
+
+@dataclass
+class SchoolRecord:
+    name: str
+    province: str
+    status: str
+    website_url: str | None
+    contact_person: str | None
+    contact_number: str | None
+    contact_email: str | None
+
+    @classmethod
+    def from_dataframe_row(cls, row: Any) -> SchoolRecord:
+        return cls(
+            name=str(row.get("Name of Organisation", "")).strip(),
+            province=normalize_province(row.get("Province")),
+            status=normalize_status(row.get("Status")),
+            website_url=_clean_value(row.get("Website URL")),
+            contact_person=_clean_value(row.get("Contact Person")),
+            contact_number=_clean_value(row.get("Contact Number")),
+            contact_email=_clean_value(row.get("Contact Email Address")),
+        )
+
+    def as_dict(self) -> dict[str, str | None]:
+        return {
+            "Name of Organisation": self.name,
+            "Province": self.province,
+            "Status": self.status,
+            "Website URL": self.website_url,
+            "Contact Person": self.contact_person,
+            "Contact Number": self.contact_number,
+            "Contact Email Address": self.contact_email,
+        }
+
+
+@dataclass
+class EnrichmentResult:
+    record: SchoolRecord
+    issues: list[str] = field(default_factory=list)
+    evidence: EvidenceRecord | None = None
+
+    def apply(self, frame: Any, index: int) -> None:
+        for key, value in self.record.as_dict().items():
+            if value is not None:
+                frame.at[index, key] = value
+
+
+@dataclass(frozen=True)
+class RollbackAction:
+    row_id: int
+    organisation: str
+    columns: list[str]
+    previous_values: dict[str, str | None]
+    reason: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "row_id": self.row_id,
+            "organisation": self.organisation,
+            "columns": list(self.columns),
+            "previous_values": dict(self.previous_values),
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
+class RollbackPlan:
+    actions: list[RollbackAction]
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"actions": [action.as_dict() for action in self.actions]}
+
+
+@dataclass
+class PipelineReport:
+    refined_dataframe: Any
+    validation_report: ValidationReport
+    evidence_log: list[EvidenceRecord]
+    metrics: dict[str, float | int]
+    sanity_findings: list[SanityCheckFinding] = field(default_factory=list)
+    quality_issues: list[QualityIssue] = field(default_factory=list)
+    rollback_plan: RollbackPlan | None = None
+    lineage_artifacts: LineageArtifacts | None = None
+    lakehouse_manifest: LakehouseManifest | None = None
+    version_info: VersionInfo | None = None
+    graph_semantics: GraphSemanticsReport | None = None
+    relationship_graph: RelationshipGraphSnapshot | None = None
+    drift_report: DriftReport | None = None
+    compliance_schedule: list[ComplianceScheduleEntry] = field(default_factory=list)
+
+    @property
+    def issues(self) -> list[ValidationIssue]:
+        return self.validation_report.issues
+
+    def to_contract(self) -> PipelineReportContract:
+        return pipeline_report_to_contract(self)
+
+
+def _clean_value(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+# Adapter functions for contract migration
+def school_record_to_contract(record: SchoolRecord):
+    """Convert legacy SchoolRecord dataclass to contract model."""
+    from watercrawl.domain.contracts import SchoolRecordContract
+
+    return SchoolRecordContract(
+        name=record.name,
+        province=record.province,
+        status=record.status,
+        website_url=record.website_url,
+        contact_person=record.contact_person,
+        contact_number=record.contact_number,
+        contact_email=record.contact_email,
+    )
+
+
+def school_record_from_contract(contract):
+    """Convert contract model to legacy SchoolRecord dataclass."""
+    from watercrawl.domain.contracts import SchoolRecordContract
+
+    if not isinstance(contract, SchoolRecordContract):
+        raise TypeError(f"Expected SchoolRecordContract, got {type(contract)}")
+
+    return SchoolRecord(
+        name=contract.name,
+        province=contract.province,
+        status=contract.status,
+        website_url=contract.website_url,
+        contact_person=contract.contact_person,
+        contact_number=contract.contact_number,
+        contact_email=contract.contact_email,
+    )
+
+
+def evidence_record_to_contract(record: EvidenceRecord):
+    """Convert legacy EvidenceRecord dataclass to contract model."""
+    from watercrawl.domain.contracts import EvidenceRecordContract
+
+    return EvidenceRecordContract(
+        row_id=record.row_id,
+        organisation=record.organisation,
+        changes=record.changes,
+        sources=list(record.sources),
+        notes=record.notes,
+        confidence=record.confidence,
+        timestamp=record.timestamp,
+    )
+
+
+def compliance_schedule_entry_to_contract(entry: ComplianceScheduleEntry):
+    """Convert ComplianceScheduleEntry to its contract representation."""
+    from watercrawl.domain.contracts import ComplianceScheduleEntryContract
+
+    return ComplianceScheduleEntryContract(
+        row_id=entry.row_id,
+        organisation=entry.organisation,
+        status=entry.status,
+        last_verified_at=entry.last_verified_at,
+        next_review_due=entry.next_review_due,
+        mx_failure_count=entry.mx_failure_count,
+        tasks=list(entry.tasks),
+        lawful_basis=entry.lawful_basis,
+        contact_purpose=entry.contact_purpose,
+    )
+
+
+def evidence_record_from_contract(contract):
+    """Convert contract model to legacy EvidenceRecord dataclass."""
+    from watercrawl.domain.contracts import EvidenceRecordContract
+
+    if not isinstance(contract, EvidenceRecordContract):
+        raise TypeError(f"Expected EvidenceRecordContract, got {type(contract)}")
+
+    return EvidenceRecord(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        changes=contract.changes,
+        sources=contract.sources,
+        notes=contract.notes,
+        confidence=contract.confidence,
+        timestamp=contract.timestamp,
+    )
+
+
+def compliance_schedule_entry_from_contract(contract):
+    """Convert ComplianceScheduleEntryContract back to dataclass."""
+    from watercrawl.domain.contracts import ComplianceScheduleEntryContract
+
+    if not isinstance(contract, ComplianceScheduleEntryContract):
+        raise TypeError(
+            f"Expected ComplianceScheduleEntryContract, got {type(contract)}"
+        )
+
+    return ComplianceScheduleEntry(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        status=contract.status,
+        last_verified_at=contract.last_verified_at,
+        next_review_due=contract.next_review_due,
+        mx_failure_count=contract.mx_failure_count,
+        tasks=tuple(contract.tasks),
+        lawful_basis=contract.lawful_basis,
+        contact_purpose=contract.contact_purpose,
+    )
+
+
+def quality_issue_to_contract(issue: QualityIssue):
+    """Convert legacy QualityIssue dataclass to contract model."""
+    from watercrawl.domain.contracts import QualityIssueContract
+
+    return QualityIssueContract(
+        row_id=issue.row_id,
+        organisation=issue.organisation,
+        code=issue.code,
+        severity=issue.severity,
+        message=issue.message,
+        remediation=issue.remediation,
+    )
+
+
+def quality_issue_from_contract(contract):
+    """Convert contract model to legacy QualityIssue dataclass."""
+    from watercrawl.domain.contracts import QualityIssueContract
+
+    if not isinstance(contract, QualityIssueContract):
+        raise TypeError(f"Expected QualityIssueContract, got {type(contract)}")
+
+    return QualityIssue(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        code=contract.code,
+        severity=contract.severity,
+        message=contract.message,
+        remediation=contract.remediation,
+    )
+
+
+def validation_issue_to_contract(issue: ValidationIssue):
+    """Convert legacy ValidationIssue dataclass to contract model."""
+    from watercrawl.domain.contracts import ValidationIssueContract
+
+    return ValidationIssueContract(
+        code=issue.code,
+        message=issue.message,
+        row=issue.row,
+        column=issue.column,
+    )
+
+
+def validation_issue_from_contract(contract):
+    """Convert contract model to legacy ValidationIssue dataclass."""
+    from watercrawl.domain.contracts import ValidationIssueContract
+
+    if not isinstance(contract, ValidationIssueContract):
+        raise TypeError(f"Expected ValidationIssueContract, got {type(contract)}")
+
+    return ValidationIssue(
+        code=contract.code,
+        message=contract.message,
+        row=contract.row,
+        column=contract.column,
+    )
+
+
+def validation_report_to_contract(report: ValidationReport):
+    from watercrawl.domain.contracts import ValidationReportContract
+
+    return ValidationReportContract(
+        issues=[validation_issue_to_contract(issue) for issue in report.issues],
+        rows=report.rows,
+    )
+
+
+def validation_report_from_contract(contract):
+    from watercrawl.domain.contracts import ValidationReportContract
+
+    if not isinstance(contract, ValidationReportContract):
+        raise TypeError(f"Expected ValidationReportContract, got {type(contract)}")
+
+    return ValidationReport(
+        issues=[validation_issue_from_contract(issue) for issue in contract.issues],
+        rows=contract.rows,
+    )
+
+
+def sanity_check_finding_to_contract(finding: SanityCheckFinding):
+    from watercrawl.domain.contracts import SanityCheckFindingContract
+
+    return SanityCheckFindingContract(
+        row_id=finding.row_id,
+        organisation=finding.organisation,
+        issue=finding.issue,
+        remediation=finding.remediation,
+    )
+
+
+def sanity_check_finding_from_contract(contract):
+    from watercrawl.domain.contracts import SanityCheckFindingContract
+
+    if not isinstance(contract, SanityCheckFindingContract):
+        raise TypeError(f"Expected SanityCheckFindingContract, got {type(contract)}")
+
+    return SanityCheckFinding(
+        row_id=contract.row_id,
+        organisation=contract.organisation,
+        issue=contract.issue,
+        remediation=contract.remediation,
+    )
+
+
+def pipeline_report_to_contract(report: PipelineReport):
+    from watercrawl.domain.contracts import PipelineReportContract
+
+    normalized_metrics: dict[str, float] = {}
+    for key, value in report.metrics.items():
+        if isinstance(value, (int, float, bool)):
+            normalized_metrics[key] = float(value)
+        else:
+            raise TypeError(
+                f"Metric '{key}' must be numeric, received {type(value).__name__}"
+            )
+
+    return PipelineReportContract(
+        validation_report=validation_report_to_contract(report.validation_report),
+        evidence_log=[
+            evidence_record_to_contract(record) for record in report.evidence_log
+        ],
+        metrics=normalized_metrics,
+        sanity_findings=[
+            sanity_check_finding_to_contract(finding)
+            for finding in report.sanity_findings
+        ],
+        quality_issues=[
+            quality_issue_to_contract(issue) for issue in report.quality_issues
+        ],
+        compliance_schedule=[
+            compliance_schedule_entry_to_contract(entry)
+            for entry in report.compliance_schedule
+        ],
+    )
+
+
+def pipeline_report_from_contract(contract):
+    from watercrawl.domain.contracts import PipelineReportContract
+
+    if not isinstance(contract, PipelineReportContract):
+        raise TypeError(f"Expected PipelineReportContract, got {type(contract)}")
+
+    return PipelineReport(
+        refined_dataframe=None,
+        validation_report=validation_report_from_contract(contract.validation_report),
+        evidence_log=[
+            evidence_record_from_contract(record) for record in contract.evidence_log
+        ],
+        metrics=dict(contract.metrics),
+        sanity_findings=[
+            sanity_check_finding_from_contract(finding)
+            for finding in contract.sanity_findings
+        ],
+        quality_issues=[
+            quality_issue_from_contract(issue) for issue in contract.quality_issues
+        ],
+        compliance_schedule=[
+            compliance_schedule_entry_from_contract(entry)
+            for entry in contract.compliance_schedule
+        ],
+    )

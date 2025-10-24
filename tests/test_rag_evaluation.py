@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from firecrawl_demo.governance.rag_evaluation import (
+from watercrawl.governance.rag_evaluation import (
     RagEvaluationConfig,
     evaluate_responses,
 )

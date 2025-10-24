@@ -20,13 +20,13 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from firecrawl_demo.core import config
-from firecrawl_demo.domain.contracts import CommitArtifactContract, PlanArtifactContract
-from firecrawl_demo.integrations.contracts.shared_config import (
+from watercrawl.core import config
+from watercrawl.domain.contracts import CommitArtifactContract, PlanArtifactContract
+from watercrawl.integrations.contracts.shared_config import (
     environment_payload as contracts_environment_payload,
 )
-from firecrawl_demo.integrations.integration_plugins import contract_registry
-from firecrawl_demo.interfaces.cli_base import (
+from watercrawl.integrations.integration_plugins import contract_registry
+from watercrawl.interfaces.cli_base import (
     PlanCommitError,
     PlanCommitGuard,
     load_cli_environment,
@@ -574,7 +574,7 @@ if sys.version_info < (3, 14):
                 "bandit",
                 "-r",
                 "crawlkit",
-                "firecrawl_demo",
+                "watercrawl",
             ),
             description="Security lint the Crawlkit and legacy Firecrawl packages with Bandit.",
         ),

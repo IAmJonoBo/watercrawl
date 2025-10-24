@@ -9,7 +9,7 @@ from typing import Any, cast
 from click.testing import CliRunner
 
 from apps.automation import cli as automation_cli
-from firecrawl_demo.domain.contracts import CONTRACT_VERSION
+from watercrawl.domain.contracts import CONTRACT_VERSION
 
 
 def _write_plan(tmp_path: Path) -> Path:

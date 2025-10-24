@@ -11,7 +11,7 @@ Both entry points run through Poetry: `poetry run python -m apps.analyst.cli ...
 The repository ships a ready-to-run dataset at `data/sample.csv` so you can validate and
 enrich immediately after installing dependencies.
 
-> **Compatibility note:** `firecrawl_demo.interfaces.cli` now re-exports the analyst CLI **and** Crawlkit FastAPI builders so legacy automation and MCP tooling can adopt the `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints without importing the Crawlkit package directly.
+> **Compatibility note:** `watercrawl.interfaces.cli` now re-exports the analyst CLI **and** Crawlkit FastAPI builders so legacy automation and MCP tooling can adopt the `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints without importing the Crawlkit package directly.
 
 ## Analyst commands (`apps.analyst.cli`)
 
@@ -67,7 +67,7 @@ poetry run python -m apps.analyst.cli mcp-server
 Serve the new `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` endpoints by exporting `crawlkit.orchestrate.api.create_app` from the CLI shim. For example:
 
 ```bash
-poetry run python -m uvicorn firecrawl_demo.interfaces.cli:create_app --factory --reload
+poetry run python -m uvicorn watercrawl.interfaces.cli:create_app --factory --reload
 ```
 
 Feature flags gate access to these endpoints; ensure plan→commit artefacts exist and run the automation QA (`qa lint`, `qa typecheck`) before deploying updated adapters.
@@ -137,7 +137,7 @@ The automation CLI emits structured console tables and plan artefacts for each t
 The repository includes a Streamlit-based analyst UI for interactive review and feedback on enriched datasets.
 
 ```bash
-poetry run streamlit run firecrawl_demo/interfaces/analyst_ui.py
+poetry run streamlit run watercrawl/interfaces/analyst_ui.py
 ```
 
 Features:

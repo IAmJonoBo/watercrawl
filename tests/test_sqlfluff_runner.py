@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from firecrawl_demo.integrations.contracts.shared_config import (
+from watercrawl.integrations.contracts.shared_config import (
     environment_payload,
 )
 from tools.sql import sqlfluff_runner

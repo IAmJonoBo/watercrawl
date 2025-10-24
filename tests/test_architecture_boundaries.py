@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "firecrawl_demo"
+PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "watercrawl"
 
 
 def _import_targets(module_path: Path) -> set[str]:
@@ -28,7 +28,7 @@ def _import_targets(module_path: Path) -> set[str]:
 def test_core_and_integrations_do_not_import_interfaces(module_path: Path) -> None:
     imports = _import_targets(module_path)
     forbidden = {
-        target for target in imports if target.startswith("firecrawl_demo.interfaces")
+        target for target in imports if target.startswith("watercrawl.interfaces")
     }
     assert (
         not forbidden

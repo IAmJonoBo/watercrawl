@@ -7,7 +7,7 @@ import pytest
 
 nx = pytest.importorskip("networkx")
 
-from firecrawl_demo.domain import relationships
+from watercrawl.domain import relationships
 
 
 def _prov(source: str, connector: str | None = None) -> relationships.ProvenanceTag:

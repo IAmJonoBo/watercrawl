@@ -7,32 +7,32 @@ description: System design, layered architecture, and component relationships
 
 ## Layered Design
 
-1. **Core Utilities** (`firecrawl_demo.core`)
+1. **Core Utilities** (`watercrawl.core`)
    - Provides configuration, Excel I/O helpers, and shared constants used across the stack.
    - Normalises sheet naming, preserves canonical column order, and exposes deterministic file paths for artefact export.
-2. **Domain Layer** (`firecrawl_demo.domain`)
+2. **Domain Layer** (`watercrawl.domain`)
    - Owns canonical models (`models`), validation rules (`validation`), and compliance heuristics (`compliance`).
    - Emits structured `ValidationReport`, `EvidenceRecord`, and `QualityIssue` objects that can be consumed without referencing persistence concerns.
 3. **Crawlkit Modules** (`crawlkit`)
    - Houses polite fetchers, renderer fallbacks, Markdown distillers, entity extraction, and Celery orchestration, replacing the legacy Firecrawl demos under feature flag control.
    - FastAPI surfaces expose `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` so automation and MCP clients can reuse the same primitives as the CLI.
-4. **Application Layer** (`firecrawl_demo.application`)
+4. **Application Layer** (`watercrawl.application`)
    - Coordinates orchestration through the `pipeline`, `quality`, and `progress` modules.
    - Defines interfaces in `application.interfaces` so pipelines and evidence sinks can be swapped or decorated without touching domain logic.
    - Centralises row-level enrichment inside `application.row_processing`, which exposes a deterministic `process_row` service. All future enrichment steps must depend on this service instead of mutating DataFrames directly so change descriptions, sanity checks, and quality-gate artefacts stay consistent and testable.
-5. **Integrations** (`firecrawl_demo.integrations`)
+5. **Integrations** (`watercrawl.integrations`)
    - Adapter, telemetry, storage, and contract integrations register themselves with the shared plugin registry.
    - External systems plug into the application layer via protocols so deterministic offline adapters continue to drive the QA suite.
-6. **Infrastructure** (`firecrawl_demo.infrastructure`)
+6. **Infrastructure** (`watercrawl.infrastructure`)
    - Implements persistence for the application interfaces, including CSV/streaming evidence sinks and the infrastructure planning scaffold.
    - Keeps storage and deployment details decoupled from the pipeline so alternative sinks (e.g., Kafka, REST) can be introduced without disturbing core orchestration.
-7. **Interfaces** (`firecrawl_demo.interfaces`)
+7. **Interfaces** (`watercrawl.interfaces`)
    - CLI, analyst UI, and MCP surfaces build on the application layer to expose validated enrichment workflows to humans and GitHub Copilot.
-> **Package boundaries.** `firecrawl_demo.domain` captures business invariants, `firecrawl_demo.application` orchestrates workflows against those invariants, `firecrawl_demo.infrastructure` persists artefacts, and `firecrawl_demo.integrations` houses optional systems (lineage, lakehouse, contracts, research). Production wheels still exclude workspace directories (`codex/`, `apps/`, `platform/`, `tools/`) so deployments remain lean.
+> **Package boundaries.** `watercrawl.domain` captures business invariants, `watercrawl.application` orchestrates workflows against those invariants, `watercrawl.infrastructure` persists artefacts, and `watercrawl.integrations` houses optional systems (lineage, lakehouse, contracts, research). Production wheels still exclude workspace directories (`codex/`, `apps/`, `platform/`, `tools/`) so deployments remain lean.
 
 ## Data Contracts
 
-The `firecrawl_demo.domain.contracts` module provides **versioned Pydantic contracts** for all domain models, enabling:
+The `watercrawl.domain.contracts` module provides **versioned Pydantic contracts** for all domain models, enabling:
 
 - **JSON Schema export** for contract testing and API documentation
 - **Runtime validation** with detailed error messages
@@ -53,7 +53,7 @@ All core domain dataclasses have corresponding Pydantic contract equivalents:
 
 ### Adapter Functions
 
-Bidirectional adapters in `firecrawl_demo.domain.models` convert between legacy dataclasses and contract models:
+Bidirectional adapters in `watercrawl.domain.models` convert between legacy dataclasses and contract models:
 
 ```python
 # Convert legacy to contract
@@ -68,7 +68,7 @@ This ensures **backward compatibility** during migration while new code can use 
 ### Schema Export
 
 ```python
-from firecrawl_demo.domain.contracts import export_all_avro_schemas, export_all_schemas
+from watercrawl.domain.contracts import export_all_avro_schemas, export_all_schemas
 
 # Export JSON Schema definitions for documentation/testing
 json_schemas = export_all_schemas()
@@ -80,7 +80,7 @@ avro_schemas = export_all_avro_schemas()
 ### Contract Registry
 
 All contracts include metadata for schema registry integration and can be retrieved from the
-shared registry exposed via `firecrawl_demo.integrations.integration_plugins.contract_registry()`:
+shared registry exposed via `watercrawl.integrations.integration_plugins.contract_registry()`:
 
 - **Version**: Semantic version (e.g., "1.0.0")
 - **Schema URI**: Canonical identifier (e.g., "https://watercrawl.acesaero.co.za/schemas/v1/school-record")
@@ -115,13 +115,13 @@ flowchart LR
 ## Extensibility Points
 
 - Implement a new `ResearchAdapter` to integrate additional data sources (SACAA APIs, commercial datasets, etc.).
-- Provide an alternate `EvidenceSink` implementation in `firecrawl_demo.infrastructure.evidence` to stream audit events to Kafka, REST endpoints, or other telemetry systems.
+- Provide an alternate `EvidenceSink` implementation in `watercrawl.infrastructure.evidence` to stream audit events to Kafka, REST endpoints, or other telemetry systems.
 - Override `Pipeline.run_task` to expose additional automation actions (province-only audits, contract summaries, etc.).
 - Extend MkDocs with new ADRs to document architectural decisions as the stack evolves.
 
 ### Research Adapter Registry
 
-The `firecrawl_demo.integrations.adapters.research.registry` module centralises adapter discovery so new intelligence sources can be added without editing the pipeline.
+The `watercrawl.integrations.adapters.research.registry` module centralises adapter discovery so new intelligence sources can be added without editing the pipeline.
 
 1. Author an adapter that implements the `ResearchAdapter` protocol (expose a `lookup(organisation, province)` method returning a `ResearchFinding`).
 2. Register it during import with `register_adapter("my-adapter", my_factory)`. Factories receive an `AdapterContext` and should return a new adapter instance (or `None` when disabled).
@@ -132,7 +132,7 @@ The `firecrawl_demo.integrations.adapters.research.registry` module centralises 
 
 ### Integration Plugin Registry
 
-`firecrawl_demo.integrations.integration_plugins` provides a shared registry that groups plugins by category (`adapters`, `telemetry`, `storage`, `contracts`) and exposes discovery helpers used by the pipeline and CLIs. Built-in plugins register themselves on import and describe their required feature flags, environment variables, optional dependencies, and health probes. Third-party packages can contribute additional plugins via Python entry points or by calling `register_plugin()` during import.
+`watercrawl.integrations.integration_plugins` provides a shared registry that groups plugins by category (`adapters`, `telemetry`, `storage`, `contracts`) and exposes discovery helpers used by the pipeline and CLIs. Built-in plugins register themselves on import and describe their required feature flags, environment variables, optional dependencies, and health probes. Third-party packages can contribute additional plugins via Python entry points or by calling `register_plugin()` during import.
 
 - **Adapters**: Composite research adapter stack that honours feature flags for Firecrawl and offline triangulation.
 - **Telemetry**: Drift, graph semantics, and lineage surfaces, each with a health probe that verifies optional transports (HTTP/Kafka) or baseline prerequisites.
@@ -147,7 +147,7 @@ This registry keeps `build_research_adapter()` thin while allowing optional modu
 
 ### Infrastructure Plan Scaffold
 
-The `firecrawl_demo.infrastructure.planning` module provides an `InfrastructurePlan` dataclass that aggregates crawler, observability, policy, and plan→commit expectations into a single contract.
+The `watercrawl.infrastructure.planning` module provides an `InfrastructurePlan` dataclass that aggregates crawler, observability, policy, and plan→commit expectations into a single contract.
 
 - **CrawlerPlan** captures the frontier backend, scheduling policy, politeness delays, depth limits, trap-rule file, and user agent.
 - **ObservabilityPlan** defines probe paths, SLO thresholds, and alert routes.
@@ -158,5 +158,5 @@ Call `build_infrastructure_plan()` to obtain a frozen snapshot suitable for docu
 
 ### Lineage & Lakehouse Services
 
-- `firecrawl_demo.integrations.lineage` captures OpenLineage, PROV-O, and DCAT artefacts so provenance bundles accompany enriched datasets.
-- `firecrawl_demo.integrations.lakehouse` snapshots curated tables to Parquet with manifest metadata, forming the foundation for future Delta Lake/Iceberg and DVC/lakeFS integrations.
+- `watercrawl.integrations.lineage` captures OpenLineage, PROV-O, and DCAT artefacts so provenance bundles accompany enriched datasets.
+- `watercrawl.integrations.lakehouse` snapshots curated tables to Parquet with manifest metadata, forming the foundation for future Delta Lake/Iceberg and DVC/lakeFS integrations.

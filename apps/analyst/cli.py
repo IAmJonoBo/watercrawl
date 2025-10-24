@@ -8,9 +8,9 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from firecrawl_demo.core import config
-from firecrawl_demo.integrations.integration_plugins import contract_registry
-from firecrawl_demo.interfaces import analyst_cli
+from watercrawl.core import config
+from watercrawl.integrations.integration_plugins import contract_registry
+from watercrawl.interfaces import analyst_cli
 
 _USER_FACING_COMMANDS = {
     "validate": "Inspect a dataset and report quality issues before enrichment.",

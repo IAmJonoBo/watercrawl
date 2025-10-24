@@ -17,7 +17,7 @@ Project quick-start (what Copilot should use when running or testing locally)
   - Install workspace packages: `pnpm install --frozen-lockfile`
 
 What files to change
-- Prefer editing code under `firecrawl_demo/`, scripts in `scripts/`, CLI/automation under `apps/` and related tests under `tests/`.
+- Prefer editing code under `watercrawl/`, scripts in `scripts/`, CLI/automation under `apps/` and related tests under `tests/`.
 
 Code standards & checks (acceptance criteria)
 - New or changed code must include unit tests where appropriate and all tests must pass.

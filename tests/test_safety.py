@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from firecrawl_demo.governance.safety import (
+from watercrawl.governance.safety import (
     SafetyDecision,
     SafetyPolicy,
     evaluate_plan_commit,

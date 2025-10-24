@@ -57,7 +57,7 @@ typecheck:
 # Run security scan
 security:
     @echo "Running security scan..."
-    poetry run bandit -r crawlkit firecrawl_demo
+    poetry run bandit -r crawlkit watercrawl
 
 # Run all quality checks
 qa: lint typecheck security test
@@ -204,10 +204,10 @@ metrics:
     @poetry run pytest --collect-only -q | tail -1
     @echo ""
     @echo "Coverage:"
-    @poetry run pytest --cov=firecrawl_demo --cov-report=term | grep "^TOTAL"
+    @poetry run pytest --cov=watercrawl --cov-report=term | grep "^TOTAL"
     @echo ""
     @echo "Code size:"
-    @find firecrawl_demo -name "*.py" | xargs wc -l | tail -1
+    @find watercrawl -name "*.py" | xargs wc -l | tail -1
     @echo ""
     @echo "Test size:"
     @find tests -name "*.py" | xargs wc -l | tail -1

@@ -78,7 +78,7 @@ graph TB
 
 Watercrawl is organized into six distinct layers, each with specific responsibilities:
 
-### 1. Interfaces Layer (`firecrawl_demo.interfaces`)
+### 1. Interfaces Layer (`watercrawl.interfaces`)
 
 **Purpose**: External entry points for humans and AI agents
 
@@ -103,9 +103,9 @@ graph LR
 
 ### Crawlkit Modules (`crawlkit`)
 
-Feature-flagged Crawlkit fetch, distill, extract, and Celery orchestrators replace the legacy Firecrawl demos. Enable `FEATURE_ENABLE_CRAWLKIT` to exercise the adapters locally; set `FEATURE_ENABLE_FIRECRAWL_SDK` only when you are ready to run the optional SDK. The compatibility shim exposes `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` via FastAPI (`firecrawl_demo.interfaces.cli:create_app`) so automation clients can reuse the same surfaces.
+Feature-flagged Crawlkit fetch, distill, extract, and Celery orchestrators replace the legacy Firecrawl demos. Enable `FEATURE_ENABLE_CRAWLKIT` to exercise the adapters locally; set `FEATURE_ENABLE_FIRECRAWL_SDK` only when you are ready to run the optional SDK. The compatibility shim exposes `/crawlkit/crawl`, `/crawlkit/markdown`, and `/crawlkit/entities` via FastAPI (`watercrawl.interfaces.cli:create_app`) so automation clients can reuse the same surfaces.
 
-### 2. Application Layer (`firecrawl_demo.application`)
+### 2. Application Layer (`watercrawl.application`)
 
 **Purpose**: Orchestrate workflows and enforce business rules
 
@@ -135,7 +135,7 @@ sequenceDiagram
     E-->>P: Confirmation
 ```
 
-### 3. Domain Layer (`firecrawl_demo.domain`)
+### 3. Domain Layer (`watercrawl.domain`)
 
 **Purpose**: Core business logic and rules (framework-independent)
 
@@ -177,7 +177,7 @@ classDiagram
     Organisation "1" --> "*" EvidenceRecord
 ```
 
-### 4. Integrations Layer (`firecrawl_demo.integrations`)
+### 4. Integrations Layer (`watercrawl.integrations`)
 
 **Purpose**: Connect to external systems and optional features
 
@@ -210,7 +210,7 @@ graph TD
     style G fill:#0969da,color:#fff
 ```
 
-### 5. Infrastructure Layer (`firecrawl_demo.infrastructure`)
+### 5. Infrastructure Layer (`watercrawl.infrastructure`)
 
 **Purpose**: Implement persistence and deployment concerns
 
@@ -221,7 +221,7 @@ graph TD
 
 **Key Principle**: Infrastructure adapts to application interfaces
 
-### 6. Core Utilities (`firecrawl_demo.core`)
+### 6. Core Utilities (`watercrawl.core`)
 
 **Purpose**: Shared utilities and configuration
 
@@ -297,7 +297,7 @@ Watercrawl is designed for extension at multiple levels:
 Implement the `ResearchAdapter` protocol to add new data sources:
 
 ```python
-from firecrawl_demo.integrations.adapters.research import (
+from watercrawl.integrations.adapters.research import (
     ResearchAdapter, 
     ResearchFinding
 )
@@ -316,7 +316,7 @@ class CustomAdapter(ResearchAdapter):
         )
 
 # Register with the plugin system
-from firecrawl_demo.integrations.adapters.research.registry import register_adapter
+from watercrawl.integrations.adapters.research.registry import register_adapter
 register_adapter("custom", lambda ctx: CustomAdapter())
 ```
 
@@ -325,7 +325,7 @@ register_adapter("custom", lambda ctx: CustomAdapter())
 Implement `EvidenceSink` interface for custom logging:
 
 ```python
-from firecrawl_demo.application.interfaces import EvidenceSink, EvidenceRecord
+from watercrawl.application.interfaces import EvidenceSink, EvidenceRecord
 
 class KafkaEvidenceSink(EvidenceSink):
     async def log_evidence(self, record: EvidenceRecord) -> None:
@@ -338,7 +338,7 @@ class KafkaEvidenceSink(EvidenceSink):
 Extend domain validators for custom compliance:
 
 ```python
-from firecrawl_demo.domain.validation import DatasetValidator
+from watercrawl.domain.validation import DatasetValidator
 
 class CustomValidator(DatasetValidator):
     def validate_custom_field(self, df: pd.DataFrame) -> List[ValidationIssue]:
@@ -507,7 +507,7 @@ See [Architecture Decision Records (ADRs)](/adr/) for detailed rationales:
 
 ### Research Adapter Registry
 
-The registry (`firecrawl_demo.integrations.research.registry`) discovers adapters without editing the pipeline:
+The registry (`watercrawl.integrations.research.registry`) discovers adapters without editing the pipeline:
 
 1. Implement the `ResearchAdapter` protocol.
 2. Register the factory with `register_adapter()`.
@@ -516,9 +516,9 @@ The registry (`firecrawl_demo.integrations.research.registry`) discovers adapter
 
 ### Infrastructure Plan Scaffold
 
-`firecrawl_demo.infrastructure.planning` assembles crawler, observability, policy, and plan→commit expectations. Use `build_infrastructure_plan()` to produce a frozen snapshot for documentation, CI assertions, or MCP tooling.
+`watercrawl.infrastructure.planning` assembles crawler, observability, policy, and plan→commit expectations. Use `build_infrastructure_plan()` to produce a frozen snapshot for documentation, CI assertions, or MCP tooling.
 
 ### Lineage & Lakehouse Services
 
-- `firecrawl_demo.integrations.lineage` records OpenLineage, PROV-O, and DCAT artefacts.
-- `firecrawl_demo.integrations.lakehouse` snapshots curated tables to Parquet with manifest metadata, paving the way for Delta Lake/Iceberg or DVC/lakeFS integrations.
+- `watercrawl.integrations.lineage` records OpenLineage, PROV-O, and DCAT artefacts.
+- `watercrawl.integrations.lakehouse` snapshots curated tables to Parquet with manifest metadata, paving the way for Delta Lake/Iceberg or DVC/lakeFS integrations.

@@ -5,13 +5,13 @@ from typing import cast
 import pytest
 from structlog.typing import FilteringBoundLogger
 
-from firecrawl_demo.core import config
-from firecrawl_demo.domain.models import (
+from watercrawl.core import config
+from watercrawl.domain.models import (
     EvidenceRecord,
     evidence_record_from_contract,
     evidence_record_to_contract,
 )
-from firecrawl_demo.infrastructure.evidence import (
+from watercrawl.infrastructure.evidence import (
     CompositeEvidenceSink,
     CSVEvidenceSink,
     StreamingEvidenceSink,

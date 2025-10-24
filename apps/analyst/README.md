@@ -6,7 +6,7 @@ gates so analysts receive production-grade outputs.
 
 Guardrails:
 
-- Depend on shared primitives from `firecrawl_demo/` rather than duplicating
+- Depend on shared primitives from `watercrawl/` rather than duplicating
   logic or policy decisions.
 - Surface reproducible dataset details (manifests, lineage bundles, evidence
   logs) in any response emitted by this surface.
