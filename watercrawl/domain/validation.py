@@ -211,7 +211,7 @@ class DatasetValidator:
                     and contact.normalized_email
                 ):
                     email_domain = contact.normalized_email.split("@", 1)[-1]
-                    if not email_domain.endswith(contact.website_domain.lower()):
+                    if email_domain != contact.website_domain.lower() and not email_domain.endswith('.' + contact.website_domain.lower()):
                         issues.append(
                             ValidationIssue(
                                 code="email_domain_mismatch",
