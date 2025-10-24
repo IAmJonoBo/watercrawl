@@ -1,0 +1,37 @@
+{
+  "status": "fail",
+  "offline": false,
+  "recorded_at": "2025-10-24T00:10:46.390077+00:00",
+  "missing_caches": [
+    "pip_cache",
+    "playwright",
+    "tldextract",
+    "node_tarballs"
+  ],
+  "details": {
+    "pip": {
+      "path": "/home/runner/work/watercrawl/watercrawl/artifacts/cache/pip",
+      "ready": false,
+      "mirror_state": false
+    },
+    "playwright": {
+      "path": "/home/runner/work/watercrawl/watercrawl/artifacts/cache/playwright",
+      "ready": false,
+      "missing_browsers": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ]
+    },
+    "tldextract": {
+      "path": "/home/runner/work/watercrawl/watercrawl/artifacts/cache/tldextract/publicsuffix.org-tlds",
+      "ready": false
+    },
+    "node": {
+      "path": "/home/runner/work/watercrawl/watercrawl/artifacts/cache/node",
+      "ready": false,
+      "has_tarballs": false
+    }
+  },
+  "error": "Poetry CLI is required to validate the lockfile but was not found in PATH. Install Poetry and retry the bootstrap command."
+}

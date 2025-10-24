@@ -194,9 +194,36 @@ poetry run python apps/analyst/accessibility/axe_smoke.py
 poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap
 poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap
 poetry run python -m apps.automation.cli qa mutation --dry-run
+# Production Readiness Review (PRR) - comprehensive release checklist
+poetry run python -m apps.automation.cli qa prr
+poetry run python -m apps.automation.cli qa prr --skip-optional --output artifacts/prr/report.json
 ```
 
 > **Ephemeral Runner Support:** The automation QA commands (`qa lint`, `qa typecheck`, `qa mutation`) are resilient on ephemeral runners (GitHub Actions, Copilot sandboxes) with minimal dependencies. They bootstrap vendored tooling automatically and allow partial QA results even when the full environment isn't available. See [docs/operations.md](docs/operations.md#qa-automation-workflows) for details.
+
+### Production Readiness Review (PRR)
+
+The `qa prr` command executes comprehensive production readiness checks aligned with industry best practices:
+
+- **PRR Framework** - Evidence-backed release validation
+- **NIST SSDF** - Secure Software Development Framework
+- **OWASP ASVS v5** - Application Security Verification Standard
+- **SLSA** - Supply-chain Levels for Software Artifacts
+- **OpenSSF Scorecard** - Open source security best practices
+- **SBOM** - Software Bill of Materials (SPDX/CycloneDX)
+
+The review generates a comprehensive checklist covering:
+
+1. **Quality & Functionality**: Tests, coverage, lint, static analysis
+2. **Reliability & Performance**: Load/stress tests, SLOs, capacity, chaos/DR
+3. **Security & Privacy**: Threat model, secrets, SAST/DAST, dependency scans, data protection
+4. **Supply Chain**: SBOM, reproducible builds, provenance attestation
+5. **Compliance & Licensing**: Third-party license obligations
+6. **Observability & Ops**: Metrics, logs, traces, alerts, runbooks, on-call/rollback
+7. **Deployment & Change**: IaC, config pinning, deployment strategy, migrations, feature flags
+8. **Docs & Comms**: Release notes, user/admin docs, support handover
+
+Each check returns a status (Pass/Fail/Warn/N/A/Skip) with proof and remediation guidance. The review concludes with a Go/No-Go decision and residual risk assessment. Use `--skip-optional` to skip optional checks like load tests and chaos engineering. Evidence bundles are saved to `artifacts/prr/evidence/` for audit trails.
 
 > `requirements-dev.txt` hashes refreshed on **2025-10-23 (UTC)** via
 > `poetry export -f requirements.txt --with dev --output requirements-dev.txt`.

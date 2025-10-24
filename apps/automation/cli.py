@@ -1307,5 +1307,87 @@ def qa_problems(
     raise SystemExit(result.returncode)
 
 
+@qa.command("prr")
+@click.option(
+    "--skip-optional",
+    is_flag=True,
+    default=False,
+    help="Skip optional checks (coverage, SLOs, chaos, etc.)",
+)
+@click.option(
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output path for PRR report JSON",
+)
+@click.option(
+    "--fail-on-no-go",
+    is_flag=True,
+    default=True,
+    help="Exit with error code if Go decision is NO-GO",
+)
+def qa_prr(skip_optional: bool, output: Path | None, fail_on_no_go: bool) -> None:
+    """Run Production Readiness Review (PRR) for release validation.
+
+    Executes comprehensive production readiness checks aligned with:
+    - Production Readiness Review (PRR) framework
+    - NIST SSDF (Secure Software Development Framework)
+    - OWASP ASVS v5 (Application Security Verification Standard)
+    - SLSA (Supply-chain Levels for Software Artifacts)
+    - OpenSSF Scorecard
+    - SBOM minimum elements (SPDX/CycloneDX)
+
+    Generates evidence-backed checklist with:
+    • Quality & Functionality (tests, coverage, lint, static analysis)
+    • Reliability & Performance (load/stress, SLOs, capacity, chaos/DR)
+    • Security & Privacy (threat model, secrets, SAST/DAST, dep scans)
+    • Supply Chain (SBOM, reproducible builds, provenance)
+    • Compliance & Licensing (third-party licenses)
+    • Observability & Ops (metrics, logs, traces, alerts, runbooks)
+    • Deployment & Change (IaC, config, migrations, feature flags)
+    • Docs & Comms (release notes, user/admin docs, support handover)
+
+    Outputs a table of checks with Status (Pass/Fail/Warn/N/A), Proofs,
+    and Remediations, then a concise Go/No-Go decision with residual risks.
+    """
+    from watercrawl.governance.production_readiness import ProductionReadinessReview
+
+    console = Console()
+    console.print("\n[bold cyan]Production Readiness Review (PRR)[/bold cyan]\n")
+
+    # Initialize PRR
+    prr = ProductionReadinessReview(repo_root=REPO_ROOT, project_name="watercrawl")
+
+    # Run all checks
+    report = prr.run_all_checks(skip_optional=skip_optional)
+
+    # Save report if output specified
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(report.to_dict(), indent=2))
+        console.print(f"\n[green]PRR report saved: {output}[/green]")
+
+    # Print final decision
+    console.print("\n" + "=" * 60)
+    if report.go_decision:
+        console.print("[bold green]✓ GO - Release Approved[/bold green]")
+        if report.residual_risks:
+            console.print("\n[yellow]Residual Risks:[/yellow]")
+            for risk in report.residual_risks:
+                console.print(f"  {risk}")
+    else:
+        console.print("[bold red]✗ NO-GO - Release Blocked[/bold red]")
+        console.print("\n[red]Critical Issues:[/red]")
+        for risk in report.residual_risks:
+            if "CRITICAL" in risk:
+                console.print(f"  {risk}")
+
+    console.print("=" * 60 + "\n")
+
+    # Exit with error if NO-GO
+    if not report.go_decision and fail_on_no_go:
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
     cli()
