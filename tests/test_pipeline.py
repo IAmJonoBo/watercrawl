@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 
 from watercrawl.application.pipeline import (
+    MultiSourcePipeline,
     Pipeline,
     _CircuitBreaker,
     _LookupCoordinator,
@@ -20,6 +21,7 @@ from watercrawl.application.pipeline import (
 from watercrawl.application.progress import NullPipelineProgressListener
 from watercrawl.application.quality import QualityFinding, QualityGate
 from watercrawl.application.row_processing import (
+    RowProcessingResult,
     RowProcessingRequest,
     compose_quality_rejection_notes,
     describe_changes,
@@ -27,12 +29,14 @@ from watercrawl.application.row_processing import (
 )
 from watercrawl.core import cache as cache_module
 from watercrawl.core import config
+from watercrawl.domain import relationships
 from watercrawl.domain.contracts import EvidenceRecordContract
 from watercrawl.domain.models import (
     EvidenceRecord,
     SchoolRecord,
     evidence_record_from_contract,
 )
+from watercrawl.infrastructure.evidence import NullEvidenceSink
 from watercrawl.integrations.adapters.research import (
     ResearchAdapter,
     ResearchFinding,
@@ -797,3 +801,130 @@ def test_compose_evidence_notes_includes_rebrand_metadata() -> None:
     assert "Possible rename" in notes
     assert "Latest address intelligence" in notes
     assert "Evidence shortfall" in notes
+
+
+def test_multi_source_pipeline_merges_duplicate_inputs(tmp_path: Path) -> None:
+    primary = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Merge Org",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "https://primary.example",  # type: ignore[assignment]
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+    secondary = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Merge Org",
+                "Province": "Gauteng",
+                "Status": "Verified",
+                "Website URL": "https://secondary.example",  # type: ignore[assignment]
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+    primary_path = tmp_path / "primary.csv"
+    secondary_path = tmp_path / "secondary.xlsx"
+    primary.to_csv(primary_path, index=False)
+    with pd.ExcelWriter(secondary_path) as writer:
+        secondary.to_excel(writer, sheet_name=config.CLEANED_SHEET, index=False)
+
+    pipeline = MultiSourcePipeline(
+        research_adapter=StaticResearchAdapter({}),
+        evidence_sink=NullEvidenceSink(),
+        lineage_manager=None,
+        lakehouse_writer=None,
+    )
+
+    report = pipeline.run_file(
+        [primary_path, secondary_path],
+        sheet_map={secondary_path.name: config.CLEANED_SHEET},
+    )
+
+    assert len(report.refined_dataframe) == 1
+    assert report.refined_dataframe.loc[0, "Status"] == "Verified"
+    assert report.metrics["multi_source_files"] == 2
+    assert report.metrics["multi_source_duplicate_groups"] == 1
+    assert report.metrics["multi_source_conflicts"] >= 1
+    metadata = report.refined_dataframe.attrs.get("multi_source")
+    assert metadata is not None
+    assert set(metadata["files"]) == {str(primary_path.resolve()), str(secondary_path.resolve())}
+    assert metadata["rows"]
+    assert len(metadata["rows"][0]["sources"]) == 2
+
+
+def test_update_relationship_state_uses_source_info() -> None:
+    pipe = Pipeline()
+    name = "Source Org"
+    base_row = {
+        "Name of Organisation": name,
+        "Province": "Gauteng",
+        "Status": "Candidate",
+        "Website URL": "https://example.org",
+        "Contact Person": "Analyst",
+        "Contact Number": "+27105550100",
+        "Contact Email Address": "analyst@example.org",
+    }
+    record = SchoolRecord.from_dataframe_row(pd.Series(base_row))
+    row_state = _RowState(
+        position=0,
+        index=0,
+        row_id=2,
+        original_row=base_row,
+        original_record=record,
+        working_record=record,
+        source_info={
+            "sources": (
+                {
+                    "path": "/tmp/primary.csv",
+                    "sheet": "Clean",
+                    "source_row": 1,
+                },
+            ),
+            "conflicts": (),
+        },
+    )
+    row_result = RowProcessingResult(
+        row_id=2,
+        proposed_record=record,
+        record=record,
+        updated=False,
+        sources=["https://example.org/data"],
+        sanity_findings=[],
+        sanity_notes=[],
+        cleared_columns=[],
+        changed_columns={},
+        evidence_record=None,
+        quality_issues=[],
+        rollback_action=None,
+        quality_rejected=False,
+        decision=None,
+    )
+    organisations: dict[str, relationships.Organisation] = {}
+    people: dict[str, relationships.Person] = {}
+    sources: dict[str, relationships.SourceDocument] = {}
+    edges: dict[tuple[str, str, str], relationships.EvidenceLink] = {}
+
+    pipe._update_relationship_state(
+        organisations=organisations,
+        people=people,
+        sources=sources,
+        edges=edges,
+        row_state=row_state,
+        row_result=row_result,
+        finding=ResearchFinding(),
+    )
+
+    key = relationships.canonical_id("organisation", name)
+    organisation = organisations[key]
+    assert any(tag.source.startswith("dataset:") for tag in organisation.provenance)
+    dataset_tags = [tag for tag in organisation.provenance if tag.source.startswith("dataset:")]
+    assert dataset_tags
+    assert any("source_row:1" in (tag.notes or "") for tag in dataset_tags)

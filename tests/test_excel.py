@@ -203,6 +203,27 @@ def test_read_dataset_supports_excel_roundtrips(tmp_path: Path) -> None:
     assert pytest.approx(normalized.loc[0, "Runway Length"], rel=1e-6) == 30.48
 
 
+def test_read_dataset_tracks_missing_columns(tmp_path: Path) -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Missing Email",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "https://example.org",
+            }
+        ]
+    )
+    dataset_path = tmp_path / "missing.csv"
+    frame.to_csv(dataset_path, index=False)
+
+    normalized = excel.read_dataset(dataset_path)
+
+    missing_columns = set(normalized.attrs.get("missing_columns", ()))
+    assert "Contact Email Address" in missing_columns
+    assert pd.isna(normalized.loc[0, "Contact Email Address"])
+
+
 def test_normalize_numeric_units_rejects_unsupported_type() -> None:
     frame = pd.DataFrame(
         [
@@ -273,3 +294,111 @@ def test_normalize_numeric_units_handles_dimensionless_and_invalid() -> None:
 
     with pytest.raises(ValueError):
         excel.normalize_numeric_units(pd.DataFrame([{"Runway Length": "not-a-number"}]))
+
+
+def test_read_dataset_combines_multiple_inputs(tmp_path: Path) -> None:
+    primary = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Primary Org",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "https://primary.example",  # type: ignore[assignment]
+            }
+        ]
+    )
+    secondary = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Secondary Org",
+                "Province": "Western Cape",
+                "Status": "Verified",
+                "Website URL": "https://secondary.example",  # type: ignore[assignment]
+            }
+        ]
+    )
+    primary_path = tmp_path / "primary.csv"
+    secondary_path = tmp_path / "secondary.csv"
+    primary.to_csv(primary_path, index=False)
+    secondary.to_csv(secondary_path, index=False)
+
+    combined = excel.read_dataset([primary_path, secondary_path])
+
+    assert len(combined) == 2
+    assert set(combined["Name of Organisation"]) == {"Primary Org", "Secondary Org"}
+    source_rows = combined.attrs.get("source_rows")
+    assert isinstance(source_rows, list)
+    assert {Path(entry["path"]).name for entry in source_rows} == {
+        primary_path.name,
+        secondary_path.name,
+    }
+
+
+def test_read_dataset_accepts_directory_inputs(tmp_path: Path) -> None:
+    input_dir = tmp_path / "inputs"
+    input_dir.mkdir()
+    csv_path = input_dir / "data.csv"
+    xlsx_path = input_dir / "extra.xlsx"
+
+    pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Dir Org",
+                "Province": "Free State",
+                "Status": "Candidate",
+            }
+        ]
+    ).to_csv(csv_path, index=False)
+    pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Workbook Org",
+                "Province": "Limpopo",
+                "Status": "Verified",
+            }
+        ]
+    ).to_excel(xlsx_path, sheet_name="Sheet1", index=False)
+
+    combined = excel.read_dataset(input_dir)
+
+    assert len(combined) == 2
+    assert set(combined["Province"]) == {"Free State", "Limpopo"}
+
+
+def test_read_dataset_sheet_map_overrides_default(tmp_path: Path) -> None:
+    csv_path = tmp_path / "base.csv"
+    xlsx_path = tmp_path / "mapped.xlsx"
+
+    pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Base Org",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+            }
+        ]
+    ).to_csv(csv_path, index=False)
+
+    with pd.ExcelWriter(xlsx_path) as writer:
+        pd.DataFrame(
+            [
+                {
+                    "Name of Organisation": "Mapped Org",
+                    "Province": "Northern Cape",
+                    "Status": "Verified",
+                }
+            ]
+        ).to_excel(writer, sheet_name="Custom", index=False)
+
+    combined = excel.read_dataset(
+        [csv_path, xlsx_path], sheet_map={xlsx_path.name: "Custom"}
+    )
+
+    assert "Mapped Org" in set(combined["Name of Organisation"])
+    source_rows = combined.attrs.get("source_rows") or []
+    entry = next(
+        (item for item in source_rows if Path(item["path"]).name == xlsx_path.name),
+        None,
+    )
+    assert entry is not None
+    assert entry.get("sheet") == "Custom"

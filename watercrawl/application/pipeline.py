@@ -7,7 +7,7 @@ import logging
 from collections import defaultdict
 from collections.abc import Hashable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from math import ceil
 from pathlib import Path
@@ -37,6 +37,11 @@ from watercrawl.application.row_processing import (
 )
 from watercrawl.core import cache as global_cache
 from watercrawl.core import config
+from watercrawl.core.normalization import (
+    ColumnConflictResolver,
+    MergeDuplicatesResult,
+    merge_duplicate_records,
+)
 
 if _PANDAS_AVAILABLE:
     from watercrawl.core.excel import EXPECTED_COLUMNS, read_dataset, write_dataset
@@ -186,6 +191,7 @@ class _RowState:
     original_row: Any
     original_record: SchoolRecord
     working_record: SchoolRecord
+    source_info: Mapping[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -549,6 +555,17 @@ class Pipeline(PipelineService):
                 )
             },
         )
+        dataset_sources = []
+        if row_state.source_info:
+            dataset_sources = list(row_state.source_info.get("sources", []))
+            for source_entry in dataset_sources:
+                source_path = Path(str(source_entry.get("path", "")))
+                provenance_tag = relationships.ProvenanceTag(
+                    source=f"dataset:{source_path.name}",
+                    retrieved_at=now,
+                    notes=f"row:{row_state.row_id};source_row:{source_entry.get('source_row')}",
+                )
+                organisation.provenance.add(provenance_tag)
         existing_org = organisations.get(organisation_id)
         if existing_org:
             organisation = relationships.merge_organisations(existing_org, organisation)
@@ -611,6 +628,16 @@ class Pipeline(PipelineService):
                 person = relationships.merge_people(existing_person, person)
             people[person_id] = person
             organisations[organisation_id].contacts.add(person_id)
+            if dataset_sources:
+                for source_entry in dataset_sources:
+                    source_path = Path(str(source_entry.get("path", "")))
+                    person.provenance.add(
+                        relationships.ProvenanceTag(
+                            source=f"dataset:{source_path.name}",
+                            retrieved_at=now,
+                            notes=f"row:{row_state.row_id};source_row:{source_entry.get('source_row')}",
+                        )
+                    )
             contact_edge = relationships.EvidenceLink(
                 source=organisation_id,
                 target=person_id,
@@ -762,6 +789,13 @@ class Pipeline(PipelineService):
         row_states: list[_RowState] = []
         column_updates: dict[str, dict[Hashable, Any]] = defaultdict(dict)
         cleared_cells: dict[str, set[Hashable]] = defaultdict(set)
+        source_metadata: dict[int, Mapping[str, Any]] = {}
+        try:
+            for entry in working_frame.attrs.get("source_rows", []):
+                row_idx = int(entry.get("row", len(source_metadata)))
+                source_metadata[row_idx] = entry
+        except AttributeError:
+            source_metadata = {}
         for position, row in enumerate(working_frame.itertuples(index=True, name=None)):
             idx = row[0]
             row_values = dict(zip(working_frame.columns, row[1:]))
@@ -779,6 +813,7 @@ class Pipeline(PipelineService):
                     original_row=row_values,
                     original_record=original_record,
                     working_record=record,
+                    source_info=source_metadata.get(position),
                 )
             )
 
@@ -1214,17 +1249,21 @@ class Pipeline(PipelineService):
 
     async def run_file_async(
         self,
-        input_path: Path,
+        input_path: Path | Sequence[Path],
         output_path: Path | None = None,
         *,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
+        sheet_map: Mapping[str, str] | None = None,
     ) -> PipelineReport:
         """Asynchronously process a dataset file through the pipeline."""
-        dataset = read_dataset(input_path)
+        dataset = read_dataset(input_path, sheet_map=sheet_map)
         active_context = lineage_context
         if active_context:
-            input_uri = input_path.resolve().as_uri()
+            if isinstance(input_path, Path):
+                input_uri = input_path.resolve().as_uri()
+            else:
+                input_uri = [candidate.resolve().as_uri() for candidate in input_path]
             output_uri = output_path.resolve().as_uri() if output_path else None
             active_context = replace(
                 active_context,
@@ -1240,14 +1279,15 @@ class Pipeline(PipelineService):
 
     def run_file(
         self,
-        input_path: Path,
+        input_path: Path | Sequence[Path],
         output_path: Path | None = None,
         *,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
+        sheet_map: Mapping[str, str] | None = None,
     ) -> PipelineReport:
         """Synchronously process a dataset file through the pipeline."""
-        dataset = read_dataset(input_path)
+        dataset = read_dataset(input_path, sheet_map=sheet_map)
         report = self.run_dataframe(
             dataset, progress=progress, lineage_context=lineage_context
         )
@@ -1357,3 +1397,123 @@ class Pipeline(PipelineService):
                 finding.as_dict() for finding in self._last_report.sanity_findings
             ],
         }
+
+
+@dataclass
+class MultiSourcePipeline(Pipeline):
+    """Pipeline variant that consolidates multiple dataset sources."""
+
+    conflict_resolver: ColumnConflictResolver = field(
+        default_factory=lambda: ColumnConflictResolver(
+            getattr(config, "COLUMN_DESCRIPTORS", ())
+        )
+    )
+
+    def _prepare_multi_source_frame(
+        self,
+        input_path: Path | Sequence[Path],
+        *,
+        sheet_map: Mapping[str, str] | None = None,
+    ) -> tuple[pd.DataFrame, dict[str, Any], MergeDuplicatesResult]:
+        dataset = read_dataset(input_path, sheet_map=sheet_map)
+        original_rows = dataset.attrs.get("source_rows", [])
+        original_files = set(dataset.attrs.get("source_files", []))
+        merge_result = merge_duplicate_records(
+            dataset, key_column="Name of Organisation", resolver=self.conflict_resolver
+        )
+        metadata_by_index: dict[int, Mapping[str, Any]] = {}
+        if isinstance(original_rows, list):
+            for entry in original_rows:
+                if isinstance(entry, Mapping):
+                    row_idx = int(entry.get("row", len(metadata_by_index)))
+                    metadata_by_index[row_idx] = entry
+
+        rows_meta: list[dict[str, Any]] = []
+        duplicate_groups = 0
+        conflict_count = 0
+        for new_index, trace in enumerate(merge_result.traces):
+            if len(trace.source_indices) > 1:
+                duplicate_groups += 1
+            conflict_count += len(trace.conflicts)
+            sources = [
+                dict(metadata_by_index.get(idx, {}))
+                for idx in trace.source_indices
+                if idx in metadata_by_index
+            ]
+            rows_meta.append(
+                {
+                    "row": new_index,
+                    "key": trace.key,
+                    "sources": sources,
+                    "conflicts": [asdict(conflict) for conflict in trace.conflicts],
+                }
+            )
+
+        merged_frame = merge_result.merged_frame
+        merged_frame.attrs.update(dataset.attrs)
+        merged_frame.attrs["source_rows"] = rows_meta
+        metadata = {
+            "files": original_files,
+            "rows": rows_meta,
+            "duplicate_groups": duplicate_groups,
+            "conflict_count": conflict_count,
+            "raw_rows": len(original_rows),
+        }
+        merged_frame.attrs["multi_source"] = metadata
+        return merged_frame, metadata, merge_result
+
+    def _apply_multi_source_metadata(
+        self, report: PipelineReport, metadata: dict[str, Any], frame: Any
+    ) -> None:
+        report.metrics["multi_source_files"] = float(len(metadata.get("files", [])))
+        report.metrics["multi_source_raw_rows"] = float(metadata.get("raw_rows", 0))
+        report.metrics["multi_source_rows"] = float(len(metadata.get("rows", [])))
+        report.metrics["multi_source_duplicate_groups"] = float(
+            metadata.get("duplicate_groups", 0)
+        )
+        report.metrics["multi_source_conflicts"] = float(
+            metadata.get("conflict_count", 0)
+        )
+        if hasattr(report.refined_dataframe, "attrs"):
+            report.refined_dataframe.attrs.update(frame.attrs)
+            report.refined_dataframe.attrs["multi_source"] = metadata
+
+    def run_file(
+        self,
+        input_path: Path | Sequence[Path],
+        output_path: Path | None = None,
+        *,
+        progress: PipelineProgressListener | None = None,
+        lineage_context: LineageContext | None = None,
+        sheet_map: Mapping[str, str] | None = None,
+    ) -> PipelineReport:
+        frame, metadata, _ = self._prepare_multi_source_frame(
+            input_path, sheet_map=sheet_map
+        )
+        report = self.run_dataframe(
+            frame, progress=progress, lineage_context=lineage_context
+        )
+        self._apply_multi_source_metadata(report, metadata, frame)
+        if output_path:
+            write_dataset(report.refined_dataframe, output_path)
+        return report
+
+    async def run_file_async(
+        self,
+        input_path: Path | Sequence[Path],
+        output_path: Path | None = None,
+        *,
+        progress: PipelineProgressListener | None = None,
+        lineage_context: LineageContext | None = None,
+        sheet_map: Mapping[str, str] | None = None,
+    ) -> PipelineReport:
+        frame, metadata, _ = self._prepare_multi_source_frame(
+            input_path, sheet_map=sheet_map
+        )
+        report = await self.run_dataframe_async(
+            frame, progress=progress, lineage_context=lineage_context
+        )
+        self._apply_multi_source_metadata(report, metadata, frame)
+        if output_path:
+            write_dataset(report.refined_dataframe, output_path)
+        return report

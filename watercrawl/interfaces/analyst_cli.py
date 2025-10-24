@@ -15,7 +15,7 @@ import click
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeRemainingColumn
 
-from watercrawl.application.pipeline import Pipeline
+from watercrawl.application.pipeline import MultiSourcePipeline, Pipeline
 from watercrawl.application.progress import PipelineProgressListener
 from watercrawl.core import config
 from watercrawl.core.excel import read_dataset
@@ -66,6 +66,27 @@ def _get_cli_override(name: str, default: T) -> T:
     if cli_module is not None and hasattr(cli_module, name):
         return getattr(cli_module, name)
     return default
+
+
+def _parse_sheet_map(entries: Sequence[str]) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for entry in entries:
+        if "=" in entry:
+            key, value = entry.split("=", 1)
+        elif ":" in entry:
+            key, value = entry.split(":", 1)
+        else:
+            raise ValueError(
+                "Invalid sheet mapping format. Use <name>=<sheet>."
+            )
+        mapping[key.strip()] = value.strip()
+    return mapping
+
+
+def _compose_inputs(primary: Path, extras: Sequence[Path]) -> Path | list[Path]:
+    if extras:
+        return [primary, *extras]
+    return primary
 
 
 @contextmanager
@@ -162,6 +183,20 @@ def cli() -> None:
 @cli.command()
 @click.argument("input_path", type=click.Path(exists=True, path_type=Path))
 @click.option(
+    "--inputs",
+    "additional_inputs",
+    type=click.Path(exists=True, path_type=Path),
+    multiple=True,
+    help="Additional dataset paths or directories to merge before validation.",
+)
+@click.option(
+    "--sheet-map",
+    "sheet_map_entries",
+    type=str,
+    multiple=True,
+    help="Override workbook sheet names using <file>=<sheet> entries.",
+)
+@click.option(
     "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
 )
 @click.option(
@@ -183,6 +218,8 @@ def cli() -> None:
 )
 def validate(
     input_path: Path,
+    additional_inputs: Sequence[Path],
+    sheet_map_entries: Sequence[str],
     output_format: str,
     progress: bool | None,
     profile_id: str | None,
@@ -194,7 +231,12 @@ def validate(
     pipeline_factory = _get_cli_override("Pipeline", Pipeline)
     reader = _get_cli_override("read_dataset", read_dataset)
     pipeline = pipeline_factory()
-    frame = reader(input_path)
+    try:
+        sheet_map = _parse_sheet_map(sheet_map_entries)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc), param_hint="--sheet-map") from exc
+    inputs = _compose_inputs(input_path, additional_inputs)
+    frame = reader(inputs, sheet_map=sheet_map or None)
     report = pipeline.validator.validate_dataframe(frame)
     validation_contract = report.to_contract()
     issues_payload = [issue.model_dump() for issue in validation_contract.issues]
@@ -247,6 +289,20 @@ def validate(
 @cli.command()
 @click.argument("input_path", type=click.Path(exists=True, path_type=Path))
 @click.option(
+    "--inputs",
+    "additional_inputs",
+    type=click.Path(exists=True, path_type=Path),
+    multiple=True,
+    help="Additional dataset paths or directories to merge before enrichment.",
+)
+@click.option(
+    "--sheet-map",
+    "sheet_map_entries",
+    type=str,
+    multiple=True,
+    help="Override workbook sheet names using <file>=<sheet> entries.",
+)
+@click.option(
     "--output",
     "output_path",
     type=click.Path(path_type=Path),
@@ -293,6 +349,8 @@ def validate(
 )
 def enrich(
     input_path: Path,
+    additional_inputs: Sequence[Path],
+    sheet_map_entries: Sequence[str],
     output_path: Path | None,
     output_format: str,
     progress: bool | None,
@@ -305,6 +363,12 @@ def enrich(
     """Validate, enrich, and export a dataset."""
 
     _select_profile(profile_id, profile_path)
+    try:
+        sheet_map = _parse_sheet_map(sheet_map_entries)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc), param_hint="--sheet-map") from exc
+    inputs = _compose_inputs(input_path, additional_inputs)
+    multi_source_required = bool(additional_inputs) or input_path.is_dir()
     evidence_sink_factory = _get_cli_override(
         "build_evidence_sink", build_evidence_sink
     )
@@ -312,7 +376,10 @@ def enrich(
     lakehouse_writer_factory = _get_cli_override(
         "build_lakehouse_writer", build_lakehouse_writer
     )
-    pipeline_factory = _get_cli_override("Pipeline", Pipeline)
+    pipeline_factory = _get_cli_override(
+        "MultiSourcePipeline" if multi_source_required else "Pipeline",
+        MultiSourcePipeline if multi_source_required else Pipeline,
+    )
     plan_guard = _get_cli_override("plan_guard", CLI_ENVIRONMENT.plan_guard)
     try:
         validation = plan_guard.require(
@@ -355,10 +422,11 @@ def enrich(
             dataset_version=target.stem,
         )
     report = pipeline.run_file(
-        input_path,
+        inputs,
         output_path=target,
         progress=listener,
         lineage_context=lineage_context,
+        sheet_map=sheet_map or None,
     )
     report_contract = report.to_contract()
     issues_payload = [issue.model_dump() for issue in report_contract.issues]
@@ -412,8 +480,9 @@ def enrich(
         if report.version_info:
             click.echo(f"Version manifest: {report.version_info.metadata_path}")
         if payload["adapter_failures"]:
+            failures_display = int(payload["adapter_failures"])
             click.echo(
-                f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."
+                f"Warnings: {failures_display} research lookups failed; see logs."
             )
         if validation.plan_paths:
             click.echo(

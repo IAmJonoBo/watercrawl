@@ -44,6 +44,27 @@
 
 ## Steps (iteration log)
 
+- [ ] 2025-10-31 — Multi-source ingestion groundwork (agent) — _Owner: Platform/Data · Due: 2025-11-07_:
+      - Baseline QA before edits (fresh Poetry env auto-provisioned by `poetry run`):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing` ❌ (`pytest-cov` plugin missing; pytest rejects --cov flag).【fbc5e6†L1-L5】
+        - `poetry run ruff check .` ❌ (29 existing lint failures across scripts/tests/core modules).【4ac10d†L1-L118】
+        - `poetry run mypy .` ❌ (125 typing errors; missing stubs for pandas/networkx/opentelemetry/etc.).【71e787†L1-L118】
+        - `poetry run bandit -r .` ❌ (`bandit` CLI not installed in env).【ea250e†L1-L2】
+        - `poetry build` ✅ (sdist/wheel generated successfully).【2aeef9†L1-L6】
+      - Next: implement multi-source dataset ingestion + pipeline orchestration while coordinating with owners on longstanding QA debt.
+      - Targeted tests (`poetry run pytest tests/test_excel.py::test_read_dataset_combines_multiple_inputs …`) ❌ (`ModuleNotFoundError: No module named 'pandas'` — environment missing pandas wheels).【726309†L8-L30】
+      - Follow-up (2025-11-01): Installed full Poetry environment (`poetry install --with dev`) and re-ran guardrails.
+        - `poetry run pytest tests/test_excel.py::test_read_dataset_tracks_missing_columns` ✅ (new regression for missing-column metadata).【f44879†L1-L3】
+        - `poetry run pytest tests/test_cli.py::test_cli_validate_reports_issues` ✅ (exit code restores failure mode on missing email column).【a35628†L1-L2】
+        - `poetry run pytest tests/test_cli.py::test_cli_enrich_logs_plan_audit` ✅ (JSON payload + audit logging intact; warning emitted).【8ad4ef†L1-L8】
+        - `poetry run pytest tests/test_cli.py::test_cli_enrich_warns_on_adapter_failures` ✅ (adapter-failure warning formatting updated).【967532†L1-L2】
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing` ❌ (suite still red later in run; most recent stop at CLI enrichment JSON exit code mismatch after extended progress).【2972f4†L1-L33】
+        - `poetry run ruff check .` ❌ (same 31 pre-existing lint issues remain).【8a2544†L1-L66】
+        - `poetry run mypy .` ❌ (53 outstanding typing errors across tooling/tests).【5c20c5†L1-L14】
+        - `poetry run bandit -r .` ⚠️ (manual cancel at 57% to avoid multi-hour scan; noted for follow-up).【f091df†L1-L2】
+        - `poetry build` ✅ (artifact regeneration after dependency sync).【517c56†L1-L6】
+      - Outstanding: finish full-suite pytest once CLI regressions settled; broaden coverage for async pipeline/CLI multi-source paths per TODO list.
+
 - [ ] 2025-10-31 — Pytest runner Python 3.13 fallback update (agent) — _Owner: Platform · Due: 2025-11-07_:
       - Updated `scripts/run_pytest.sh` fallback to locate Python 3.13 interpreters and install the `${PIPELINE_EXTRA}` bundle when running via uv.
       - Validated discovery via `env PATH="/tmp/uv-only:${CLEAN_PATH}" ./scripts/run_pytest.sh --maxfail=1 --disable-warnings`; run halts on pre-existing `ModuleNotFoundError: pint`.

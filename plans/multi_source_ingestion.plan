@@ -1,0 +1,9 @@
+Title: Multi-source dataset ingestion and pipeline orchestration
+Summary: Extend dataset ingestion to combine multiple sources, add pipeline orchestration for provenance tracking, and expose new CLI controls for analysts.
+Steps:
+  - Update watercrawl.core.excel.read_dataset to accept directories or multiple paths, aligning columns via the profile-aware normalization registry and emitting diagnostics for conflicts.
+  - Codify precedence/conflict resolution rules in watercrawl.core.normalization so stitched datasets honor profile descriptors and highlight discrepancies.
+  - Introduce watercrawl.application.pipeline.MultiSourcePipeline to coordinate multi-file ingestion, deduplication, provenance graph updates, and metadata tracking.
+  - Extend watercrawl.interfaces.analyst_cli enrich/validate surfaces with --inputs/--sheet-map flags and add regression tests covering mixed CSV/XLSX ingestion.
+  - Add focused unit tests for multi-source ingestion and pipeline orchestration while updating existing fixtures to cover provenance expectations.
+Rationale: Analysts must reconcile multiple spreadsheets per campaign; unifying ingestion with provenance-aware orchestration and CLI controls ensures reproducible merges while maintaining audit trails.

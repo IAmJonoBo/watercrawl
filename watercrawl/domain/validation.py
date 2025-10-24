@@ -22,7 +22,17 @@ class DatasetValidator:
 
     def validate_dataframe(self, frame: Any) -> ValidationReport:
         issues: list[ValidationIssue] = []
-        missing_columns = [col for col in EXPECTED_COLUMNS if col not in frame.columns]
+        frame_columns = getattr(frame, "columns", [])
+        frame_attrs = getattr(frame, "attrs", {})
+        missing_from_attrs = {
+            str(column)
+            for column in frame_attrs.get("missing_columns", ())
+            if column is not None
+        }
+        missing_from_structure = {
+            col for col in EXPECTED_COLUMNS if col not in frame_columns
+        }
+        missing_columns = sorted(missing_from_attrs | missing_from_structure)
         for column in missing_columns:
             issues.append(
                 ValidationIssue(
