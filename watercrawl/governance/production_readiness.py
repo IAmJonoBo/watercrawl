@@ -1256,8 +1256,9 @@ class ProductionReadinessReview:
         """Check for feature flag implementation."""
         # Look for feature flag patterns in code
         feature_flag_files = []
-        for py_file in self.repo_root.glob("**/*.py"):
-            if "test" in str(py_file) or "node_modules" in str(py_file):
+        excluded_dirs = {"test", "tests", "node_modules"}
+        for py_file in self.repo_root.rglob("*.py"):
+            if any(part in excluded_dirs for part in py_file.parts):
                 continue
             try:
                 content = py_file.read_text()
