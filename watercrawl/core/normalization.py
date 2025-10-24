@@ -413,6 +413,9 @@ def _address_normalizer(
         required=descriptor.required,
         allowed_values=descriptor.allowed_values,
         format_hints=hints,
+        synonyms=descriptor.synonyms,
+        alternate_labels=descriptor.alternate_labels,
+        detection_hooks=descriptor.detection_hooks,
     )
     return _text_normalizer(series, updated_descriptor, registry)
 

@@ -52,7 +52,17 @@
         - `poetry run bandit -r .` ❌ (`bandit` command unavailable in current environment).【1baae5†L1-L2】
         - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ❌ (fails importing `packaging`; dependency missing in shell environment).【0696cb†L1-L6】
         - `poetry build` ✅ (sdist/wheel for crawlkit built successfully).【02d0a9†L1-L7】
+      - 2025-11-04 rerun (agent):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing` ❌ (pytest still missing coverage plugin; identical failure).【e02fa0†L1-L5】
+        - `poetry run ruff check .` ❌ (same 29 Ruff violations across legacy sources).【d2d13c†L1-L118】
+        - `poetry run mypy .` ❌ (130 errors persist; missing stubs for pandas/networkx/opentelemetry/etc.).【d834ef†L1-L118】
+        - `poetry run bandit -r watercrawl` ❌ (`bandit` executable not installed).【775326†L1-L2】
+        - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ❌ (`packaging` module still absent).【b99460†L1-L6】
+        - `poetry build` ✅ (artifacts regenerate cleanly).【5b57a8†L1-L7】
       - Targeted test coverage: `poetry run pytest tests/test_core_column_inference.py -k inference -q` ⚠️ (skipped: pandas dependency not installed).【45305e†L1-L2】
+      - Targeted test coverage (2025-11-04 rerun): `poetry run pytest tests/test_core_column_inference.py -k inference -q` ⚠️ (still skipped without pandas).【6c95fd†L2-L2】
+      - Targeted lint sweep: `poetry run ruff check watercrawl/core/profiles.py watercrawl/core/normalization.py watercrawl/core/column_inference.py tests/test_core_column_inference.py` ✅ (no new style regressions).【50238a†L1-L2】
+      - Targeted type-check: `poetry run mypy watercrawl/core/profiles.py watercrawl/core/normalization.py` ❌ (fails early on missing pandas/pint/networkx stubs cascading from package imports).【d5594b†L1-L25】
       - Next: provision pandas/PyYAML in QA env to exercise new inference/CLI preview tests; coordinate with platform owners on outstanding repo-wide lint/type/security debt before promoting feature.
 
 - [ ] 2025-10-31 — Multi-source ingestion groundwork (agent) — _Owner: Platform/Data · Due: 2025-11-07_:
