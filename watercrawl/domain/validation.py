@@ -173,8 +173,7 @@ class DatasetValidator:
                         )
                     )
                 else:
-                    normalized = contact.normalized_phone or ""
-                    if not _PHONE_RE.fullmatch(normalized):
+                    if not contact.normalized_phone or not _PHONE_RE.fullmatch(contact.normalized_phone):
                         issues.append(
                             ValidationIssue(
                                 code="invalid_phone_format",
