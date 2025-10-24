@@ -16,6 +16,8 @@ from watercrawl.domain.models import (
     normalize_status,
 )
 
+from .column_inference import ColumnInferenceEngine, ColumnInferenceResult
+
 from . import config  # type: ignore
 from .normalization import ColumnNormalizationRegistry, normalize_numeric_value
 
@@ -61,39 +63,46 @@ def _resolve_sheet_name(
 
 def _align_columns(
     frame: pd.DataFrame, descriptors: Sequence[Any]
-) -> tuple[pd.DataFrame, set[str]]:
+) -> tuple[pd.DataFrame, set[str], ColumnInferenceResult | None]:
     # Late import to avoid circular dependency at module import time.
     from watercrawl.core.profiles import ColumnDescriptor
 
     if not descriptors:
-        return frame, set()
+        return frame, set(), None
     required_columns = set(getattr(config, "EXPECTED_COLUMNS", ()))
-    alias_lookup: dict[str, str] = {}
     canonical_order: list[str] = []
+    alias_lookup: dict[str, str] = {}
+    column_descriptors: list[ColumnDescriptor] = []
     for descriptor in descriptors:
         if isinstance(descriptor, ColumnDescriptor):
             canonical_order.append(descriptor.name)
+            column_descriptors.append(descriptor)
             alias_lookup[_column_key(descriptor.name)] = descriptor.name
             if descriptor.required:
                 required_columns.add(descriptor.name)
-            hints = descriptor.format_hints or {}
-            aliases = hints.get("aliases", ())
-            if not isinstance(aliases, Iterable) or isinstance(aliases, (str, bytes)):
-                aliases = ()
-            for alias in aliases:
-                alias_lookup[_column_key(str(alias))] = descriptor.name
+            for label in descriptor.candidate_labels():
+                alias_lookup[_column_key(label)] = descriptor.name
         else:
             name = getattr(descriptor, "name", None)
             if name:
-                canonical_order.append(name)
-                alias_lookup[_column_key(str(name))] = str(name)
+                canonical = str(name)
+                canonical_order.append(canonical)
+                alias_lookup[_column_key(canonical)] = canonical
 
+    inference_result: ColumnInferenceResult | None = None
     rename_map: dict[str, str] = {}
+    if column_descriptors:
+        engine = ColumnInferenceEngine(column_descriptors)
+        inference_result = engine.infer(frame)
+        rename_map.update(inference_result.rename_map)
+
     for column in frame.columns:
-        key = _column_key(str(column))
-        canonical = alias_lookup.get(key)
-        if canonical and canonical not in rename_map.values():
-            rename_map[str(column)] = canonical
+        source = str(column)
+        if source in rename_map:
+            continue
+        canonical = alias_lookup.get(_column_key(source))
+        if canonical and canonical != source and canonical not in rename_map.values():
+            rename_map[source] = canonical
 
     aligned = frame.rename(columns=rename_map).copy()
     missing_columns: set[str] = set()
@@ -105,7 +114,7 @@ def _align_columns(
 
     ordered_columns = [name for name in canonical_order if name in aligned.columns]
     remaining = [col for col in aligned.columns if col not in ordered_columns]
-    return aligned[ordered_columns + remaining], missing_columns
+    return aligned[ordered_columns + remaining], missing_columns, inference_result
 
 
 class ExcelExporter:
@@ -143,6 +152,7 @@ def read_dataset(
     frames: list[pd.DataFrame] = []
     source_rows: list[dict[str, Any]] = []
     missing_columns_global: set[str] = set()
+    inference_results: list[ColumnInferenceResult] = []
     for input_path in input_paths:
         suffix = input_path.suffix.lower()
         sheet_name: str | None = None
@@ -153,10 +163,12 @@ def read_dataset(
             frame = pd.read_csv(input_path)
         else:
             raise ValueError(f"Unsupported file format: {suffix}")
-        aligned, missing_columns = _align_columns(frame, descriptors)
+        aligned, missing_columns, inference_result = _align_columns(frame, descriptors)
         frames.append(aligned)
         if missing_columns:
             missing_columns_global.update(missing_columns)
+        if inference_result is not None:
+            inference_results.append(inference_result)
         for local_index, row_index in enumerate(aligned.index):
             source_rows.append(
                 {
@@ -181,6 +193,9 @@ def read_dataset(
         metadata_attrs["missing_columns"] = sorted(missing_columns_global)
     if sheet_map:
         metadata_attrs["sheet_overrides"] = dict(sheet_map)
+    if inference_results:
+        summary = ColumnInferenceResult.merge(inference_results)
+        metadata_attrs["column_inference"] = summary.to_dict()
 
     active_registry = registry or getattr(config, "COLUMN_NORMALIZATION_REGISTRY", None)
     diagnostics: dict[str, Any] = {}

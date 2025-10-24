@@ -76,9 +76,7 @@ def _parse_sheet_map(entries: Sequence[str]) -> dict[str, str]:
         elif ":" in entry:
             key, value = entry.split(":", 1)
         else:
-            raise ValueError(
-                "Invalid sheet mapping format. Use <name>=<sheet>."
-            )
+            raise ValueError("Invalid sheet mapping format. Use <name>=<sheet>.")
         mapping[key.strip()] = value.strip()
     return mapping
 
@@ -87,6 +85,105 @@ def _compose_inputs(primary: Path, extras: Sequence[Path]) -> Path | list[Path]:
     if extras:
         return [primary, *extras]
     return primary
+
+
+def _emit_column_inference_preview(metadata: Mapping[str, Any]) -> None:
+    """Render inferred column mappings as CLI warnings."""
+
+    inference = metadata.get("column_inference")
+    if not isinstance(inference, Mapping):
+        return
+
+    raw_matches = inference.get("matches")
+    matches: list[dict[str, Any]] = []
+    if isinstance(raw_matches, Sequence):
+        for entry in raw_matches:
+            if not isinstance(entry, Mapping):
+                continue
+            source = entry.get("source")
+            canonical = entry.get("canonical")
+            if not source or not canonical:
+                continue
+            score_raw = entry.get("score", 0.0)
+            try:
+                score = float(score_raw)
+            except (TypeError, ValueError):
+                score = 0.0
+            reasons_raw = entry.get("reasons", ())
+            if isinstance(reasons_raw, Sequence) and not isinstance(
+                reasons_raw, (str, bytes)
+            ):
+                reasons = [str(reason) for reason in reasons_raw if reason]
+            elif reasons_raw:
+                reasons = [str(reasons_raw)]
+            else:
+                reasons = []
+            matches.append(
+                {
+                    "source": str(source),
+                    "canonical": str(canonical),
+                    "score": score,
+                    "reasons": reasons,
+                }
+            )
+
+    rename_matches = [
+        match for match in matches if match["source"] != match["canonical"]
+    ]
+
+    unmatched_raw = inference.get("unmatched_sources", ())
+    if isinstance(unmatched_raw, Sequence) and not isinstance(
+        unmatched_raw, (str, bytes)
+    ):
+        unmatched = [str(entry) for entry in unmatched_raw if entry]
+    elif unmatched_raw:
+        unmatched = [str(unmatched_raw)]
+    else:
+        unmatched = []
+
+    missing_raw = inference.get("missing_targets", ())
+    if isinstance(missing_raw, Sequence) and not isinstance(missing_raw, (str, bytes)):
+        missing = [str(entry) for entry in missing_raw if entry]
+    elif missing_raw:
+        missing = [str(missing_raw)]
+    else:
+        missing = []
+
+    if not rename_matches and not unmatched and not missing:
+        return
+
+    if rename_matches:
+        click.echo("Inferred column mappings:", err=True)
+        for match in rename_matches:
+            reasons = "; ".join(match["reasons"])
+            message = (
+                f" - {match['source']} → {match['canonical']} "
+                f"(score {match['score']:.2f})"
+            )
+            if reasons:
+                message += f" [{reasons}]"
+            color: str | None = None
+            if match["score"] < 0.7:
+                color = "red"
+            elif match["score"] < 0.85:
+                color = "yellow"
+            if color:
+                click.secho(message, fg=color, err=True)
+            else:
+                click.echo(message, err=True)
+
+    if unmatched:
+        click.secho(
+            "Unmapped columns: " + ", ".join(sorted(set(unmatched))),
+            fg="yellow",
+            err=True,
+        )
+    if missing:
+        click.secho(
+            "Missing expected columns: " + ", ".join(sorted(set(missing))),
+            fg="red",
+            err=True,
+        )
 
 
 @contextmanager
@@ -237,6 +334,7 @@ def validate(
         raise click.BadParameter(str(exc), param_hint="--sheet-map") from exc
     inputs = _compose_inputs(input_path, additional_inputs)
     frame = reader(inputs, sheet_map=sheet_map or None)
+    _emit_column_inference_preview(frame.attrs)
     report = pipeline.validator.validate_dataframe(frame)
     validation_contract = report.to_contract()
     issues_payload = [issue.model_dump() for issue in validation_contract.issues]
@@ -380,6 +478,7 @@ def enrich(
         "MultiSourcePipeline" if multi_source_required else "Pipeline",
         MultiSourcePipeline if multi_source_required else Pipeline,
     )
+    reader = _get_cli_override("read_dataset", read_dataset)
     plan_guard = _get_cli_override("plan_guard", CLI_ENVIRONMENT.plan_guard)
     try:
         validation = plan_guard.require(
@@ -390,6 +489,8 @@ def enrich(
         )
     except PlanCommitError as exc:
         raise click.ClickException(str(exc)) from exc
+    preview_frame = reader(inputs, sheet_map=sheet_map or None)
+    _emit_column_inference_preview(preview_frame.attrs)
     evidence_sink = evidence_sink_factory()
     lineage_manager = lineage_manager_factory()
     lakehouse_writer = lakehouse_writer_factory()

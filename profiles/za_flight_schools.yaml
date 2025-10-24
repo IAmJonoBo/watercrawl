@@ -13,11 +13,18 @@ dataset:
   columns:
     - name: Name of Organisation
       type: text
+      synonyms:
+        - Organisation Name
+        - Org Name
+        - Flight School Name
       format_hints:
         case: title
         collapse_whitespace: true
     - name: Province
       type: enum
+      synonyms:
+        - Region
+        - Province/Region
       allowed_values:
         - Eastern Cape
         - Free State
@@ -28,20 +35,32 @@ dataset:
         - Northern Cape
         - North West
         - Western Cape
+      detection_hooks:
+        - allowed_values
       format_hints:
         default: Unknown
     - name: Status
       type: enum
+      synonyms:
+        - Verification Status
       allowed_values:
         - Verified
         - Candidate
         - Needs Review
         - Duplicate
         - Do Not Contact (Compliance)
+      detection_hooks:
+        - allowed_values
       format_hints:
         default: Needs Review
     - name: Website URL
       type: url
+      synonyms:
+        - Website
+        - URL
+        - Company Website
+      detection_hooks:
+        - url_pattern
       format_hints:
         ensure_https: true
         strip_query: true
@@ -49,22 +68,51 @@ dataset:
         strip_trailing_slash: true
     - name: Contact Person
       type: text
+      synonyms:
+        - Primary Contact
+        - Contact Name
       format_hints:
         case: title
         collapse_whitespace: true
     - name: Contact Number
       type: phone
       required: true
+      synonyms:
+        - Contact Phone
+        - Phone Number
+        - Telephone
+      detection_hooks:
+        - phone_pattern
     - name: Contact Email Address
       type: email
+      synonyms:
+        - Contact Email
+        - Email Address
+      detection_hooks:
+        - email_pattern
       format_hints:
         case: lower
     - name: Fleet Size
       type: numeric_with_units
+      synonyms:
+        - Aircraft Count
+        - Number of Aircraft
+      detection_hooks:
+        - numeric_values
     - name: Runway Length
       type: numeric_with_units
+      synonyms:
+        - Runway Length Feet
+        - Runway Length (ft)
+      detection_hooks:
+        - numeric_values
     - name: Runway Length (m)
       type: numeric_with_units
+      synonyms:
+        - Runway Length Metres
+        - Runway Length Meters
+      detection_hooks:
+        - numeric_values
   numeric_units:
     - column: Fleet Size
       canonical_unit: count

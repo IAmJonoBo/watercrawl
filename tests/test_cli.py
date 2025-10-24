@@ -4,8 +4,13 @@ from collections.abc import Mapping
 from pathlib import Path
 from types import SimpleNamespace
 
-import pandas as pd
+import pytest
 from click.testing import CliRunner
+
+pytest.importorskip("yaml")
+pytest.importorskip("pandas")
+
+import pandas as pd
 
 from watercrawl.application.progress import PipelineProgressListener
 from watercrawl.domain.contracts import (
@@ -618,11 +623,13 @@ def test_cli_validate_progress_path(tmp_path):
         def on_complete(self, metrics: Mapping[str, int]) -> None:
             self.completions.append(metrics)
 
+    def _dummy_read_dataset(path, **kwargs):
+        assert "sheet_map" not in kwargs or kwargs["sheet_map"] is None
+        return df
+
     with cli.override_cli_dependencies(
         Pipeline=DummyPipeline,
-        read_dataset=lambda path, **kwargs: (
-            (assert "sheet_map" not in kwargs or kwargs["sheet_map"] is None), df
-        )[1],
+        read_dataset=_dummy_read_dataset,
         RichPipelineProgress=DummyProgressListener,
     ):
         runner = CliRunner()
@@ -634,6 +641,60 @@ def test_cli_validate_progress_path(tmp_path):
     assert result.exit_code == 0
     assert "Rows: 1" in result.output
     assert "missing_data" in result.output
+
+
+def test_cli_validate_emits_inference_preview(tmp_path):
+    input_path = tmp_path / "input.csv"
+    input_path.write_text("dummy", encoding="utf-8")
+
+    df = pd.DataFrame({"Name": ["A"]})
+    df.attrs["column_inference"] = {
+        "matches": [
+            {
+                "source": "Org Name",
+                "canonical": "Name of Organisation",
+                "score": 0.82,
+                "reasons": ["Synonym match"],
+            }
+        ],
+        "unmatched_sources": [],
+        "missing_targets": [],
+        "rename_map": {"Org Name": "Name of Organisation"},
+    }
+
+    class DummyReport:
+        rows = 1
+        issues: list[dict[str, str]] = []
+        is_valid = True
+
+        def to_contract(self) -> ValidationReportContract:
+            return ValidationReportContract(issues=[], rows=1)
+
+    class DummyValidator:
+        def validate_dataframe(self, frame: pd.DataFrame) -> DummyReport:
+            assert frame is df
+            return DummyReport()
+
+    class DummyPipeline:
+        def __init__(self) -> None:
+            self.validator = DummyValidator()
+
+    def _dummy_read_dataset(path: Path | list[Path], **kwargs):
+        return df
+
+    with cli.override_cli_dependencies(
+        Pipeline=DummyPipeline,
+        read_dataset=_dummy_read_dataset,
+    ):
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(
+            cli_group,
+            ["validate", str(input_path), "--format", "json"],
+        )
+
+    assert result.exit_code == 0
+    assert "Inferred column mappings" in result.stderr
+    assert "Org Name → Name of Organisation" in result.stderr
 
 
 def test_cli_enrich_warns_on_adapter_failures(tmp_path):
