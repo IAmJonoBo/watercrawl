@@ -48,6 +48,18 @@
       - Validated discovery via `env PATH="/tmp/uv-only:${CLEAN_PATH}" ./scripts/run_pytest.sh --maxfail=1 --disable-warnings`; run halts on pre-existing `ModuleNotFoundError: pint`.
       - Next: Package pint (and other optional pipeline deps) into the fallback flow or document required extras for CI smoke runs.
 
+- [ ] 2025-10-31 — CI coverage invocation update (agent) — _Owner: Platform · Due: 2025-11-07_:
+      - Baseline QA prior to edits:
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ❌ (pytest-cov plugin missing).
+        - `poetry run ruff check .` ❌ (29 pre-existing lint findings across scripts/tests/core modules).
+        - `poetry run mypy .` ❌ (124 errors; missing stubs and typing mismatches).
+        - `poetry run bandit -r .` ❌ (Bandit executable unavailable in env).
+        - `poetry build` ✅.
+      - Changes: Updated `.github/workflows/ci.yml` pytest step to collect coverage for both `crawlkit` and `watercrawl`.
+      - Target QA after edits:
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ❌ (`ModuleNotFoundError: httpx` when importing crawlkit fetch module; optional dependency still absent).
+      - Next: Ensure CI/environment bundles required optional dependencies (httpx, playwright, etc.) or adjust test strategy so coverage run can execute without network extras.
+
 - [x] 2025-10-23 — requirements-dev hash refresh (agent) — _Owner: Platform · Due: 2025-10-23_:
   - Ran `poetry export -f requirements.txt --with dev --output requirements-dev.txt` after installing the export plugin.
   - Verified hashes by syncing a clean uv virtualenv with `uv pip sync --python .hash-env/bin/python --require-hashes requirements-dev.txt`.

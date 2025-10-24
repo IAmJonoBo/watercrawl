@@ -107,7 +107,8 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: "${{ github.workspace }}/artifacts/cache/playwright"
         run: >-
-          poetry run pytest --maxfail=5 --disable-warnings --cov=crawlkit
+          poetry run pytest --maxfail=5 --disable-warnings
+          --cov=crawlkit --cov=watercrawl
           --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=pytest-results.xml
       - name: Run data contracts
         if: matrix.python-version == '3.13'
