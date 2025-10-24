@@ -573,9 +573,8 @@ class ProductionReadinessReview:
                 tools.append("safety (dependency scan)")
 
         # Check for security workflow
-        workflows = list((self.repo_root / ".github" / "workflows").glob("*.yml")) if (
-            self.repo_root / ".github" / "workflows"
-        ).exists() else []
+        workflows_dir = self.repo_root / ".github" / "workflows"
+        workflows = list(workflows_dir.glob("*.yml")) if workflows_dir.exists() else []
         for wf in workflows:
             content = wf.read_text()
             if "codeql" in content.lower():
