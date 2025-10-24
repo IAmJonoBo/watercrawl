@@ -386,9 +386,7 @@ class DatasetValidator:
         for offset, data in row_iterable:
 
             organisation = _clean_value(data.get("Name of Organisation")) or ""
-            org_identifier = (
-                organisation or f"row-{offset}"
-            )
+            org_identifier = organisation or f"row-{offset}"
             canonical_org_id = relationships.canonical_id("organisation", org_identifier)
 
             website = _clean_value(data.get("Website URL"))
