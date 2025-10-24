@@ -11,8 +11,12 @@ import sys
 from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
+from typing import Any
 
-import duckdb
+try:
+    import duckdb  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover - optional dependency
+    duckdb: Any | None = None
 
 from watercrawl.integrations.contracts.shared_config import environment_payload
 
@@ -21,6 +25,12 @@ DEFAULT_DUCKDB = Path("target/contracts.duckdb")
 
 
 def ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
+    if duckdb is None:
+        msg = (
+            "duckdb is not installed. Install the optional dbt/duckdb tooling or "
+            "re-run from an environment with duckdb wheels available."
+        )
+        raise RuntimeError(msg)
     materialised_path = (project_dir / relative_path).resolve()
     materialised_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -49,6 +59,14 @@ def run_sqlfluff(
         print(
             "Skipping SQLFluff lint: dbt templater is incompatible with Python >= 3.14. "
             "Run this command from a Python 3.13 environment when SQL checks are required."
+        )
+        return 0
+
+    if duckdb is None:
+        print(
+            "Skipping SQLFluff lint: duckdb is not installed. "
+            "Install the optional lakehouse extras or run from an environment "
+            "with duckdb wheels to enable SQL checks."
         )
         return 0
 
