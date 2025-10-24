@@ -6,8 +6,13 @@ import pytest
 
 from watercrawl.core import config
 from watercrawl.core.normalization import (
+    ColumnConflict,
+    ColumnConflictResolver,
     ColumnNormalizationRegistry,
+    MergeDuplicatesResult,
+    RowMergeTrace,
     build_default_registry,
+    merge_duplicate_records,
 )
 from watercrawl.core.profiles import ColumnDescriptor
 from watercrawl.domain.compliance import normalize_phone, validate_email
@@ -150,3 +155,74 @@ def test_read_dataset_applies_registry(
     assert "Contact Number" in report
     assert report["Contact Number"]["semantic_type"] == "phone"
     assert report["Runway Length"]["issue_count"] == 0
+
+
+def test_conflict_resolver_prefers_allowed_value_order() -> None:
+    descriptor = ColumnDescriptor(
+        name="Status",
+        semantic_type="enum",
+        allowed_values=(
+            "Verified",
+            "Candidate",
+            "Needs Review",
+            "Duplicate",
+        ),
+    )
+    resolver = ColumnConflictResolver([descriptor])
+
+    selected, conflict = resolver.resolve(
+        "Status", existing="Candidate", incoming="Verified"
+    )
+
+    assert selected == "Verified"
+    assert isinstance(conflict, ColumnConflict)
+    assert conflict.reason == "allowed_values_precedence"
+
+
+def test_merge_duplicate_records_collapses_conflicts() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Merge Org",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+            },
+            {
+                "Name of Organisation": "Merge Org",
+                "Province": "Gauteng",
+                "Status": "Verified",
+            },
+        ]
+    )
+    descriptors = (
+        ColumnDescriptor(name="Name of Organisation", semantic_type="text"),
+        ColumnDescriptor(
+            name="Province",
+            semantic_type="enum",
+            allowed_values=("Gauteng", "Western Cape"),
+        ),
+        ColumnDescriptor(
+            name="Status",
+            semantic_type="enum",
+            allowed_values=(
+                "Verified",
+                "Candidate",
+                "Needs Review",
+            ),
+        ),
+    )
+    resolver = ColumnConflictResolver(descriptors)
+
+    result = merge_duplicate_records(
+        frame, key_column="Name of Organisation", resolver=resolver
+    )
+
+    assert isinstance(result, MergeDuplicatesResult)
+    assert len(result.merged_frame) == 1
+    assert result.merged_frame.loc[0, "Status"] == "Verified"
+    assert result.traces
+    trace = result.traces[0]
+    assert isinstance(trace, RowMergeTrace)
+    assert trace.key == "merge org"
+    assert len(trace.source_indices) == 2
+    assert any(conflict.column == "Status" for conflict in trace.conflicts)

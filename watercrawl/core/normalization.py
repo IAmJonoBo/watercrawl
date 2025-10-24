@@ -22,9 +22,14 @@ __all__ = [
     "ColumnNormalizationResult",
     "ColumnDiagnostics",
     "NormalizationIssue",
+    "ColumnConflict",
+    "ColumnConflictResolver",
+    "RowMergeTrace",
+    "MergeDuplicatesResult",
     "build_default_registry",
     "build_numeric_rule_lookup",
     "normalize_numeric_value",
+    "merge_duplicate_records",
 ]
 
 
@@ -106,6 +111,208 @@ class ColumnNormalizationRegistry:
         return normalizer(series, descriptor, self)
 
 
+@dataclass(frozen=True)
+class ColumnConflict:
+    """Describe how a conflicting value was resolved during merging."""
+
+    column: str
+    existing_value: Any
+    incoming_value: Any
+    resolved_value: Any
+    reason: str
+
+
+@dataclass(frozen=True)
+class RowMergeTrace:
+    """Trace metadata for a merged row across multi-source ingestion."""
+
+    key: str
+    source_indices: tuple[int, ...]
+    conflicts: tuple[ColumnConflict, ...]
+
+
+@dataclass(frozen=True)
+class MergeDuplicatesResult:
+    """Result payload returned when merging duplicate records."""
+
+    merged_frame: pd.DataFrame
+    traces: list[RowMergeTrace]
+
+
+class ColumnConflictResolver:
+    """Resolve conflicting column values using profile-aware precedence rules."""
+
+    def __init__(
+        self, descriptors: Iterable[ColumnDescriptor] | None = None
+    ) -> None:
+        self._descriptors: dict[str, ColumnDescriptor] = {}
+        for descriptor in descriptors or ():
+            self._descriptors[descriptor.name] = descriptor
+
+    def resolve(
+        self, column: str, existing: Any, incoming: Any
+    ) -> tuple[Any, ColumnConflict | None]:
+        if _is_missing_value(incoming):
+            return existing, None
+        if _is_missing_value(existing):
+            return incoming, None
+        if _values_equal(existing, incoming):
+            return existing, None
+
+        descriptor = self._descriptors.get(column)
+        if descriptor:
+            selected, reason = self._apply_descriptor(descriptor, existing, incoming)
+        else:
+            selected, reason = (existing, "prefer_existing")
+
+        conflict = ColumnConflict(
+            column=column,
+            existing_value=existing,
+            incoming_value=incoming,
+            resolved_value=selected,
+            reason=reason,
+        )
+        if selected is existing and reason == "prefer_existing":
+            # No actionable change beyond retaining the existing value.
+            return existing, conflict
+        return selected, conflict
+
+    def _apply_descriptor(
+        self, descriptor: ColumnDescriptor, existing: Any, incoming: Any
+    ) -> tuple[Any, str]:
+        semantic = descriptor.semantic_type.lower()
+        if descriptor.allowed_values:
+            existing_rank = _value_rank(existing, descriptor.allowed_values)
+            incoming_rank = _value_rank(incoming, descriptor.allowed_values)
+            if incoming_rank > existing_rank:
+                return incoming, "allowed_values_precedence"
+            if existing_rank > incoming_rank:
+                return existing, "allowed_values_precedence"
+
+        hints = {key.lower(): value for key, value in descriptor.format_hints.items()}
+        merge_prefer = hints.get("merge_prefer")
+        if merge_prefer == "longer_text" or semantic in {"text", "string", "address"}:
+            existing_len = len(str(existing))
+            incoming_len = len(str(incoming))
+            if incoming_len > existing_len:
+                return incoming, "longer_text"
+            if existing_len > incoming_len:
+                return existing, "longer_text"
+
+        if semantic in {"numeric", "numeric_with_units"}:
+            existing_float = _coerce_numeric(existing)
+            incoming_float = _coerce_numeric(incoming)
+            if incoming_float is not None and existing_float is None:
+                return incoming, "prefer_numeric"
+            if incoming_float is not None and existing_float is not None:
+                # Prefer non-zero or larger absolute magnitude values.
+                if abs(incoming_float) > abs(existing_float):
+                    return incoming, "prefer_numeric"
+                if abs(existing_float) > abs(incoming_float):
+                    return existing, "prefer_numeric"
+
+        # Fall back to retaining the existing value for determinism.
+        return existing, "prefer_existing"
+
+
+def merge_duplicate_records(
+    frame: pd.DataFrame,
+    *,
+    key_column: str,
+    resolver: ColumnConflictResolver,
+) -> MergeDuplicatesResult:
+    """Merge duplicate rows sharing the given key using conflict resolution rules."""
+
+    if key_column not in frame.columns:
+        return MergeDuplicatesResult(frame.copy(), [])
+
+    columns = list(frame.columns)
+    merged_rows: list[dict[str, Any]] = []
+    traces: list[RowMergeTrace] = []
+
+    keyed = frame[key_column].fillna("").astype(str)
+    canonical_keys = keyed.map(_canonical_key)
+    grouped = canonical_keys.groupby(canonical_keys, sort=False)
+    for new_index, (key, indices) in enumerate(grouped.groups.items()):
+        group = frame.loc[list(indices)]
+        base = group.iloc[0].to_dict()
+        conflicts: list[ColumnConflict] = []
+        for _, row in group.iloc[1:].iterrows():
+            for column in columns:
+                selected, conflict = resolver.resolve(
+                    column, base.get(column), row[column]
+                )
+                base[column] = selected
+                if conflict is not None and conflict not in conflicts:
+                    conflicts.append(conflict)
+        merged_rows.append(base)
+        traces.append(
+            RowMergeTrace(
+                key=key,
+                source_indices=tuple(int(idx) for idx in indices),
+                conflicts=tuple(conflicts),
+            )
+        )
+
+    merged_frame = pd.DataFrame(merged_rows, columns=columns)
+    merged_frame.reset_index(drop=True, inplace=True)
+    return MergeDuplicatesResult(merged_frame=merged_frame, traces=traces)
+
+
+def _is_missing_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, (float, int, Decimal)):
+        return pd.isna(value)
+    try:
+        return bool(pd.isna(value))
+    except TypeError:
+        return False
+
+
+def _values_equal(lhs: Any, rhs: Any) -> bool:
+    if _is_missing_value(lhs) and _is_missing_value(rhs):
+        return True
+    if isinstance(lhs, str) and isinstance(rhs, str):
+        return lhs.strip() == rhs.strip()
+    return lhs == rhs
+
+
+def _value_rank(value: Any, allowed: Iterable[str]) -> int:
+    normalized = str(value).strip().casefold()
+    allowed_list = list(allowed)
+    for index, candidate in enumerate(allowed_list):
+        if normalized == str(candidate).strip().casefold():
+            return len(allowed_list) - index
+    return -1
+
+
+def _coerce_numeric(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float, Decimal)):
+        if pd.isna(value):
+            return None
+        return float(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _canonical_key(value: str) -> str:
+    tokens = [chunk for chunk in value.casefold().split() if chunk]
+    return " ".join(tokens)
 def build_numeric_rule_lookup(
     numeric_rules: Iterable[NumericUnitRule],
 ) -> dict[str, dict[str, Any]]:
@@ -489,6 +696,11 @@ def _coerce_to_str(value: Any) -> str | None:
         if not value.strip():
             return None
         return value
+    try:
+        if pd.isna(value):  # type: ignore[arg-type]
+            return None
+    except TypeError:
+        pass
     if isinstance(value, (int, float, Decimal)):
         return str(value)
     return str(value)

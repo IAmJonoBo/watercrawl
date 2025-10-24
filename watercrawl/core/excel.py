@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import pandas as pd
 
@@ -20,6 +20,89 @@ from . import config  # type: ignore
 from .normalization import ColumnNormalizationRegistry, normalize_numeric_value
 
 EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
+
+_SUPPORTED_SUFFIXES = {".csv", ".xlsx", ".xls"}
+
+
+def _column_key(name: str) -> str:
+    return "".join(ch for ch in name.casefold() if ch.isalnum())
+
+
+def _expand_input(target: Path) -> list[Path]:
+    if target.is_dir():
+        return [
+            child
+            for child in sorted(target.iterdir(), key=lambda item: item.name.lower())
+            if child.is_file() and child.suffix.lower() in _SUPPORTED_SUFFIXES
+        ]
+    return [target]
+
+
+def _collect_inputs(path_or_paths: Path | Sequence[Path]) -> list[Path]:
+    inputs: list[Path] = []
+    if isinstance(path_or_paths, Path):
+        inputs.extend(_expand_input(path_or_paths))
+    else:
+        for entry in path_or_paths:
+            inputs.extend(_expand_input(entry))
+    return inputs
+
+
+def _resolve_sheet_name(
+    path: Path, sheet_map: Mapping[str, str] | None
+) -> str:
+    if not sheet_map:
+        return config.CLEANED_SHEET
+    for key in (str(path), path.name, path.stem):
+        if key in sheet_map:
+            return sheet_map[key]
+    return config.CLEANED_SHEET
+
+
+def _align_columns(
+    frame: pd.DataFrame, descriptors: Sequence[Any]
+) -> tuple[pd.DataFrame, set[str]]:
+    # Late import to avoid circular dependency at module import time.
+    from watercrawl.core.profiles import ColumnDescriptor
+
+    if not descriptors:
+        return frame, set()
+    required_columns = set(getattr(config, "EXPECTED_COLUMNS", ()))
+    alias_lookup: dict[str, str] = {}
+    canonical_order: list[str] = []
+    for descriptor in descriptors:
+        if isinstance(descriptor, ColumnDescriptor):
+            canonical_order.append(descriptor.name)
+            alias_lookup[_column_key(descriptor.name)] = descriptor.name
+            if descriptor.required:
+                required_columns.add(descriptor.name)
+            hints = descriptor.format_hints or {}
+            for alias in hints.get("aliases", ()):  # type: ignore[call-arg]
+                alias_lookup[_column_key(str(alias))] = descriptor.name
+        else:
+            name = getattr(descriptor, "name", None)
+            if name:
+                canonical_order.append(name)
+                alias_lookup[_column_key(str(name))] = str(name)
+
+    rename_map: dict[str, str] = {}
+    for column in frame.columns:
+        key = _column_key(str(column))
+        canonical = alias_lookup.get(key)
+        if canonical and canonical not in rename_map.values():
+            rename_map[str(column)] = canonical
+
+    aligned = frame.rename(columns=rename_map).copy()
+    missing_columns: set[str] = set()
+    for name in canonical_order:
+        if name not in aligned.columns:
+            aligned[name] = pd.NA
+            if name in required_columns:
+                missing_columns.add(name)
+
+    ordered_columns = [name for name in canonical_order if name in aligned.columns]
+    remaining = [col for col in aligned.columns if col not in ordered_columns]
+    return aligned[ordered_columns + remaining], missing_columns
 
 
 class ExcelExporter:
@@ -42,26 +125,67 @@ class ExcelExporter:
 
 
 def read_dataset(
-    path: Path,
+    path: Path | Sequence[Path],
     *,
     registry: ColumnNormalizationRegistry | None = None,
+    sheet_map: Mapping[str, str] | None = None,
 ) -> pd.DataFrame:
-    """Read and normalize a dataset from the given path."""
-    suffix = path.suffix.lower()
-    if suffix in {".xlsx", ".xls"}:
-        frame = pd.read_excel(path, sheet_name=config.CLEANED_SHEET)
-    elif suffix == ".csv":
-        frame = pd.read_csv(path)
-    else:
-        raise ValueError(f"Unsupported file format: {suffix}")
+    """Read and normalize a dataset from one or more paths."""
+
+    input_paths = _collect_inputs(path)
+    if not input_paths:
+        raise ValueError("No supported dataset files were provided")
+
+    descriptors = getattr(config, "COLUMN_DESCRIPTORS", ())
+    frames: list[pd.DataFrame] = []
+    source_rows: list[dict[str, Any]] = []
+    missing_columns_global: set[str] = set()
+    for input_path in input_paths:
+        suffix = input_path.suffix.lower()
+        sheet_name: str | None = None
+        if suffix in {".xlsx", ".xls"}:
+            sheet_name = _resolve_sheet_name(input_path, sheet_map)
+            frame = pd.read_excel(input_path, sheet_name=sheet_name)
+        elif suffix == ".csv":
+            frame = pd.read_csv(input_path)
+        else:
+            raise ValueError(f"Unsupported file format: {suffix}")
+        aligned, missing_columns = _align_columns(frame, descriptors)
+        frames.append(aligned)
+        if missing_columns:
+            missing_columns_global.update(missing_columns)
+        for local_index, row_index in enumerate(aligned.index):
+            source_rows.append(
+                {
+                    "row": len(source_rows),
+                    "path": str(input_path.resolve()),
+                    "sheet": sheet_name,
+                    "source_row": (
+                        int(row_index)
+                        if isinstance(row_index, (int, float)) and not pd.isna(row_index)
+                        else row_index
+                    ),
+                    "local_index": local_index,
+                }
+            )
+
+    combined = pd.concat(frames, ignore_index=True, sort=False)
+    metadata_attrs: dict[str, Any] = {
+        "source_rows": source_rows,
+        "source_files": sorted({entry["path"] for entry in source_rows}),
+    }
+    if missing_columns_global:
+        metadata_attrs["missing_columns"] = sorted(missing_columns_global)
+    if sheet_map:
+        metadata_attrs["sheet_overrides"] = dict(sheet_map)
 
     active_registry = registry or getattr(config, "COLUMN_NORMALIZATION_REGISTRY", None)
-    descriptors = getattr(config, "COLUMN_DESCRIPTORS", ())
     diagnostics: dict[str, Any] = {}
     normalized_columns: set[str] = set()
 
+    working_frame = combined
     if active_registry and descriptors:
-        working = frame.copy()
+        working = combined.copy()
         for descriptor in descriptors:
             if descriptor.name not in working.columns:
                 continue
@@ -71,7 +195,7 @@ def read_dataset(
             working[descriptor.name] = result.series
             diagnostics[descriptor.name] = result.diagnostics.to_dict()
             normalized_columns.add(descriptor.name)
-        frame = working
+        working_frame = working
 
     remaining_rules: dict[str, dict[str, Any]] | None = None
     if active_registry is not None:
@@ -81,10 +205,11 @@ def read_dataset(
             if name not in normalized_columns
         }
 
-    normalized = normalize_numeric_units(frame, rules=remaining_rules)
+    normalized = normalize_numeric_units(working_frame, rules=remaining_rules)
     normalized = normalize_categorical_values(
         normalized, skip_columns=normalized_columns
     )
+    normalized.attrs.update(metadata_attrs)
 
     if diagnostics:
         report_path = config.INTERIM_DIR / "normalization_report.json"
@@ -135,6 +260,7 @@ def normalize_numeric_units(
     """Normalize numeric units in the dataframe according to predefined rules."""
 
     normalized = frame.copy()
+    normalized.attrs.update(frame.attrs)
     rule_lookup = rules if rules is not None else dict(config.NUMERIC_UNIT_LOOKUP)
     if not rule_lookup:
         return normalized
@@ -162,6 +288,7 @@ def normalize_categorical_values(
 ) -> pd.DataFrame:
     """Normalize categorical values in the dataframe."""
     normalized = frame.copy()
+    normalized.attrs.update(frame.attrs)
     skip = set(skip_columns or ())
     if "Province" in normalized.columns and "Province" not in skip:
         normalized["Province"] = normalized["Province"].apply(normalize_province)
