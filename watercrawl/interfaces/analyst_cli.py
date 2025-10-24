@@ -480,11 +480,7 @@ def enrich(
         if report.version_info:
             click.echo(f"Version manifest: {report.version_info.metadata_path}")
         if payload["adapter_failures"]:
-            failures = payload["adapter_failures"]
-            if isinstance(failures, float) and failures.is_integer():
-                failures_display: int | float = int(failures)
-            else:
-                failures_display = failures
+            failures_display = int(payload["adapter_failures"])
             click.echo(
                 f"Warnings: {failures_display} research lookups failed; see logs."
             )
