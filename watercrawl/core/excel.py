@@ -187,7 +187,7 @@ def _apply_evidence_hyperlinks(worksheet, data_rows: Mapping[int, int]) -> None:
                 ]
                 if urls:
                     sources_cell.value = "\n".join(urls)
-                    sources_cell.hyperlink = urls[0]  # type: ignore[assignment]
+                    sources_cell.hyperlink = urls[0]  # type: ignore[assignment]  # type: ignore[assignment]
                     sources_cell.style = "Hyperlink"
                     sources_cell.alignment = Alignment(wrap_text=True, vertical="top")
 
