@@ -464,8 +464,6 @@ async def lookup_with_adapter_async(
 
     async def _run_with_executor(func: Callable[..., T], *args: object) -> T:
         candidate = cast("Executor | None", active_executor)
-        if not requires_fallback:
-            return await loop.run_in_executor(candidate, func, *args)
         try:
             return await loop.run_in_executor(candidate, func, *args)
         except TypeError:
