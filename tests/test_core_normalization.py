@@ -182,6 +182,43 @@ def test_conflict_resolver_prefers_allowed_value_order() -> None:
     assert conflict.reason == "allowed_values_precedence"
 
 
+def test_conflict_resolver_respects_incoming_hint() -> None:
+    descriptor = ColumnDescriptor(
+        name="Website URL",
+        semantic_type="text",
+        format_hints={"merge_prefer": "incoming"},
+    )
+    resolver = ColumnConflictResolver([descriptor])
+
+    selected, conflict = resolver.resolve(
+        "Website URL",
+        existing="https://old.example",
+        incoming="https://new.example",
+    )
+
+    assert selected == "https://new.example"
+    assert conflict is not None
+    assert conflict.reason == "prefer_incoming"
+
+
+def test_conflict_resolver_respects_priority_sequence() -> None:
+    descriptor = ColumnDescriptor(
+        name="Status",
+        semantic_type="enum",
+        allowed_values=("Verified", "Candidate", "Needs Review"),
+        format_hints={"merge_prefer": ("Verified", "Candidate")},
+    )
+    resolver = ColumnConflictResolver([descriptor])
+
+    selected, conflict = resolver.resolve(
+        "Status", existing="Candidate", incoming="Verified"
+    )
+
+    assert selected == "Verified"
+    assert conflict is not None
+    assert conflict.reason == "merge_priority"
+
+
 def test_merge_duplicate_records_collapses_conflicts() -> None:
     frame = pd.DataFrame(
         [

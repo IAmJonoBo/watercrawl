@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from numbers import Real
-from typing import Any, Callable, Iterable, Mapping, Protocol
+from typing import Any, Callable, Iterable, Mapping, Protocol, Sequence
 from urllib.parse import urlparse, urlunparse
 
 import pandas as pd
@@ -198,7 +198,29 @@ class ColumnConflictResolver:
 
         hints = {key.lower(): value for key, value in descriptor.format_hints.items()}
         merge_prefer = hints.get("merge_prefer")
-        if merge_prefer == "longer_text" or semantic in {"text", "string", "address"}:
+        if isinstance(merge_prefer, str):
+            preference = merge_prefer.strip().lower()
+            if preference in {"incoming", "prefer_incoming"}:
+                return incoming, "prefer_incoming"
+            if preference in {"existing", "prefer_existing"}:
+                return existing, "prefer_existing_hint"
+        if isinstance(merge_prefer, Sequence) and not isinstance(
+            merge_prefer, (str, bytes)
+        ):
+            priority = [
+                str(value).strip().casefold() for value in merge_prefer if str(value).strip()
+            ]
+            if priority:
+                existing_rank = _priority_rank(existing, priority)
+                incoming_rank = _priority_rank(incoming, priority)
+                if incoming_rank > existing_rank:
+                    return incoming, "merge_priority"
+                if existing_rank > incoming_rank:
+                    return existing, "merge_priority"
+        if (
+            isinstance(merge_prefer, str)
+            and merge_prefer.strip().lower() == "longer_text"
+        ) or semantic in {"text", "string", "address"}:
             existing_len = len(str(existing))
             incoming_len = len(str(incoming))
             if incoming_len > existing_len:
@@ -297,6 +319,14 @@ def _value_rank(value: Any, allowed: Iterable[str]) -> int:
     for index, candidate in enumerate(allowed_list):
         if normalized == str(candidate).strip().casefold():
             return len(allowed_list) - index
+    return -1
+
+
+def _priority_rank(value: Any, priority: Sequence[str]) -> int:
+    normalized = str(value).strip().casefold()
+    for index, candidate in enumerate(priority):
+        if normalized == candidate:
+            return len(priority) - index
     return -1
 
 

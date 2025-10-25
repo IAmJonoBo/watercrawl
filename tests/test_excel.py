@@ -418,3 +418,40 @@ def test_read_dataset_sheet_map_overrides_default(tmp_path: Path) -> None:
     )
     assert entry is not None
     assert entry.get("sheet") == "Custom"
+
+
+def test_read_dataset_supports_multiple_sheet_overrides(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "multi.xlsx"
+    with pd.ExcelWriter(workbook_path) as writer:
+        pd.DataFrame(
+            [
+                {
+                    "Province": "Gauteng",
+                    "Name of Organisation": "Sheet One",
+                    "Status": "Candidate",
+                }
+            ]
+        ).to_excel(writer, sheet_name="Primary", index=False)
+        pd.DataFrame(
+            [
+                {
+                    "Status": "Verified",
+                    "Name of Organisation": "Sheet Two",
+                    "Province": "Western Cape",
+                }
+            ]
+        ).to_excel(writer, sheet_name="Archive", index=False)
+
+    combined = excel.read_dataset(
+        workbook_path,
+        sheet_map={workbook_path.name: ("Primary", "Archive")},
+    )
+
+    assert len(combined) == 2
+    assert set(combined["Name of Organisation"]) == {"Sheet One", "Sheet Two"}
+    overrides = combined.attrs.get("sheet_overrides")
+    assert overrides == {workbook_path.name: ["Primary", "Archive"]}
+    rows = combined.attrs.get("source_rows")
+    assert isinstance(rows, list)
+    sheet_names = {entry.get("sheet") for entry in rows}
+    assert sheet_names == {"Primary", "Archive"}

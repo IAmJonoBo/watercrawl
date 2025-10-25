@@ -280,7 +280,7 @@ def test_cli_enrich_supports_multi_inputs(tmp_path: Path) -> None:
             *,
             progress: PipelineProgressListener | None = None,
             lineage_context: object | None = None,
-            sheet_map: Mapping[str, str] | None = None,
+            sheet_map: Mapping[str, tuple[str, ...]] | None = None,
         ) -> PipelineReport:
             self.last_call = {
                 "input_path": input_path,
@@ -347,8 +347,104 @@ def test_cli_enrich_supports_multi_inputs(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert dummy.last_call is not None
     assert isinstance(dummy.last_call["input_path"], list)
-    assert dummy.last_call["sheet_map"] == {secondary_path.name: "Custom"}
+    assert dummy.last_call["sheet_map"] == {secondary_path.name: ("Custom",)}
     assert dummy.last_call["output_path"] == output_path
+
+
+def test_cli_validate_supports_multiple_sheet_mappings(tmp_path: Path) -> None:
+    primary_path = tmp_path / "primary.csv"
+    secondary_path = tmp_path / "secondary.xlsx"
+    pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Primary",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+            }
+        ]
+    ).to_csv(primary_path, index=False)
+    with pd.ExcelWriter(secondary_path) as writer:
+        pd.DataFrame(
+            [
+                {
+                    "Name of Organisation": "Secondary",
+                    "Province": "Limpopo",
+                    "Status": "Verified",
+                }
+            ]
+        ).to_excel(writer, sheet_name="Primary", index=False)
+        pd.DataFrame(
+            [
+                {
+                    "Name of Organisation": "Archive Secondary",
+                    "Province": "Western Cape",
+                    "Status": "Needs Review",
+                }
+            ]
+        ).to_excel(writer, sheet_name="Archive", index=False)
+
+    df = pd.DataFrame(
+        [
+            {
+                "Name of Organisation": "Combined",
+                "Province": "Gauteng",
+                "Status": "Candidate",
+                "Website URL": "",  # type: ignore[assignment]
+                "Contact Person": "",
+                "Contact Number": "",
+                "Contact Email Address": "",
+            }
+        ]
+    )
+
+    class DummyReport:
+        rows = 1
+        issues: list[dict[str, str]] = []
+        is_valid = True
+
+        def to_contract(self) -> ValidationReportContract:
+            return ValidationReportContract(issues=[], rows=1)
+
+    class DummyValidator:
+        def validate_dataframe(self, frame: pd.DataFrame) -> DummyReport:
+            assert frame is df
+            return DummyReport()
+
+    class DummyPipeline:
+        def __init__(self) -> None:
+            self.validator = DummyValidator()
+
+    captured: dict[str, object] = {}
+
+    def _dummy_reader(
+        inputs: Path | list[Path], *, sheet_map: Mapping[str, tuple[str, ...]] | None
+    ) -> pd.DataFrame:
+        captured["inputs"] = inputs
+        captured["sheet_map"] = sheet_map
+        return df
+
+    runner = CliRunner()
+    with cli.override_cli_dependencies(
+        Pipeline=DummyPipeline,
+        read_dataset=_dummy_reader,
+    ):
+        result = runner.invoke(
+            cli_group,
+            [
+                "validate",
+                str(primary_path),
+                "--inputs",
+                str(secondary_path),
+                "--sheet-map",
+                f"{secondary_path.name}=Primary,Archive",
+                "--format",
+                "json",
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert isinstance(captured.get("inputs"), list)
+    assert captured["sheet_map"] == {secondary_path.name: ("Primary", "Archive")}
 
 
 def test_cli_enrich_force_rejected_when_policy_disallows(tmp_path):

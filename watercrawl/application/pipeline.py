@@ -1261,7 +1261,7 @@ class Pipeline(PipelineService):
         *,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
-        sheet_map: Mapping[str, str] | None = None,
+        sheet_map: Mapping[str, str | Sequence[str]] | None = None,
     ) -> PipelineReport:
         """Asynchronously process a dataset file through the pipeline."""
         dataset = read_dataset(input_path, sheet_map=sheet_map)
@@ -1293,7 +1293,7 @@ class Pipeline(PipelineService):
         *,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
-        sheet_map: Mapping[str, str] | None = None,
+        sheet_map: Mapping[str, str | Sequence[str]] | None = None,
     ) -> PipelineReport:
         """Synchronously process a dataset file through the pipeline."""
         dataset = read_dataset(input_path, sheet_map=sheet_map)
@@ -1422,7 +1422,7 @@ class MultiSourcePipeline(Pipeline):
         self,
         input_path: Path | Sequence[Path],
         *,
-        sheet_map: Mapping[str, str] | None = None,
+        sheet_map: Mapping[str, str | Sequence[str]] | None = None,
     ) -> tuple[pd.DataFrame, dict[str, Any], MergeDuplicatesResult]:
         dataset = read_dataset(input_path, sheet_map=sheet_map)
         original_rows = dataset.attrs.get("source_rows", [])
@@ -1494,7 +1494,7 @@ class MultiSourcePipeline(Pipeline):
         *,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
-        sheet_map: Mapping[str, str] | None = None,
+        sheet_map: Mapping[str, str | Sequence[str]] | None = None,
     ) -> PipelineReport:
         frame, metadata, _ = self._prepare_multi_source_frame(
             input_path, sheet_map=sheet_map
@@ -1514,7 +1514,7 @@ class MultiSourcePipeline(Pipeline):
         *,
         progress: PipelineProgressListener | None = None,
         lineage_context: LineageContext | None = None,
-        sheet_map: Mapping[str, str] | None = None,
+        sheet_map: Mapping[str, str | Sequence[str]] | None = None,
     ) -> PipelineReport:
         frame, metadata, _ = self._prepare_multi_source_frame(
             input_path, sheet_map=sheet_map
