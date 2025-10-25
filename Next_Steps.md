@@ -44,6 +44,14 @@
 
 ## Steps (iteration log)
 
+- [ ] 2025-11-05 — Excel exporter formatting enhancements (agent):
+      - Targeted QA:
+        - `poetry run pytest tests/test_excel_exporter.py -q` ✅ (new workbook formatting coverage).【d45f71†L1-L2】
+        - `poetry run ruff check watercrawl/core/excel.py tests/test_excel_exporter.py` ✅ (no lint regressions).【570c23†L1-L1】
+        - `poetry run mypy watercrawl/core/excel.py tests/test_excel_exporter.py` ✅ (type-safe formatting helpers).【228db6†L1-L1】
+        - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ✅ (no new advisories).【ea75a4†L1-L4】
+      - Notes: Added themed summary sheet, conditional formatting, hyperlink wiring, and evidence table styling with openpyxl; golden-file regression tests assert workbook structure.
+
 - [ ] 2025-11-02 — Column inference preview wiring (agent) — _Owner: Platform/Data · Due: 2025-11-09_:
       - Baseline QA prior to finalising column inference module:
         - `poetry run pytest --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing` ❌ (fails: pytest does not recognise --cov flag because pytest-cov plugin absent).【e568f1†L1-L5】
