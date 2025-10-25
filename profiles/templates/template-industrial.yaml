@@ -1,0 +1,94 @@
+id: template-industrial
+name: Industrial Supplier Template
+description: Baseline refinement profile for industrial suppliers across multi-region deployments.
+dataset:
+  expected_columns:
+    - Name of Organisation
+    - Province
+    - Status
+    - Website URL
+    - Contact Person
+    - Contact Number
+    - Contact Email Address
+  numeric_units: []
+  columns:
+    - name: Name of Organisation
+      required: true
+      semantic_type: text
+      synonyms: [Organisation Name, Company]
+    - name: Province
+      required: true
+      semantic_type: categorical
+    - name: Status
+      required: true
+      semantic_type: categorical
+    - name: Website URL
+      semantic_type: url
+      format_hints:
+        must_be_https: true
+    - name: Contact Person
+      semantic_type: text
+    - name: Contact Number
+      semantic_type: phone
+    - name: Contact Email Address
+      semantic_type: email
+provinces:
+  - Region Alpha
+  - Region Beta
+  - Region Gamma
+  - Region Delta
+statuses:
+  - Verified
+  - Candidate
+  - Needs Review
+  - Do Not Contact (Compliance)
+default_status: Candidate
+compliance:
+  default_confidence:
+    Verified: 90
+    Candidate: 65
+    Needs Review: 40
+    Do Not Contact (Compliance): 0
+  min_evidence_sources: 2
+  official_source_keywords:
+    - gov
+    - regulator
+  evidence_queries:
+    - "<organisation> manufacturing capability"
+    - "<organisation> certifications"
+  lawful_basis:
+    legitimate_interest: Maintain accurate supplier records for sourcing decisions.
+  default_lawful_basis: legitimate_interest
+  contact_purposes:
+    transparency_notice: Provide sourcing transparency updates.
+  default_contact_purpose: transparency_notice
+  opt_out_statuses:
+    - Do Not Contact (Compliance)
+  revalidation_days: 365
+  notification_templates: {}
+  audit_exports: []
+contact:
+  phone:
+    country_code: "+99"
+    e164_regex: '^\+99[0-9]{9}$'
+    national_prefixes: ["0"]
+    national_number_length: 9
+  email:
+    regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    role_prefixes:
+      - info
+      - admin
+    require_domain_match: true
+research:
+  queries:
+    - "<organisation> industrial supply contracts"
+    - "<organisation> compliance certifications"
+  concurrency_limit: 4
+  cache_ttl_hours: 48
+  max_retries: 3
+  retry_backoff_base_seconds: 0.5
+  circuit_breaker_failure_threshold: 5
+  circuit_breaker_reset_seconds: 30
+  allow_personal_data: false
+  rate_limit_seconds: 0.0
+  connectors: {}
