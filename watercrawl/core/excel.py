@@ -253,7 +253,7 @@ def _populate_summary_sheet(
     )
     sheet.add_table(sheet_tables)
 
-    status_counts: Counter[str] = Counter()
+    status_counts = Counter()
     if "Status" in dataframe.columns:
         status_counts.update(dataframe["Status"].dropna().astype(str))
     sheet["D2"] = "Status"
