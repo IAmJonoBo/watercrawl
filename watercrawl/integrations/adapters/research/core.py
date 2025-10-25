@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import Executor
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast, runtime_checkable
 from urllib.parse import urlparse
 
 from crawlkit.adapter.firecrawl_compat import fetch_markdown
@@ -17,6 +17,8 @@ from watercrawl.core.external_sources import triangulate_organisation
 from watercrawl.domain.compliance import normalize_phone
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:  # pragma: no cover - typing helpers
     from .connectors import ConnectorEvidence
@@ -447,26 +449,45 @@ async def lookup_with_adapter_async(
     executor: Executor | None = None,
     apply_triangulation: bool = True,
 ) -> ResearchFinding:
-    if isinstance(adapter, SupportsAsyncLookup):
-        result = adapter.lookup_async(organisation, province)
-        if isinstance(result, Awaitable):
-            result = await result
+    loop = asyncio.get_running_loop()
+    adapter_executor = getattr(adapter, "_lookup_executor", None)
+
+    active_executor: object | None
+    if executor is not None:
+        active_executor = executor
     else:
-        loop = asyncio.get_running_loop()
-        candidate_executor = executor
-        if candidate_executor is None:
-            candidate_executor = getattr(adapter, "_lookup_executor", None)
-        result = await loop.run_in_executor(
-            candidate_executor, adapter.lookup, organisation, province
-        )
+        active_executor = adapter_executor
+
+    requires_fallback = active_executor is not None and not isinstance(
+        active_executor, Executor
+    )
+
+    async def _run_with_executor(func: Callable[..., T], *args: object) -> T:
+        candidate = cast("Executor | None", active_executor)
+        try:
+            return await loop.run_in_executor(candidate, func, *args)
+        except TypeError:
+            logger.debug(
+                "Adapter-provided executor %r rejected; falling back to default loop executor",
+                active_executor,
+                exc_info=True,
+            )
+            return await loop.run_in_executor(None, func, *args)
+
+    if isinstance(adapter, SupportsAsyncLookup):
+        result = await adapter.lookup_async(organisation, province)
+    else:
+        result = await _run_with_executor(adapter.lookup, organisation, province)
 
     if not apply_triangulation:
         return result
 
     baseline_notes = result.notes
-    triangulated = await asyncio.to_thread(
-        triangulate_via_sources, organisation, province, result
-    )
+
+    def _triangulate() -> ResearchFinding:
+        return triangulate_via_sources(organisation, province, result)
+
+    triangulated = await _run_with_executor(_triangulate)
     merged = merge_findings(result, triangulated)
 
     class _BaselineNotes(str):

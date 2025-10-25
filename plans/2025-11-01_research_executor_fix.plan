@@ -1,0 +1,17 @@
+# Plan: Research adapter executor propagation hardening
+
+## Context
+- Baseline pytest with coverage currently fails at `tests/test_research_logic.py::test_lookup_with_adapter_async_uses_adapter_executor` because the adapter-specific executor sentinel is dropped.
+- Need to ensure `_lookup_executor` is honoured even when not an `Executor` subclass (tests rely on sentinel objects) while keeping runtime safety for real event loops.
+- After code changes, rerun the full QA baseline (pytest + linters + type/safety suites) and refresh `Next_Steps.md` with outcomes.
+
+## Intended changes
+1. Update `watercrawl/integrations/adapters/research/core.py` so `lookup_with_adapter_async` propagates adapter-provided executors, tolerates non-`Executor` sentinel objects for tests, and gracefully falls back when event loops reject custom executors.
+2. Add targeted unit coverage in `tests/test_research_logic.py` if adjustments are needed (existing test should pass without edits; avoid regressions).
+3. Re-run QA baseline commands: pytest (with coverage), ruff, isort, black, yamllint, sqlfluff runner, markdownlint via automation CLI, mypy, bandit, offline_safety, automation CLI QA commands (`qa lint`, `qa typecheck`, `qa mutation --dry-run`). Capture outcomes for `Next_Steps.md`.
+4. Update `Next_Steps.md` (and other documentation if necessary) to reflect remediation progress and remaining risks (e.g., markdownlint TLS behaviour).
+
+## Validation
+- All QA commands complete successfully except known markdownlint offline TLS issue (document status).
+- `tests/test_research_logic.py::test_lookup_with_adapter_async_uses_adapter_executor` passes and ensures loop executor sentinel is preserved.
+- No regressions in type checking or linting introduced by the change.
