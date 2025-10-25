@@ -44,6 +44,22 @@
 
 ## Steps (iteration log)
 
+- [x] 2025-11-02 — Dataset schema alignment + QA rerun (agent) — _Owner: Platform/QA · Due: 2025-11-09_:
+      - Extended pipeline, validation, and dataset fixtures to include the new `Fleet Size` and `Runway Length (m)` columns; refactored profile templates to the `geography.provinces` / `statuses.allowed` schema and refreshed production readiness proof messaging.
+      - Re-ran the full pytest suite after fixes (Python 3.13.3) — `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ✅ (575 passed, 3 skipped, coverage table emitted).【12ffa9†L1-L69】
+      - Baseline tooling pass:
+        * `poetry run ruff check .` ✅【12ecf1†L1-L1】
+        * `poetry run isort --profile black --check-only .` ✅ (7 vendored stubs skipped).【d09afb†L1-L1】
+        * `poetry run black --check .` ✅ after reformatting `tests/test_e2e_pipeline.py`.【3c8315†L1-L4】【9aa1c3†L1-L2】
+        * `poetry run mypy .` ✅ (only annotation-unchecked notes).【a319ef†L1-L14】
+        * `poetry run bandit -r watercrawl` ⚠️ (existing Low findings: compliance `assert`, PRR enum string, broad `except`).【6c92a8†L9-L43】
+        * `poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap` ⚠️ (markdownlint nodeenv TLS failure, hadolint warnings about unpinned apt/pip).【4b106e†L1-L46】
+        * `poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap` ✅.【0f5b08†L1-L10】
+        * `poetry run python -m apps.automation.cli qa mutation --dry-run` ✅ (plan emitted; `--no-auto-bootstrap` unsupported).【05ace8†L1-L10】【9751ad†L1-L8】
+        * `poetry run safety check --full-report` ⚠️ (network blocked — SSL handshake failure).【fbeb0a†L1-L13】
+        * `poetry build` ✅ (wheel and sdist produced).【e6195a†L1-L4】
+      - Follow-ups: seed offline Node tarball or pin markdownlint cache to clear TLS blocker; decide on hadolint pinning strategy for Dockerfile (warnings persist); evaluate replacing `assert` in compliance review and tightening PRR exception handling; investigate offline-friendly alternative for `safety check` or document trusted mirror.
+
 - [x] 2025-11-01 — Research adapter executor propagation hardening (agent) — _Owner: Platform · Due: 2025-11-08_:
       - Captured plan artefact `plans/2025-11-01_research_executor_fix.plan` describing the fix and QA rerun scope.
       - Patched `lookup_with_adapter_async` to preserve adapter-provided executors (even sentinel placeholders) with a safe fallback to the loop default when the runtime rejects custom executors.

@@ -20,8 +20,7 @@ import os
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, Generator, Optional
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +38,13 @@ try:
 except ImportError:
     OTEL_AVAILABLE = False
     logger.debug("OpenTelemetry not available - observability features disabled")
+
+if TYPE_CHECKING:
+    from opentelemetry.metrics import Meter
+    from opentelemetry.trace import Tracer
+else:  # pragma: no cover - optional dependency
+    Meter = Any
+    Tracer = Any
 
 
 @dataclass
@@ -141,15 +147,15 @@ class ObservabilityManager:
     def __init__(self, config: Optional[ObservabilityConfig] = None):
         self.config = config or ObservabilityConfig()
         self.initialized = False
-        self.tracer = None
-        self.meter = None
+        self.tracer: Tracer | None = None
+        self.meter: Meter | None = None
         self.slo_metrics = SLOMetrics()
 
         # Metrics instruments
-        self._request_counter = None
-        self._latency_histogram = None
-        self._error_counter = None
-        self._slo_gauge = None
+        self._request_counter: Any | None = None
+        self._latency_histogram: Any | None = None
+        self._error_counter: Any | None = None
+        self._slo_gauge: Any | None = None
 
     def initialize(self) -> None:
         """Initialize OpenTelemetry providers and exporters."""
@@ -426,11 +432,17 @@ class ObservabilityManager:
         try:
             # Flush traces
             if self.tracer and OTEL_AVAILABLE:
-                trace.get_tracer_provider().shutdown()
+                provider = trace.get_tracer_provider()
+                shutdown = getattr(provider, "shutdown", None)
+                if callable(shutdown):
+                    shutdown()
 
             # Shutdown metrics
             if self.meter and OTEL_AVAILABLE:
-                metrics.get_meter_provider().shutdown()
+                meter_provider = metrics.get_meter_provider()
+                shutdown_meter = getattr(meter_provider, "shutdown", None)
+                if callable(shutdown_meter):
+                    shutdown_meter()
 
             logger.info("OpenTelemetry shutdown successfully")
 

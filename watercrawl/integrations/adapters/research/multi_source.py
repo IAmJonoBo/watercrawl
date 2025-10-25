@@ -156,17 +156,24 @@ class MultiSourceResearchAdapter:
         self, connector_name: str, organisation: str, province: str
     ) -> ConnectorRequest:
         settings = config.RESEARCH_CONNECTOR_SETTINGS.get(connector_name, {})
-        allow_personal = settings.get("allow_personal_data")
-        if allow_personal is None:
-            allow_personal = config.RESEARCH_ALLOW_PERSONAL_DATA
-        rate_limit = settings.get(
+        allow_personal_raw = settings.get("allow_personal_data")
+        allow_personal = (
+            bool(allow_personal_raw)
+            if allow_personal_raw is not None
+            else config.RESEARCH_ALLOW_PERSONAL_DATA
+        )
+        rate_limit_raw = settings.get(
             "rate_limit_seconds", config.RESEARCH_RATE_LIMIT_SECONDS
         )
+        try:
+            rate_limit_seconds = float(rate_limit_raw)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            rate_limit_seconds = float(config.RESEARCH_RATE_LIMIT_SECONDS)
         return ConnectorRequest(
             organisation=organisation,
             province=province,
-            allow_personal_data=bool(allow_personal),
-            rate_limit_delay=float(rate_limit) if rate_limit is not None else 0.0,
+            allow_personal_data=allow_personal,
+            rate_limit_delay=rate_limit_seconds,
         )
 
 

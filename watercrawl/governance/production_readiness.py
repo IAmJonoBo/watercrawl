@@ -12,13 +12,11 @@ Implements comprehensive production readiness checks aligned with:
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from rich.console import Console
 from rich.table import Table
@@ -169,7 +167,7 @@ class ProductionReadinessReview:
                     name="Unit/Integration/E2E Tests",
                     category=CheckCategory.QUALITY,
                     status=CheckStatus.PASS,
-                    proof="Tests configured in pyproject.toml",
+                    proof="pytest configured in pyproject.toml",
                     evidence_paths=["tests/", "pyproject.toml"],
                     metadata={
                         "test_count": len(list(pytest_path.glob("test_*.py"))),
@@ -327,7 +325,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.RELIABILITY,
                     status=CheckStatus.PASS,
                     proof=f"Found {len(perf_tests)} performance test files",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in perf_tests],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in perf_tests
+                    ],
                 )
             )
         elif skip_optional:
@@ -364,7 +364,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.RELIABILITY,
                     status=CheckStatus.PASS,
                     proof=f"Found SLO configurations: {len(slo_files)} files",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in slo_files],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in slo_files
+                    ],
                 )
             )
         elif skip_optional:
@@ -403,7 +405,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.RELIABILITY,
                     status=CheckStatus.PASS,
                     proof="Capacity planning documentation found",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in capacity_docs],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in capacity_docs
+                    ],
                 )
             )
         elif skip_optional:
@@ -442,7 +446,8 @@ class ProductionReadinessReview:
                     status=CheckStatus.PASS,
                     proof=f"Found {len(chaos_tests)} chaos tests, {len(dr_docs)} DR docs",
                     evidence_paths=[
-                        str(p.relative_to(self.repo_root)) for p in chaos_tests + dr_docs
+                        str(p.relative_to(self.repo_root))
+                        for p in chaos_tests + dr_docs
                     ],
                 )
             )
@@ -500,7 +505,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.SECURITY,
                     status=CheckStatus.PASS,
                     proof="Security/threat documentation found",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in threat_docs],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in threat_docs
+                    ],
                 )
             )
         else:
@@ -725,7 +732,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.SUPPLY_CHAIN,
                     status=CheckStatus.PASS,
                     proof=f"SBOM files found: {len(sbom_files)}",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in sbom_files],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in sbom_files
+                    ],
                 )
             )
         elif lock_files:
@@ -766,7 +775,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.SUPPLY_CHAIN,
                     status=CheckStatus.PASS,
                     proof=f"Build automation found: {len(build_files)} files",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in build_files],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in build_files
+                    ],
                 )
             )
         elif skip_optional:
@@ -954,7 +965,8 @@ class ProductionReadinessReview:
                     status=CheckStatus.PASS,
                     proof=f"Found {len(alert_files)} configs, {len(alert_tests)} tests",
                     evidence_paths=[
-                        str(p.relative_to(self.repo_root)) for p in alert_files + alert_tests
+                        str(p.relative_to(self.repo_root))
+                        for p in alert_files + alert_tests
                     ],
                 )
             )
@@ -994,7 +1006,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.OBSERVABILITY,
                     status=CheckStatus.PASS,
                     proof=f"Found {len(runbook_docs)} runbook documents",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in runbook_docs],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in runbook_docs
+                    ],
                 )
             )
         elif skip_optional:
@@ -1112,7 +1126,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.DEPLOYMENT,
                     status=CheckStatus.PASS,
                     proof=f"Found {len(iac_files)} IaC files",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in iac_files[:10]],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in iac_files[:10]
+                    ],
                 )
             )
         else:
@@ -1290,7 +1306,10 @@ class ProductionReadinessReview:
                     category=CheckCategory.DEPLOYMENT,
                     status=CheckStatus.PASS,
                     proof=f"Feature flags found: {len(feature_flag_files)} files, env_example={'yes' if has_env_flags else 'no'}",
-                    metadata={"files": len(feature_flag_files), "env_example": has_env_flags},
+                    metadata={
+                        "files": len(feature_flag_files),
+                        "env_example": has_env_flags,
+                    },
                 )
             )
         else:
@@ -1333,7 +1352,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.DOCUMENTATION,
                     status=CheckStatus.PASS,
                     proof=f"Found {len(release_docs)} release documentation files",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in release_docs],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in release_docs
+                    ],
                 )
             )
         else:
@@ -1364,7 +1385,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.DOCUMENTATION,
                     status=CheckStatus.PASS,
                     proof=f"Found {doc_count} documentation files",
-                    evidence_paths=["README.md", "docs/"] if docs_dir.exists() else ["README.md"],
+                    evidence_paths=(
+                        ["README.md", "docs/"] if docs_dir.exists() else ["README.md"]
+                    ),
                 )
             )
         else:
@@ -1394,7 +1417,9 @@ class ProductionReadinessReview:
                     category=CheckCategory.DOCUMENTATION,
                     status=CheckStatus.PASS,
                     proof=f"Found {len(support_docs)} support documentation files",
-                    evidence_paths=[str(p.relative_to(self.repo_root)) for p in support_docs],
+                    evidence_paths=[
+                        str(p.relative_to(self.repo_root)) for p in support_docs
+                    ],
                 )
             )
         elif skip_optional:
@@ -1456,7 +1481,9 @@ class ProductionReadinessReview:
             go_decision=go_decision,
             residual_risks=residual_risks,
             summary=summary,
-            evidence_bundle_path=str(evidence_bundle_path) if evidence_bundle_path else None,
+            evidence_bundle_path=(
+                str(evidence_bundle_path) if evidence_bundle_path else None
+            ),
         )
 
     def _generate_summary(
@@ -1464,7 +1491,7 @@ class ProductionReadinessReview:
     ) -> str:
         """Generate PRR summary."""
         total = sum(status_counts.values())
-        summary = f"Production Readiness Review Summary\n"
+        summary = "Production Readiness Review Summary\n"
         summary += f"{'=' * 50}\n"
         summary += f"Total Checks: {total}\n"
         summary += f"  ✓ Pass: {status_counts[CheckStatus.PASS]}\n"
@@ -1472,7 +1499,7 @@ class ProductionReadinessReview:
         summary += f"  ⚠ Warn: {status_counts[CheckStatus.WARN]}\n"
         summary += f"  - N/A: {status_counts[CheckStatus.NA]}\n"
         summary += f"  ⊘ Skip: {status_counts[CheckStatus.SKIP]}\n"
-        summary += f"\n"
+        summary += "\n"
         summary += f"Go/No-Go Decision: {'✓ GO' if go_decision else '✗ NO-GO'}\n"
 
         if not go_decision:
@@ -1494,7 +1521,9 @@ class ProductionReadinessReview:
             if not category_checks:
                 continue
 
-            table = Table(title=f"\n{category.value}", show_header=True, header_style="bold")
+            table = Table(
+                title=f"\n{category.value}", show_header=True, header_style="bold"
+            )
             table.add_column("Check", style="cyan", no_wrap=True)
             table.add_column("Status", justify="center", style="bold")
             table.add_column("Proof/Remediation", style="dim")
@@ -1511,7 +1540,10 @@ class ProductionReadinessReview:
                     status_text.stylize("dim")
 
                 info = check.proof or ""
-                if check.status in (CheckStatus.FAIL, CheckStatus.WARN) and check.remediation:
+                if (
+                    check.status in (CheckStatus.FAIL, CheckStatus.WARN)
+                    and check.remediation
+                ):
                     info = f"{info}\n→ {check.remediation}"
 
                 table.add_row(check.name, status_text, info)
@@ -1519,10 +1551,12 @@ class ProductionReadinessReview:
             console.print(table)
 
         # Print summary
-        console.print(f"\n[bold]Summary[/bold]")
+        console.print("\n[bold]Summary[/bold]")
         console.print(f"  Total Checks: {sum(status_counts.values())}")
         console.print(f"  ✓ Pass: [green]{status_counts[CheckStatus.PASS]}[/green]")
-        console.print(f"  ✗ Fail: [red bold]{status_counts[CheckStatus.FAIL]}[/red bold]")
+        console.print(
+            f"  ✗ Fail: [red bold]{status_counts[CheckStatus.FAIL]}[/red bold]"
+        )
         console.print(f"  ⚠ Warn: [yellow]{status_counts[CheckStatus.WARN]}[/yellow]")
         console.print(f"  - N/A: {status_counts[CheckStatus.NA]}")
         console.print(f"  ⊘ Skip: [dim]{status_counts[CheckStatus.SKIP]}[/dim]")
@@ -1554,5 +1588,7 @@ class ProductionReadinessReview:
             console.print(f"\n[green]Evidence bundle saved: {report_path}[/green]")
             return report_path
         except Exception as e:
-            console.print(f"[yellow]Warning: Failed to save evidence bundle: {e}[/yellow]")
+            console.print(
+                f"[yellow]Warning: Failed to save evidence bundle: {e}[/yellow]"
+            )
             return None

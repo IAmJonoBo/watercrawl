@@ -7,10 +7,10 @@ from typing import Any
 
 import pytest
 
+from tools.sql import sqlfluff_runner
 from watercrawl.integrations.contracts.shared_config import (
     environment_payload,
 )
-from tools.sql import sqlfluff_runner
 
 duckdb = pytest.importorskip("duckdb")
 

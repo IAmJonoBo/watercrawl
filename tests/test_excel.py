@@ -51,14 +51,16 @@ def _runway_values() -> st.SearchStrategy[object]:
 
 
 def _province_values() -> st.SearchStrategy[object]:
-    canonical = config.PROVINCES + [province.upper() for province in config.PROVINCES]
+    canonical = list(config.PROVINCES) + [
+        province.upper() for province in config.PROVINCES
+    ]
     return st.one_of(
         st.sampled_from(canonical), st.just("unknown"), st.none(), st.just("")
     )
 
 
 def _status_values() -> st.SearchStrategy[object]:
-    canonical = config.CANONICAL_STATUSES + [
+    canonical = list(config.CANONICAL_STATUSES) + [
         status.upper() for status in config.CANONICAL_STATUSES
     ]
     return st.one_of(
@@ -91,6 +93,13 @@ def _spreadsheet_frames() -> st.SearchStrategy[pd.DataFrame]:
             ),
             column("Fleet Size", elements=_fleet_values()),
             column("Runway Length", elements=_runway_values()),
+            column(
+                "Runway Length (m)",
+                elements=st.one_of(
+                    st.none(),
+                    st.floats(min_value=0.0, max_value=5000.0, allow_nan=False),
+                ),
+            ),
         ],
         index=range_indexes(min_size=1, max_size=5),
     )
@@ -113,7 +122,13 @@ def test_read_dataset_normalizes_units_and_categories(
 
     subset_columns = [
         column
-        for column in ("Province", "Status", "Fleet Size", "Runway Length")
+        for column in (
+            "Province",
+            "Status",
+            "Fleet Size",
+            "Runway Length",
+            "Runway Length (m)",
+        )
         if column in normalized.columns
     ]
     pd.testing.assert_frame_equal(
@@ -189,6 +204,7 @@ def test_read_dataset_supports_excel_roundtrips(tmp_path: Path) -> None:
                 "Contact Email Address": "analyst@example.org",
                 "Fleet Size": "12 planes",
                 "Runway Length": "100 ft",
+                "Runway Length (m)": 30.48,
             }
         ]
     )
@@ -357,7 +373,7 @@ def test_read_dataset_accepts_directory_inputs(tmp_path: Path) -> None:
                 "Status": "Verified",
             }
         ]
-    ).to_excel(xlsx_path, sheet_name="Sheet1", index=False)
+    ).to_excel(xlsx_path, sheet_name=config.CLEANED_SHEET, index=False)
 
     combined = excel.read_dataset(input_dir)
 

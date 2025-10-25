@@ -6,7 +6,6 @@ pytest.importorskip("yaml")
 
 from watercrawl.core.profiles import load_profile
 
-
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "profiles" / "templates"
 
 
@@ -20,7 +19,9 @@ def test_profile_templates_directory_exists() -> None:
 )
 def test_profile_templates_are_valid(template_path: Path) -> None:
     profile = load_profile(template_path)
-    assert profile.identifier.startswith("template-"), "Template identifiers must be namespaced"
+    assert profile.identifier.startswith(
+        "template-"
+    ), "Template identifiers must be namespaced"
     assert profile.description, "Template profiles should include a description"
 
 

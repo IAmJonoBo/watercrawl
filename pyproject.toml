@@ -140,6 +140,7 @@ extend-exclude = '''
 (
   ^/node_modules/
   |^/docs-starlight/
+  |^/stubs/
 )
 '''
 

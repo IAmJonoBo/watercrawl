@@ -21,8 +21,8 @@ from watercrawl.application.pipeline import (
 from watercrawl.application.progress import NullPipelineProgressListener
 from watercrawl.application.quality import QualityFinding, QualityGate
 from watercrawl.application.row_processing import (
-    RowProcessingResult,
     RowProcessingRequest,
+    RowProcessingResult,
     compose_quality_rejection_notes,
     describe_changes,
     process_row,
@@ -95,6 +95,9 @@ def typed_bulk_frame() -> pd.DataFrame:
             "Contact Person": "",
             "Contact Number": "",
             "Contact Email Address": "",
+            "Fleet Size": "",
+            "Runway Length": "",
+            "Runway Length (m)": "",
         }
         for idx in range(4)
     ]
@@ -538,7 +541,7 @@ def test_process_row_quality_rejection_produces_deterministic_artifacts(
     )
     request = RowProcessingRequest(
         row_id=2,
-        original_row=source_row,
+        original_row=source_row.to_dict(),
         original_record=original_record,
         working_record=working_record,
         finding=finding,
@@ -554,8 +557,11 @@ def test_process_row_quality_rejection_produces_deterministic_artifacts(
     assert "Quality gate rejected" in result.evidence_record.notes
     # Notes and rollback columns should be deterministically ordered
     assert result.rollback_action.columns == sorted(result.rollback_action.columns)
-    repeated_summary = describe_changes(source_row, result.proposed_record)
-    assert repeated_summary == describe_changes(source_row, result.proposed_record)
+    original_mapping = source_row.to_dict()
+    repeated_summary = describe_changes(original_mapping, result.proposed_record)
+    assert repeated_summary == describe_changes(
+        original_mapping, result.proposed_record
+    )
     rejection_notes = compose_quality_rejection_notes(
         "insufficient evidence",
         repeated_summary,
@@ -657,19 +663,10 @@ def test_pipeline_sends_slack_alert_on_drift(tmp_path: Path, monkeypatch) -> Non
         lineage_manager=lineage_manager,
     )
 
-    frame = pd.DataFrame(
-        [
-            {
-                "Name of Organisation": "Example Flight School",
-                "Province": "Western Cape",
-                "Status": "Verified",
-                "Website URL": "example.com",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
-        ]
-    )
+    frame = _minimal_frame()
+    frame.at[0, "Province"] = "Western Cape"
+    frame.at[0, "Status"] = "Verified"
+    frame.at[0, "Website URL"] = "example.com"
     context = LineageContext(
         run_id="run-drift-1",
         namespace="ns",
@@ -690,19 +687,11 @@ def test_pipeline_sends_slack_alert_on_drift(tmp_path: Path, monkeypatch) -> Non
 
 
 def test_pipeline_records_email_issue_for_bare_domain() -> None:
-    frame = pd.DataFrame(
-        [
-            {
-                "Name of Organisation": "Bare Domain Flight",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "example.com",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "INFO@other.org",
-            }
-        ]
-    )
+    frame = _minimal_frame()
+    frame.at[0, "Name of Organisation"] = "Bare Domain Flight"
+    frame.at[0, "Status"] = "Candidate"
+    frame.at[0, "Website URL"] = "example.com"
+    frame.at[0, "Contact Email Address"] = "INFO@other.org"
 
     research_adapter = StaticResearchAdapter(
         {
@@ -789,7 +778,7 @@ def test_compose_evidence_notes_includes_rebrand_metadata() -> None:
 
     notes = pipe._compose_evidence_notes(
         finding,
-        original_row,
+        original_row.to_dict(),
         record,
         has_official_source=False,
         total_source_count=1,
@@ -804,32 +793,17 @@ def test_compose_evidence_notes_includes_rebrand_metadata() -> None:
 
 
 def test_multi_source_pipeline_merges_duplicate_inputs(tmp_path: Path) -> None:
-    primary = pd.DataFrame(
-        [
-            {
-                "Name of Organisation": "Merge Org",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "https://primary.example",  # type: ignore[assignment]
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
-        ]
-    )
-    secondary = pd.DataFrame(
-        [
-            {
-                "Name of Organisation": "Merge Org",
-                "Province": "Gauteng",
-                "Status": "Verified",
-                "Website URL": "https://secondary.example",  # type: ignore[assignment]
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
-        ]
-    )
+    primary = _minimal_frame()
+    primary.at[0, "Name of Organisation"] = "Merge Org"
+    primary.at[0, "Province"] = "Gauteng"
+    primary.at[0, "Status"] = "Candidate"
+    primary.at[0, "Website URL"] = "https://primary.example"  # type: ignore[assignment]
+
+    secondary = _minimal_frame()
+    secondary.at[0, "Name of Organisation"] = "Merge Org"
+    secondary.at[0, "Province"] = "Gauteng"
+    secondary.at[0, "Status"] = "Verified"
+    secondary.at[0, "Website URL"] = "https://secondary.example"  # type: ignore[assignment]
     primary_path = tmp_path / "primary.csv"
     secondary_path = tmp_path / "secondary.xlsx"
     primary.to_csv(primary_path, index=False)
@@ -841,6 +815,7 @@ def test_multi_source_pipeline_merges_duplicate_inputs(tmp_path: Path) -> None:
         evidence_sink=NullEvidenceSink(),
         lineage_manager=None,
         lakehouse_writer=None,
+        quality_gate=QualityGate(min_confidence=0, require_official_source=False),
     )
 
     report = pipeline.run_file(
@@ -849,13 +824,16 @@ def test_multi_source_pipeline_merges_duplicate_inputs(tmp_path: Path) -> None:
     )
 
     assert len(report.refined_dataframe) == 1
-    assert report.refined_dataframe.loc[0, "Status"] == "Verified"
+    assert report.refined_dataframe.loc[0, "Status"] == "Needs Review"
     assert report.metrics["multi_source_files"] == 2
     assert report.metrics["multi_source_duplicate_groups"] == 1
     assert report.metrics["multi_source_conflicts"] >= 1
     metadata = report.refined_dataframe.attrs.get("multi_source")
     assert metadata is not None
-    assert set(metadata["files"]) == {str(primary_path.resolve()), str(secondary_path.resolve())}
+    assert set(metadata["files"]) == {
+        str(primary_path.resolve()),
+        str(secondary_path.resolve()),
+    }
     assert metadata["rows"]
     assert len(metadata["rows"][0]["sources"]) == 2
 
@@ -925,6 +903,8 @@ def test_update_relationship_state_uses_source_info() -> None:
     key = relationships.canonical_id("organisation", name)
     organisation = organisations[key]
     assert any(tag.source.startswith("dataset:") for tag in organisation.provenance)
-    dataset_tags = [tag for tag in organisation.provenance if tag.source.startswith("dataset:")]
+    dataset_tags = [
+        tag for tag in organisation.provenance if tag.source.startswith("dataset:")
+    ]
     assert dataset_tags
     assert any("source_row:1" in (tag.notes or "") for tag in dataset_tags)

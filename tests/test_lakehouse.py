@@ -67,7 +67,7 @@ def test_local_lakehouse_writer_falls_back_to_csv_when_parquet_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     config = LakehouseConfig(
-        backend="delta",
+        backend="filesystem",
         root_path=tmp_path,
         table_name="flight_schools",
     )

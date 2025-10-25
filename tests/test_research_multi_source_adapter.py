@@ -79,7 +79,7 @@ def test_multi_source_adapter_merges_observations() -> None:
     press_connector.collect.return_value = press_result
 
     adapter = MultiSourceResearchAdapter(
-        connectors=[regulator_connector, press_connector],
+        connectors=(regulator_connector, press_connector),
         validator=validator,
     )
 

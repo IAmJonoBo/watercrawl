@@ -12,6 +12,9 @@
           "Contact Person",
           "Contact Number",
           "Contact Email Address",
+          "Fleet Size",
+          "Runway Length",
+          "Runway Length (m)",
           "Confidence"
         ]
       },

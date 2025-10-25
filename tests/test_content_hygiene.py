@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from watercrawl.integrations.content_hygiene import (
     ContentCleaner,
     Deduplicator,

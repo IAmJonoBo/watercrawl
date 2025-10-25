@@ -28,6 +28,9 @@ def test_validator_detects_invalid_province():
                 "Contact Person": "Jane Dlamini",
                 "Contact Number": "+27 11 555 0101",
                 "Contact Email Address": "hello@aerolabs.co.za",
+                "Fleet Size": "",
+                "Runway Length": "",
+                "Runway Length (m)": "",
             }
         ]
     )

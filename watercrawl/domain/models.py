@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, overload
 
 from watercrawl.core import config
 
@@ -44,8 +44,15 @@ class ExpectedColumnsProxy(Sequence[str]):
     def __len__(self) -> int:
         return len(config.get_profile_state().EXPECTED_COLUMNS)
 
-    def __getitem__(self, index: int) -> str:
-        return config.get_profile_state().EXPECTED_COLUMNS[index]
+    @overload
+    def __getitem__(self, index: int) -> str: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[str]: ...
+
+    def __getitem__(self, index: int | slice) -> str | Sequence[str]:
+        columns = config.get_profile_state().EXPECTED_COLUMNS
+        return columns[index]
 
 
 EXPECTED_COLUMNS: Sequence[str] = ExpectedColumnsProxy()

@@ -30,17 +30,19 @@ dataset:
       semantic_type: phone
     - name: Contact Email Address
       semantic_type: email
-provinces:
-  - Market North
-  - Market South
-  - Market East
-  - Market West
+geography:
+  provinces:
+    - Market North
+    - Market South
+    - Market East
+    - Market West
 statuses:
-  - Verified
-  - Candidate
-  - Needs Review
-  - Archived
-default_status: Candidate
+  allowed:
+    - Verified
+    - Candidate
+    - Needs Review
+    - Archived
+  default: Candidate
 compliance:
   default_confidence:
     Verified: 92

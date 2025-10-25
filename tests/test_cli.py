@@ -10,11 +10,11 @@ from click.testing import CliRunner
 pytest.importorskip("yaml")
 pytest.importorskip("pandas")
 
+import pandas as pd
 import yaml
 
-import pandas as pd
-
 from watercrawl.application.progress import PipelineProgressListener
+from watercrawl.core import config
 from watercrawl.domain.contracts import (
     CONTRACT_VERSION,
     PipelineReportContract,
@@ -22,7 +22,6 @@ from watercrawl.domain.contracts import (
     ValidationReportContract,
 )
 from watercrawl.domain.models import PipelineReport, SchoolRecord, ValidationReport
-from watercrawl.core import config
 from watercrawl.interfaces import cli
 from watercrawl.interfaces.cli import cli as cli_group
 
@@ -34,7 +33,7 @@ def _write_sample_csv(path: Path, include_email: bool = False) -> None:
         "Status": "Candidate",
         "Website URL": "",
         "Contact Person": "",
-        "Contact Number": "",
+        "Contact Number": "+27115550100",
     }
     if include_email:
         base_row["Contact Email Address"] = "info@aerolabs.co.za"
@@ -701,15 +700,17 @@ def test_cli_validate_emits_inference_preview(tmp_path):
     def _dummy_read_dataset(_path: Path | list[Path], **_kwargs):
         return df
 
+    result = None
     with cli.override_cli_dependencies(
         Pipeline=DummyPipeline,
         read_dataset=_dummy_read_dataset,
     ):
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(
             cli_group,
-            ["validate", str(input_path), "--format", "json"],
+            ["validate", str(input_path), "--format", "text"],
         )
+    assert result is not None
 
     assert result.exit_code == 0
     assert "Inferred column mappings" in result.stderr
@@ -803,6 +804,7 @@ def test_cli_enrich_warns_on_adapter_failures(tmp_path):
     assert result.exit_code == 0
     assert "Warnings: 4 research lookups failed" in result.output
 
+
 def test_cli_profiles_list_reports_active_profile():
     runner = CliRunner()
     result = runner.invoke(cli_group, ["profiles", "list", "--format", "json"])
@@ -817,7 +819,7 @@ def test_cli_profiles_validate_accepts_profile_copy(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli_group, ["profiles", "validate", str(profile_path)])
     assert result.exit_code == 0
-    assert "Profile is valid" in result.output
+    assert "is valid at" in result.output
 
 
 def test_cli_profiles_switch_updates_active_profile(tmp_path: Path) -> None:

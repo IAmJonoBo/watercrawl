@@ -18,11 +18,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Iterable
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from scripts import provision_wheelhouse
+try:
+    from . import provision_wheelhouse
+except ImportError:  # pragma: no cover - allow execution as a script
+    import provision_wheelhouse  # type: ignore
 
 DEFAULT_PYTHON_VERSIONS = ("3.14", "3.15")
 DEFAULT_CACHE_ROOT = Path("artifacts/cache/pip")

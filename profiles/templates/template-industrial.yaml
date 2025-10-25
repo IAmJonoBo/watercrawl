@@ -32,17 +32,19 @@ dataset:
       semantic_type: phone
     - name: Contact Email Address
       semantic_type: email
-provinces:
-  - Region Alpha
-  - Region Beta
-  - Region Gamma
-  - Region Delta
+geography:
+  provinces:
+    - Region Alpha
+    - Region Beta
+    - Region Gamma
+    - Region Delta
 statuses:
-  - Verified
-  - Candidate
-  - Needs Review
-  - Do Not Contact (Compliance)
-default_status: Candidate
+  allowed:
+    - Verified
+    - Candidate
+    - Needs Review
+    - Do Not Contact (Compliance)
+  default: Candidate
 compliance:
   default_confidence:
     Verified: 90

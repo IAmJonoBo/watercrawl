@@ -8,9 +8,7 @@ from pathlib import Path
 import pytest
 
 from watercrawl.interfaces.telemetry import (
-    DevExMetrics,
     TelemetryCollector,
-    create_default_collector,
     get_space_survey_template,
 )
 

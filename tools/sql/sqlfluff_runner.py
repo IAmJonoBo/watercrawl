@@ -13,29 +13,34 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-try:
-    import duckdb  # type: ignore[import-not-found]
-except ImportError:  # pragma: no cover - optional dependency
-    duckdb: Any | None = None
-
 from watercrawl.integrations.contracts.shared_config import environment_payload
+
+duckdb_module: Any | None
+try:
+    import duckdb as _duckdb_module  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover - optional dependency
+    duckdb_module = None
+else:
+    duckdb_module = _duckdb_module
 
 DEFAULT_DBT_PROJECT = Path("data_contracts/analytics")
 DEFAULT_DUCKDB = Path("target/contracts.duckdb")
 
 
 def ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
-    if duckdb is None:
+    if duckdb_module is None:
         msg = (
             "duckdb is not installed. Install the optional dbt/duckdb tooling or "
             "re-run from an environment with duckdb wheels available."
         )
         raise RuntimeError(msg)
+    module = duckdb_module
+    assert module is not None  # for mypy
     materialised_path = (project_dir / relative_path).resolve()
     materialised_path.parent.mkdir(parents=True, exist_ok=True)
 
     def _initialise(path: Path) -> None:
-        with duckdb.connect(str(path)) as connection:
+        with module.connect(str(path)) as connection:
             connection.execute("PRAGMA database_list;")
 
     if not materialised_path.exists():
@@ -44,7 +49,7 @@ def ensure_duckdb(project_dir: Path, relative_path: Path) -> Path:
 
     try:
         _initialise(materialised_path)
-    except duckdb.Error:
+    except module.Error:
         with suppress(FileNotFoundError):
             materialised_path.unlink()
         _initialise(materialised_path)

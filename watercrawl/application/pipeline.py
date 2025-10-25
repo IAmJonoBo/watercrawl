@@ -376,7 +376,6 @@ class _LookupCoordinator:
                 raise
             except Exception as exc:  # pragma: no cover - defensive guard
                 self._metrics.failures += 1
-                self._circuit_breaker.record_failure()
                 logger.warning(
                     "Research adapter failed for %s (%s): %s",
                     state.working_record.name,
@@ -666,7 +665,7 @@ class Pipeline(PipelineService):
                 retrieved_at=now,
                 notes=note,
             )
-            publisher = _CONNECTOR_PUBLISHERS.get(connector)
+            publisher = _CONNECTOR_PUBLISHERS.get(connector) if connector else None
             document = relationships.SourceDocument(
                 identifier=document_id,
                 uri=url,
@@ -917,9 +916,9 @@ class Pipeline(PipelineService):
                     continue
                 indices, values = zip(*entries.items())
                 working_frame_cast.loc[list(indices), column] = list(values)
-            for column, indices in cleared_cells.items():
-                if indices:
-                    working_frame_cast.loc[list(indices), column] = ""
+            for column, cleared in cleared_cells.items():
+                if cleared:
+                    working_frame_cast.loc[list(cleared), column] = ""
 
         if evidence_records:
             contract_entries = [
@@ -947,7 +946,7 @@ class Pipeline(PipelineService):
             else 0.0
         )
 
-        metrics = {
+        metrics: dict[str, float | int] = {
             "rows_total": len(working_frame),
             "enriched_rows": enriched_rows,
             "verified_rows": int((working_frame["Status"] == "Verified").sum()),
@@ -1032,38 +1031,46 @@ class Pipeline(PipelineService):
         manifest = None
         version_info = None
         if self.lakehouse_writer and active_context:
-            manifest = self.lakehouse_writer.write(
-                run_id=active_context.run_id, dataframe=report.refined_dataframe
-            )
-            version_value = manifest.version
-            if self.versioning_manager:
-                version_info = self.versioning_manager.record_snapshot(
+            try:
+                manifest = self.lakehouse_writer.write(
                     run_id=active_context.run_id,
-                    manifest=manifest,
-                    input_fingerprint=input_fingerprint,
-                    extras={
-                        "source": "pipeline.run_dataframe_async",
-                        "environment": config.DEPLOYMENT.profile,
-                    },
+                    dataframe=report.refined_dataframe,
                 )
-                version_value = version_info.version
-            active_context = active_context.with_lakehouse(
-                uri=manifest.table_uri,
-                version=version_value,
-                manifest_path=manifest.manifest_path,
-                fingerprint=manifest.fingerprint,
-            )
-            if version_info is not None:
-                active_context = active_context.with_version(
-                    version=version_info.version,
-                    metadata_path=version_info.metadata_path,
-                    reproduce_command=version_info.reproduce_command,
-                    input_fingerprint=version_info.input_fingerprint,
-                    output_fingerprint=version_info.output_fingerprint,
-                    extras=version_info.extras,
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logger.warning("Lakehouse write failed: %s", exc, exc_info=exc)
+                metrics["lakehouse_write_failed"] = (
+                    metrics.get("lakehouse_write_failed", 0) + 1
                 )
             else:
-                active_context = active_context.with_version(version=version_value)
+                version_value = manifest.version
+                if self.versioning_manager:
+                    version_info = self.versioning_manager.record_snapshot(
+                        run_id=active_context.run_id,
+                        manifest=manifest,
+                        input_fingerprint=input_fingerprint,
+                        extras={
+                            "source": "pipeline.run_dataframe_async",
+                            "environment": config.DEPLOYMENT.profile,
+                        },
+                    )
+                    version_value = version_info.version
+                active_context = active_context.with_lakehouse(
+                    uri=manifest.table_uri,
+                    version=version_value,
+                    manifest_path=manifest.manifest_path,
+                    fingerprint=manifest.fingerprint,
+                )
+                if version_info is not None:
+                    active_context = active_context.with_version(
+                        version=version_info.version,
+                        metadata_path=version_info.metadata_path,
+                        reproduce_command=version_info.reproduce_command,
+                        input_fingerprint=version_info.input_fingerprint,
+                        output_fingerprint=version_info.output_fingerprint,
+                        extras=version_info.extras,
+                    )
+                else:
+                    active_context = active_context.with_version(version=version_value)
         if self.lineage_manager and active_context:
             artifacts = self.lineage_manager.capture(report, active_context)
             report.lineage_artifacts = artifacts
@@ -1261,13 +1268,15 @@ class Pipeline(PipelineService):
         active_context = lineage_context
         if active_context:
             if isinstance(input_path, Path):
-                input_uri = input_path.resolve().as_uri()
+                resolved_input_uri = input_path.resolve().as_uri()
             else:
-                input_uri = [candidate.resolve().as_uri() for candidate in input_path]
+                resolved_input_uri = ",".join(
+                    candidate.resolve().as_uri() for candidate in input_path
+                )
             output_uri = output_path.resolve().as_uri() if output_path else None
             active_context = replace(
                 active_context,
-                input_uri=input_uri,
+                input_uri=resolved_input_uri,
                 output_uri=output_uri or active_context.output_uri,
             )
         report = await self.run_dataframe_async(

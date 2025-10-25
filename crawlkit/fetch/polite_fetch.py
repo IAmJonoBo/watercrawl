@@ -45,12 +45,9 @@ async def _evaluate_robots(
         return RobotsDecision(allowed=True, user_agent=policy.user_agent, rule=None)
     allowed = parser.can_fetch(policy.user_agent, url)
     rule = None
-    try:
-        entry = parser.default_entry
-        if entry and entry.rulelines:
-            rule = "\n".join(line.path for line in entry.rulelines)
-    except AttributeError:
-        rule = None
+    entry = getattr(parser, "default_entry", None)
+    if entry and getattr(entry, "rulelines", None):
+        rule = "\n".join(line.path for line in entry.rulelines)
     return RobotsDecision(allowed=allowed, user_agent=policy.user_agent, rule=rule)
 
 

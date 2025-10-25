@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Callable, Iterable
 
 try:
@@ -20,8 +21,13 @@ from watercrawl.domain.compliance import canonical_domain
 from .models import EXPECTED_COLUMNS, ValidationIssue, ValidationReport
 
 
-_PHONE_RE = re.compile(config.PHONE_E164_REGEX)
-_EMAIL_RE = re.compile(config.EMAIL_REGEX)
+def _profile_state() -> config.ProfileRuntimeState:
+    return config.get_profile_state()
+
+
+@lru_cache(maxsize=None)
+def _compiled_regex(pattern: str) -> re.Pattern[str]:
+    return re.compile(pattern)
 
 
 def _clean_value(value: Any) -> str | None:
@@ -108,7 +114,9 @@ class DatasetValidator:
     def _validate_provinces(
         self, frame: Any, _: ContactIndex
     ) -> Iterable[ValidationIssue]:
-        allowed = {province.lower(): province for province in config.PROVINCES}
+        allowed = {
+            province.lower(): province for province in _profile_state().PROVINCES
+        }
         province_series = frame["Province"].fillna("")
         issues: list[ValidationIssue] = []
         for offset, (_, raw_value) in enumerate(province_series.items(), start=2):
@@ -130,7 +138,7 @@ class DatasetValidator:
     def _validate_statuses(
         self, frame: Any, _: ContactIndex
     ) -> Iterable[ValidationIssue]:
-        allowed = {status.lower() for status in config.CANONICAL_STATUSES}
+        allowed = {status.lower() for status in _profile_state().CANONICAL_STATUSES}
         issues: list[ValidationIssue] = []
         for offset, (_, raw_value) in enumerate(
             frame["Status"].fillna("").items(), start=2
@@ -173,7 +181,10 @@ class DatasetValidator:
                         )
                     )
                 else:
-                    if not contact.normalized_phone or not _PHONE_RE.fullmatch(contact.normalized_phone):
+                    phone_re = _compiled_regex(_profile_state().PHONE_E164_REGEX)
+                    if not contact.normalized_phone or not phone_re.fullmatch(
+                        contact.normalized_phone
+                    ):
                         issues.append(
                             ValidationIssue(
                                 code="invalid_phone_format",
@@ -194,7 +205,8 @@ class DatasetValidator:
                     )
                     continue
 
-                if not _EMAIL_RE.fullmatch(contact.email):
+                email_re = _compiled_regex(_profile_state().EMAIL_REGEX)
+                if not email_re.fullmatch(contact.email):
                     issues.append(
                         ValidationIssue(
                             code="invalid_email_format",
@@ -205,13 +217,19 @@ class DatasetValidator:
                     )
                     continue
 
+                state = _profile_state()
                 if (
-                    config.EMAIL_REQUIRE_DOMAIN_MATCH
+                    state.EMAIL_REQUIRE_DOMAIN_MATCH
                     and contact.website_domain
                     and contact.normalized_email
                 ):
                     email_domain = contact.normalized_email.split("@", 1)[-1]
-                    if email_domain != contact.website_domain.lower() and not email_domain.endswith('.' + contact.website_domain.lower()):
+                    if (
+                        email_domain != contact.website_domain.lower()
+                        and not email_domain.endswith(
+                            "." + contact.website_domain.lower()
+                        )
+                    ):
                         issues.append(
                             ValidationIssue(
                                 code="email_domain_mismatch",
@@ -282,7 +300,9 @@ class DatasetValidator:
                                 column="Contact Email Address",
                             )
                         )
-                    elif existing_email and existing_email.row_number != entry.row_number:
+                    elif (
+                        existing_email and existing_email.row_number != entry.row_number
+                    ):
                         issues.append(
                             ValidationIssue(
                                 code="duplicate_contact_email",
@@ -354,9 +374,7 @@ class DatasetValidator:
                 )
 
             if len(roles) > 1:
-                display_roles = sorted(
-                    {entry.role for entry in ordered if entry.role}
-                )
+                display_roles = sorted({entry.role for entry in ordered if entry.role})
                 issues.append(
                     ValidationIssue(
                         code="conflicting_contact_roles",
@@ -380,13 +398,17 @@ class DatasetValidator:
                 for offset, (_, data) in enumerate(frame.iterrows(), start=2)
             )
         else:
-            row_iterable = ((offset, data) for offset, data in enumerate(frame, start=2))
+            row_iterable = (
+                (offset, data) for offset, data in enumerate(frame, start=2)
+            )
 
         for offset, data in row_iterable:
 
             organisation = _clean_value(data.get("Name of Organisation")) or ""
             org_identifier = organisation or f"row-{offset}"
-            canonical_org_id = relationships.canonical_id("organisation", org_identifier)
+            canonical_org_id = relationships.canonical_id(
+                "organisation", org_identifier
+            )
 
             website = _clean_value(data.get("Website URL"))
             website_domain = canonical_domain(website) if website else None

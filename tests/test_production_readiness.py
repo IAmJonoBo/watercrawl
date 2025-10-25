@@ -11,8 +11,8 @@ from watercrawl.governance.production_readiness import (
     CheckCategory,
     CheckResult,
     CheckStatus,
-    PRRReport,
     ProductionReadinessReview,
+    PRRReport,
 )
 
 
@@ -122,6 +122,7 @@ def test_check_tests_configured(temp_repo: Path) -> None:
     assert check.name == "Unit/Integration/E2E Tests"
     assert check.category == CheckCategory.QUALITY
     assert check.status == CheckStatus.PASS
+    assert check.proof is not None
     assert "pytest" in check.proof.lower()
 
 
@@ -134,6 +135,7 @@ def test_check_lint_configured(temp_repo: Path) -> None:
     check = prr.checks[0]
     assert check.name == "Linting Configuration"
     assert check.status == CheckStatus.PASS
+    assert check.proof is not None
     assert "ruff" in check.proof.lower()
 
 
@@ -146,6 +148,7 @@ def test_check_static_analysis_configured(temp_repo: Path) -> None:
     check = prr.checks[0]
     assert check.name == "Static Analysis"
     assert check.status == CheckStatus.PASS
+    assert check.proof is not None
     assert "mypy" in check.proof.lower()
 
 
@@ -182,6 +185,7 @@ def test_check_sbom_with_lock_files(temp_repo: Path) -> None:
     check = prr.checks[0]
     assert check.name == "SBOM (SPDX/CycloneDX)"
     assert check.status == CheckStatus.WARN
+    assert check.proof is not None
     assert "poetry.lock" in check.proof
 
 
@@ -216,6 +220,7 @@ def test_check_config_pinned(temp_repo: Path) -> None:
     check = prr.checks[0]
     assert check.name == "Config Pinned"
     assert check.status == CheckStatus.PASS
+    assert check.proof is not None
     assert "poetry.lock" in check.proof
 
 

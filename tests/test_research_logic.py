@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterable, Mapping
-from typing import Callable
+from collections.abc import Mapping
+from typing import Callable, cast
 
 import pytest
 
@@ -21,6 +21,7 @@ from watercrawl.integrations.adapters.research import (
     register_adapter,
 )
 from watercrawl.integrations.adapters.research import registry as research_registry
+from watercrawl.integrations.adapters.research.core import Fetcher
 
 
 class _DummyLoop:
@@ -539,7 +540,7 @@ def test_crawlkit_research_adapter_collects_sources(monkeypatch) -> None:
         }
 
     adapter = research.CrawlkitResearchAdapter(
-        fetcher=fake_fetch,
+        fetcher=cast(Fetcher, fake_fetch),
         seed_url_provider=seed,
     )
     result = adapter.lookup("Example Org", "Gauteng")
@@ -622,7 +623,7 @@ def test_crawlkit_research_adapter_merges_multiple_seed_urls(monkeypatch) -> Non
         }
 
     adapter = research.CrawlkitResearchAdapter(
-        fetcher=fake_fetch,
+        fetcher=cast(Fetcher, fake_fetch),
         seed_url_provider=seed,
     )
 
@@ -680,7 +681,7 @@ def test_crawlkit_research_adapter_reports_failed_urls(monkeypatch) -> None:
         }
 
     adapter = research.CrawlkitResearchAdapter(
-        fetcher=fake_fetch,
+        fetcher=cast(Fetcher, fake_fetch),
         seed_url_provider=seed,
     )
 
