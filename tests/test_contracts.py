@@ -5,6 +5,7 @@ import json
 import os
 import re
 from pathlib import Path
+from typing import Any, cast
 
 import pandas as pd
 import pytest
@@ -36,6 +37,9 @@ def _valid_row() -> dict[str, str]:
         "Contact Person": "Amina Dlamini",
         "Contact Number": "+27123456789",
         "Contact Email Address": "amina@testflightschool.co.za",
+        "Fleet Size": "",
+        "Runway Length": "",
+        "Runway Length (m)": "",
         "Confidence": "85",
     }
 
@@ -264,30 +268,36 @@ def test_csv_evidence_sink_validates_mappings(tmp_path: Path) -> None:
 
     sink = CSVEvidenceSink(path=tmp_path / "evidence.csv")
     sink.record(
-        [
-            {
-                "row_id": 1,
-                "organisation": "Test School",
-                "changes": "Initial contract export",
-                "sources": ["https://example.com", "https://gov.za"],
-                "notes": "Automated QA",
-                "confidence": 90,
-            }
-        ]
+        cast(
+            list[Any],
+            [
+                {
+                    "row_id": 1,
+                    "organisation": "Test School",
+                    "changes": "Initial contract export",
+                    "sources": ["https://example.com", "https://gov.za"],
+                    "notes": "Automated QA",
+                    "confidence": 90,
+                }
+            ],
+        )
     )
     assert sink.path.exists()
 
     with pytest.raises(ValidationError):
         sink.record(
-            [
-                {
-                    "row_id": -1,
-                    "organisation": "Test School",
-                    "changes": "Invalid contract",
-                    "sources": [],
-                    "confidence": 150,
-                }
-            ]
+            cast(
+                list[Any],
+                [
+                    {
+                        "row_id": -1,
+                        "organisation": "Test School",
+                        "changes": "Invalid contract",
+                        "sources": [],
+                        "confidence": 150,
+                    }
+                ],
+            )
         )
 
 
@@ -314,13 +324,16 @@ def test_streaming_evidence_sink_rejects_invalid_payloads() -> None:
         sink.record(["not a contract"])  # type: ignore[list-item]
     with pytest.raises(ValidationError):
         sink.record(
-            [
-                {
-                    "row_id": 0,
-                    "organisation": "Test",
-                    "changes": "Invalid",
-                    "sources": [],
-                    "confidence": -1,
-                }
-            ]
+            cast(
+                list[Any],
+                [
+                    {
+                        "row_id": 0,
+                        "organisation": "Test",
+                        "changes": "Invalid",
+                        "sources": [],
+                        "confidence": -1,
+                    }
+                ],
+            )
         )

@@ -73,6 +73,7 @@ def test_fetch_package_metadata_uses_certifi_context(
 
     assert data == {"info": {}, "releases": {}}
     assert insecure is False
+    assert isinstance(captured["url"], str)
     assert captured["url"].endswith("/example/json")
     assert captured["timeout"] == wheel_status.REQUEST_TIMEOUT
 

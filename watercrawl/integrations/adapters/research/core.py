@@ -40,6 +40,16 @@ class ResearchAdapter(Protocol):
     def lookup(self, organisation: str, province: str) -> ResearchFinding: ...
 
 
+class Fetcher(Protocol):
+    def __call__(
+        self,
+        url: str,
+        depth: int = ...,
+        include_subpaths: bool = ...,
+        policy: Mapping[str, Any] | None = ...,
+    ) -> Mapping[str, Any]: ...
+
+
 @dataclass(frozen=True)
 class ResearchFinding:
     """Container for enrichment data returned by research adapters."""
@@ -153,10 +163,7 @@ class CrawlkitResearchAdapter:
 
     def __init__(
         self,
-        fetcher: (
-            Callable[[str, int, bool, Mapping[str, Any] | None], Mapping[str, Any]]
-            | None
-        ) = None,
+        fetcher: Fetcher | None = None,
         *,
         seed_url_provider: SeedProvider | None = None,
         policy_factory: PolicyFactory | None = None,
@@ -452,15 +459,11 @@ async def lookup_with_adapter_async(
     loop = asyncio.get_running_loop()
     adapter_executor = getattr(adapter, "_lookup_executor", None)
 
-    active_executor: object | None
+    active_executor: Executor | None
     if executor is not None:
         active_executor = executor
     else:
-        active_executor = adapter_executor
-
-    requires_fallback = active_executor is not None and not isinstance(
-        active_executor, Executor
-    )
+        active_executor = cast("Executor | None", adapter_executor)
 
     async def _run_with_executor(func: Callable[..., T], *args: object) -> T:
         candidate = cast("Executor | None", active_executor)
@@ -494,7 +497,9 @@ async def lookup_with_adapter_async(
         """Preserve baseline notes while exposing triangulation context for membership checks."""
 
         def __contains__(self, item: object) -> bool:
-            if isinstance(item, str) and item.lower() == "regulator":
+            if not isinstance(item, str):
+                return False
+            if item.lower() == "regulator":
                 return True
             return super().__contains__(item)
 

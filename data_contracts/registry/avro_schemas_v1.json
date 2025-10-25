@@ -43,6 +43,86 @@
     "type": "record",
     "watercrawl_version": "1.0.0"
   },
+  "ComplianceScheduleEntry": {
+    "doc": "Contract describing compliance verification metadata for a row.",
+    "fields": [
+      {
+        "doc": "Row identifier",
+        "name": "row_id",
+        "type": "int"
+      },
+      {
+        "doc": "Organisation name",
+        "name": "organisation",
+        "type": "string"
+      },
+      {
+        "doc": "Current status value",
+        "name": "status",
+        "type": "string"
+      },
+      {
+        "doc": "Timestamp when the contact was last verified",
+        "name": "last_verified_at",
+        "type": [
+          "null",
+          "string",
+          "string"
+        ]
+      },
+      {
+        "doc": "Timestamp when re-validation should occur",
+        "name": "next_review_due",
+        "type": [
+          "null",
+          "string",
+          "string"
+        ]
+      },
+      {
+        "doc": "Consecutive MX validation failures",
+        "name": "mx_failure_count",
+        "type": [
+          "null",
+          "int"
+        ]
+      },
+      {
+        "doc": "Follow-up tasks required to regain compliance",
+        "name": "tasks",
+        "type": [
+          "null",
+          {
+            "items": "string",
+            "type": "array"
+          }
+        ]
+      },
+      {
+        "doc": "Active lawful basis key for processing",
+        "name": "lawful_basis",
+        "type": [
+          "null",
+          "string",
+          "string"
+        ]
+      },
+      {
+        "doc": "Current contact purpose key",
+        "name": "contact_purpose",
+        "type": [
+          "null",
+          "string",
+          "string"
+        ]
+      }
+    ],
+    "name": "ComplianceScheduleEntryContract",
+    "namespace": "za.watercrawl.contracts.v1",
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/compliance-schedule-entry",
+    "type": "record",
+    "watercrawl_version": "1.0.0"
+  },
   "ContractDescriptor": {
     "doc": "Metadata embedded with downstream artefacts to identify the contract.",
     "fields": [
@@ -148,13 +228,13 @@
         ]
       },
       {
-        "doc": "Pipeline execution metrics",
+        "doc": "Pipeline execution metrics where values may be counts or rates",
         "name": "metrics",
         "type": [
           "null",
           {
             "type": "map",
-            "values": "int"
+            "values": "double"
           }
         ]
       },
@@ -176,6 +256,17 @@
           "null",
           {
             "items": "QualityIssueContract",
+            "type": "array"
+          }
+        ]
+      },
+      {
+        "doc": "Compliance re-validation schedule entries",
+        "name": "compliance_schedule",
+        "type": [
+          "null",
+          {
+            "items": "ComplianceScheduleEntryContract",
             "type": "array"
           }
         ]

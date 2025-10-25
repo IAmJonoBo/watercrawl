@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,6 +17,14 @@ from pint import UnitRegistry
 from pint.errors import DimensionalityError, RedefinitionError, UndefinedUnitError
 
 from .profiles import ColumnDescriptor, NumericUnitRule
+
+
+def _is_pandas_na(value: object) -> bool:
+    try:
+        return bool(pd.isna(value))  # type: ignore[arg-type, call-overload]
+    except TypeError:
+        return False
+
 
 __all__ = [
     "ColumnNormalizationRegistry",
@@ -142,9 +151,7 @@ class MergeDuplicatesResult:
 class ColumnConflictResolver:
     """Resolve conflicting column values using profile-aware precedence rules."""
 
-    def __init__(
-        self, descriptors: Iterable[ColumnDescriptor] | None = None
-    ) -> None:
+    def __init__(self, descriptors: Iterable[ColumnDescriptor] | None = None) -> None:
         self._descriptors: dict[str, ColumnDescriptor] = {}
         for descriptor in descriptors or ():
             self._descriptors[descriptor.name] = descriptor
@@ -248,7 +255,7 @@ def merge_duplicate_records(
         merged_rows.append(base)
         traces.append(
             RowMergeTrace(
-                key=key,
+                key=str(key),
                 source_indices=tuple(int(idx) for idx in indices),
                 conflicts=tuple(conflicts),
             )
@@ -264,10 +271,14 @@ def _is_missing_value(value: Any) -> bool:
         return True
     if isinstance(value, str):
         return not value.strip()
-    if isinstance(value, (float, int, Decimal)):
-        return pd.isna(value)
+    if isinstance(value, float):
+        return math.isnan(value)
+    if isinstance(value, int):
+        return False
+    if isinstance(value, Decimal):
+        return value.is_nan()
     try:
-        return bool(pd.isna(value))
+        return _is_pandas_na(value)
     except TypeError:
         return False
 
@@ -293,7 +304,9 @@ def _coerce_numeric(value: Any) -> float | None:
     if value is None:
         return None
     if isinstance(value, (int, float, Decimal)):
-        if pd.isna(value):
+        if isinstance(value, float) and math.isnan(value):
+            return None
+        if isinstance(value, Decimal) and value.is_nan():
             return None
         return float(value)
     if isinstance(value, str):
@@ -327,6 +340,8 @@ def _canonical_key(value: str) -> str:
     """
     tokens = [chunk for chunk in value.casefold().split() if chunk]
     return " ".join(tokens)
+
+
 def build_numeric_rule_lookup(
     numeric_rules: Iterable[NumericUnitRule],
 ) -> dict[str, dict[str, Any]]:
@@ -713,11 +728,8 @@ def _coerce_to_str(value: Any) -> str | None:
         if not value.strip():
             return None
         return value
-    try:
-        if pd.isna(value):  # type: ignore[arg-type]
-            return None
-    except TypeError:
-        pass
+    if _is_pandas_na(value):
+        return None
     if isinstance(value, (int, float, Decimal)):
         return str(value)
     return str(value)
@@ -726,7 +738,7 @@ def _coerce_to_str(value: Any) -> str | None:
 def _is_missing(value: Any) -> bool:
     if isinstance(value, str):
         return not value.strip()
-    return pd.isna(value)
+    return _is_pandas_na(value)
 
 
 def _build_diagnostics(
@@ -735,7 +747,8 @@ def _build_diagnostics(
     values: list[Any],
     issues: list[NormalizationIssue],
 ) -> ColumnDiagnostics:
-    series = pd.Series(values, index=index, dtype=object)
+    index_list = list(index)
+    series = pd.Series(values, index=index_list, dtype=object)
     total = len(series)
     null_count = int(series.isna().sum())
     issue_counter = Counter(issue.message for issue in issues)

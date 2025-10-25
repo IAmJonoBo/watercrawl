@@ -15,26 +15,46 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import certifi
 import requests
 from packaging.specifiers import SpecifierSet
 
-# Avoid importing requests.adapters directly to prevent Trunk/pyright complaining about missing stubs.
-# Resolve HTTPAdapter at runtime via importlib to keep static analyzers from importing the submodule.
-try:
-    import importlib
+if TYPE_CHECKING:  # pragma: no cover - typing helper
+    from requests.adapters import HTTPAdapter as _HTTPAdapterBase
+else:
 
-    adapters = importlib.import_module("requests.adapters")
-    HTTPAdapter = adapters.HTTPAdapter  # type: ignore[attr-defined]
-except Exception:
-    # Fallback placeholder to retain runtime import safety; methods will raise if used.
-    class HTTPAdapter:  # type: ignore
+    class _HTTPAdapterBase:  # pragma: no cover - fallback stub for typing
         def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
             raise RuntimeError(
                 "requests.adapters.HTTPAdapter is unavailable in this environment"
             )
+
+
+RuntimeHTTPAdapterBase: type[_HTTPAdapterBase]
+
+try:
+    import importlib
+
+    adapters = importlib.import_module("requests.adapters")
+    RuntimeHTTPAdapterBase = cast(
+        "type[_HTTPAdapterBase]", getattr(adapters, "HTTPAdapter")
+    )
+except Exception:
+
+    class _RuntimeHTTPAdapterFallback(_HTTPAdapterBase):  # type: ignore[misc]
+        def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+            raise RuntimeError(
+                "requests.adapters.HTTPAdapter is unavailable in this environment"
+            )
+
+    RuntimeHTTPAdapterBase = _RuntimeHTTPAdapterFallback
+
+if TYPE_CHECKING:
+    _AdapterBase = _HTTPAdapterBase
+else:
+    _AdapterBase = RuntimeHTTPAdapterBase
 
 
 DEFAULT_BLOCKERS_PATH = Path("presets/dependency_blockers.toml")
@@ -86,16 +106,12 @@ def _build_trust_store() -> tuple[ssl.SSLContext, str | None]:
     return ssl.create_default_context(cafile=handle.name), handle.name
 
 
-class TLSAdapter:
+class TLSAdapter(_AdapterBase):
     """HTTPAdapter-like adapter that enforces the custom SSL context."""
 
     def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
         pool_kwargs["ssl_context"] = SSL_CONTEXT
-        # Delegate to the runtime-resolved HTTPAdapter implementation instead of using super(),
-        # avoiding the static-analysis error about a variable used as a base class.
-        HTTPAdapter.init_poolmanager(
-            self, connections, maxsize, block=block, **pool_kwargs
-        )
+        super().init_poolmanager(connections, maxsize, block=block, **pool_kwargs)
 
 
 SSL_CONTEXT, CA_BUNDLE = _build_trust_store()

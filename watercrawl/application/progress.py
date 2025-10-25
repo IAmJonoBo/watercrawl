@@ -18,7 +18,7 @@ class PipelineProgressListener(Protocol):
         self, index: int, updated: bool, record: SchoolRecord
     ) -> None: ...
 
-    def on_complete(self, metrics: Mapping[str, int]) -> None: ...
+    def on_complete(self, metrics: Mapping[str, float | int]) -> None: ...
 
     def on_error(self, error: Exception, index: int | None = None) -> None: ...
 
@@ -36,7 +36,7 @@ class NullPipelineProgressListener(PipelineProgressListener):
         return
 
     def on_complete(
-        self, metrics: Mapping[str, int]
+        self, metrics: Mapping[str, float | int]
     ) -> None:  # pragma: no cover - trivial
         return
 

@@ -51,7 +51,7 @@ def test_builtin_research_plugin_discovered() -> None:
     assert "research" in adapters
     plugin = adapters["research"]
     assert plugin.config_schema.feature_flags == (
-        "FEATURE_ENABLE_FIRECRAWL_SDK",
+        "FEATURE_ENABLE_CRAWLKIT",
         "ALLOW_NETWORK_RESEARCH",
     )
 

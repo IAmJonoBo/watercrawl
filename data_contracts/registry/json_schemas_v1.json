@@ -72,6 +72,107 @@
     "type": "object",
     "version": "1.0.0"
   },
+  "ComplianceScheduleEntry": {
+    "description": "Contract describing compliance verification metadata for a row.",
+    "properties": {
+      "contact_purpose": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Current contact purpose key",
+        "title": "Contact Purpose"
+      },
+      "last_verified_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Timestamp when the contact was last verified",
+        "title": "Last Verified At"
+      },
+      "lawful_basis": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Active lawful basis key for processing",
+        "title": "Lawful Basis"
+      },
+      "mx_failure_count": {
+        "default": 0,
+        "description": "Consecutive MX validation failures",
+        "minimum": 0,
+        "title": "Mx Failure Count",
+        "type": "integer"
+      },
+      "next_review_due": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Timestamp when re-validation should occur",
+        "title": "Next Review Due"
+      },
+      "organisation": {
+        "description": "Organisation name",
+        "minLength": 1,
+        "title": "Organisation",
+        "type": "string"
+      },
+      "row_id": {
+        "description": "Row identifier",
+        "minimum": 0,
+        "title": "Row Id",
+        "type": "integer"
+      },
+      "status": {
+        "description": "Current status value",
+        "minLength": 1,
+        "title": "Status",
+        "type": "string"
+      },
+      "tasks": {
+        "description": "Follow-up tasks required to regain compliance",
+        "items": {
+          "type": "string"
+        },
+        "title": "Tasks",
+        "type": "array"
+      }
+    },
+    "required": [
+      "row_id",
+      "organisation",
+      "status"
+    ],
+    "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/compliance-schedule-entry",
+    "title": "ComplianceScheduleEntryContract",
+    "type": "object",
+    "version": "1.0.0"
+  },
   "ContractDescriptor": {
     "description": "Metadata embedded with downstream artefacts to identify the contract.",
     "properties": {
@@ -162,6 +263,107 @@
   },
   "PipelineReport": {
     "$defs": {
+      "ComplianceScheduleEntryContract": {
+        "description": "Contract describing compliance verification metadata for a row.",
+        "properties": {
+          "contact_purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Current contact purpose key",
+            "title": "Contact Purpose"
+          },
+          "last_verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Timestamp when the contact was last verified",
+            "title": "Last Verified At"
+          },
+          "lawful_basis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Active lawful basis key for processing",
+            "title": "Lawful Basis"
+          },
+          "mx_failure_count": {
+            "default": 0,
+            "description": "Consecutive MX validation failures",
+            "minimum": 0,
+            "title": "Mx Failure Count",
+            "type": "integer"
+          },
+          "next_review_due": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Timestamp when re-validation should occur",
+            "title": "Next Review Due"
+          },
+          "organisation": {
+            "description": "Organisation name",
+            "minLength": 1,
+            "title": "Organisation",
+            "type": "string"
+          },
+          "row_id": {
+            "description": "Row identifier",
+            "minimum": 0,
+            "title": "Row Id",
+            "type": "integer"
+          },
+          "status": {
+            "description": "Current status value",
+            "minLength": 1,
+            "title": "Status",
+            "type": "string"
+          },
+          "tasks": {
+            "description": "Follow-up tasks required to regain compliance",
+            "items": {
+              "type": "string"
+            },
+            "title": "Tasks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "row_id",
+          "organisation",
+          "status"
+        ],
+        "schema_uri": "https://watercrawl.acesaero.co.za/schemas/v1/compliance-schedule-entry",
+        "title": "ComplianceScheduleEntryContract",
+        "type": "object",
+        "version": "1.0.0"
+      },
       "EvidenceRecordContract": {
         "description": "Contract for evidence log entries.\n\nMaps to the legacy EvidenceRecord dataclass for backward compatibility.",
         "properties": {
@@ -403,6 +605,14 @@
     },
     "description": "Contract for pipeline execution reports.\n\nMaps to the legacy PipelineReport dataclass for backward compatibility.\nNote: This is a simplified version that doesn't include all optional\ntelemetry fields (lineage, lakehouse, version info, etc.) as those\nwould create circular dependencies.",
     "properties": {
+      "compliance_schedule": {
+        "description": "Compliance re-validation schedule entries",
+        "items": {
+          "$ref": "ComplianceScheduleEntryContract"
+        },
+        "title": "Compliance Schedule",
+        "type": "array"
+      },
       "evidence_log": {
         "description": "Evidence log entries",
         "items": {
@@ -413,9 +623,9 @@
       },
       "metrics": {
         "additionalProperties": {
-          "type": "integer"
+          "type": "number"
         },
-        "description": "Pipeline execution metrics",
+        "description": "Pipeline execution metrics where values may be counts or rates",
         "title": "Metrics",
         "type": "object"
       },

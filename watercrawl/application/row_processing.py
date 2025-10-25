@@ -89,12 +89,16 @@ def process_row(
     ) = summarize_sources(original_record=original_record, merged_sources=sources)
 
     if finding.website_url:
-        current_domain = canonical_domain(proposed_record.website_url)
-        proposed_domain = canonical_domain(finding.website_url)
-        if not proposed_record.website_url or (
-            proposed_domain and proposed_domain != current_domain
+        proposed_url = finding.website_url.strip()
+        current_url = (proposed_record.website_url or "").strip()
+        current_domain = canonical_domain(current_url) if current_url else None
+        proposed_domain = canonical_domain(proposed_url)
+        if (
+            not current_url
+            or (proposed_domain and proposed_domain != current_domain)
+            or proposed_url.lower() != current_url.lower()
         ):
-            proposed_record.website_url = finding.website_url
+            proposed_record.website_url = proposed_url
 
     if not proposed_record.contact_person and finding.contact_person:
         proposed_record.contact_person = finding.contact_person

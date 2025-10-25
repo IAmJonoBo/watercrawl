@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-nx = pytest.importorskip("networkx")
-
 from watercrawl.domain import relationships
+
+nx = pytest.importorskip("networkx")
 
 
 def _prov(source: str, connector: str | None = None) -> relationships.ProvenanceTag:

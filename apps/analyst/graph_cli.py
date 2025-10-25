@@ -6,6 +6,7 @@ import json
 import time
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any, cast
 
 import click
 import networkx as nx
@@ -47,7 +48,7 @@ def _organisation_names(graph: nx.MultiDiGraph, node: str) -> list[str]:
 
 def _person_nodes_for_source(graph: nx.MultiDiGraph, source_node: str) -> list[str]:
     people: list[str] = []
-    for predecessor, _, edge_key in graph.in_edges(source_node, keys=True):
+    for predecessor, _, edge_key in cast(Any, graph).in_edges(source_node, keys=True):
         data = graph.nodes[predecessor]
         if data.get("type") == "person":
             people.append(predecessor)
@@ -55,7 +56,7 @@ def _person_nodes_for_source(graph: nx.MultiDiGraph, source_node: str) -> list[s
         return people
     organisations = [
         predecessor
-        for predecessor, _, _ in graph.in_edges(source_node, keys=True)
+        for predecessor, _, _ in cast(Any, graph).in_edges(source_node, keys=True)
         if graph.nodes[predecessor].get("type") == "organisation"
     ]
     for organisation in organisations:

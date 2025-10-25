@@ -365,7 +365,7 @@ class TestContractAdapters:
             quality_issue_from_contract("not a contract")
 
 
-SNAPSHOT_DIR = Path(__file__).resolve().parents[2] / "data_contracts" / "registry"
+SNAPSHOT_DIR = Path(__file__).resolve().parents[1] / "data_contracts" / "registry"
 JSON_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "json_schemas_v1.json"
 AVRO_SCHEMA_SNAPSHOT = SNAPSHOT_DIR / "avro_schemas_v1.json"
 REGISTRY_SNAPSHOT = SNAPSHOT_DIR / "registry_v1.json"

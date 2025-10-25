@@ -5,6 +5,7 @@ import json
 import re
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlparse
 
@@ -35,23 +36,28 @@ else:  # pragma: no cover - optional dependency
     dns_resolver = dns.resolver
 
 
-_PHONE_RE = re.compile(config.PHONE_E164_REGEX)
-_EMAIL_RE = re.compile(config.EMAIL_REGEX)
-_ROLE_INBOX_RE = (
-    re.compile(
-        rf"^(?:{'|'.join(re.escape(prefix) for prefix in config.ROLE_INBOX_PREFIXES)})@",
-        re.I,
-    )
-    if config.ROLE_INBOX_PREFIXES
-    else None
-)
+def _profile_state() -> config.ProfileRuntimeState:
+    return config.get_profile_state()
+
+
+@lru_cache(maxsize=None)
+def _compiled_regex(pattern: str, flags: int = 0) -> re.Pattern[str]:
+    return re.compile(pattern, flags)
+
+
+@lru_cache(maxsize=None)
+def _role_inbox_regex(prefixes: tuple[str, ...]) -> re.Pattern[str] | None:
+    if not prefixes:
+        return None
+    escaped = "|".join(re.escape(prefix) for prefix in prefixes)
+    return re.compile(rf"^(?:{escaped})@", re.I)
 
 
 def normalize_province(province: str | None) -> str:
     if not province:
         return "Unknown"
     cleaned = province.strip()
-    for candidate in config.PROVINCES:
+    for candidate in _profile_state().PROVINCES:
         if cleaned.lower() == candidate.lower():
             return candidate
     return "Unknown"
@@ -79,10 +85,11 @@ def normalize_phone(raw_phone: str | None) -> tuple[str | None, list[str]]:
     digits = re.sub(r"\D", "", raw_phone)
     normalized: str | None = None
     stripped = raw_phone.strip()
-    country_code = config.PHONE_COUNTRY_CODE
+    state = _profile_state()
+    country_code = state.PHONE_COUNTRY_CODE
     country_digits = country_code.lstrip("+")
-    national_length = config.PHONE_NATIONAL_NUMBER_LENGTH
-    prefixes = [str(prefix).lstrip("+") for prefix in config.PHONE_NATIONAL_PREFIXES]
+    national_length = state.PHONE_NATIONAL_NUMBER_LENGTH
+    prefixes = [str(prefix).lstrip("+") for prefix in state.PHONE_NATIONAL_PREFIXES]
 
     def _normalize_local(local_digits: str) -> str | None:
         candidate = local_digits
@@ -111,7 +118,8 @@ def normalize_phone(raw_phone: str | None) -> tuple[str | None, list[str]]:
                 break
 
     issues: list[str] = []
-    if not normalized or not _PHONE_RE.fullmatch(normalized):
+    phone_re = _compiled_regex(state.PHONE_E164_REGEX)
+    if not normalized or not phone_re.fullmatch(normalized):
         if not has_profile_prefix:
             issues.append(
                 f"Phone must use the {country_code} country prefix or configured national prefixes"
@@ -128,12 +136,14 @@ def validate_email(
         return None, ["Email missing"]
     cleaned = email.strip()
     issues: list[str] = []
-    if not _EMAIL_RE.fullmatch(cleaned):
+    state = _profile_state()
+    email_re = _compiled_regex(state.EMAIL_REGEX)
+    if not email_re.fullmatch(cleaned):
         issues.append("Email format invalid")
         return None, issues
     domain = cleaned.split("@", 1)[-1].lower()
     if (
-        config.EMAIL_REQUIRE_DOMAIN_MATCH
+        state.EMAIL_REQUIRE_DOMAIN_MATCH
         and organisation_domain
         and not domain.endswith(organisation_domain.lower())
     ):
@@ -141,7 +151,8 @@ def validate_email(
     mx_issue = _check_mx_records(domain)
     if mx_issue:
         issues.append(mx_issue)
-    if _ROLE_INBOX_RE and _ROLE_INBOX_RE.match(cleaned):
+    role_regex = _role_inbox_regex(state.ROLE_INBOX_PREFIXES)
+    if role_regex and role_regex.match(cleaned):
         issues.append("Role inbox used")
     return cleaned.lower(), issues
 

@@ -311,13 +311,16 @@ class LineageManager:
         return None
 
 
-def _metrics_facet(metrics: dict[str, int]) -> dict[str, Any]:
+def _metrics_facet(metrics: Mapping[str, int | float]) -> dict[str, Any]:
+    numeric_metrics = {key: float(value) for key, value in metrics.items()}
     return {
-        "acesMetrics": {"metrics": metrics},
+        "acesMetrics": {"metrics": numeric_metrics},
     }
 
 
-def _dataset_facets(context: LineageContext, metrics: dict[str, int]) -> dict[str, Any]:
+def _dataset_facets(
+    context: LineageContext, metrics: Mapping[str, int | float]
+) -> dict[str, Any]:
     facets: dict[str, Any] = _metrics_facet(metrics)
     if context.dataset_version:
         facets["datasetVersion"] = {"version": context.dataset_version}

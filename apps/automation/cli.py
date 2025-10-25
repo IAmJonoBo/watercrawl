@@ -20,6 +20,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from scripts import bootstrap_python
 from watercrawl.core import config
 from watercrawl.domain.contracts import CommitArtifactContract, PlanArtifactContract
 from watercrawl.integrations.contracts.shared_config import (
@@ -31,7 +32,6 @@ from watercrawl.interfaces.cli_base import (
     PlanCommitGuard,
     load_cli_environment,
 )
-from scripts import bootstrap_python
 
 CLI_ENVIRONMENT = load_cli_environment()
 REPO_ROOT = Path(__file__).resolve().parents[2]

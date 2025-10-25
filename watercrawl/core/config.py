@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from watercrawl.core.profiles import (
     ColumnDescriptor,
@@ -167,25 +168,33 @@ def _build_profile_state(
     official_keywords = tuple(compliance.official_source_keywords)
     evidence_queries = tuple(compliance.evidence_queries)
 
-    connector_settings = {
-        name: {
-            "enabled": settings.enabled,
-            "rate_limit_seconds": settings.rate_limit_seconds,
-            "allow_personal_data": settings.allow_personal_data,
+    connector_settings: dict[str, dict[str, object]] = {}
+    for name, settings in research.connectors.items():
+        entry: dict[str, object] = {
+            "enabled": bool(settings.enabled),
+            "rate_limit_seconds": (
+                float(settings.rate_limit_seconds)
+                if settings.rate_limit_seconds is not None
+                else None
+            ),
+            "allow_personal_data": bool(settings.allow_personal_data),
         }
-        for name, settings in research.connectors.items()
-    }
+        connector_settings[name] = entry
 
     from watercrawl.core.normalization import (  # local import to avoid cycles
+        EmailValidator,
+        PhoneNormalizer,
         build_default_registry,
         build_numeric_rule_lookup,
     )
     from watercrawl.domain.compliance import normalize_phone, validate_email
 
     numeric_lookup = build_numeric_rule_lookup(numeric_rules)
+    phone_normalizer = cast(PhoneNormalizer, normalize_phone)
+    email_validator = cast(EmailValidator, validate_email)
     registry = build_default_registry(
-        phone_normalizer=normalize_phone,
-        email_validator=validate_email,
+        phone_normalizer=phone_normalizer,
+        email_validator=email_validator,
     )
     registry.numeric_rules.update(numeric_lookup)
 
@@ -274,7 +283,7 @@ def profile_context(
     profile_id: str | None = None,
     profile_path: Path | None = None,
     profile: RefinementProfile | None = None,
-) -> ProfileRuntimeState:
+) -> Generator[ProfileRuntimeState, None, None]:
     """Temporarily switch to a different refinement profile within the context."""
 
     if profile is None:
@@ -545,9 +554,13 @@ class GraphSemanticsSettings:
     enabled: bool = True
     min_organisation_nodes: int = 1
     min_province_nodes: int = 1
-    max_province_nodes: int = len(PROVINCES)
+    max_province_nodes: int = field(
+        default_factory=lambda: len(get_profile_state().PROVINCES)
+    )
     min_status_nodes: int = 1
-    max_status_nodes: int = len(CANONICAL_STATUSES)
+    max_status_nodes: int = field(
+        default_factory=lambda: len(get_profile_state().CANONICAL_STATUSES)
+    )
     min_edge_count: int = 2
     min_average_degree: float = 1.5
     max_average_degree: float = 4.0
@@ -1022,6 +1035,8 @@ def configure(provider: SecretsProvider | None = None) -> None:
         ),
     )
 
+    state = get_profile_state()
+
     GRAPH_SEMANTICS = GraphSemanticsSettings(
         enabled=_env_bool("GRAPH_SEMANTICS_ENABLED", True, SECRETS_PROVIDER),
         min_organisation_nodes=_env_int(
@@ -1029,11 +1044,11 @@ def configure(provider: SecretsProvider | None = None) -> None:
         ),
         min_province_nodes=_env_int("GRAPH_MIN_PROVINCE_NODES", 1, SECRETS_PROVIDER),
         max_province_nodes=_env_int(
-            "GRAPH_MAX_PROVINCE_NODES", len(PROVINCES), SECRETS_PROVIDER
+            "GRAPH_MAX_PROVINCE_NODES", len(state.PROVINCES), SECRETS_PROVIDER
         ),
         min_status_nodes=_env_int("GRAPH_MIN_STATUS_NODES", 1, SECRETS_PROVIDER),
         max_status_nodes=_env_int(
-            "GRAPH_MAX_STATUS_NODES", len(CANONICAL_STATUSES), SECRETS_PROVIDER
+            "GRAPH_MAX_STATUS_NODES", len(state.CANONICAL_STATUSES), SECRETS_PROVIDER
         ),
         min_edge_count=_env_int("GRAPH_MIN_EDGE_COUNT", 2, SECRETS_PROVIDER),
         min_average_degree=_env_float("GRAPH_MIN_AVG_DEGREE", 1.5, SECRETS_PROVIDER),

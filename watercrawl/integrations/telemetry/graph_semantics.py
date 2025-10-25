@@ -430,7 +430,7 @@ def build_relationship_graph(
     nodes_csv_path.parent.mkdir(parents=True, exist_ok=True)
     edges_csv_path.parent.mkdir(parents=True, exist_ok=True)
 
-    graph = nx.MultiDiGraph()
+    graph: nx.MultiDiGraph = nx.MultiDiGraph()
     node_rows: list[dict[str, Any]] = []
     for organisation in organisations:
         provenance = [tag.as_dict() for tag in organisation.provenance]

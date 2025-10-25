@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from typing import Iterable, cast
 
 from ..types import DistilledDoc, Entities
 
@@ -23,17 +23,18 @@ def _unique(sequence: Iterable[dict[str, object]]) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
     for item in sequence:
         key_items: list[tuple[str, object]] = []
-        for key, value in sorted(item.items()):
+        for key_name, value in sorted(item.items()):
             if isinstance(value, list):
-                key_items.append((key, tuple(value)))
+                key_items.append((key_name, tuple(value)))
             elif isinstance(value, dict):
-                key_items.append((key, tuple(sorted(value.items()))))
+                serialized = tuple(sorted(value.items()))
+                key_items.append((key_name, cast(object, serialized)))
             else:
-                key_items.append((key, value))
-        key = tuple(key_items)
-        if key in seen:
+                key_items.append((key_name, value))
+        item_key = tuple(key_items)
+        if item_key in seen:
             continue
-        seen.add(key)
+        seen.add(item_key)
         results.append(item)
     return results
 

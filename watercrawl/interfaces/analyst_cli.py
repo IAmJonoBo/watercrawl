@@ -155,13 +155,14 @@ def _emit_column_inference_preview(metadata: Mapping[str, Any]) -> None:
     if rename_matches:
         click.echo("Inferred column mappings:", err=True)
         for match in rename_matches:
-            reasons = "; ".join(match["reasons"])
+            reason_list = cast(Sequence[str], match["reasons"])
+            reason_text = "; ".join(reason_list)
             message = (
                 f" - {match['source']} → {match['canonical']} "
                 f"(score {match['score']:.2f})"
             )
-            if reasons:
-                message += f" [{reasons}]"
+            if reason_text:
+                message += f" [{reason_text}]"
             color: str | None = None
             if match["score"] < 0.7:
                 color = "red"
@@ -246,7 +247,7 @@ class RichPipelineProgress(PipelineProgressListener):
                 description=f"Updating {record.name}",
             )
 
-    def on_complete(self, metrics: Mapping[str, int]) -> None:
+    def on_complete(self, metrics: Mapping[str, float | int]) -> None:
         if not self._started or self._task_id is None:
             return
         adapter_failures = metrics.get("adapter_failures", 0)
@@ -334,7 +335,9 @@ def validate(
         raise click.BadParameter(str(exc), param_hint="--sheet-map") from exc
     inputs = _compose_inputs(input_path, additional_inputs)
     frame = reader(inputs, sheet_map=sheet_map or None)
-    _emit_column_inference_preview(frame.attrs)
+    metadata = {str(key): value for key, value in frame.attrs.items()}
+    if output_format == "text":
+        _emit_column_inference_preview(metadata)
     report = pipeline.validator.validate_dataframe(frame)
     validation_contract = report.to_contract()
     issues_payload = [issue.model_dump() for issue in validation_contract.issues]
@@ -491,7 +494,9 @@ def enrich(
     except PlanCommitError as exc:
         raise click.ClickException(str(exc)) from exc
     preview_frame = reader(inputs, sheet_map=sheet_map or None)
-    _emit_column_inference_preview(preview_frame.attrs)
+    preview_metadata = {str(key): value for key, value in preview_frame.attrs.items()}
+    if output_format == "text":
+        _emit_column_inference_preview(preview_metadata)
     evidence_sink = evidence_sink_factory()
     lineage_manager = lineage_manager_factory()
     lakehouse_writer = lakehouse_writer_factory()
@@ -533,13 +538,14 @@ def enrich(
     report_contract = report.to_contract()
     issues_payload = [issue.model_dump() for issue in report_contract.issues]
     registry = contract_registry()
+    adapter_failures = int(report_contract.metrics.get("adapter_failures", 0))
     payload = {
         "rows_total": report_contract.metrics.get("rows_total", 0),
         "rows_enriched": report_contract.metrics.get("enriched_rows", 0),
         "verified_rows": report_contract.metrics.get("verified_rows", 0),
         "issues": issues_payload,
         "output_path": str(target),
-        "adapter_failures": report_contract.metrics.get("adapter_failures", 0),
+        "adapter_failures": adapter_failures,
         "plan_artifacts": [str(path) for path in validation.plan_paths],
         "commit_artifacts": [str(path) for path in validation.commit_paths],
         "contracts": {
@@ -582,8 +588,8 @@ def enrich(
             click.echo(f"Lakehouse manifest: {report.lakehouse_manifest.manifest_path}")
         if report.version_info:
             click.echo(f"Version manifest: {report.version_info.metadata_path}")
-        if payload["adapter_failures"]:
-            failures_display = int(payload["adapter_failures"])
+        if adapter_failures:
+            failures_display = adapter_failures
             click.echo(
                 f"Warnings: {failures_display} research lookups failed; see logs."
             )
@@ -708,57 +714,59 @@ def contracts(
 
     if output_format == "json":
         click.echo(json.dumps(payload, indent=2))
+        return
+
+    click.echo("Contracts " + ("passed" if payload["success"] else "failed"))
+
+    ge_stats = ge_result.statistics
+    evaluated = int(ge_stats.get("evaluated_expectations", 0))
+    successful = int(ge_stats.get("successful_expectations", 0))
+    click.echo(f"Great Expectations: {successful}/{evaluated} expectations passed")
+
+    if ge_payload["failed_expectations"]:
+        click.echo("Failing expectations:")
+        for expectation in ge_payload["failed_expectations"]:
+            expectation_type = expectation.get("expectation_type") or "unknown"
+            details = expectation.get("kwargs", {})
+            column = details.get("column")
+            descriptor: str
+            if column:
+                descriptor = str(column)
+            else:
+                column_list = details.get("column_list")
+                descriptor = ", ".join(map(str, column_list)) if column_list else ""
+            if descriptor:
+                click.echo(f" - {expectation_type}: {descriptor}")
+            else:
+                click.echo(f" - {expectation_type}")
     else:
-        click.echo(
-            "Contracts " + ("passed" if payload["success"] else "failed"),
-        )
-        click.echo(
-            "Great Expectations: "
-            + f"{ge_payload['statistics'].get('successful_expectations', 0)} / "
-            + f"{ge_payload['statistics'].get('evaluated_expectations', 0)}"
-        )
-        if ge_payload["failed_expectations"]:
-            click.echo("Failing expectations:")
-            for failure in ge_payload["failed_expectations"]:
-                expectation = failure.get("expectation_type", "unknown")
-                column = failure.get("kwargs", {}).get("column")
-                scope = f" on column '{column}'" if column else ""
-                click.echo(f" - {expectation}{scope}")
-        click.echo(
-            "dbt tests: "
-            + f"{dbt_payload['passed']} passed / {dbt_payload['total']} executed"
-        )
-        if dbt_payload["failures"]:
-            click.echo("Failing dbt tests:")
-            for record in dbt_payload["results"]:
-                status = record.get("status")
-                if status and str(status).lower() not in {"pass", "skipped", "warn"}:
-                    click.echo(
-                        f" - {record.get('unique_id', record.get('name', 'unknown'))}: {status}"
-                    )
-        click.echo(
-            "Deequ checks: "
-            + f"{deequ_payload['check_count'] - deequ_payload['failures']} passed / "
-            + f"{deequ_payload['check_count']} executed"
-        )
-        if deequ_payload["failures"]:
-            click.echo("Failing Deequ checks:")
-            for entry in deequ_payload["results"]:
-                if entry.get("success", True):
-                    continue
-                check_name = entry.get("check", "unknown")
-                click.echo(f" - {check_name}")
-                details = entry.get("details", {})
-                if isinstance(details, Mapping):
-                    for key, value in details.items():
-                        if isinstance(value, list):
-                            if not value:
-                                continue
-                            preview = value[:3]
-                            suffix = "…" if len(value) > len(preview) else ""
-                            click.echo(f"   {key}: {preview}{suffix}")
-                        else:
-                            click.echo(f"   {key}: {value}")
+        click.echo("Failing expectations: none")
+
+    passed_dbt = dbt_result.total - dbt_result.failures
+    if dbt_result.failures:
+        click.echo(f"Failing dbt tests: {dbt_result.failures}/{dbt_result.total}")
+    click.echo(f"dbt tests: {passed_dbt}/{dbt_result.total} passed")
+
+    click.echo(
+        "Deequ checks: "
+        + f"{deequ_result.check_count - deequ_result.failures}/{deequ_result.check_count}"
+    )
+
+    failing_deequ = [
+        entry for entry in deequ_result.results if not entry.get("success", True)
+    ]
+    if failing_deequ:
+        click.echo("Failing Deequ checks:")
+        for entry in failing_deequ:
+            check = entry.get("check")
+            details = entry.get("details", {})
+            message = details.get("message")
+            if check and message:
+                click.echo(f" - {check}: {message}")
+            elif check:
+                click.echo(f" - {check}")
+    else:
+        click.echo("Failing Deequ checks: none")
 
     if not payload["success"]:
         raise click.exceptions.Exit(1)
@@ -822,7 +830,9 @@ def profiles() -> None:
 
 
 @profiles.command("list")
-@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
+@click.option(
+    "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
+)
 def profiles_list(output_format: str) -> None:
     """List available refinement profiles."""
 
@@ -840,9 +850,7 @@ def profiles_list(output_format: str) -> None:
     for entry in entries:
         marker = "*" if entry.get("active") else "-"
         click.echo(f" {marker} {entry['id']} :: {entry['name']} ({entry['path']})")
-    click.echo(
-        f"Active profile: {active['id']} :: {active['name']} ({active['path']})"
-    )
+    click.echo(f"Active profile: {active['id']} :: {active['name']} ({active['path']})")
 
 
 @profiles.command("validate")
@@ -862,8 +870,12 @@ def profiles_validate(profile_path: Path) -> None:
 @profiles.command("switch")
 @click.option("--profile", "profile_id", type=str)
 @click.option("--profile-path", type=click.Path(exists=True, path_type=Path))
-@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
-def profiles_switch(profile_id: str | None, profile_path: Path | None, output_format: str) -> None:
+@click.option(
+    "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
+)
+def profiles_switch(
+    profile_id: str | None, profile_path: Path | None, output_format: str
+) -> None:
     """Switch the active refinement profile."""
 
     if not profile_id and not profile_path:

@@ -1,0 +1,38 @@
+# Plan: Alpha readiness QA remediation
+
+## Context
+- Baseline QA commands fail: pytest aborts on circular import between `watercrawl.core.config` and `watercrawl.domain.compliance` (config attributes accessed during module init)【f7f0aa†L1-L20】.
+- Ruff reports 34 issues (unused imports, unused variables, invalid f-strings) across scripts, tests, and governance modules【294265†L1-L134】.
+- isort and black checks fail broadly (imports unsorted in core/test modules; 182 files needing formatting including vendored stubs)【1214b5†L1-L11】【a2849d†L1-L10】.
+- mypy surfaces 64 errors spanning config/normalization/pipeline/tests due to missing annotations, incompatible signatures, and dynamic config proxies【7902d0†L1-L24】.
+- Bandit flags assert/subprocess usage and hardcoded password strings in production readiness module【5c78d2†L1-L36】.
+- Safety scan fails to reach vulnerability service due to network restrictions【81e45f†L1-L1】.
+- Automation CLI QA commands (`qa lint`, `qa typecheck`, `qa mutation --dry-run`) fail early from the same config/compliance circular import【98e5bb†L1-L20】【432c9f†L1-L20】【05acba†L1-L20】.
+
+## Intended changes
+1. Refactor `watercrawl/domain/compliance.py` to lazily derive profile-dependent regex/normalizer settings via helper functions (using `config.get_profile_state()` and cached regex builders) to eliminate module-level attribute access during import. Ensure `_ROLE_INBOX_RE` caching handles empty prefixes safely.
+2. Update dependent normalization logic (if needed) to rely on the new helper functions; add targeted unit coverage if gaps appear (e.g., regression test ensuring `normalize_phone` still handles prefix variants and respects MX timeout configuration).
+3. Address Ruff/isort/black issues by:
+   - Removing unused imports/variables in scripts/tests/governance modules.
+   - Fixing F541 f-strings in production readiness summary.
+   - Ensuring formatting skips vendored stubs (adjust black/isort configs or apply targeted `pyproject.toml` excludes if appropriate) to avoid touching third-party stubs.
+4. Resolve mypy errors by:
+   - Adding explicit re-export shims (e.g., `EXPECTED_COLUMNS`) or typed protocols for dynamic config proxies.
+   - Annotating variables (`status_counts`, `graph`), adjusting function signatures (e.g., `RowMergeTrace` key type, research adapter connectors), and tightening helper return types.
+   - Introducing helper dataclasses or wrappers where tests currently rely on plain dicts (ensure compatibility with runtime behaviour).
+5. Tidy governance/production readiness module to satisfy bandit (replace assert with guard raising, document subprocess usage, avoid hardcoded password strings by moving to enum/constant).
+6. Update lint/type/test suites to green, re-run automation CLI QA commands, and document any unavoidable external blockers (e.g., safety network access) with mitigations.
+7. Refresh `Next_Steps.md` (Tasks, Steps, Quality Gates) with progress, residual risks (e.g., offline safety scanning approach), and follow-ups.
+
+## Validation
+- `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing`
+- `poetry run ruff check .`
+- `poetry run isort --profile black --check-only .`
+- `poetry run black --check .`
+- `poetry run mypy .`
+- `poetry run bandit -r watercrawl`
+- `poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap`
+- `poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap`
+- `poetry run python -m apps.automation.cli qa mutation --dry-run --no-auto-bootstrap`
+- `poetry run safety check --full-report` (document fallback if network unreachable; consider cached DB alternative).
+- `poetry build`

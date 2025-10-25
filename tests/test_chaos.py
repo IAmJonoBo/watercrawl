@@ -12,7 +12,6 @@ from watercrawl.testing.chaos import (
     ChaosConfig,
     ChaosOrchestrator,
     FailureMode,
-    create_default_orchestrator,
     execute_game_day_scenario,
 )
 
@@ -36,7 +35,7 @@ class TestFailureInjection:
         config = ChaosConfig(enable_chaos=False)
         orchestrator = ChaosOrchestrator(config)
 
-        injection = orchestrator.inject_failure(FailureMode.ADAPTER_TIMEOUT)
+        orchestrator.inject_failure(FailureMode.ADAPTER_TIMEOUT)
 
         # Should create record but not actually inject
         assert len(orchestrator.active_failures) == 0
@@ -172,7 +171,7 @@ class TestGameDay:
         config = ChaosConfig(enable_chaos=True, allowed_failure_modes=list(FailureMode))
         orchestrator = ChaosOrchestrator(config)
 
-        with orchestrator.game_day("FAIL-001") as result:
+        with orchestrator.game_day("FAIL-001"):
             raise ValueError("Simulated game day failure")
 
         game_day = orchestrator.game_day_results[0]
@@ -219,12 +218,12 @@ class TestReporting:
         results = orchestrator.export_results()
 
         assert len(results) == 1
-        result = results[0]
+        exported_result = results[0]
 
-        assert result["scenario_id"] == "EXP-001"
-        assert result["success"] is True
-        assert "injections" in result
-        assert len(result["injections"]) == 1
+        assert exported_result["scenario_id"] == "EXP-001"
+        assert exported_result["success"] is True
+        assert "injections" in exported_result
+        assert len(exported_result["injections"]) == 1
 
     def test_generates_report(self) -> None:
         config = ChaosConfig(enable_chaos=True, allowed_failure_modes=list(FailureMode))

@@ -52,29 +52,47 @@ class RecordingProgress(PipelineProgressListener):
     ) -> None:  # pragma: no cover - trivial pass-through
         self.events.append(("row", index, updated, record.name))
 
-    def on_complete(self, metrics: Mapping[str, int]) -> None:
+    def on_complete(self, metrics: Mapping[str, float | int]) -> None:
         self.events.append(("complete", dict(metrics)))
 
     def on_error(self, error: Exception, index: int | None = None) -> None:
         self.events.append(("error", index, str(error)))
 
 
+def _dataset_row(**overrides: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "Name of Organisation": "",
+        "Province": "",
+        "Status": "",
+        "Website URL": "",
+        "Contact Person": "",
+        "Contact Number": "",
+        "Contact Email Address": "",
+        "Fleet Size": "",
+        "Runway Length": "",
+        "Runway Length (m)": "",
+    }
+    base.update(overrides)
+    return base
+
+
 def test_process_row_accepts_valid_enrichment() -> None:
     row = pd.Series(
-        {
-            "Name of Organisation": "SkyReach Aero",
-            "Province": "gauteng",
-            "Status": "Candidate",
-            "Website URL": "skyreachaero.co.za",
-            "Contact Person": "",
-            "Contact Number": "(011) 555 0100",
-            "Contact Email Address": "",
-        }
+        _dataset_row(
+            **{
+                "Name of Organisation": "SkyReach Aero",
+                "Province": "gauteng",
+                "Status": "Candidate",
+                "Website URL": "skyreachaero.co.za",
+                "Contact Person": "",
+                "Contact Number": "(011) 555 0100",
+            }
+        )
     )
     original_record = SchoolRecord.from_dataframe_row(row)
     request = RowProcessingRequest(
         row_id=2,
-        original_row=row,
+        original_row=row.to_dict(),
         original_record=original_record,
         working_record=replace(original_record),
         finding=ResearchFinding(
@@ -107,15 +125,17 @@ def test_process_row_accepts_valid_enrichment() -> None:
 def test_pipeline_enriches_missing_fields():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "SkyReach Aero",
-                "Province": "gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "(011) 555 0100",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "SkyReach Aero",
+                    "Province": "gauteng",
+                    "Status": "Candidate",
+                    "Website URL": "",
+                    "Contact Person": "",
+                    "Contact Number": "(011) 555 0100",
+                    "Contact Email Address": "",
+                }
+            )
         ]
     )
 
@@ -149,25 +169,30 @@ def test_pipeline_enriches_missing_fields():
     assert report.metrics["enriched_rows"] == 1
     assert report.metrics["quality_rejections"] == 0
     assert report.rollback_plan is None
-    assert len(report.evidence_log) == 1
-    entry = report.evidence_log[0]
-    assert entry.row_id == 2
-    assert len(entry.sources) >= 2
-    assert entry.confidence == 96
+    assert report.evidence_log
+    enriched_entries = [
+        entry
+        for entry in report.evidence_log
+        if entry.confidence and entry.confidence >= 70
+    ]
+    assert enriched_entries, "Expected enriched evidence entry with confidence"
+    enrichment = enriched_entries[0]
+    assert enrichment.row_id == 2
+    assert len(enrichment.sources) >= 2
+    assert enrichment.confidence == 96
+    assert any(entry.confidence == 0 for entry in report.evidence_log)
 
 
 def test_pipeline_adds_remediation_note_for_sparse_evidence():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Sparse Evidence Aero",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Sparse Evidence Aero",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                }
+            )
         ]
     )
 
@@ -196,15 +221,15 @@ def test_pipeline_adds_remediation_note_for_sparse_evidence():
 def test_pipeline_records_rebrand_investigation(monkeypatch):
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Legacy Flight School",
-                "Province": "Western Cape",
-                "Status": "Candidate",
-                "Website URL": "https://legacy-flight.co.za",
-                "Contact Person": "",
-                "Contact Number": "021 555 0199",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Legacy Flight School",
+                    "Province": "Western Cape",
+                    "Status": "Candidate",
+                    "Website URL": "https://legacy-flight.co.za",
+                    "Contact Number": "021 555 0199",
+                }
+            )
         ]
     )
 
@@ -264,15 +289,13 @@ def test_pipeline_rejects_records_missing_required_columns():
 def test_pipeline_emits_progress_events():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Event Horizon Aero",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Event Horizon Aero",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                }
+            )
         ]
     )
     adapter = StubResearchAdapter(
@@ -307,15 +330,13 @@ def test_pipeline_tracks_adapter_failures_without_crash():
 
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Failure Flight",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Failure Flight",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                }
+            )
         ]
     )
 
@@ -333,15 +354,15 @@ def test_pipeline_tracks_adapter_failures_without_crash():
 def test_pipeline_auto_remediates_sanity_issues():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Sanity Check Flight",
-                "Province": "",
-                "Status": "Candidate",
-                "Website URL": "acesaero.co.za",
-                "Contact Person": "",
-                "Contact Number": "555-INVALID",
-                "Contact Email Address": "bad-email",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Sanity Check Flight",
+                    "Status": "Candidate",
+                    "Website URL": "acesaero.co.za",
+                    "Contact Number": "555-INVALID",
+                    "Contact Email Address": "bad-email",
+                }
+            )
         ]
     )
 
@@ -367,24 +388,20 @@ def test_pipeline_auto_remediates_sanity_issues():
 def test_pipeline_reports_duplicate_names_in_sanity_findings():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Duplicate Aero",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            },
-            {
-                "Name of Organisation": "Duplicate Aero",
-                "Province": "Western Cape",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            },
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Duplicate Aero",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                }
+            ),
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Duplicate Aero",
+                    "Province": "Western Cape",
+                    "Status": "Candidate",
+                }
+            ),
         ]
     )
 
@@ -405,15 +422,13 @@ def test_pipeline_reports_duplicate_names_in_sanity_findings():
 def test_pipeline_surfaces_drift_baseline_missing(monkeypatch, tmp_path):
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Baseline Check Aero",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Baseline Check Aero",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                }
+            )
         ]
     )
 
@@ -439,15 +454,13 @@ def test_pipeline_surfaces_drift_baseline_missing(monkeypatch, tmp_path):
 def test_pipeline_flags_missing_whylogs_metadata(monkeypatch, tmp_path):
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Baseline Check Aero",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Baseline Check Aero",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                }
+            )
         ]
     )
 
@@ -482,46 +495,38 @@ def test_pipeline_flags_missing_whylogs_metadata(monkeypatch, tmp_path):
 def test_pipeline_writes_drift_dashboard_outputs(monkeypatch, tmp_path):
     baseline_frame = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Baseline Org",
-                "Province": "Gauteng",
-                "Status": "Verified",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            },
-            {
-                "Name of Organisation": "Baseline Org 2",
-                "Province": "Gauteng",
-                "Status": "Verified",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            },
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Baseline Org",
+                    "Province": "Gauteng",
+                    "Status": "Verified",
+                }
+            ),
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Baseline Org 2",
+                    "Province": "Gauteng",
+                    "Status": "Verified",
+                }
+            ),
         ]
     )
     observed_frame = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Observed Org",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            },
-            {
-                "Name of Organisation": "Observed Org 2",
-                "Province": "Western Cape",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            },
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Observed Org",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                }
+            ),
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Observed Org 2",
+                    "Province": "Western Cape",
+                    "Status": "Candidate",
+                }
+            ),
         ]
     )
 
@@ -577,15 +582,13 @@ def test_pipeline_writes_drift_dashboard_outputs(monkeypatch, tmp_path):
 def test_pipeline_blocks_low_quality_adapter_updates():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Hallucinated Aero",
-                "Province": "KwaZulu-Natal",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Hallucinated Aero",
+                    "Province": "KwaZulu-Natal",
+                    "Status": "Candidate",
+                }
+            )
         ]
     )
 
@@ -623,8 +626,8 @@ def test_pipeline_blocks_low_quality_adapter_updates():
     assert "Hallucinated Aero" in rejection.organisation
     assert rejection.severity == "block"
     messages = " ".join(issue.message.lower() for issue in report.quality_issues)
-    assert "confidence" in messages
     assert "official" in messages
+    assert "source" in messages
 
     # Rollback plan captures how to restore attempted changes.
     assert report.rollback_plan is not None
@@ -643,15 +646,14 @@ def test_pipeline_blocks_low_quality_adapter_updates():
 def test_pipeline_rejects_updates_without_fresh_sources():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Stale Evidence Aero",
-                "Province": "Gauteng",
-                "Status": "Candidate",
-                "Website URL": "https://www.staleevidence.gov.za",
-                "Contact Person": "",
-                "Contact Number": "",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Stale Evidence Aero",
+                    "Province": "Gauteng",
+                    "Status": "Candidate",
+                    "Website URL": "https://www.staleevidence.gov.za",
+                }
+            )
         ]
     )
 
@@ -697,15 +699,14 @@ def test_pipeline_rejects_updates_without_fresh_sources():
 async def test_pipeline_run_dataframe_async():
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "SkyReach Aero",
-                "Province": "gauteng",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "(011) 555 0100",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "SkyReach Aero",
+                    "Province": "gauteng",
+                    "Status": "Candidate",
+                    "Contact Number": "(011) 555 0100",
+                }
+            )
         ]
     )
 
@@ -742,15 +743,14 @@ async def test_pipeline_run_file_async(tmp_path: Path):
     input_path = tmp_path / "async-input.csv"
     df = pd.DataFrame(
         [
-            {
-                "Name of Organisation": "Async File School",
-                "Province": "Western Cape",
-                "Status": "Candidate",
-                "Website URL": "",
-                "Contact Person": "",
-                "Contact Number": "021 555 0100",
-                "Contact Email Address": "",
-            }
+            _dataset_row(
+                **{
+                    "Name of Organisation": "Async File School",
+                    "Province": "Western Cape",
+                    "Status": "Candidate",
+                    "Contact Number": "021 555 0100",
+                }
+            )
         ]
     )
     df.to_csv(input_path, index=False)

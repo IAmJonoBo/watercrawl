@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Sequence
 from collections import Counter
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from typing import Any, Mapping
@@ -16,6 +16,7 @@ from openpyxl.styles import Alignment, Font, PatternFill  # type: ignore[import]
 from openpyxl.utils import get_column_letter  # type: ignore[import]
 from openpyxl.worksheet.table import Table, TableStyleInfo  # type: ignore[import]
 
+from watercrawl.domain.models import EXPECTED_COLUMNS as DOMAIN_EXPECTED_COLUMNS
 from watercrawl.domain.models import (
     EnrichmentResult,
     SchoolRecord,
@@ -23,10 +24,11 @@ from watercrawl.domain.models import (
     normalize_status,
 )
 
-from .column_inference import ColumnInferenceEngine, ColumnInferenceResult
-
 from . import config  # type: ignore
+from .column_inference import ColumnInferenceEngine, ColumnInferenceResult
 from .normalization import ColumnNormalizationRegistry, normalize_numeric_value
+
+EXPECTED_COLUMNS = DOMAIN_EXPECTED_COLUMNS
 
 _SUPPORTED_SUFFIXES = {".csv", ".xlsx", ".xls"}
 EVIDENCE_SHEET = "Evidence"
@@ -140,8 +142,12 @@ def _format_issues_sheet(worksheet, theme: WorkbookTheme) -> None:
     end_row = worksheet.max_row
     if end_row < start_row:
         return
-    warn_fill = PatternFill(start_color="FFF6B26B", end_color="FFF6B26B", fill_type="solid")
-    block_fill = PatternFill(start_color="FFF4CCCC", end_color="FFF4CCCC", fill_type="solid")
+    warn_fill = PatternFill(
+        start_color="FFF6B26B", end_color="FFF6B26B", fill_type="solid"
+    )
+    block_fill = PatternFill(
+        start_color="FFF4CCCC", end_color="FFF4CCCC", fill_type="solid"
+    )
     cell_range = f"{column_letter}{start_row}:{column_letter}{end_row}"
     worksheet.conditional_formatting.add(
         cell_range,
@@ -230,7 +236,9 @@ def _populate_summary_sheet(
     sheet = workbook.create_sheet("Summary", 0)
     sheet["A1"] = getattr(config.PROFILE, "name", "Enrichment Summary")
     sheet["A1"].font = Font(size=14, bold=True)
-    sheet["A1"].fill = PatternFill(start_color=theme.accent, end_color=theme.accent, fill_type="solid")
+    sheet["A1"].fill = PatternFill(
+        start_color=theme.accent, end_color=theme.accent, fill_type="solid"
+    )
     metrics = [
         ("Total Rows", len(dataframe)),
         ("Evidence Entries", evidence_count),
@@ -251,7 +259,7 @@ def _populate_summary_sheet(
     )
     sheet.add_table(sheet_tables)
 
-    status_counts = Counter()
+    status_counts: Counter[str] = Counter()
     if "Status" in dataframe.columns:
         status_counts.update(dataframe["Status"].dropna().astype(str))
     sheet["D2"] = "Status"
@@ -330,9 +338,7 @@ def _collect_inputs(path_or_paths: Path | Sequence[Path]) -> list[Path]:
     return inputs
 
 
-def _resolve_sheet_name(
-    path: Path, sheet_map: Mapping[str, str] | None
-) -> str:
+def _resolve_sheet_name(path: Path, sheet_map: Mapping[str, str] | None) -> str:
     if not sheet_map:
         return config.CLEANED_SHEET
     for key in (str(path), path.name, path.stem):
@@ -574,7 +580,8 @@ def read_dataset(
                     "sheet": sheet_name,
                     "source_row": (
                         int(row_index)
-                        if isinstance(row_index, (int, float)) and not pd.isna(row_index)
+                        if isinstance(row_index, (int, float))
+                        and not pd.isna(row_index)
                         else str(row_index) if row_index is not None else None
                     ),
                     "local_index": local_index,
@@ -653,8 +660,10 @@ def load_school_records(path: Path = config.SOURCE_XLSX) -> list[SchoolRecord]:
     df = read_dataset(path)
     expected_columns = config.get_profile_state().EXPECTED_COLUMNS
     missing = [col for col in expected_columns if col not in df.columns]
-    if missing:
-        raise ValueError(f"Missing expected columns: {missing}")
+    metadata_missing = list(df.attrs.get("missing_columns", []))
+    missing_set = set(missing) | {str(column) for column in metadata_missing}
+    if missing_set:
+        raise ValueError(f"Missing expected columns: {sorted(missing_set)}")
     return [SchoolRecord.from_dataframe_row(row) for _, row in df.iterrows()]
 
 

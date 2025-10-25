@@ -128,7 +128,7 @@ class TestObservabilityManager:
         manager = ObservabilityManager(config)
         manager.initialize()
 
-        with manager.trace_operation("test_op") as span:
+        with manager.trace_operation("test_op"):
             time.sleep(0.01)
 
         # Should record the operation
@@ -164,7 +164,7 @@ class TestObservabilityManager:
         manager.initialize()
 
         attrs = {"dataset": "sample.csv", "size": 100}
-        with manager.trace_operation("enrich", attributes=attrs) as span:
+        with manager.trace_operation("enrich", attributes=attrs):
             pass
 
         assert manager.slo_metrics.total_requests == 1
@@ -250,13 +250,13 @@ class TestIntegration:
         manager.initialize()
 
         # Simulate pipeline run
-        with manager.trace_operation("validate") as span:
+        with manager.trace_operation("validate"):
             time.sleep(0.01)
 
-        with manager.trace_operation("enrich") as span:
+        with manager.trace_operation("enrich"):
             time.sleep(0.02)
 
-        with manager.trace_operation("contracts") as span:
+        with manager.trace_operation("contracts"):
             time.sleep(0.01)
 
         # Check metrics

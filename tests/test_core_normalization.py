@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 import pytest
@@ -9,7 +10,9 @@ from watercrawl.core.normalization import (
     ColumnConflict,
     ColumnConflictResolver,
     ColumnNormalizationRegistry,
+    EmailValidator,
     MergeDuplicatesResult,
+    PhoneNormalizer,
     RowMergeTrace,
     build_default_registry,
     merge_duplicate_records,
@@ -21,8 +24,8 @@ from watercrawl.domain.compliance import normalize_phone, validate_email
 @pytest.fixture()
 def registry() -> ColumnNormalizationRegistry:
     reg = build_default_registry(
-        phone_normalizer=normalize_phone,
-        email_validator=validate_email,
+        phone_normalizer=cast(PhoneNormalizer, normalize_phone),
+        email_validator=cast(EmailValidator, validate_email),
     )
     return reg
 
