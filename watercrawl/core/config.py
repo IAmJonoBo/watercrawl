@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -48,14 +50,89 @@ LOGS_DIR = DATA_DIR / "logs"
 
 
 # Profile loading -----------------------------------------------------------
-PROFILE: RefinementProfile
-PROFILE_PATH: Path
-COLUMN_DESCRIPTORS: tuple[ColumnDescriptor, ...]
-NUMERIC_UNIT_LOOKUP: dict[str, dict[str, Any]]
-if TYPE_CHECKING:  # pragma: no cover - typing only
-    pass
+@dataclass(frozen=True)
+class ProfileRuntimeState:
+    PROFILE: RefinementProfile
+    PROFILE_PATH: Path
+    EXPECTED_COLUMNS: tuple[str, ...]
+    PROVINCES: tuple[str, ...]
+    CANONICAL_STATUSES: tuple[str, ...]
+    DEFAULT_STATUS: str
+    MIN_EVIDENCE_SOURCES: int
+    DEFAULT_CONFIDENCE_BY_STATUS: dict[str, int]
+    OFFICIAL_SOURCE_KEYWORDS: tuple[str, ...]
+    EVIDENCE_QUERIES: tuple[str, ...]
+    COMPLIANCE_LAWFUL_BASES: dict[str, str]
+    COMPLIANCE_DEFAULT_LAWFUL_BASIS: str
+    COMPLIANCE_CONTACT_PURPOSES: dict[str, str]
+    COMPLIANCE_DEFAULT_CONTACT_PURPOSE: str
+    COMPLIANCE_OPT_OUT_STATUSES: tuple[str, ...]
+    COMPLIANCE_REVALIDATION_DAYS: int
+    COMPLIANCE_NOTIFICATION_TEMPLATES: dict[str, str]
+    COMPLIANCE_AUDIT_EXPORTS: tuple[str, ...]
+    PHONE_COUNTRY_CODE: str
+    PHONE_E164_REGEX: str
+    PHONE_NATIONAL_PREFIXES: tuple[str, ...]
+    PHONE_NATIONAL_NUMBER_LENGTH: int | None
+    EMAIL_REGEX: str
+    ROLE_INBOX_PREFIXES: tuple[str, ...]
+    EMAIL_REQUIRE_DOMAIN_MATCH: bool
+    RESEARCH_QUERIES: tuple[str, ...]
+    RESEARCH_CONCURRENCY_LIMIT: int
+    RESEARCH_CACHE_TTL_HOURS: float | None
+    RESEARCH_MAX_RETRIES: int
+    RESEARCH_RETRY_BACKOFF_BASE_SECONDS: float
+    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int
+    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS: float
+    RESEARCH_ALLOW_PERSONAL_DATA: bool
+    RESEARCH_RATE_LIMIT_SECONDS: float
+    RESEARCH_CONNECTOR_SETTINGS: dict[str, dict[str, object]]
+    COLUMN_DESCRIPTORS: tuple[ColumnDescriptor, ...]
+    NUMERIC_UNIT_RULES: tuple[NumericUnitRule, ...]
+    NUMERIC_UNIT_LOOKUP: dict[str, dict[str, Any]]
+    COLUMN_NORMALIZATION_REGISTRY: Any
 
-COLUMN_NORMALIZATION_REGISTRY: Any
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    PROFILE: RefinementProfile
+    PROFILE_PATH: Path
+    EXPECTED_COLUMNS: tuple[str, ...]
+    PROVINCES: tuple[str, ...]
+    CANONICAL_STATUSES: tuple[str, ...]
+    DEFAULT_STATUS: str
+    MIN_EVIDENCE_SOURCES: int
+    DEFAULT_CONFIDENCE_BY_STATUS: dict[str, int]
+    OFFICIAL_SOURCE_KEYWORDS: tuple[str, ...]
+    EVIDENCE_QUERIES: tuple[str, ...]
+    COMPLIANCE_LAWFUL_BASES: dict[str, str]
+    COMPLIANCE_DEFAULT_LAWFUL_BASIS: str
+    COMPLIANCE_CONTACT_PURPOSES: dict[str, str]
+    COMPLIANCE_DEFAULT_CONTACT_PURPOSE: str
+    COMPLIANCE_OPT_OUT_STATUSES: tuple[str, ...]
+    COMPLIANCE_REVALIDATION_DAYS: int
+    COMPLIANCE_NOTIFICATION_TEMPLATES: dict[str, str]
+    COMPLIANCE_AUDIT_EXPORTS: tuple[str, ...]
+    PHONE_COUNTRY_CODE: str
+    PHONE_E164_REGEX: str
+    PHONE_NATIONAL_PREFIXES: tuple[str, ...]
+    PHONE_NATIONAL_NUMBER_LENGTH: int | None
+    EMAIL_REGEX: str
+    ROLE_INBOX_PREFIXES: tuple[str, ...]
+    EMAIL_REQUIRE_DOMAIN_MATCH: bool
+    RESEARCH_QUERIES: tuple[str, ...]
+    RESEARCH_CONCURRENCY_LIMIT: int
+    RESEARCH_CACHE_TTL_HOURS: float | None
+    RESEARCH_MAX_RETRIES: int
+    RESEARCH_RETRY_BACKOFF_BASE_SECONDS: float
+    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int
+    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS: float
+    RESEARCH_ALLOW_PERSONAL_DATA: bool
+    RESEARCH_RATE_LIMIT_SECONDS: float
+    RESEARCH_CONNECTOR_SETTINGS: dict[str, dict[str, object]]
+    COLUMN_DESCRIPTORS: tuple[ColumnDescriptor, ...]
+    NUMERIC_UNIT_RULES: tuple[NumericUnitRule, ...]
+    NUMERIC_UNIT_LOOKUP: dict[str, dict[str, Any]]
+    COLUMN_NORMALIZATION_REGISTRY: Any
 
 
 def _resolve_profile_from_env() -> tuple[RefinementProfile, Path]:
@@ -70,6 +147,163 @@ def _resolve_profile_from_env() -> tuple[RefinementProfile, Path]:
         return profile, resolved_path
     except ProfileError as exc:  # pragma: no cover - configuration failure
         raise RuntimeError(f"Failed to load refinement profile: {exc}") from exc
+
+
+def _build_profile_state(
+    profile: RefinementProfile, profile_path: Path
+) -> ProfileRuntimeState:
+    expected_columns = tuple(profile.dataset.expected_columns)
+    provinces = tuple(profile.provinces)
+    statuses = tuple(profile.statuses)
+    numeric_rules = tuple(profile.dataset.numeric_units)
+    column_descriptors = tuple(profile.dataset.columns)
+
+    compliance = profile.compliance
+    contact = profile.contact
+    research = profile.research
+
+    min_evidence_sources = int(compliance.min_evidence_sources)
+    default_confidence = dict(compliance.default_confidence)
+    official_keywords = tuple(compliance.official_source_keywords)
+    evidence_queries = tuple(compliance.evidence_queries)
+
+    connector_settings = {
+        name: {
+            "enabled": settings.enabled,
+            "rate_limit_seconds": settings.rate_limit_seconds,
+            "allow_personal_data": settings.allow_personal_data,
+        }
+        for name, settings in research.connectors.items()
+    }
+
+    from watercrawl.core.normalization import (  # local import to avoid cycles
+        build_default_registry,
+        build_numeric_rule_lookup,
+    )
+    from watercrawl.domain.compliance import normalize_phone, validate_email
+
+    numeric_lookup = build_numeric_rule_lookup(numeric_rules)
+    registry = build_default_registry(
+        phone_normalizer=normalize_phone,
+        email_validator=validate_email,
+    )
+    registry.numeric_rules.update(numeric_lookup)
+
+    return ProfileRuntimeState(
+        PROFILE=profile,
+        PROFILE_PATH=profile_path,
+        EXPECTED_COLUMNS=expected_columns,
+        PROVINCES=provinces,
+        CANONICAL_STATUSES=statuses,
+        DEFAULT_STATUS=profile.default_status,
+        MIN_EVIDENCE_SOURCES=min_evidence_sources,
+        DEFAULT_CONFIDENCE_BY_STATUS=default_confidence,
+        OFFICIAL_SOURCE_KEYWORDS=official_keywords,
+        EVIDENCE_QUERIES=evidence_queries,
+        COMPLIANCE_LAWFUL_BASES=dict(compliance.lawful_basis),
+        COMPLIANCE_DEFAULT_LAWFUL_BASIS=compliance.default_lawful_basis,
+        COMPLIANCE_CONTACT_PURPOSES=dict(compliance.contact_purposes),
+        COMPLIANCE_DEFAULT_CONTACT_PURPOSE=compliance.default_contact_purpose,
+        COMPLIANCE_OPT_OUT_STATUSES=tuple(compliance.opt_out_statuses),
+        COMPLIANCE_REVALIDATION_DAYS=int(compliance.revalidation_days),
+        COMPLIANCE_NOTIFICATION_TEMPLATES=dict(compliance.notification_templates),
+        COMPLIANCE_AUDIT_EXPORTS=tuple(compliance.audit_exports),
+        PHONE_COUNTRY_CODE=contact.phone.country_code,
+        PHONE_E164_REGEX=contact.phone.e164_regex,
+        PHONE_NATIONAL_PREFIXES=tuple(contact.phone.national_prefixes),
+        PHONE_NATIONAL_NUMBER_LENGTH=contact.phone.national_number_length,
+        EMAIL_REGEX=contact.email.regex,
+        ROLE_INBOX_PREFIXES=tuple(contact.email.role_prefixes),
+        EMAIL_REQUIRE_DOMAIN_MATCH=bool(contact.email.require_domain_match),
+        RESEARCH_QUERIES=tuple(research.queries),
+        RESEARCH_CONCURRENCY_LIMIT=max(1, int(research.concurrency_limit)),
+        RESEARCH_CACHE_TTL_HOURS=research.cache_ttl_hours,
+        RESEARCH_MAX_RETRIES=max(0, int(research.max_retries)),
+        RESEARCH_RETRY_BACKOFF_BASE_SECONDS=max(
+            0.0, float(research.retry_backoff_base_seconds)
+        ),
+        RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD=max(
+            1, int(research.circuit_breaker_failure_threshold)
+        ),
+        RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS=max(
+            0.0, float(research.circuit_breaker_reset_seconds)
+        ),
+        RESEARCH_ALLOW_PERSONAL_DATA=bool(research.allow_personal_data),
+        RESEARCH_RATE_LIMIT_SECONDS=float(research.rate_limit_seconds),
+        RESEARCH_CONNECTOR_SETTINGS=connector_settings,
+        COLUMN_DESCRIPTORS=column_descriptors,
+        NUMERIC_UNIT_RULES=numeric_rules,
+        NUMERIC_UNIT_LOOKUP=numeric_lookup,
+        COLUMN_NORMALIZATION_REGISTRY=registry,
+    )
+
+
+_profile_init, _profile_path_init = _resolve_profile_from_env()
+_DEFAULT_PROFILE_STATE = _build_profile_state(_profile_init, _profile_path_init)
+_PROFILE_STATE: ContextVar[ProfileRuntimeState] = ContextVar(
+    "profile_state", default=_DEFAULT_PROFILE_STATE
+)
+
+
+def get_profile_state() -> ProfileRuntimeState:
+    """Return the active profile runtime state for the current context."""
+
+    return _PROFILE_STATE.get()
+
+
+def describe_profile_state(state: ProfileRuntimeState) -> dict[str, object]:
+    """Return serialisable metadata for a profile state."""
+
+    return {
+        "id": state.PROFILE.identifier,
+        "name": state.PROFILE.name,
+        "description": state.PROFILE.description,
+        "path": str(state.PROFILE_PATH),
+    }
+
+
+def describe_active_profile() -> dict[str, object]:
+    """Describe the currently active refinement profile."""
+
+    return describe_profile_state(get_profile_state())
+
+
+@contextmanager
+def profile_context(
+    *,
+    profile_id: str | None = None,
+    profile_path: Path | None = None,
+    profile: RefinementProfile | None = None,
+) -> ProfileRuntimeState:
+    """Temporarily switch to a different refinement profile within the context."""
+
+    if profile is None:
+        if profile_path is not None:
+            resolved = Path(profile_path).expanduser().resolve()
+            profile = load_profile(resolved)
+        elif profile_id is not None:
+            resolved = discover_profile(PROJECT_ROOT, profile_id)
+            profile = load_profile(resolved)
+        else:
+            raise ProfileError(
+                "profile_context requires profile, profile_id, or profile_path"
+            )
+    else:
+        resolved = profile_path or get_profile_state().PROFILE_PATH
+
+    new_state = _build_profile_state(profile, resolved)
+    token = _PROFILE_STATE.set(new_state)
+    try:
+        yield new_state
+    finally:
+        _PROFILE_STATE.reset(token)
+
+
+def __getattr__(name: str) -> Any:  # pragma: no cover - passthrough accessor
+    state = get_profile_state()
+    if hasattr(state, name):
+        return getattr(state, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name}")
 
 
 # Input / output artefacts ---------------------------------------------------
@@ -92,204 +326,6 @@ ISSUES_SHEET = "Issues"
 LISTS_SHEET = "Lists"
 
 
-# Compliance constants -----------------------------------------------------
-EXPECTED_COLUMNS: list[str]
-PROVINCES: list[str]
-CANONICAL_STATUSES: list[str]
-DEFAULT_STATUS: str
-
-MIN_EVIDENCE_SOURCES: int
-DEFAULT_CONFIDENCE_BY_STATUS: dict[str, int]
-OFFICIAL_SOURCE_KEYWORDS: tuple[str, ...]
-EVIDENCE_QUERIES: list[str]
-COMPLIANCE_LAWFUL_BASES: dict[str, str]
-COMPLIANCE_DEFAULT_LAWFUL_BASIS: str
-COMPLIANCE_CONTACT_PURPOSES: dict[str, str]
-COMPLIANCE_DEFAULT_CONTACT_PURPOSE: str
-COMPLIANCE_OPT_OUT_STATUSES: tuple[str, ...]
-COMPLIANCE_REVALIDATION_DAYS: int
-COMPLIANCE_NOTIFICATION_TEMPLATES: dict[str, str]
-COMPLIANCE_AUDIT_EXPORTS: tuple[str, ...]
-
-PHONE_COUNTRY_CODE: str
-PHONE_E164_REGEX: str
-PHONE_NATIONAL_PREFIXES: tuple[str, ...]
-PHONE_NATIONAL_NUMBER_LENGTH: int | None
-
-EMAIL_REGEX: str
-ROLE_INBOX_PREFIXES: tuple[str, ...]
-EMAIL_REQUIRE_DOMAIN_MATCH: bool
-
-RESEARCH_QUERIES: list[str]
-RESEARCH_CONCURRENCY_LIMIT: int
-RESEARCH_CACHE_TTL_HOURS: float | None
-RESEARCH_MAX_RETRIES: int
-RESEARCH_RETRY_BACKOFF_BASE_SECONDS: float
-RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int
-RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS: float
-RESEARCH_ALLOW_PERSONAL_DATA: bool
-RESEARCH_RATE_LIMIT_SECONDS: float
-RESEARCH_CONNECTOR_SETTINGS: dict[str, dict[str, object]]
-
-NUMERIC_UNIT_RULES: tuple[NumericUnitRule, ...]
-
-
-def _apply_profile(profile: RefinementProfile, profile_path: Path) -> None:
-    global PROFILE, PROFILE_PATH
-    global EXPECTED_COLUMNS, PROVINCES, CANONICAL_STATUSES, DEFAULT_STATUS
-    global MIN_EVIDENCE_SOURCES, DEFAULT_CONFIDENCE_BY_STATUS, OFFICIAL_SOURCE_KEYWORDS
-    global EVIDENCE_QUERIES, PHONE_COUNTRY_CODE, PHONE_E164_REGEX
-    global COMPLIANCE_LAWFUL_BASES, COMPLIANCE_DEFAULT_LAWFUL_BASIS
-    global COMPLIANCE_CONTACT_PURPOSES, COMPLIANCE_DEFAULT_CONTACT_PURPOSE
-    global COMPLIANCE_OPT_OUT_STATUSES, COMPLIANCE_REVALIDATION_DAYS
-    global COMPLIANCE_NOTIFICATION_TEMPLATES, COMPLIANCE_AUDIT_EXPORTS
-    global PHONE_NATIONAL_PREFIXES, PHONE_NATIONAL_NUMBER_LENGTH
-    global EMAIL_REGEX, ROLE_INBOX_PREFIXES, EMAIL_REQUIRE_DOMAIN_MATCH
-    global RESEARCH_QUERIES, NUMERIC_UNIT_RULES
-    global RESEARCH_CONCURRENCY_LIMIT, RESEARCH_CACHE_TTL_HOURS
-    global RESEARCH_MAX_RETRIES, RESEARCH_RETRY_BACKOFF_BASE_SECONDS
-    global RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD
-    global RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS
-    global RESEARCH_ALLOW_PERSONAL_DATA, RESEARCH_RATE_LIMIT_SECONDS
-    global RESEARCH_CONNECTOR_SETTINGS
-    global COLUMN_DESCRIPTORS, NUMERIC_UNIT_LOOKUP, COLUMN_NORMALIZATION_REGISTRY
-
-    PROFILE = profile
-    PROFILE_PATH = profile_path
-
-    EXPECTED_COLUMNS = list(profile.dataset.expected_columns)
-    PROVINCES = list(profile.provinces)
-    CANONICAL_STATUSES = list(profile.statuses)
-    DEFAULT_STATUS = profile.default_status
-
-    MIN_EVIDENCE_SOURCES = profile.compliance.min_evidence_sources
-    DEFAULT_CONFIDENCE_BY_STATUS = dict(profile.compliance.default_confidence)
-    OFFICIAL_SOURCE_KEYWORDS = tuple(profile.compliance.official_source_keywords)
-    EVIDENCE_QUERIES = list(profile.compliance.evidence_queries)
-    COMPLIANCE_LAWFUL_BASES = dict(profile.compliance.lawful_basis)
-    COMPLIANCE_DEFAULT_LAWFUL_BASIS = profile.compliance.default_lawful_basis
-    COMPLIANCE_CONTACT_PURPOSES = dict(profile.compliance.contact_purposes)
-    COMPLIANCE_DEFAULT_CONTACT_PURPOSE = profile.compliance.default_contact_purpose
-    COMPLIANCE_OPT_OUT_STATUSES = tuple(profile.compliance.opt_out_statuses)
-    COMPLIANCE_REVALIDATION_DAYS = int(profile.compliance.revalidation_days)
-    COMPLIANCE_NOTIFICATION_TEMPLATES = dict(profile.compliance.notification_templates)
-    COMPLIANCE_AUDIT_EXPORTS = tuple(profile.compliance.audit_exports)
-
-    PHONE_COUNTRY_CODE = profile.contact.phone.country_code
-    PHONE_E164_REGEX = profile.contact.phone.e164_regex
-    PHONE_NATIONAL_PREFIXES = tuple(profile.contact.phone.national_prefixes)
-    PHONE_NATIONAL_NUMBER_LENGTH = profile.contact.phone.national_number_length
-
-    EMAIL_REGEX = profile.contact.email.regex
-    ROLE_INBOX_PREFIXES = tuple(profile.contact.email.role_prefixes)
-    EMAIL_REQUIRE_DOMAIN_MATCH = profile.contact.email.require_domain_match
-
-    RESEARCH_QUERIES = list(profile.research.queries)
-    RESEARCH_CONCURRENCY_LIMIT = max(1, int(profile.research.concurrency_limit))
-    RESEARCH_CACHE_TTL_HOURS = profile.research.cache_ttl_hours
-    RESEARCH_MAX_RETRIES = max(0, int(profile.research.max_retries))
-    RESEARCH_RETRY_BACKOFF_BASE_SECONDS = max(
-        0.0, float(profile.research.retry_backoff_base_seconds)
-    )
-    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD = max(
-        1, int(profile.research.circuit_breaker_failure_threshold)
-    )
-    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS = max(
-        0.0, float(profile.research.circuit_breaker_reset_seconds)
-    )
-    NUMERIC_UNIT_RULES = tuple(profile.dataset.numeric_units)
-    RESEARCH_ALLOW_PERSONAL_DATA = bool(profile.research.allow_personal_data)
-    RESEARCH_RATE_LIMIT_SECONDS = float(profile.research.rate_limit_seconds)
-    RESEARCH_CONNECTOR_SETTINGS = {
-        name: {
-            "enabled": settings.enabled,
-            "rate_limit_seconds": settings.rate_limit_seconds,
-            "allow_personal_data": settings.allow_personal_data,
-        }
-        for name, settings in profile.research.connectors.items()
-    }
-    COLUMN_DESCRIPTORS = tuple(profile.dataset.columns)
-
-    from watercrawl.core.normalization import (  # local import to avoid cycles
-        build_default_registry,
-        build_numeric_rule_lookup,
-    )
-    from watercrawl.domain.compliance import normalize_phone, validate_email
-
-    numeric_lookup = build_numeric_rule_lookup(NUMERIC_UNIT_RULES)
-    NUMERIC_UNIT_LOOKUP = numeric_lookup
-    registry = build_default_registry(
-        phone_normalizer=normalize_phone,
-        email_validator=validate_email,
-    )
-    registry.numeric_rules.update(numeric_lookup)
-    COLUMN_NORMALIZATION_REGISTRY = registry
-
-
-_profile_init, _profile_path_init = _resolve_profile_from_env()
-_apply_profile(_profile_init, _profile_path_init)
-
-RESEARCH_ALLOW_PERSONAL_DATA = bool(
-    globals().get("RESEARCH_ALLOW_PERSONAL_DATA", False)
-)
-RESEARCH_RATE_LIMIT_SECONDS = float(globals().get("RESEARCH_RATE_LIMIT_SECONDS", 0.0))
-_connector_defaults = globals().get("RESEARCH_CONNECTOR_SETTINGS", {})
-if not isinstance(_connector_defaults, dict):
-    _connector_defaults = {}
-RESEARCH_CONNECTOR_SETTINGS = dict(_connector_defaults)
-
-# Safety defaults: ensure tests and runtime environments that load this module
-# without explicitly populated profile fields still have reasonable values.
-# These are conservative defaults and can be overridden by calling switch_profile
-# or setting environment/profile values.
-try:
-    RESEARCH_CONCURRENCY_LIMIT  # type: ignore[name-defined]
-except NameError:
-    RESEARCH_CONCURRENCY_LIMIT = 4
-
-try:
-    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD  # type: ignore[name-defined]
-except NameError:
-    RESEARCH_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
-
-try:
-    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS  # type: ignore[name-defined]
-except NameError:
-    RESEARCH_CIRCUIT_BREAKER_RESET_SECONDS = 60.0
-
-try:
-    RESEARCH_CACHE_TTL_HOURS  # type: ignore[name-defined]
-except NameError:
-    RESEARCH_CACHE_TTL_HOURS = None
-
-try:
-    RESEARCH_MAX_RETRIES  # type: ignore[name-defined]
-except NameError:
-    RESEARCH_MAX_RETRIES = 3
-
-try:
-    RESEARCH_RETRY_BACKOFF_BASE_SECONDS  # type: ignore[name-defined]
-except NameError:
-    RESEARCH_RETRY_BACKOFF_BASE_SECONDS = 1.0
-
-try:
-    COLUMN_DESCRIPTORS  # type: ignore[name-defined]
-except NameError:
-    COLUMN_DESCRIPTORS = ()
-
-try:
-    NUMERIC_UNIT_LOOKUP  # type: ignore[name-defined]
-except NameError:
-    NUMERIC_UNIT_LOOKUP = {}
-
-try:
-    COLUMN_NORMALIZATION_REGISTRY  # type: ignore[name-defined]
-except NameError:
-    from watercrawl.core.normalization import build_default_registry
-
-    COLUMN_NORMALIZATION_REGISTRY = build_default_registry()
-
-
 def switch_profile(
     *,
     profile_id: str | None = None,
@@ -300,14 +336,17 @@ def switch_profile(
     if profile_path:
         resolved = Path(profile_path).expanduser().resolve()
         profile = load_profile(resolved)
-        _apply_profile(profile, resolved)
-        return profile
-    if profile_id:
+    elif profile_id:
         resolved = discover_profile(PROJECT_ROOT, profile_id)
         profile = load_profile(resolved)
-        _apply_profile(profile, resolved)
-        return profile
-    raise ProfileError("switch_profile requires either profile_id or profile_path")
+    else:
+        raise ProfileError("switch_profile requires either profile_id or profile_path")
+
+    new_state = _build_profile_state(profile, resolved)
+    _PROFILE_STATE.set(new_state)
+    global _DEFAULT_PROFILE_STATE
+    _DEFAULT_PROFILE_STATE = new_state
+    return profile
 
 
 def list_profiles() -> list[dict[str, object]]:
@@ -317,6 +356,7 @@ def list_profiles() -> list[dict[str, object]]:
     profiles_dir = PROJECT_ROOT / "profiles"
     if not profiles_dir.exists():
         return profiles
+    active_path = get_profile_state().PROFILE_PATH.resolve()
     for path in sorted(profiles_dir.glob("*.y*ml")):
         try:
             profile = load_profile(path)
@@ -328,7 +368,7 @@ def list_profiles() -> list[dict[str, object]]:
                 "name": profile.name,
                 "description": profile.description,
                 "path": str(path),
-                "active": path.resolve() == PROFILE_PATH.resolve(),
+                "active": path.resolve() == active_path,
             }
         )
     return profiles

@@ -44,6 +44,11 @@
 
 ## Steps (iteration log)
 
+- [ ] 2025-11-06 — Profile registry CLI + multi-profile runtime (agent):
+      - Targeted QA:
+        - `poetry run pytest tests/test_cli.py tests/test_profile_context.py tests/test_profiles_templates.py` ⚠️ (skipped: PyYAML module unavailable in runner; tests gated accordingly).【d0e5c9†L1-L7】
+      - Notes: Introduced contextvar-backed profile runtime (`config.profile_context`, `describe_active_profile`), updated plan→commit guard to persist profile metadata, added `analyst_cli profiles` group (list/validate/switch), and seeded two industry-agnostic profile templates with schema validation coverage.
+
 - [ ] 2025-11-05 — Excel exporter formatting enhancements (agent):
       - Targeted QA:
         - `poetry run pytest tests/test_excel_exporter.py -q` ✅ (new workbook formatting coverage).【d45f71†L1-L2】

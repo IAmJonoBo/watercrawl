@@ -28,8 +28,6 @@ from .column_inference import ColumnInferenceEngine, ColumnInferenceResult
 from . import config  # type: ignore
 from .normalization import ColumnNormalizationRegistry, normalize_numeric_value
 
-EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
-
 _SUPPORTED_SUFFIXES = {".csv", ".xlsx", ".xls"}
 EVIDENCE_SHEET = "Evidence"
 
@@ -351,7 +349,7 @@ def _align_columns(
 
     if not descriptors:
         return frame, set(), None
-    required_columns = set(getattr(config, "EXPECTED_COLUMNS", ()))
+    required_columns = set(config.get_profile_state().EXPECTED_COLUMNS)
     canonical_order: list[str] = []
     alias_lookup: dict[str, str] = {}
     column_descriptors: list[ColumnDescriptor] = []
@@ -653,7 +651,8 @@ def write_dataset(df: pd.DataFrame, path: Path) -> None:
 def load_school_records(path: Path = config.SOURCE_XLSX) -> list[SchoolRecord]:
     """Load school records from the dataset at the given path."""
     df = read_dataset(path)
-    missing = [col for col in EXPECTED_COLUMNS if col not in df.columns]
+    expected_columns = config.get_profile_state().EXPECTED_COLUMNS
+    missing = [col for col in expected_columns if col not in df.columns]
     if missing:
         raise ValueError(f"Missing expected columns: {missing}")
     return [SchoolRecord.from_dataframe_row(row) for _, row in df.iterrows()]

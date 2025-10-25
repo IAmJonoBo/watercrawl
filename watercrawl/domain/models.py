@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Literal
+from functools import lru_cache
+from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence
 
 from watercrawl.core import config
 
@@ -31,12 +32,37 @@ else:  # pragma: no cover - optional integrations may be unavailable at runtime
     except Exception:  # pragma: no cover - fallback when relationships module missing
         RelationshipGraphSnapshot = Any  # type: ignore[misc, assignment]
 
-EXPECTED_COLUMNS = list(config.EXPECTED_COLUMNS)
-
-_CANONICAL_PROVINCES = {province.lower(): province for province in config.PROVINCES}
 _UNKNOWN_PROVINCE = "Unknown"
-_CANONICAL_STATUSES = {status.lower(): status for status in config.CANONICAL_STATUSES}
-_STATUS_FALLBACK = config.DEFAULT_STATUS
+
+
+class ExpectedColumnsProxy(Sequence[str]):
+    """Sequence proxy that reflects the active profile's expected columns."""
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(config.get_profile_state().EXPECTED_COLUMNS)
+
+    def __len__(self) -> int:
+        return len(config.get_profile_state().EXPECTED_COLUMNS)
+
+    def __getitem__(self, index: int) -> str:
+        return config.get_profile_state().EXPECTED_COLUMNS[index]
+
+
+EXPECTED_COLUMNS: Sequence[str] = ExpectedColumnsProxy()
+
+
+@lru_cache(maxsize=8)
+def _canonical_province_lookup(
+    profile_path: str, provinces: tuple[str, ...]
+) -> dict[str, str]:
+    return {province.lower(): province for province in provinces}
+
+
+@lru_cache(maxsize=8)
+def _canonical_status_lookup(
+    profile_path: str, statuses: tuple[str, ...]
+) -> dict[str, str]:
+    return {status.lower(): status for status in statuses}
 
 
 def normalize_province(value: Any) -> str:
@@ -45,16 +71,21 @@ def normalize_province(value: Any) -> str:
     text = str(value).strip()
     if not text:
         return _UNKNOWN_PROVINCE
-    return _CANONICAL_PROVINCES.get(text.lower(), _UNKNOWN_PROVINCE)
+    state = config.get_profile_state()
+    lookup = _canonical_province_lookup(str(state.PROFILE_PATH), state.PROVINCES)
+    return lookup.get(text.lower(), _UNKNOWN_PROVINCE)
 
 
 def normalize_status(value: Any) -> str:
     if value is None:
-        return _STATUS_FALLBACK
+        return config.get_profile_state().DEFAULT_STATUS
     text = str(value).strip()
     if not text:
-        return _STATUS_FALLBACK
-    return _CANONICAL_STATUSES.get(text.lower(), _STATUS_FALLBACK)
+        return config.get_profile_state().DEFAULT_STATUS
+    state = config.get_profile_state()
+    lookup = _canonical_status_lookup(str(state.PROFILE_PATH), state.CANONICAL_STATUSES)
+    fallback = state.DEFAULT_STATUS
+    return lookup.get(text.lower(), fallback)
 
 
 @dataclass

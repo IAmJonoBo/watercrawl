@@ -1,0 +1,92 @@
+id: template-services
+name: Professional Services Template
+description: Template refinement profile for professional services and consulting firms.
+dataset:
+  expected_columns:
+    - Name of Organisation
+    - Province
+    - Status
+    - Website URL
+    - Contact Person
+    - Contact Number
+    - Contact Email Address
+  numeric_units: []
+  columns:
+    - name: Name of Organisation
+      required: true
+      semantic_type: text
+      synonyms: [Firm Name, Practice]
+    - name: Province
+      required: true
+      semantic_type: categorical
+    - name: Status
+      required: true
+      semantic_type: categorical
+    - name: Website URL
+      semantic_type: url
+    - name: Contact Person
+      semantic_type: text
+    - name: Contact Number
+      semantic_type: phone
+    - name: Contact Email Address
+      semantic_type: email
+provinces:
+  - Market North
+  - Market South
+  - Market East
+  - Market West
+statuses:
+  - Verified
+  - Candidate
+  - Needs Review
+  - Archived
+default_status: Candidate
+compliance:
+  default_confidence:
+    Verified: 92
+    Candidate: 60
+    Needs Review: 35
+    Archived: 0
+  min_evidence_sources: 2
+  official_source_keywords:
+    - chamber
+    - association
+  evidence_queries:
+    - "<organisation> consulting services"
+    - "<organisation> case studies"
+  lawful_basis:
+    legitimate_interest: Maintain contact records for B2B engagement.
+  default_lawful_basis: legitimate_interest
+  contact_purposes:
+    transparency_notice: Provide service transparency notices.
+  default_contact_purpose: transparency_notice
+  opt_out_statuses:
+    - Archived
+  revalidation_days: 270
+  notification_templates: {}
+  audit_exports: []
+contact:
+  phone:
+    country_code: "+88"
+    e164_regex: '^\+88[0-9]{8,10}$'
+    national_prefixes: ["0"]
+    national_number_length: 10
+  email:
+    regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    role_prefixes:
+      - hello
+      - support
+    require_domain_match: true
+research:
+  queries:
+    - "<organisation> advisory team"
+    - "<organisation> client testimonials"
+  concurrency_limit: 3
+  cache_ttl_hours: 72
+  max_retries: 2
+  retry_backoff_base_seconds: 0.5
+  circuit_breaker_failure_threshold: 4
+  circuit_breaker_reset_seconds: 45
+  allow_personal_data: false
+  rate_limit_seconds: 0.0
+  connectors: {}

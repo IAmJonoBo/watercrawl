@@ -10,6 +10,8 @@ from click.testing import CliRunner
 pytest.importorskip("yaml")
 pytest.importorskip("pandas")
 
+import yaml
+
 import pandas as pd
 
 from watercrawl.application.progress import PipelineProgressListener
@@ -20,6 +22,7 @@ from watercrawl.domain.contracts import (
     ValidationReportContract,
 )
 from watercrawl.domain.models import PipelineReport, SchoolRecord, ValidationReport
+from watercrawl.core import config
 from watercrawl.interfaces import cli
 from watercrawl.interfaces.cli import cli as cli_group
 
@@ -87,6 +90,16 @@ def _write_commit(tmp_path: Path) -> Path:
     return commit_path
 
 
+def _duplicate_profile(tmp_path: Path, *, identifier: str) -> Path:
+    payload = yaml.safe_load(config.PROFILE_PATH.read_text(encoding="utf-8"))
+    payload["id"] = identifier
+    payload["name"] = f"Template {identifier}"
+    payload["description"] = "Profile fixture for CLI tests"
+    destination = tmp_path / f"{identifier}.yaml"
+    destination.write_text(yaml.safe_dump(payload), encoding="utf-8")
+    return destination
+
+
 def _make_record(name: str = "Atlas") -> SchoolRecord:
     return SchoolRecord.from_dataframe_row(
         pd.Series(
@@ -152,6 +165,7 @@ def test_cli_enrich_creates_output(tmp_path):
     assert output_path.exists()
     assert "lineage_artifacts" in payload
     assert payload["commit_artifacts"] == [str(commit_path)]
+    assert payload["profile"]["id"] == config.PROFILE.identifier
     lineage_dir = Path(payload["lineage_artifacts"]["openlineage"]).parent
     assert lineage_dir.exists()
     pipeline_contract = payload["contracts"]["pipeline_report"]
@@ -218,6 +232,8 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
                 str(input_path),
                 "--output",
                 str(output_path),
+                "--format",
+                "json",
                 "--plan",
                 str(plan_path),
                 "--commit",
@@ -225,6 +241,8 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
             ],
         )
     assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["profile"]["path"] == str(config.PROFILE_PATH)
     assert "plan_commit.audit" in caplog.text
     assert str(plan_path) in caplog.text
     audit_path = cli.plan_guard.contract.audit_log_path
@@ -234,6 +252,7 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
     )
     assert last_record["allowed"] is True
     assert str(plan_path) in last_record["plans"]
+    assert last_record["profile"]["id"] == config.PROFILE.identifier
 
 
 def test_cli_enrich_supports_multi_inputs(tmp_path: Path) -> None:
@@ -783,3 +802,43 @@ def test_cli_enrich_warns_on_adapter_failures(tmp_path):
 
     assert result.exit_code == 0
     assert "Warnings: 4 research lookups failed" in result.output
+
+def test_cli_profiles_list_reports_active_profile():
+    runner = CliRunner()
+    result = runner.invoke(cli_group, ["profiles", "list", "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["active_profile"]["id"] == config.PROFILE.identifier
+    assert any(entry.get("active") for entry in payload["profiles"])
+
+
+def test_cli_profiles_validate_accepts_profile_copy(tmp_path: Path) -> None:
+    profile_path = _duplicate_profile(tmp_path, identifier="cli-validate")
+    runner = CliRunner()
+    result = runner.invoke(cli_group, ["profiles", "validate", str(profile_path)])
+    assert result.exit_code == 0
+    assert "Profile is valid" in result.output
+
+
+def test_cli_profiles_switch_updates_active_profile(tmp_path: Path) -> None:
+    original_path = config.PROFILE_PATH
+    profile_path = _duplicate_profile(tmp_path, identifier="cli-switch")
+    runner = CliRunner()
+    try:
+        result = runner.invoke(
+            cli_group,
+            [
+                "profiles",
+                "switch",
+                "--profile-path",
+                str(profile_path),
+                "--format",
+                "json",
+            ],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["profile"]["id"] == "cli-switch"
+        assert config.PROFILE.identifier == "cli-switch"
+    finally:
+        config.switch_profile(profile_path=original_path)

@@ -19,7 +19,7 @@ from watercrawl.application.pipeline import MultiSourcePipeline, Pipeline
 from watercrawl.application.progress import PipelineProgressListener
 from watercrawl.core import config
 from watercrawl.core.excel import read_dataset
-from watercrawl.core.profiles import ProfileError
+from watercrawl.core.profiles import ProfileError, load_profile
 from watercrawl.domain.models import SchoolRecord
 from watercrawl.infrastructure.evidence import build_evidence_sink
 from watercrawl.integrations.contracts import (
@@ -350,6 +350,7 @@ def validate(
             }
         },
     }
+    payload["profile"] = config.describe_active_profile()
     progress_listener_factory = _get_cli_override(
         "RichPipelineProgress", RichPipelineProgress
     )
@@ -548,6 +549,7 @@ def enrich(
             }
         },
     }
+    payload["profile"] = dict(validation.profile)
     if report.lineage_artifacts:
         payload["lineage_artifacts"] = {
             "openlineage": str(report.lineage_artifacts.openlineage_path),
@@ -812,6 +814,72 @@ def coverage_command(output_format: str, output_path: Path | None) -> None:
             err=True,
         )
         raise click.exceptions.Exit(1)
+
+
+@cli.group()
+def profiles() -> None:
+    """Inspect and manage refinement profiles."""
+
+
+@profiles.command("list")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
+def profiles_list(output_format: str) -> None:
+    """List available refinement profiles."""
+
+    entries = config.list_profiles()
+    active = config.describe_active_profile()
+    if output_format == "json":
+        payload = {"active_profile": active, "profiles": entries}
+        click.echo(json.dumps(payload, indent=2))
+        return
+
+    if not entries:
+        click.echo("No profiles discovered under profiles/", err=True)
+        return
+    click.echo("Available profiles:")
+    for entry in entries:
+        marker = "*" if entry.get("active") else "-"
+        click.echo(f" {marker} {entry['id']} :: {entry['name']} ({entry['path']})")
+    click.echo(
+        f"Active profile: {active['id']} :: {active['name']} ({active['path']})"
+    )
+
+
+@profiles.command("validate")
+@click.argument("profile_path", type=click.Path(exists=True, path_type=Path))
+def profiles_validate(profile_path: Path) -> None:
+    """Validate a refinement profile definition."""
+
+    try:
+        profile = load_profile(profile_path)
+    except ProfileError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(
+        f"Profile {profile.identifier} ({profile.name}) is valid at {profile_path}."
+    )
+
+
+@profiles.command("switch")
+@click.option("--profile", "profile_id", type=str)
+@click.option("--profile-path", type=click.Path(exists=True, path_type=Path))
+@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
+def profiles_switch(profile_id: str | None, profile_path: Path | None, output_format: str) -> None:
+    """Switch the active refinement profile."""
+
+    if not profile_id and not profile_path:
+        raise click.UsageError("Provide --profile or --profile-path")
+    if profile_id and profile_path:
+        raise click.UsageError("Specify only one of --profile or --profile-path")
+    try:
+        config.switch_profile(profile_id=profile_id, profile_path=profile_path)
+    except ProfileError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    active = config.describe_active_profile()
+    if output_format == "json":
+        click.echo(json.dumps({"profile": active}, indent=2))
+    else:
+        click.echo(f"Active profile switched to {active['name']} ({active['id']})")
 
 
 @cli.command("mcp-server")
