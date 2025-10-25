@@ -318,6 +318,12 @@ def _column_key(name: str) -> str:
     return "".join(ch for ch in name.casefold() if ch.isalnum())
 
 
+def _ensure_path(candidate: Path | str) -> Path:
+    if isinstance(candidate, Path):
+        return candidate
+    return Path(candidate)
+
+
 def _expand_input(target: Path) -> list[Path]:
     if target.is_dir():
         return [
@@ -328,23 +334,43 @@ def _expand_input(target: Path) -> list[Path]:
     return [target]
 
 
-def _collect_inputs(path_or_paths: Path | Sequence[Path]) -> list[Path]:
+def _collect_inputs(path_or_paths: Path | str | Sequence[Path | str]) -> list[Path]:
     inputs: list[Path] = []
-    if isinstance(path_or_paths, Path):
-        inputs.extend(_expand_input(path_or_paths))
+    if isinstance(path_or_paths, (Path, str)):
+        inputs.extend(_expand_input(_ensure_path(path_or_paths)))
     else:
         for entry in path_or_paths:
-            inputs.extend(_expand_input(entry))
+            inputs.extend(_expand_input(_ensure_path(entry)))
     return inputs
 
 
-def _resolve_sheet_name(path: Path, sheet_map: Mapping[str, str] | None) -> str:
+def _normalise_sheet_names(raw: str | Sequence[str]) -> tuple[str, ...]:
+    if isinstance(raw, str):
+        candidates = [segment.strip() for segment in raw.split(",")]
+    else:
+        candidates = [str(segment).strip() for segment in raw]
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for name in candidates:
+        if not name:
+            continue
+        if name not in seen:
+            ordered.append(name)
+            seen.add(name)
+    if not ordered:
+        return (config.CLEANED_SHEET,)
+    return tuple(ordered)
+
+
+def _resolve_sheet_names(
+    path: Path, sheet_map: Mapping[str, str | Sequence[str]] | None
+) -> tuple[str, ...]:
     if not sheet_map:
-        return config.CLEANED_SHEET
+        return (config.CLEANED_SHEET,)
     for key in (str(path), path.name, path.stem):
         if key in sheet_map:
-            return sheet_map[key]
-    return config.CLEANED_SHEET
+            return _normalise_sheet_names(sheet_map[key])
+    return (config.CLEANED_SHEET,)
 
 
 def _align_columns(
@@ -540,10 +566,10 @@ class ExcelExporter:
 
 
 def read_dataset(
-    path: Path | Sequence[Path],
+    path: Path | str | Sequence[Path | str],
     *,
     registry: ColumnNormalizationRegistry | None = None,
-    sheet_map: Mapping[str, str] | None = None,
+    sheet_map: Mapping[str, str | Sequence[str]] | None = None,
 ) -> pd.DataFrame:
     """Read and normalize a dataset from one or more paths."""
 
@@ -558,35 +584,43 @@ def read_dataset(
     inference_results: list[ColumnInferenceResult] = []
     for input_path in input_paths:
         suffix = input_path.suffix.lower()
-        sheet_name: str | None = None
         if suffix in {".xlsx", ".xls"}:
-            sheet_name = _resolve_sheet_name(input_path, sheet_map)
-            frame = pd.read_excel(input_path, sheet_name=sheet_name)
+            sheet_names: tuple[str | None, ...] = _resolve_sheet_names(
+                input_path, sheet_map
+            )
         elif suffix == ".csv":
-            frame = pd.read_csv(input_path)
+            sheet_names = (None,)
         else:
             raise ValueError(f"Unsupported file format: {suffix}")
-        aligned, missing_columns, inference_result = _align_columns(frame, descriptors)
-        frames.append(aligned)
-        if missing_columns:
-            missing_columns_global.update(missing_columns)
-        if inference_result is not None:
-            inference_results.append(inference_result)
-        for local_index, row_index in enumerate(aligned.index):
-            source_rows.append(
-                {
-                    "row": len(source_rows),
-                    "path": str(input_path.resolve()),
-                    "sheet": sheet_name,
-                    "source_row": (
-                        int(row_index)
-                        if isinstance(row_index, (int, float))
-                        and not pd.isna(row_index)
-                        else str(row_index) if row_index is not None else None
-                    ),
-                    "local_index": local_index,
-                }
+
+        for sheet_name in sheet_names:
+            if suffix in {".xlsx", ".xls"}:
+                frame = pd.read_excel(input_path, sheet_name=sheet_name)
+            else:
+                frame = pd.read_csv(input_path)
+            aligned, missing_columns, inference_result = _align_columns(
+                frame, descriptors
             )
+            frames.append(aligned)
+            if missing_columns:
+                missing_columns_global.update(missing_columns)
+            if inference_result is not None:
+                inference_results.append(inference_result)
+            for local_index, row_index in enumerate(aligned.index):
+                source_rows.append(
+                    {
+                        "row": len(source_rows),
+                        "path": str(input_path.resolve()),
+                        "sheet": sheet_name,
+                        "source_row": (
+                            int(row_index)
+                            if isinstance(row_index, (int, float))
+                            and not pd.isna(row_index)
+                            else str(row_index) if row_index is not None else None
+                        ),
+                        "local_index": local_index,
+                    }
+                )
 
     combined = pd.concat(frames, ignore_index=True, sort=False)
     metadata_attrs: dict[str, Any] = {
@@ -596,7 +630,10 @@ def read_dataset(
     if missing_columns_global:
         metadata_attrs["missing_columns"] = sorted(missing_columns_global)
     if sheet_map:
-        metadata_attrs["sheet_overrides"] = dict(sheet_map)
+        metadata_attrs["sheet_overrides"] = {
+            key: list(_normalise_sheet_names(value))
+            for key, value in sheet_map.items()
+        }
     if inference_results:
         summary = ColumnInferenceResult.merge(inference_results)
         metadata_attrs["column_inference"] = summary.to_dict()

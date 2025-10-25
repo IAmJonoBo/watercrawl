@@ -44,6 +44,14 @@
 
 ## Steps (iteration log)
 
+- [ ] 2025-11-03 — Multi-source ingestion consolidation uplift (agent) — _Owner: Platform/Data · Due: 2025-11-10_:
+      - Extended `watercrawl.core.excel.read_dataset` to accept path lists/directories with multi-sheet overrides; stitched sheets now reuse profile-aware column alignment and persist per-row provenance alongside `sheet_overrides` metadata.
+      - Codified merge precedence controls in `watercrawl.core.normalization.ColumnConflictResolver` (incoming/priority hints) and surfaced CLI parsing for `--sheet-map` multi-sheet entries with regression coverage for mixed CSV/XLSX inputs.
+      - Targeted QA:
+        * `poetry run pytest tests/test_excel.py tests/test_core_normalization.py tests/test_cli.py -k "test_cli_enrich_supports_multi_inputs or test_cli_validate_supports_multiple_sheet_mappings"` ❌ (collection halted: pandas not installed in execution environment).【3ce41b†L1-L26】
+        * `poetry run ruff check watercrawl/core/excel.py watercrawl/interfaces/analyst_cli.py watercrawl/core/normalization.py tests/test_excel.py tests/test_cli.py tests/test_core_normalization.py` ✅.【447aac†L1-L1】
+      - Next: provision/vend pandas (and other optional deps) for pytest collection or gate affected tests; rerun focused pytest suite once dependencies available; confirm downstream QA (mypy/bandit) status before promoting pipeline changes.
+
 - [x] 2025-11-02 — Dataset schema alignment + QA rerun (agent) — _Owner: Platform/QA · Due: 2025-11-09_:
       - Extended pipeline, validation, and dataset fixtures to include the new `Fleet Size` and `Runway Length (m)` columns; refactored profile templates to the `geography.provinces` / `statuses.allowed` schema and refreshed production readiness proof messaging.
       - Re-ran the full pytest suite after fixes (Python 3.13.3) — `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ✅ (575 passed, 3 skipped, coverage table emitted).【12ffa9†L1-L69】

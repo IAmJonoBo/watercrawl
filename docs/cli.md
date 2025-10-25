@@ -29,6 +29,8 @@ poetry run python -m apps.analyst.cli validate data/input.csv --format json
 - Returns JSON (for automation) or text summaries.
 - Exit status is `1` when validation fails so automations can gate on QA.
 - Pass `--progress` to render a progress bar while validating large files.
+- Provide additional CSV/XLSX sources (or directories) with `--inputs` to merge datasets before validation; the CLI stitches files using the active profile's column descriptors.
+- Override workbook sheets with `--sheet-map <file>=<sheet>[,<sheet>]`; comma-separated values load multiple sheets from the same workbook.
 
 ### `enrich`
 
@@ -44,6 +46,8 @@ poetry run python -m apps.analyst.cli enrich data/input.csv --output data/output
 - Requires at least one recorded `*.plan` artefact when policy mandates plan→commit guardrails (`--plan` accepts multiple paths; `--force` is available only when `PLAN_COMMIT_ALLOW_FORCE=1`).
 - Requires at least one `*.commit` artefact summarising the approved diff, `If-Match` value, and RAG/RAGAS metrics that met policy thresholds (`--commit` accepts multiple paths).
 - Successful runs append JSON audit entries to `data/logs/plan_commit_audit.jsonl`, capturing plan paths, commit metadata, and policy decisions for traceability.
+- Pass `--inputs` to merge additional CSV/XLSX sources or directories before enrichment; the pipeline automatically switches to the multi-source merger when more than one source is provided.
+- Use `--sheet-map <file>=<sheet>[,<sheet>]` to target specific workbook sheets. Multiple sheet names (comma-separated) are ingested sequentially with profile-aware column alignment and per-row provenance.
 
 ### `contracts`
 

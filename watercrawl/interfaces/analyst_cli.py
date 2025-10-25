@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import sys
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -68,8 +69,8 @@ def _get_cli_override(name: str, default: T) -> T:
     return default
 
 
-def _parse_sheet_map(entries: Sequence[str]) -> dict[str, str]:
-    mapping: dict[str, str] = {}
+def _parse_sheet_map(entries: Sequence[str]) -> dict[str, tuple[str, ...]]:
+    mapping: dict[str, tuple[str, ...]] = {}
     for entry in entries:
         if "=" in entry:
             key, value = entry.split("=", 1)
@@ -77,7 +78,20 @@ def _parse_sheet_map(entries: Sequence[str]) -> dict[str, str]:
             key, value = entry.split(":", 1)
         else:
             raise ValueError("Invalid sheet mapping format. Use <name>=<sheet>.")
-        mapping[key.strip()] = value.strip()
+        key = key.strip()
+        segments = re.split(r"[;,]", value)
+        sheets: list[str] = []
+        seen: set[str] = set()
+        for segment in segments:
+            cleaned = segment.strip()
+            if not cleaned:
+                continue
+            if cleaned not in seen:
+                sheets.append(cleaned)
+                seen.add(cleaned)
+        if not sheets:
+            raise ValueError("Sheet mapping requires at least one sheet name.")
+        mapping[key] = tuple(sheets)
     return mapping
 
 
@@ -292,7 +306,9 @@ def cli() -> None:
     "sheet_map_entries",
     type=str,
     multiple=True,
-    help="Override workbook sheet names using <file>=<sheet> entries.",
+    help=(
+        "Override workbook sheet names using <file>=<sheet>[,<sheet>] entries."
+    ),
 )
 @click.option(
     "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
@@ -402,7 +418,9 @@ def validate(
     "sheet_map_entries",
     type=str,
     multiple=True,
-    help="Override workbook sheet names using <file>=<sheet> entries.",
+    help=(
+        "Override workbook sheet names using <file>=<sheet>[,<sheet>] entries."
+    ),
 )
 @click.option(
     "--output",
