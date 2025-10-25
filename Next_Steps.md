@@ -349,4 +349,38 @@ Execute in this order; each item must meet its gate before promotion.
       - Ran `python -m scripts.dependency_matrix guard --config presets/dependency_targets.toml --blockers presets/dependency_blockers.toml --status-output tools/dependency_matrix/status.json --strict` (exit 0 after adding ruamel-yaml-clib to allow list; blockers remain present).
       - Updated `tools/dependency_matrix/wheel_status.json` to include ruamel-yaml-clib; TLS failures persist when fetching PyPI metadata so cache automation still pending.
       - Wheel blockers remain unresolved for 33 packages (cp314) / 33 packages (cp315); dependency matrix guard output captured for owners. Follow-up: coordinate with wheelhouse to mirror cp314/cp315 artifacts or secure TLS trust bundle to finish remediation.
+- [ ] 2025-11-02 — Column inference engine uplift (agent) — _Owner: Platform/Data · Due: 2025-11-09_:
+      - Baseline QA (fresh run post-environment bootstrap):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing` ❌ (SyntaxError in `tests/test_cli.py`; inline assert expression rejected on Python 3.13).【bcd12d†L1-L4】
+        - `poetry run ruff check .` ❌ (34 lint errors including invalid syntax in `tests/test_cli.py`).【346ba2†L1-L96】
+        - `poetry run black --check .` ❌ (178 files require formatting; parser error on `tests/test_cli.py`).【3d5581†L1-L4】
+        - `poetry run mypy .` ❌ (SyntaxError in `tests/test_cli.py`).【2e8c10†L1-L2】
+        - `poetry run bandit -r .` ⚠️ (aborted around 44% after prolonged scan to keep session responsive).【b4e500†L1-L1】
+        - `poetry run safety check --full-report` ⚠️ (offline environment blocked advisory API lookup).【d20c93†L1-L1】
+        - `poetry build` ✅ (sdist and wheel generated successfully).【4c1e9b†L1-L5】
+        - `poetry run python -m apps.automation.cli qa lint` ❌ (automation bundle reports failures across Ruff/Black/Yamllint/SQLFluff/pre-commit).【de562c†L1-L16】
+        - `poetry run python -m apps.automation.cli qa typecheck` ❌ (missing `click` dependency when booting CLI wrapper).【9f9231†L1-L6】
+        - `poetry run python -m apps.automation.cli qa mutation --dry-run` ❌ (missing `click` dependency prevents CLI startup).【725ab4†L1-L6】
+        - `poetry run trunk check` ⚠️ (`trunk` CLI unavailable in environment).【aca261†L1-L1】
+      - Next: implement column inference scoring engine, extend profile metadata with synonyms/detection hooks, and surface CLI mapping previews with regression coverage; re-run targeted QA (pytest core suite + lint/type) after fixes.
+      - Risks: baseline QA currently red across tests/lint/type; fix `tests/test_cli.py` syntax regression first to unblock suites.
+      - Progress (2025-11-02 pass):
+        - Added `watercrawl.core.column_inference` with synonym/fuzzy/detection scoring and wired CLI previews plus profile synonyms.
+        - Targeted lint: `poetry run ruff check watercrawl/core/column_inference.py ...` ✅.【d1761c†L1-L2】
+        - Targeted tests: `poetry run pytest tests/test_core_column_inference.py` ⚠️ (skipped: pandas/yaml not available).【08e7c4†L1-L7】
+        - CLI preview test: `poetry run pytest tests/test_cli.py::test_cli_validate_emits_inference_preview` ⚠️ (module skipped without pandas/yaml).【8c271e†L1-L7】
+        - Targeted mypy remains blocked by repo-wide missing stubs/existing errors (see log).【73c7c0†L1-L27】【52643c†L1-L54】
+    - [ ] 2025-11-05 — Dataset validator hygiene uplift (agent) — _Owner: Platform/Data · Due: 2025-11-12_:
+      - Baseline QA before edits (fresh Poetry env):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=watercrawl --cov-report=term-missing` ❌ (`pytest-cov` plugin unavailable; pytest rejects coverage flags).【81f1a0†L1-L5】
+        - `poetry run ruff check .` ❌ (29 pre-existing Ruff violations across repository scripts/tests/core modules).【b108e0†L1-L69】
+        - `poetry run mypy .` ❌ (130 errors stemming from missing stubs/dependencies e.g., pandas, networkx, opentelemetry).【3dbedf†L1-L30】【afe179†L1-L67】
+        - `poetry run bandit -r .` ❌ (`bandit` executable not available in environment).【afe179†L67-L68】
+        - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ❌ (`packaging` dependency missing).【81c4b1†L1-L8】
+        - `poetry run black --check .` ❌ (178 files require formatting; existing formatting debt).【42563b†L1-L6】
+        - `poetry build` ✅ (sdist and wheel produced successfully).【b6e7c9†L1-L4】
+      - Targeted QA after validator updates:
+        - `poetry run pytest tests/validation/test_dataset_validator.py` ⚠️ (skipped: Hypothesis/pandas not installed in environment).【ffd5ef†L1-L7】
+        - `poetry run ruff check watercrawl/domain/validation.py tests/validation/test_dataset_validator.py` ✅ (clean for touched files).【6958f1†L1-L1】
+      - Next: Coordinate with platform owners to provision pandas + Hypothesis for full test execution; extend automation CLI coverage once dependencies available and follow-up on repo-wide lint/type/security debt.
 

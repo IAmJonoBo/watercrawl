@@ -8,10 +8,19 @@ except ImportError:
     _PANDAS_AVAILABLE = False
 
 if _PANDAS_AVAILABLE:
-    from . import cache, config, excel, external_sources, normalization, presets
+    from . import (
+        cache,
+        column_inference,
+        config,
+        excel,
+        external_sources,
+        normalization,
+        presets,
+    )
 
     __all__ = [
         "cache",
+        "column_inference",
         "config",
         "excel",
         "external_sources",

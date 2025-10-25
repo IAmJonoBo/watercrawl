@@ -1,0 +1,7 @@
+# Dataset validator hygiene uplift commit artefact
+If-Match: f4ffe0c7ca6d5d4a9d0082f3c62ec484f9d74b33
+Diffstat:
+ Next_Steps.md                             | 13 +++++++++++++
+ plans/dataset_validator_enhancements.plan |  8 ++++++++
+ tests/validation/test_dataset_validator.py | 107 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ watercrawl/domain/validation.py           | 348 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--------

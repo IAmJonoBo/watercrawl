@@ -13,11 +13,22 @@ dataset:
   columns:
     - name: Name of Organisation
       type: text
+      synonyms:
+        - Organisation Name
+      alternate_labels:
+        - Org Name
+        - Flight School Name
+        - Company Name
       format_hints:
         case: title
         collapse_whitespace: true
     - name: Province
       type: enum
+      synonyms:
+        - Region
+      alternate_labels:
+        - Province/Region
+        - Province Name
       allowed_values:
         - Eastern Cape
         - Free State
@@ -28,20 +39,36 @@ dataset:
         - Northern Cape
         - North West
         - Western Cape
+      detection_hooks:
+        - allowed_values
       format_hints:
         default: Unknown
     - name: Status
       type: enum
+      synonyms:
+        - Verification Status
+      alternate_labels:
+        - Review Status
       allowed_values:
         - Verified
         - Candidate
         - Needs Review
         - Duplicate
         - Do Not Contact (Compliance)
+      detection_hooks:
+        - allowed_values
       format_hints:
         default: Needs Review
     - name: Website URL
       type: url
+      synonyms:
+        - Website
+        - URL
+      alternate_labels:
+        - Company Website
+        - Site URL
+      detection_hooks:
+        - url_pattern
       format_hints:
         ensure_https: true
         strip_query: true
@@ -49,22 +76,63 @@ dataset:
         strip_trailing_slash: true
     - name: Contact Person
       type: text
+      synonyms:
+        - Primary Contact
+      alternate_labels:
+        - Contact Name
+        - Lead Contact
       format_hints:
         case: title
         collapse_whitespace: true
     - name: Contact Number
       type: phone
       required: true
+      synonyms:
+        - Contact Phone
+        - Phone Number
+      alternate_labels:
+        - Telephone
+        - Tel
+      detection_hooks:
+        - phone_pattern
     - name: Contact Email Address
       type: email
+      synonyms:
+        - Contact Email
+      alternate_labels:
+        - Email Address
+        - Primary Email
+      detection_hooks:
+        - email_pattern
       format_hints:
         case: lower
     - name: Fleet Size
       type: numeric_with_units
+      synonyms:
+        - Aircraft Count
+      alternate_labels:
+        - Number of Aircraft
+        - Fleet Count
+      detection_hooks:
+        - numeric_values
     - name: Runway Length
       type: numeric_with_units
+      synonyms:
+        - Runway Length Feet
+      alternate_labels:
+        - Runway Length (ft)
+        - Runway Length Feet (Imperial)
+      detection_hooks:
+        - numeric_values
     - name: Runway Length (m)
       type: numeric_with_units
+      synonyms:
+        - Runway Length Metres
+      alternate_labels:
+        - Runway Length Meters
+        - Runway Length (Metric)
+      detection_hooks:
+        - numeric_values
   numeric_units:
     - column: Fleet Size
       canonical_unit: count

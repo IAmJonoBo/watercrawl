@@ -35,6 +35,7 @@ class PlanValidationResult:
     plan_paths: list[Path]
     commit_paths: list[Path]
     commit_payloads: list[Mapping[str, Any]]
+    profile: Mapping[str, Any]
 
 
 @dataclass(slots=True)
@@ -102,6 +103,8 @@ class PlanCommitGuard:
 
         metrics = self._extract_commit_metrics(commit_payloads)
         aggregated_plan = self._aggregate_plan(plan_payloads, commit_payloads)
+        active_profile = config.describe_active_profile()
+        aggregated_plan.setdefault("profile", active_profile)
 
         active_policy = self.policy or SafetyPolicy(
             blocked_domains=set(self.contract.blocked_domains),
@@ -138,6 +141,7 @@ class PlanCommitGuard:
             plan_paths=resolved_plans,
             commit_paths=resolved_commits,
             commit_payloads=commit_payloads,
+            profile=active_profile,
         )
 
     def require_for_payload(
@@ -337,6 +341,7 @@ class PlanCommitGuard:
             "if_match": [
                 self._extract_if_match(payload) for payload in commit_payloads
             ],
+            "profile": config.describe_active_profile(),
         }
         if metrics:
             audit_record["metrics"] = dict(metrics)

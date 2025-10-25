@@ -15,11 +15,11 @@ import click
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeRemainingColumn
 
-from watercrawl.application.pipeline import Pipeline
+from watercrawl.application.pipeline import MultiSourcePipeline, Pipeline
 from watercrawl.application.progress import PipelineProgressListener
 from watercrawl.core import config
 from watercrawl.core.excel import read_dataset
-from watercrawl.core.profiles import ProfileError
+from watercrawl.core.profiles import ProfileError, load_profile
 from watercrawl.domain.models import SchoolRecord
 from watercrawl.infrastructure.evidence import build_evidence_sink
 from watercrawl.integrations.contracts import (
@@ -66,6 +66,124 @@ def _get_cli_override(name: str, default: T) -> T:
     if cli_module is not None and hasattr(cli_module, name):
         return getattr(cli_module, name)
     return default
+
+
+def _parse_sheet_map(entries: Sequence[str]) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for entry in entries:
+        if "=" in entry:
+            key, value = entry.split("=", 1)
+        elif ":" in entry:
+            key, value = entry.split(":", 1)
+        else:
+            raise ValueError("Invalid sheet mapping format. Use <name>=<sheet>.")
+        mapping[key.strip()] = value.strip()
+    return mapping
+
+
+def _compose_inputs(primary: Path, extras: Sequence[Path]) -> Path | list[Path]:
+    if extras:
+        return [primary, *extras]
+    return primary
+
+
+def _emit_column_inference_preview(metadata: Mapping[str, Any]) -> None:
+    """Render inferred column mappings as CLI warnings."""
+
+    inference = metadata.get("column_inference")
+    if not isinstance(inference, Mapping):
+        return
+
+    raw_matches = inference.get("matches")
+    matches: list[dict[str, Any]] = []
+    if isinstance(raw_matches, Sequence):
+        for entry in raw_matches:
+            if not isinstance(entry, Mapping):
+                continue
+            source = entry.get("source")
+            canonical = entry.get("canonical")
+            if not source or not canonical:
+                continue
+            score_raw = entry.get("score", 0.0)
+            try:
+                score = float(score_raw)
+            except (TypeError, ValueError):
+                score = 0.0
+            reasons_raw = entry.get("reasons", ())
+            if isinstance(reasons_raw, Sequence) and not isinstance(
+                reasons_raw, (str, bytes)
+            ):
+                reasons = [str(reason) for reason in reasons_raw if reason]
+            elif reasons_raw:
+                reasons = [str(reasons_raw)]
+            else:
+                reasons = []
+            matches.append(
+                {
+                    "source": str(source),
+                    "canonical": str(canonical),
+                    "score": score,
+                    "reasons": reasons,
+                }
+            )
+
+    rename_matches = [
+        match for match in matches if match["source"] != match["canonical"]
+    ]
+
+    unmatched_raw = inference.get("unmatched_sources", ())
+    if isinstance(unmatched_raw, Sequence) and not isinstance(
+        unmatched_raw, (str, bytes)
+    ):
+        unmatched = [str(entry) for entry in unmatched_raw if entry]
+    elif unmatched_raw:
+        unmatched = [str(unmatched_raw)]
+    else:
+        unmatched = []
+
+    missing_raw = inference.get("missing_targets", ())
+    if isinstance(missing_raw, Sequence) and not isinstance(missing_raw, (str, bytes)):
+        missing = [str(entry) for entry in missing_raw if entry]
+    elif missing_raw:
+        missing = [str(missing_raw)]
+    else:
+        missing = []
+
+    if not rename_matches and not unmatched and not missing:
+        return
+
+    if rename_matches:
+        click.echo("Inferred column mappings:", err=True)
+        for match in rename_matches:
+            reasons = "; ".join(match["reasons"])
+            message = (
+                f" - {match['source']} → {match['canonical']} "
+                f"(score {match['score']:.2f})"
+            )
+            if reasons:
+                message += f" [{reasons}]"
+            color: str | None = None
+            if match["score"] < 0.7:
+                color = "red"
+            elif match["score"] < 0.85:
+                color = "yellow"
+            if color:
+                click.secho(message, fg=color, err=True)
+            else:
+                click.echo(message, err=True)
+
+    if unmatched:
+        click.secho(
+            "Unmapped columns: " + ", ".join(sorted(set(unmatched))),
+            fg="yellow",
+            err=True,
+        )
+    if missing:
+        click.secho(
+            "Missing expected columns: " + ", ".join(sorted(set(missing))),
+            fg="red",
+            err=True,
+        )
 
 
 @contextmanager
@@ -162,6 +280,20 @@ def cli() -> None:
 @cli.command()
 @click.argument("input_path", type=click.Path(exists=True, path_type=Path))
 @click.option(
+    "--inputs",
+    "additional_inputs",
+    type=click.Path(exists=True, path_type=Path),
+    multiple=True,
+    help="Additional dataset paths or directories to merge before validation.",
+)
+@click.option(
+    "--sheet-map",
+    "sheet_map_entries",
+    type=str,
+    multiple=True,
+    help="Override workbook sheet names using <file>=<sheet> entries.",
+)
+@click.option(
     "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
 )
 @click.option(
@@ -183,6 +315,8 @@ def cli() -> None:
 )
 def validate(
     input_path: Path,
+    additional_inputs: Sequence[Path],
+    sheet_map_entries: Sequence[str],
     output_format: str,
     progress: bool | None,
     profile_id: str | None,
@@ -194,7 +328,13 @@ def validate(
     pipeline_factory = _get_cli_override("Pipeline", Pipeline)
     reader = _get_cli_override("read_dataset", read_dataset)
     pipeline = pipeline_factory()
-    frame = reader(input_path)
+    try:
+        sheet_map = _parse_sheet_map(sheet_map_entries)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc), param_hint="--sheet-map") from exc
+    inputs = _compose_inputs(input_path, additional_inputs)
+    frame = reader(inputs, sheet_map=sheet_map or None)
+    _emit_column_inference_preview(frame.attrs)
     report = pipeline.validator.validate_dataframe(frame)
     validation_contract = report.to_contract()
     issues_payload = [issue.model_dump() for issue in validation_contract.issues]
@@ -210,6 +350,7 @@ def validate(
             }
         },
     }
+    payload["profile"] = config.describe_active_profile()
     progress_listener_factory = _get_cli_override(
         "RichPipelineProgress", RichPipelineProgress
     )
@@ -246,6 +387,20 @@ def validate(
 
 @cli.command()
 @click.argument("input_path", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--inputs",
+    "additional_inputs",
+    type=click.Path(exists=True, path_type=Path),
+    multiple=True,
+    help="Additional dataset paths or directories to merge before enrichment.",
+)
+@click.option(
+    "--sheet-map",
+    "sheet_map_entries",
+    type=str,
+    multiple=True,
+    help="Override workbook sheet names using <file>=<sheet> entries.",
+)
 @click.option(
     "--output",
     "output_path",
@@ -293,6 +448,8 @@ def validate(
 )
 def enrich(
     input_path: Path,
+    additional_inputs: Sequence[Path],
+    sheet_map_entries: Sequence[str],
     output_path: Path | None,
     output_format: str,
     progress: bool | None,
@@ -305,6 +462,12 @@ def enrich(
     """Validate, enrich, and export a dataset."""
 
     _select_profile(profile_id, profile_path)
+    try:
+        sheet_map = _parse_sheet_map(sheet_map_entries)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc), param_hint="--sheet-map") from exc
+    inputs = _compose_inputs(input_path, additional_inputs)
+    multi_source_required = bool(additional_inputs) or input_path.is_dir()
     evidence_sink_factory = _get_cli_override(
         "build_evidence_sink", build_evidence_sink
     )
@@ -312,7 +475,11 @@ def enrich(
     lakehouse_writer_factory = _get_cli_override(
         "build_lakehouse_writer", build_lakehouse_writer
     )
-    pipeline_factory = _get_cli_override("Pipeline", Pipeline)
+    pipeline_factory = _get_cli_override(
+        "MultiSourcePipeline" if multi_source_required else "Pipeline",
+        MultiSourcePipeline if multi_source_required else Pipeline,
+    )
+    reader = _get_cli_override("read_dataset", read_dataset)
     plan_guard = _get_cli_override("plan_guard", CLI_ENVIRONMENT.plan_guard)
     try:
         validation = plan_guard.require(
@@ -323,6 +490,8 @@ def enrich(
         )
     except PlanCommitError as exc:
         raise click.ClickException(str(exc)) from exc
+    preview_frame = reader(inputs, sheet_map=sheet_map or None)
+    _emit_column_inference_preview(preview_frame.attrs)
     evidence_sink = evidence_sink_factory()
     lineage_manager = lineage_manager_factory()
     lakehouse_writer = lakehouse_writer_factory()
@@ -355,10 +524,11 @@ def enrich(
             dataset_version=target.stem,
         )
     report = pipeline.run_file(
-        input_path,
+        inputs,
         output_path=target,
         progress=listener,
         lineage_context=lineage_context,
+        sheet_map=sheet_map or None,
     )
     report_contract = report.to_contract()
     issues_payload = [issue.model_dump() for issue in report_contract.issues]
@@ -379,6 +549,7 @@ def enrich(
             }
         },
     }
+    payload["profile"] = dict(validation.profile)
     if report.lineage_artifacts:
         payload["lineage_artifacts"] = {
             "openlineage": str(report.lineage_artifacts.openlineage_path),
@@ -412,8 +583,9 @@ def enrich(
         if report.version_info:
             click.echo(f"Version manifest: {report.version_info.metadata_path}")
         if payload["adapter_failures"]:
+            failures_display = int(payload["adapter_failures"])
             click.echo(
-                f"Warnings: {payload['adapter_failures']} research lookups failed; see logs."
+                f"Warnings: {failures_display} research lookups failed; see logs."
             )
         if validation.plan_paths:
             click.echo(
@@ -642,6 +814,72 @@ def coverage_command(output_format: str, output_path: Path | None) -> None:
             err=True,
         )
         raise click.exceptions.Exit(1)
+
+
+@cli.group()
+def profiles() -> None:
+    """Inspect and manage refinement profiles."""
+
+
+@profiles.command("list")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
+def profiles_list(output_format: str) -> None:
+    """List available refinement profiles."""
+
+    entries = config.list_profiles()
+    active = config.describe_active_profile()
+    if output_format == "json":
+        payload = {"active_profile": active, "profiles": entries}
+        click.echo(json.dumps(payload, indent=2))
+        return
+
+    if not entries:
+        click.echo("No profiles discovered under profiles/", err=True)
+        return
+    click.echo("Available profiles:")
+    for entry in entries:
+        marker = "*" if entry.get("active") else "-"
+        click.echo(f" {marker} {entry['id']} :: {entry['name']} ({entry['path']})")
+    click.echo(
+        f"Active profile: {active['id']} :: {active['name']} ({active['path']})"
+    )
+
+
+@profiles.command("validate")
+@click.argument("profile_path", type=click.Path(exists=True, path_type=Path))
+def profiles_validate(profile_path: Path) -> None:
+    """Validate a refinement profile definition."""
+
+    try:
+        profile = load_profile(profile_path)
+    except ProfileError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(
+        f"Profile {profile.identifier} ({profile.name}) is valid at {profile_path}."
+    )
+
+
+@profiles.command("switch")
+@click.option("--profile", "profile_id", type=str)
+@click.option("--profile-path", type=click.Path(exists=True, path_type=Path))
+@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
+def profiles_switch(profile_id: str | None, profile_path: Path | None, output_format: str) -> None:
+    """Switch the active refinement profile."""
+
+    if not profile_id and not profile_path:
+        raise click.UsageError("Provide --profile or --profile-path")
+    if profile_id and profile_path:
+        raise click.UsageError("Specify only one of --profile or --profile-path")
+    try:
+        config.switch_profile(profile_id=profile_id, profile_path=profile_path)
+    except ProfileError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    active = config.describe_active_profile()
+    if output_format == "json":
+        click.echo(json.dumps({"profile": active}, indent=2))
+    else:
+        click.echo(f"Active profile switched to {active['name']} ({active['id']})")
 
 
 @cli.command("mcp-server")

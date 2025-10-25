@@ -4,8 +4,15 @@ from collections.abc import Mapping
 from pathlib import Path
 from types import SimpleNamespace
 
-import pandas as pd
+import pytest
 from click.testing import CliRunner
+
+pytest.importorskip("yaml")
+pytest.importorskip("pandas")
+
+import yaml
+
+import pandas as pd
 
 from watercrawl.application.progress import PipelineProgressListener
 from watercrawl.domain.contracts import (
@@ -14,7 +21,8 @@ from watercrawl.domain.contracts import (
     ValidationIssueContract,
     ValidationReportContract,
 )
-from watercrawl.domain.models import SchoolRecord
+from watercrawl.domain.models import PipelineReport, SchoolRecord, ValidationReport
+from watercrawl.core import config
 from watercrawl.interfaces import cli
 from watercrawl.interfaces.cli import cli as cli_group
 
@@ -30,6 +38,13 @@ def _write_sample_csv(path: Path, include_email: bool = False) -> None:
     }
     if include_email:
         base_row["Contact Email Address"] = "info@aerolabs.co.za"
+    base_row.update(
+        {
+            "Fleet Size": "",
+            "Runway Length": "",
+            "Runway Length (m)": "",
+        }
+    )
     df = pd.DataFrame([base_row])
     df.to_csv(path, index=False)
 
@@ -73,6 +88,16 @@ def _write_commit(tmp_path: Path) -> Path:
     }
     commit_path.write_text(json.dumps(commit_payload), encoding="utf-8")
     return commit_path
+
+
+def _duplicate_profile(tmp_path: Path, *, identifier: str) -> Path:
+    payload = yaml.safe_load(config.PROFILE_PATH.read_text(encoding="utf-8"))
+    payload["id"] = identifier
+    payload["name"] = f"Template {identifier}"
+    payload["description"] = "Profile fixture for CLI tests"
+    destination = tmp_path / f"{identifier}.yaml"
+    destination.write_text(yaml.safe_dump(payload), encoding="utf-8")
+    return destination
 
 
 def _make_record(name: str = "Atlas") -> SchoolRecord:
@@ -140,6 +165,7 @@ def test_cli_enrich_creates_output(tmp_path):
     assert output_path.exists()
     assert "lineage_artifacts" in payload
     assert payload["commit_artifacts"] == [str(commit_path)]
+    assert payload["profile"]["id"] == config.PROFILE.identifier
     lineage_dir = Path(payload["lineage_artifacts"]["openlineage"]).parent
     assert lineage_dir.exists()
     pipeline_contract = payload["contracts"]["pipeline_report"]
@@ -206,6 +232,8 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
                 str(input_path),
                 "--output",
                 str(output_path),
+                "--format",
+                "json",
                 "--plan",
                 str(plan_path),
                 "--commit",
@@ -213,6 +241,8 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
             ],
         )
     assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["profile"]["path"] == str(config.PROFILE_PATH)
     assert "plan_commit.audit" in caplog.text
     assert str(plan_path) in caplog.text
     audit_path = cli.plan_guard.contract.audit_log_path
@@ -222,6 +252,104 @@ def test_cli_enrich_logs_plan_audit(tmp_path, caplog):
     )
     assert last_record["allowed"] is True
     assert str(plan_path) in last_record["plans"]
+    assert last_record["profile"]["id"] == config.PROFILE.identifier
+
+
+def test_cli_enrich_supports_multi_inputs(tmp_path: Path) -> None:
+    primary_path = tmp_path / "primary.csv"
+    secondary_path = tmp_path / "secondary.xlsx"
+    output_path = tmp_path / "merged.csv"
+    plan_path = _write_plan(tmp_path)
+    commit_path = _write_commit(tmp_path)
+
+    pd.DataFrame([{"Name of Organisation": "Primary", "Province": "Gauteng"}]).to_csv(
+        primary_path, index=False
+    )
+    with pd.ExcelWriter(secondary_path) as writer:
+        pd.DataFrame(
+            [{"Name of Organisation": "Secondary", "Province": "Limpopo"}]
+        ).to_excel(writer, sheet_name="Custom", index=False)
+
+    class DummyMultiSourcePipeline:
+        def __init__(self) -> None:
+            self.last_call: dict[str, object] | None = None
+
+        def run_file(
+            self,
+            input_path: object,
+            output_path: Path | None = None,
+            *,
+            progress: PipelineProgressListener | None = None,
+            lineage_context: object | None = None,
+            sheet_map: Mapping[str, str] | None = None,
+        ) -> PipelineReport:
+            self.last_call = {
+                "input_path": input_path,
+                "output_path": output_path,
+                "sheet_map": sheet_map,
+            }
+            dataframe = pd.DataFrame(
+                [
+                    {
+                        "Name of Organisation": "Merged",
+                        "Province": "Gauteng",
+                        "Status": "Candidate",
+                        "Website URL": "",
+                        "Contact Person": "",
+                        "Contact Number": "",
+                        "Contact Email Address": "",
+                    }
+                ]
+            )
+            return PipelineReport(
+                refined_dataframe=dataframe,
+                validation_report=ValidationReport(issues=[], rows=1),
+                evidence_log=[],
+                metrics={
+                    "rows_total": 1,
+                    "enriched_rows": 0,
+                    "verified_rows": 0,
+                    "adapter_failures": 0,
+                },
+            )
+
+    class FailingPipeline:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            raise AssertionError("Base pipeline should not be instantiated")
+
+    dummy = DummyMultiSourcePipeline()
+    runner = CliRunner()
+    with cli.override_cli_dependencies(
+        Pipeline=FailingPipeline,
+        MultiSourcePipeline=lambda **_: dummy,
+        LineageManager=lambda: None,
+        build_lakehouse_writer=lambda: None,
+    ):
+        result = runner.invoke(
+            cli_group,
+            [
+                "enrich",
+                str(primary_path),
+                "--inputs",
+                str(secondary_path),
+                "--sheet-map",
+                f"{secondary_path.name}=Custom",
+                "--output",
+                str(output_path),
+                "--plan",
+                str(plan_path),
+                "--commit",
+                str(commit_path),
+                "--format",
+                "json",
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert dummy.last_call is not None
+    assert isinstance(dummy.last_call["input_path"], list)
+    assert dummy.last_call["sheet_map"] == {secondary_path.name: "Custom"}
+    assert dummy.last_call["output_path"] == output_path
 
 
 def test_cli_enrich_force_rejected_when_policy_disallows(tmp_path):
@@ -514,9 +642,13 @@ def test_cli_validate_progress_path(tmp_path):
         def on_complete(self, metrics: Mapping[str, int]) -> None:
             self.completions.append(metrics)
 
+    def _dummy_read_dataset(_path, **kwargs):
+        assert "sheet_map" not in kwargs or kwargs["sheet_map"] is None
+        return df
+
     with cli.override_cli_dependencies(
         Pipeline=DummyPipeline,
-        read_dataset=lambda path: df,
+        read_dataset=_dummy_read_dataset,
         RichPipelineProgress=DummyProgressListener,
     ):
         runner = CliRunner()
@@ -528,6 +660,60 @@ def test_cli_validate_progress_path(tmp_path):
     assert result.exit_code == 0
     assert "Rows: 1" in result.output
     assert "missing_data" in result.output
+
+
+def test_cli_validate_emits_inference_preview(tmp_path):
+    input_path = tmp_path / "input.csv"
+    input_path.write_text("dummy", encoding="utf-8")
+
+    df = pd.DataFrame({"Name": ["A"]})
+    df.attrs["column_inference"] = {
+        "matches": [
+            {
+                "source": "Org Name",
+                "canonical": "Name of Organisation",
+                "score": 0.82,
+                "reasons": ["Synonym match"],
+            }
+        ],
+        "unmatched_sources": [],
+        "missing_targets": [],
+        "rename_map": {"Org Name": "Name of Organisation"},
+    }
+
+    class DummyReport:
+        rows = 1
+        issues: list[dict[str, str]] = []
+        is_valid = True
+
+        def to_contract(self) -> ValidationReportContract:
+            return ValidationReportContract(issues=[], rows=1)
+
+    class DummyValidator:
+        def validate_dataframe(self, frame: pd.DataFrame) -> DummyReport:
+            assert frame is df
+            return DummyReport()
+
+    class DummyPipeline:
+        def __init__(self) -> None:
+            self.validator = DummyValidator()
+
+    def _dummy_read_dataset(_path: Path | list[Path], **_kwargs):
+        return df
+
+    with cli.override_cli_dependencies(
+        Pipeline=DummyPipeline,
+        read_dataset=_dummy_read_dataset,
+    ):
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(
+            cli_group,
+            ["validate", str(input_path), "--format", "json"],
+        )
+
+    assert result.exit_code == 0
+    assert "Inferred column mappings" in result.stderr
+    assert "Org Name → Name of Organisation" in result.stderr
 
 
 def test_cli_enrich_warns_on_adapter_failures(tmp_path):
@@ -582,6 +768,7 @@ def test_cli_enrich_warns_on_adapter_failures(tmp_path):
             output_path: Path,
             progress: PipelineProgressListener | None,
             lineage_context: object | None = None,
+            **_: object,
         ) -> DummyReport:
             assert path == input_path
             output_path.write_text("data", encoding="utf-8")
@@ -615,3 +802,43 @@ def test_cli_enrich_warns_on_adapter_failures(tmp_path):
 
     assert result.exit_code == 0
     assert "Warnings: 4 research lookups failed" in result.output
+
+def test_cli_profiles_list_reports_active_profile():
+    runner = CliRunner()
+    result = runner.invoke(cli_group, ["profiles", "list", "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["active_profile"]["id"] == config.PROFILE.identifier
+    assert any(entry.get("active") for entry in payload["profiles"])
+
+
+def test_cli_profiles_validate_accepts_profile_copy(tmp_path: Path) -> None:
+    profile_path = _duplicate_profile(tmp_path, identifier="cli-validate")
+    runner = CliRunner()
+    result = runner.invoke(cli_group, ["profiles", "validate", str(profile_path)])
+    assert result.exit_code == 0
+    assert "Profile is valid" in result.output
+
+
+def test_cli_profiles_switch_updates_active_profile(tmp_path: Path) -> None:
+    original_path = config.PROFILE_PATH
+    profile_path = _duplicate_profile(tmp_path, identifier="cli-switch")
+    runner = CliRunner()
+    try:
+        result = runner.invoke(
+            cli_group,
+            [
+                "profiles",
+                "switch",
+                "--profile-path",
+                str(profile_path),
+                "--format",
+                "json",
+            ],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["profile"]["id"] == "cli-switch"
+        assert config.PROFILE.identifier == "cli-switch"
+    finally:
+        config.switch_profile(profile_path=original_path)
