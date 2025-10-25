@@ -44,6 +44,23 @@
 
 ## Steps (iteration log)
 
+- [x] 2025-11-01 — Research adapter executor propagation hardening (agent) — _Owner: Platform · Due: 2025-11-08_:
+      - Captured plan artefact `plans/2025-11-01_research_executor_fix.plan` describing the fix and QA rerun scope.
+      - Patched `lookup_with_adapter_async` to preserve adapter-provided executors (even sentinel placeholders) with a safe fallback to the loop default when the runtime rejects custom executors.
+      - Baseline QA (Python 3.13.3, Poetry env reused):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ✅ (534 passed, 11 skipped, coverage table emitted).
+        - `poetry run ruff check .` ✅
+        - `poetry run isort --profile black --check-only .` ✅ (7 vendored stub files skipped per config).
+        - `poetry run black --check .` ✅ (after reformatting the touched module).
+        - `poetry run yamllint --strict -c .yamllint.yaml .` ✅
+        - `poetry run python -m tools.sql.sqlfluff_runner` ⚠️ (gracefully skipped: duckdb not installed).
+        - `poetry run bandit -r watercrawl` ✅
+        - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ✅
+        - `poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap` ⚠️ (markdownlint nodeenv TLS failure persists; Ruff/Isort/Black/Yamllint/Hadolint/Actionlint clean).
+        - `poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap` ✅
+        - `poetry run python -m apps.automation.cli qa mutation --dry-run` ✅ (recorded skip plan only).
+      - Next: seed trusted Node tarball/cache so markdownlint can succeed, then rerun `qa lint`; consider integration coverage for adapter executor sharing.
+
 - [ ] 2025-10-31 — Pytest runner Python 3.13 fallback update (agent) — _Owner: Platform · Due: 2025-11-07_:
       - Updated `scripts/run_pytest.sh` fallback to locate Python 3.13 interpreters and install the `${PIPELINE_EXTRA}` bundle when running via uv.
       - Validated discovery via `env PATH="/tmp/uv-only:${CLEAN_PATH}" ./scripts/run_pytest.sh --maxfail=1 --disable-warnings`; run halts on pre-existing `ModuleNotFoundError: pint`.
@@ -59,6 +76,47 @@
       - Validated `poetry build` ✅ and confirmed markers present via `tar -tzf dist/crawlkit-0.1.0.tar.gz` and zip inspection.【7f3ab0†L1-L4】【8dfeda†L1-L3】【430f13†L1-L2】
       - Next: Broader QA debts remain (lint/type/security) — coordinate with owners before enabling stricter gates; consider auto-installing pytest-cov or adjusting coverage flags.
 
+- [ ] 2025-10-24 — QA stabilisation initiative kick-off (agent) — _Owner: Platform/QA · Due: 2025-11-08_:
+      - Baseline executed on fresh Poetry env (Python 3.13.3):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ❌ (`tests/test_cli.py::test_cli_enrich_creates_output` fails with `Missing expected columns: Fleet Size, Runway Length, Runway Length (m)`)
+        - `poetry run ruff check .` ❌ (29 violations: unused imports in scripts/tests/governance, extraneous f-strings, unused variables).
+        - `poetry run isort --profile black --check-only .` ❌ (apps/automation CLI + tests import order drift).
+        - `poetry run black --check .` ❌ (demonstration script + ~170 vendored stubs require formatting; indicates config missing stubs exclusion).
+        - `poetry run yamllint --strict -c .yamllint.yaml .` ✅.
+        - `poetry run python -m tools.sql.sqlfluff_runner` ❌ (raises `RuntimeError: duckdb is not installed` instead of skip, breaking offline QA).
+        - `poetry run pre-commit run markdownlint-cli2 --all-files` ❌ (nodeenv TLS handshake failure downloading Node index; offline blocker persists).
+        - `poetry run pre-commit run hadolint --all-files` ❌ (Dockerfile apt/pip install commands not version-pinned).
+        - `poetry run pre-commit run actionlint --all-files` ✅.
+        - `poetry run mypy .` ❌ (50 errors across scripts, crawlkit, integrations, normalization, tests; dominated by async adapter return types and pandas typing gaps).
+        - `poetry run bandit -r watercrawl` ⚠️ (completes with 4 Low findings: runtime assert in `compliance_review`, benign enum string flagged as password, broad `except` in PRR scan, subprocess import unused).
+        - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ✅.
+        - `poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap` ❌ (aggregates Ruff/Isort/Black/SQLFluff/Markdownlint/Hadolint failures as above).
+        - `poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap` ❌ (mirrors mypy failures).
+        - `poetry run python -m apps.automation.cli qa mutation --dry-run` ✅ (skipped mutation run as expected in dry-run mode).
+      - Created `plans/2025-10-24_qa_stabilisation.plan` enumerating remediation scope (fixtures, lint, sqlfluff, type fixes, Dockerfile pinning, docs updates).
+      - Next: Implement plan tasks, prioritising sample dataset/schema alignment, Ruff/mypy fixes, sqlfluff graceful degradation, markdownlint offline strategy, and Dockerfile pinning before re-running baseline.
+
+- [x] 2025-10-31 — Hypothesis + pipeline QA stabilisation (agent) — _Owner: QA/Platform · Due: 2025-11-07_:
+      - Expanded property-based fixtures and pipeline tests to honour the new `Fleet Size`/`Runway Length (m)` columns, restored
+        research plugin feature-flag assertions, tightened the research adapter executor hand-off, and enforced typed
+        telemetry progress signatures.
+      - Hardened the Dockerfile against hadolint warnings (explicit `SHELL` with `pipefail`, quoted `apt-cache` substitutions,
+        annotated Poetry install), addressed wheel-status typing, and guarded production readiness checks/tests against
+        optional `proof` values.
+      - Baseline QA on refreshed Poetry env (Python 3.13.3):
+        - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ✅ (534 passed, 11 skipped).【2f0e64†L1-L48】
+        - `poetry run ruff check .` ✅ (0 findings).【c73033†L1-L1】
+        - `poetry run isort --profile black --check-only .` ✅ (stubs skipped as configured).【ffa7eb†L1-L1】
+        - `poetry run black --check .` ✅ (no reformat needed).【8bfd1b†L1-L2】
+        - `poetry run yamllint --strict -c .yamllint.yaml .` ✅.【d96d12†L1-L1】
+        - `poetry run python -m tools.sql.sqlfluff_runner` ⚠️ (gracefully skipped: duckdb absent).【3cdb72†L1-L2】
+        - `poetry run bandit -r watercrawl` ✅ (no issues after annotating enum status).【b40dc6†L1-L28】
+        - `poetry run python -m tools.security.offline_safety --requirements requirements.txt --requirements requirements-dev.txt` ✅.【610bff†L1-L4】
+        - `poetry run python -m apps.automation.cli qa lint --no-auto-bootstrap` ⚠️ (markdownlint still blocked by nodeenv TLS; other linters green).【cce716†L1-L13】
+        - `poetry run python -m apps.automation.cli qa typecheck --no-auto-bootstrap` ✅.【73098a†L1-L26】
+        - `poetry run python -m apps.automation.cli qa mutation --dry-run` ✅ (recorded skip plan).【2eae8f†L1-L7】
+      - Follow-ups: Seed/offline-trust Node tarball for markdownlint gate, re-run `qa lint` once TLS cache available, and expand
+        executor-aware integration coverage for research adapters.
 - [ ] 2025-10-31 — CI coverage invocation update (agent) — _Owner: Platform · Due: 2025-11-07_:
       - Baseline QA prior to edits:
         - `poetry run pytest --maxfail=1 --disable-warnings --cov=crawlkit --cov=watercrawl --cov-report=term-missing` ❌ (pytest-cov plugin missing).
